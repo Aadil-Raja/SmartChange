@@ -1,0 +1,11 @@
+# Requirements for app-api service
+# This file contains all Python dependencies for the app-api service
+
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+pydantic[email]
+passlib[bcrypt]
+pydantic-settings
