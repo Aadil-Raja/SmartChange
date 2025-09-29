@@ -11,4 +11,4 @@ class UserOut(BaseModel):
     name: str
 
     class Config:
-        orm_mode = True  # allows SQLAlchemy -> Pydantic conversion
+        from_attributes = True   # ✅ replaces orm_mode
