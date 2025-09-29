@@ -6,7 +6,7 @@ class RequestCodeIn(BaseModel):
 class VerifyCodeIn(BaseModel):
     email: EmailStr
     code: str
-    name: str | None = None
+
 
 class TokenOut(BaseModel):
     access_token: str
@@ -18,3 +18,7 @@ class MeOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class LoginPasswordIn(BaseModel):
+    email: EmailStr
+    password: str

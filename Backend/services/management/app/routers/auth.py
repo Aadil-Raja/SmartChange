@@ -1,37 +1,71 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
-from shared.schemas import RequestCodeIn, VerifyCodeIn, TokenOut, MeOut
+from shared.schemas import RequestCodeIn, VerifyCodeIn, UserCreate,LoginPasswordIn
 from app.services import auth_service
-import jwt, os
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
+# ----- SIGNUP -----
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+def signup(payload: UserCreate, db: Session = Depends(get_db)):
+    """
+    Create account (email, password, name). If email exists -> 409.
+    Returns OTP code (dev only) and a message.
+    """
+    code = auth_service.signup(db, email=payload.email, password=payload.password, name=payload.name)
+    return {
+        "message": "Sign-up successful. Enter the verification code.",
+        "dev_code": code
+    }
 
 @router.post("/request-code", status_code=status.HTTP_200_OK)
 def request_code(payload: RequestCodeIn, db: Session = Depends(get_db)):
+    """
+    Resend OTP for an existing, unverified user only. Returns code (dev only).
+    """
     code = auth_service.request_code(db, email=payload.email)
-    return {"message": "If the email is allowed, a code was sent.", "dev_code": code}
+    return {
+        "message": "If the account exists and is unverified, a new code was generated.",
+        "dev_code": code
+    }
 
-@router.post("/verify-code", response_model=TokenOut)
+@router.post("/verify-code", status_code=status.HTTP_200_OK)
 def verify_code(payload: VerifyCodeIn, db: Session = Depends(get_db)):
-    token = auth_service.verify_code(db, email=payload.email, code=payload.code, name=payload.name)
-    return {"access_token": token, "token_type": "bearer"}
+    """
+    Verify OTP for an existing, unverified user. Consumes OTP and marks verified.
+    Returns the same code (dev only) and a success flag.
+    """
+    c = auth_service.verify_code(db, email=payload.email, code=payload.code, name=payload.name)
+    return {"codeVerified": True, "dev_code": c}
 
-# JWT guard
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
-JWT_ALG = "HS256"
 
-def current_user(authorization: str = Header(...)):
-    try:
-        scheme, token = authorization.split(" ")
-        assert scheme.lower() == "bearer"
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-        return {"email": payload["sub"]}
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-@router.get("/me", response_model=MeOut)
-def me(user = Depends(current_user), db: Session = Depends(get_db)):
-    from app.repositories.users_repo import get_by_email
-    u = get_by_email(db, user["email"])
-    return u
+
+
+
+# ----- LOGIN (password) -----
+@router.post("/login/password", status_code=status.HTTP_200_OK)
+def login_password(payload: LoginPasswordIn, db: Session = Depends(get_db)):
+    """
+    Password login. If unverified, a code is generated & returned (dev).
+    """
+    result = auth_service.login_password(db, email=payload.email, password=payload.password)
+    return result  
+# ----- LOGIN (code: resend) -----
+@router.post("/login/request-code", status_code=status.HTTP_200_OK)
+def login_request_code(payload: RequestCodeIn, db: Session = Depends(get_db)):
+    """
+    Resend a login code for an existing account. Returns dev_code now.
+    """
+    code = auth_service.login_send_code(db, email=payload.email)
+    return {"message": "Code generated.", "dev_code": code}
+
+# ----- LOGIN (code: verify) -----
+@router.post("/login/verify-code", status_code=status.HTTP_200_OK)
+def login_verify_code(payload: VerifyCodeIn, db: Session = Depends(get_db)):
+    """
+    Verify the login code (works for both verified & unverified accounts).
+    If unverified, this marks the user verified too.
+    """
+    result = auth_service.login_verify_code(db, email=payload.email, code=payload.code)
+    return result  
