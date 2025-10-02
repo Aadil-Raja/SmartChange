@@ -14,19 +14,53 @@ def create(db: Session, *, email: str, name: str, password_hash: str | None = No
 def list_all(db: Session):
     return db.query(User).all()
 
-def upsert_verified_user(db: Session, *, email: str, name: str | None = None) -> User:
-    user = get_by_email(db, email)
-    if user:
-        user.email_verified = True
-        if name and not user.name:
-            user.name = name
-    else:
-        user = User(email=email, name=name, auth_provider="local", email_verified=True)
-        db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
 
+
+def get_by_firebase_uid(db: Session, uid: str) -> User | None:
+    return db.query(User).filter(User.firebase_uid == uid).first()
 
 def get_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).get(user_id)
+
+
+def upsert_from_firebase(db: Session, *, email: str, uid: str) -> User:
+    """
+    Find user by email; if missing, create minimal row.
+    Attach firebase_uid if not already set.
+    Mark email_verified=True (Google verifies it).
+    """
+    user = get_by_email(db, email)
+    if user is None:
+        user = User(
+            email=email,
+            password_hash=None,          # no local password for Google-only accounts
+            auth_provider="google",
+            email_verified=True,         # Google verified
+            firebase_uid=uid,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+
+    changed = False
+    # Attach UID if first-time Google sign-in for an existing local account
+    if not user.firebase_uid:
+        user.firebase_uid = uid
+        changed = True
+
+    # Trust Google verification
+    if not user.email_verified:
+        user.email_verified = True
+        changed = True
+
+    # Flip provider if you want to reflect latest method
+    if user.auth_provider != "google":
+        user.auth_provider = "google"
+        changed = True
+
+    if changed:
+        db.commit()
+        db.refresh(user)
+
+    return user

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
-from shared.schemas import RequestCodeIn, VerifyCodeIn, UserCreate, LoginPasswordIn,PasswordResetRequestIn, PasswordResetConfirmIn
-from app.services import auth_service
+from shared.schemas import RequestCodeIn, VerifyCodeIn, UserCreate, LoginPasswordIn,PasswordResetRequestIn, PasswordResetConfirmIn,FirebaseLoginIn
+from app.services import auth_service ,firebase_auth_service
 
 router = APIRouter()
 
@@ -150,3 +150,12 @@ def password_reset_confirm(payload: PasswordResetConfirmIn, db: Session = Depend
     """
     auth_service.confirm_password_reset(db, token=payload.token, new_password=payload.new_password)
     return {"message": "Password updated successfully"}
+
+
+
+@router.post("/firebase", status_code=status.HTTP_200_OK)
+def firebase_login(payload: FirebaseLoginIn, db: Session = Depends(get_db)):
+    """
+    Accepts Firebase ID token (Google sign-in) and returns your backend JWT.
+    """
+    return firebase_auth_service.login_with_google(db, id_token=payload.id_token)

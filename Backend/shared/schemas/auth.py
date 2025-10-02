@@ -30,3 +30,6 @@ class PasswordResetRequestIn(BaseModel):
 class PasswordResetConfirmIn(BaseModel):
     token: str
     new_password: str
+
+class FirebaseLoginIn(BaseModel):
+    id_token: str
