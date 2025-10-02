@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
-from shared.schemas import RequestCodeIn, VerifyCodeIn, UserCreate, LoginPasswordIn
+from shared.schemas import RequestCodeIn, VerifyCodeIn, UserCreate, LoginPasswordIn,PasswordResetRequestIn, PasswordResetConfirmIn
 from app.services import auth_service
 
 router = APIRouter()
@@ -128,3 +128,25 @@ async def login_verify_code(
         code=payload.code
     )
     return result
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+def password_reset_request(payload: PasswordResetRequestIn, db: Session = Depends(get_db)):
+    """
+    Always returns 200 with a message. In DEV returns a link you can click.
+    In PROD you would email this link to the user instead of returning it.
+    """
+    link = auth_service.request_password_reset(db, email=payload.email)
+    return {
+        "message": "If the email exists, a reset link has been generated.",
+        "dev_link": link  # remove in production
+    }
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+def password_reset_confirm(payload: PasswordResetConfirmIn, db: Session = Depends(get_db)):
+    """
+    User posts token + new_password. We validate token, set new password,
+    and bump token_version to revoke older tokens.
+    """
+    auth_service.confirm_password_reset(db, token=payload.token, new_password=payload.new_password)
+    return {"message": "Password updated successfully"}

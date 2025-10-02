@@ -26,3 +26,7 @@ def upsert_verified_user(db: Session, *, email: str, name: str | None = None) ->
     db.commit()
     db.refresh(user)
     return user
+
+
+def get_by_id(db: Session, user_id: int) -> User | None:
+    return db.query(User).get(user_id)

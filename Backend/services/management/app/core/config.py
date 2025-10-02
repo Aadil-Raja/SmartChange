@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     mail_ssl_tls: bool = False
     use_credentials: bool = True
     validate_certs: bool = True
-
+    reset_password_url: str = "http://localhost:5173/reset-password"
    
 
 @lru_cache()

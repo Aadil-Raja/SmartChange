@@ -22,3 +22,11 @@ class MeOut(BaseModel):
 class LoginPasswordIn(BaseModel):
     email: EmailStr
     password: str
+
+
+class PasswordResetRequestIn(BaseModel):
+    email: EmailStr
+
+class PasswordResetConfirmIn(BaseModel):
+    token: str
+    new_password: str
