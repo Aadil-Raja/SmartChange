@@ -1,10 +1,34 @@
-# SHARED: Pydantic base schemas used across all services
-# This file contains the base schemas that can be imported by any service
-
-from .user import UserBase, UserCreate, UserUpdate, UserResponse
-from .document import DocumentBase, DocumentCreate, DocumentUpdate, DocumentResponse
+from .user import UserCreate, UserOut
+from .auth import (
+    RequestCodeIn,
+    VerifyCodeIn,
+    TokenOut,
+    MeOut,
+    LoginPasswordIn,
+    PasswordResetRequestIn,
+    PasswordResetConfirmIn,
+    FirebaseLoginIn,
+)
+from .admin import (
+    AdminLoginIn,
+    TeamCreate,
+    TeamOut,
+    RoleInTeam,
+    TeamMemberAdd,
+    TeamMemberBrief,
+    TeamWithMembers,
+)
 
 __all__ = [
-    "UserBase", "UserCreate", "UserUpdate", "UserResponse",
-    "DocumentBase", "DocumentCreate", "DocumentUpdate", "DocumentResponse"
+    # user
+    "UserCreate", "UserOut",
+
+    # auth
+    "RequestCodeIn", "VerifyCodeIn", "TokenOut", "MeOut",
+    "LoginPasswordIn", "PasswordResetRequestIn", "PasswordResetConfirmIn",
+    "FirebaseLoginIn",
+
+    # admin
+    "AdminLoginIn", "TeamCreate", "TeamOut",
+    "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
 ]

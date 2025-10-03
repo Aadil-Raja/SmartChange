@@ -1,26 +1,32 @@
-# SHARED: User SQLAlchemy ORM model
-# This model is used across all services for user data persistence
-
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import func
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, func
+from sqlalchemy.orm import declarative_base
+import enum
 
 Base = declarative_base()
 
+class UserRole(enum.Enum):
+    employee = "employee"
+    manager = "manager"
+    admin = "admin"
+
 class User(Base):
-    """User model for database persistence across all services"""
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(255), nullable=True)
-    is_active = Column(Boolean, default=True)
-    is_superuser = Column(Boolean, default=False)
+    email = Column(String, unique=True, nullable=False, index=True)
+
+    password_hash = Column(String, nullable=True)
+    firebase_uid = Column(String, unique=True, nullable=True, index=True)
+    auth_provider = Column(String, default="local", nullable=False)  # "local" | "google"
+    email_verified = Column(Boolean, default=False)
+
+    # 🔽 explicit enum name so Alembic/Postgres agree
+    role = Column(
+        Enum(UserRole, name="user_role", create_type=True),
+        nullable=False,
+        server_default=UserRole.employee.value,  # helps existing rows on migrate
+    )
+
+    token_version = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}', username='{self.username}')>"

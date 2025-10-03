@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Firebase Google Sign-In (Minimal)</title>
+</head>
+<body>
+  <h1>Sign in with Google</h1>
+  <button id="googleBtn">Continue with Google</button>
+
+  <pre id="log"></pre>
+
+  <!-- Firebase SDKs (v9 modular CDN) -->
+  <script type="module">
+    // 1) Import Firebase modules from CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    // 2) Your Firebase web app config (from Console → Project settings → General)
+    const firebaseConfig = {
+  apiKey: "AIzaSyB-t_v2ogrvHuae0YDfdn_nlyC0_wpdbVc",
+  authDomain: "smartchange-7e54c.firebaseapp.com",
+  projectId: "smartchange-7e54c",
+  storageBucket: "smartchange-7e54c.firebasestorage.app",
+  messagingSenderId: "860919795899",
+  appId: "1:860919795899:web:282a7cf3e0699c7cdb999e"
+};
+
+    // 3) Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+   const provider = new GoogleAuthProvider();
+provider.setCustomParameters({
+  prompt: 'select_account'  // Forces account selection
+});
+
+
+    const log = (x) => {
+      const el = document.getElementById("log");
+      el.textContent += (typeof x === "string" ? x : JSON.stringify(x, null, 2)) + "\n";
+    };
+
+    // 4) Click → Google → get Firebase ID token → call your backend
+    document.getElementById("googleBtn").onclick = async () => {
+      try {
+        const cred = await signInWithPopup(auth, provider);
+        const idToken = await cred.user.getIdToken(/* forceRefresh */ true);
+        log("Firebase ID token obtained.");
+
+        // 5) Exchange for YOUR backend JWT
+        const res = await fetch("http://127.0.0.1:8000/auth/firebase", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id_token: idToken })
+        });
+
+        const data = await res.json();
+        log({ backend_response: data });
+
+        // 6) Use your token for authenticated API calls
+      
+      } catch (e) {
+        console.error(e);
+        log(e.message || e);
+      }
+    };
+  </script>
+</body>
+</html>
