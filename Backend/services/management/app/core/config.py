@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     validate_certs: bool = True
     reset_password_url: str = "http://localhost:5173/reset-password"
     firebase_credentials_file: str
+    init_admin_email: str | None = None
+    init_admin_password: str | None = None
 
 @lru_cache()
 def get_settings() -> Settings:

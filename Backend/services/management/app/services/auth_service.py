@@ -79,7 +79,7 @@ async def signup(db: Session, *, email: str, password: str, name: str | None = N
         raise HTTPException(status_code=409, detail="Email already registered")
 
     password_hash = _hash_password(password)
-    user = users_repo.create(db, email=email_norm, name=name or "", password_hash=password_hash)
+    user = users_repo.create(db, email=email_norm, password_hash=password_hash)
     
     try:
         user.email_verified = False
@@ -165,7 +165,7 @@ async def verify_code(db: Session, *, email: str, code: str, name: str | None = 
         raise
 
     # Send welcome email in background
-    background_tasks.add_task(send_welcome_email, email_norm, user.name)
+    background_tasks.add_task(send_welcome_email, email_norm, "send name")
 
     return code
 

@@ -4,8 +4,8 @@ from shared.models import User
 def get_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email).first()
 
-def create(db: Session, *, email: str, name: str, password_hash: str | None = None) -> User:
-    user = User(email=email, name=name, password_hash=password_hash, email_verified=True)
+def create(db: Session, *, email: str, password_hash: str | None = None,role: str | None = None) -> User:
+    user = User(email=email, password_hash=password_hash, email_verified=True,role=role)
     db.add(user)
     db.commit()
     db.refresh(user)
