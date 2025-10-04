@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
-export default function Signup() {
-  const { signup, loading } = useAuth();
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
+  const { confirmPasswordReset, loading } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
+  const { token } = useParams(); // Get token from URL: /reset-password/:token
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,12 +22,13 @@ export default function Signup() {
       return;
     }
 
-    const result = await signup(email, password, fullName);
+    const result = await confirmPasswordReset(token, password);
 
     if (result.success) {
-      navigate('/verify-code', { state: { email } });
+      setMessage('Password reset successful! Redirecting to login...');
+      setTimeout(() => navigate('/login'), 2000);
     } else {
-      setMessage(result.message || 'Signup failed');
+      setMessage(result.message || 'Password reset failed');
     }
   };
 
@@ -42,61 +42,50 @@ export default function Signup() {
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#333333]">Create your account</h1>
+          <h1 className="mb-2 text-3xl font-bold text-[#333333]">Reset Password</h1>
+          <p className="text-sm text-gray-600">Enter your new password below</p>
         </div>
 
         {message && (
-          <div className="mb-4 rounded-lg bg-red-100 p-3 text-center text-sm text-red-800">
+          <div className={`mb-4 rounded-lg p-3 text-center text-sm ${
+            message.includes('successful') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
             {message}
           </div>
         )}
 
         <div className="space-y-5">
           <Input
-            label="Full Name"
-            type="text"
-            id="fullName"
-            placeholder="Enter your full name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            id="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            label="Password"
+            label="New Password"
             type="password"
             id="password"
-            placeholder="Create a password"
+            placeholder="Enter new password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+
           <Input
             label="Confirm Password"
             type="password"
             id="confirmPassword"
-            placeholder="Confirm your password"
+            placeholder="Confirm new password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
+
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Creating...' : 'Sign Up'}
+            {loading ? 'Resetting...' : 'Reset Password'}
           </Button>
         </div>
 
         <div className="mt-6 text-center">
-          <span className="text-sm text-gray-600">Already have an account? </span>
-          <a href="/login" className="text-sm font-medium text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
-            Login
+          <a
+            href="/login"
+            className="text-sm font-medium text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline"
+          >
+            Back to Login
           </a>
         </div>
       </Card>

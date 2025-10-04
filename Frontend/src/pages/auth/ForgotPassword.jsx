@@ -1,31 +1,40 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
-const ForgotPassword = () => {
+export default function ForgotPassword() {
+  const { requestPasswordReset, loading } = useAuth();
   const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Normally call backend API to send reset link
-    console.log('Reset link sent to:', email);
-    // For now, navigate directly to reset page with dummy token
+    setMessage('');
+
+    const result = await requestPasswordReset(email);
+    
+    if (result.success) {
+      setMessage(result.message || 'Reset link sent to your email');
+      // Note: In production, backend sends email with token
+      // For dev, check backend response for reset link
+    } else {
+      setMessage(result.message || 'Failed to send reset link');
+    }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
       <Card className="w-full max-w-md p-8">
-        {/* Logo */}
         <div className="mb-6 flex justify-center">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
             <span className="text-3xl font-bold text-white">KE</span>
           </div>
         </div>
 
-        {/* Title & Description */}
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-[#333333]">Forgot Password?</h1>
           <p className="text-sm text-gray-600">
@@ -33,7 +42,14 @@ const ForgotPassword = () => {
           </p>
         </div>
 
-        {/* Form */}
+        {message && (
+          <div className={`mb-4 rounded-lg p-3 text-center text-sm ${
+            message.includes('sent') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {message}
+          </div>
+        )}
+
         <div className="space-y-6">
           <Input
             label="Email"
@@ -45,12 +61,11 @@ const ForgotPassword = () => {
             required
           />
 
-          <Button onClick={handleSubmit} type="submit">
-            Send Reset Link
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Sending...' : 'Send Reset Link'}
           </Button>
         </div>
 
-        {/* Back to Login Link */}
         <div className="mt-6 text-center">
           <a
             href="/login"
@@ -62,6 +77,4 @@ const ForgotPassword = () => {
       </Card>
     </div>
   );
-};
-
-export default ForgotPassword;
+}

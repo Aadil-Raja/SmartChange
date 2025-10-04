@@ -1,5 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import LogoutButton from './LogoutButton';
+
 
 const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentPath }) => {
   return (
@@ -14,9 +16,8 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
 
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 z-30 h-full transform bg-[#333333] text-white transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}`}
+        className={`fixed left-0 top-0 z-30 h-full transform bg-[#333333] text-white transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}`}
       >
         {/* Logo */}
         <div className="flex h-16 items-center justify-center border-b border-gray-700">
@@ -34,11 +35,10 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
               <a
                 key={index}
                 href={item.path}
-                className={`mb-2 flex items-center rounded-lg px-4 py-3 transition-colors ${
-                  isActive
+                className={`mb-2 flex items-center rounded-lg px-4 py-3 transition-colors ${isActive
                     ? 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white'
                     : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                }`}
+                  }`}
                 title={isCollapsed ? item.label : ''}
               >
                 <item.icon size={20} className="flex-shrink-0" />
@@ -46,6 +46,16 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
               </a>
             );
           })}
+        </nav>
+        <nav className="mt-6 px-3">
+          {navItems.map((item, index) => {
+            // ... existing nav items
+          })}
+
+          {/* Logout at bottom of sidebar */}
+          <div className="absolute bottom-20 left-0 right-0 px-3">
+            <LogoutButton variant="sidebar" showIcon={!isCollapsed} />
+          </div>
         </nav>
 
         {/* Collapse Toggle Button (Desktop Only) */}
