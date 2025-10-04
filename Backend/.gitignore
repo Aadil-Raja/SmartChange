@@ -67,3 +67,8 @@ pnpm-lock.yaml
 # ------------------------
 .DS_Store
 Thumbs.db
+
+
+secrets/*.json
+*.pem
+*.p12
