@@ -1,6 +1,6 @@
 # APP-API SERVICE: API routers for the app-api service
 # This file imports all routers for the app-api service
 
-from . import users,health
+from . import health
 
-__all__ = ["users", "health"]
+__all__ = [ "health"]
