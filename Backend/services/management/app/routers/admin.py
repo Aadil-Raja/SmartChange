@@ -105,3 +105,35 @@ def remove_member_route(
         return admin_service.remove_member(db, team_id=id, user_id=user_id)
     except Exception as e:
         return make_response(False, "Could not remove member", status_code=500)
+
+
+
+@router.get("/employees", status_code=status.HTTP_200_OK)
+def list_employees_route(
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Fetch all users except admins.
+    Includes team name and team role if present.
+    """
+    try:
+        return admin_service.list_employees(db)
+    except Exception as e:
+        return make_response(False, "Could not fetch employees", status_code=500)
+
+
+# ---------------------------
+# Team Roles (Admin only)
+# ---------------------------
+@router.get("/teams/roles", status_code=status.HTTP_200_OK)
+def get_team_roles_route(
+    _admin=Depends(get_current_admin),
+):
+    """
+    Fetch all available team roles.
+    """
+    try:
+        return admin_service.get_team_roles()
+    except Exception as e:
+        return make_response(False, "Could not fetch team roles", status_code=500)

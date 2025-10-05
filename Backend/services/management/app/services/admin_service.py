@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
-from app.repositories import users_repo, teams_repo
+from app.repositories import users_repo, teams_repo,employees_repo
 from shared.models import UserRole, TeamMemberRole, TeamMember
 from app.utils.response_utils import make_response  # ✅ Unified JSON response function
 
@@ -118,3 +118,34 @@ def remove_member(db: Session, *, team_id: int, user_id: int):
 
     data = {"removed": True, "user_id": user_id, "team_id": team_id}
     return make_response(True, "Member removed successfully", data=data, status_code=200)
+
+
+def list_employees(db: Session):
+    """
+    List all users except admins, ordered by user.id ASC.
+    Includes team_id, team name, and team_role if present.
+    """
+    # Adjust query in repo call to include team_id
+    rows = employees_repo.list_non_admin_users(db)
+
+    data = []
+    for user, team_id, team_name, team_role in rows:
+        data.append({
+            "user_id": user.id,
+            "email": user.email,
+            "role": user.role.value,
+            "team_id": team_id,
+            "team": team_name,
+            "team_role": (team_role.value if team_role else None),
+            "created_at": user.created_at,
+        })
+
+    return make_response(True, "Employees fetched successfully", data=data, status_code=200)
+
+
+def get_team_roles():
+    """
+    Return all available team roles.
+    """
+    roles = [r.value for r in TeamMemberRole]
+    return make_response(True, "Team roles fetched successfully", data={"roles": roles}, status_code=200)

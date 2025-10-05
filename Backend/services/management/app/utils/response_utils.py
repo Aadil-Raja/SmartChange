@@ -1,4 +1,5 @@
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from typing import Any
 
 def make_response(success: bool, message: str, data: Any = None, status_code: int = 200):
@@ -20,4 +21,4 @@ def make_response(success: bool, message: str, data: Any = None, status_code: in
     if data is not None:
         payload["data"] = data
 
-    return JSONResponse(status_code=status_code, content=payload)
+    return JSONResponse(status_code=status_code, content=jsonable_encoder(payload))
