@@ -145,3 +145,59 @@ async def send_welcome_email(email: str, name: str = ""):
     except Exception as e:
         print(f"Error sending welcome email to {email}: {str(e)}")
         return False
+    
+
+    
+async def send_password_reset_email(email: str, link: str, name: str | None = None, expires_minutes: int = 60):
+    """
+    Send a password reset email with a secure link.
+    - email: recipient
+    - link: full reset URL incl. token (e.g. https://app/reset-password?token=...)
+    - name: optional display name
+    - expires_minutes: token validity hint for the user
+    """
+    subject = "Reset your password"
+    display_name = name or "there"
+
+    body = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #111;">
+        <div style="max-width:600px;margin:0 auto;padding:24px;">
+          <h2 style="color:#4F46E5;margin:0 0 12px;">Password reset request</h2>
+          <p>Hi {display_name},</p>
+          <p>We received a request to reset your password. Click the button below to choose a new one.</p>
+
+          <div style="margin:24px 0;text-align:center;">
+            <a href="{link}"
+               style="background:#4F46E5;color:#fff;text-decoration:none;padding:12px 20px;border-radius:6px;display:inline-block;">
+               Reset Password
+            </a>
+          </div>
+
+          <p>If the button doesn’t work, copy and paste this link into your browser:</p>
+          <p style="word-break:break-all;"><a href="{link}">{link}</a></p>
+
+          <p style="margin-top:16px;">This link will expire in <strong>{expires_minutes} minutes</strong>. 
+          If you didn’t request a password reset, you can safely ignore this email.</p>
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+          <p style="font-size:12px;color:#6b7280;">This is an automated message; please don’t reply.</p>
+        </div>
+      </body>
+    </html>
+    """
+
+    message = MessageSchema(
+        subject=subject,
+        recipients=[email],
+        body=body,
+        subtype=MessageType.html,
+    )
+
+    try:
+        await fm.send_message(message)
+        return True
+    except Exception as e:
+        # Keep failures non-fatal to callers; log as needed
+        print(f"Error sending password reset email to {email}: {e}")
+        return False

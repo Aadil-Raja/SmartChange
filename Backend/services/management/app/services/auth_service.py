@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
 from app.repositories import auth_repo, users_repo
 from app.core.config import get_settings
-from app.services.email_service import send_otp_email, send_welcome_email
+from app.services.email_service import send_otp_email, send_welcome_email,send_password_reset_email
 from app.utils.response_utils import make_response
 
 # central primitives (no settings/repo imports inside utils)
@@ -333,6 +333,7 @@ def request_password_reset(
     db: Session,
     *,
     email: str,
+    background_tasks: BackgroundTasks,
 ):
     """
     Generate a password reset link for this email.
@@ -354,6 +355,12 @@ def request_password_reset(
         )
         base = getattr(settings, "reset_password_url", "http://localhost:5173/reset-password")
         link = f"{base}?token={token}"
+        background_tasks.add_task(
+            send_password_reset_email,
+            email=email_norm,
+            link=link,
+        )
+
     else:
         # keep response shape consistent; do not reveal existence
         link = "http://localhost:5173/reset-password?token=dummy"

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useSearchParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -10,7 +11,8 @@ export default function ResetPassword() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
-  const { token } = useParams(); // Get token from URL: /reset-password/:token
+  const [searchParams] = useSearchParams();      // <-- new
+  const token = searchParams.get('token'); // Get token from URL: /reset-password/:token
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

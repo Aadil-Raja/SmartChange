@@ -134,6 +134,7 @@ async def login_verify_code(
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)
 def password_reset_request(
     payload: schemas.PasswordResetRequestIn,
+     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -141,7 +142,7 @@ def password_reset_request(
     In PROD you would email this link to the user instead of returning it.
     """
     try:
-        return auth_service.request_password_reset(db, email=payload.email)
+        return auth_service.request_password_reset(db, email=payload.email,   background_tasks=background_tasks)
     except Exception as e:
         return make_response(False, "Unexpected server error", status_code=500)
 
