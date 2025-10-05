@@ -142,15 +142,33 @@ export const AuthProvider = ({ children }) => {
             return { success: false, message: err.message };
         }
     };
+    
+    const loginWithGoogle = async (idToken) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await firebaseLogin(idToken);
 
-    const handleFirebaseLogin = async (idToken) => {
-        const res = await firebaseLogin(idToken);
-        if (res.data.success) {
-            setToken(res.data.data.token);
-            localStorage.setItem("token", res.data.data.token);
-            setUser(res.data.data.user);
+            if (res.success) {
+                // Backend returns: { success: true, data: { access_token, token_type } }
+                const token = res.data.access_token;
+
+                setToken(token);
+                localStorage.setItem('token', token);
+                setUser({ authenticated: true }); // Backend doesn't return user object in this response
+
+                return { success: true };
+            } else {
+                setError(res.message || 'Firebase login failed');
+                return { success: false, message: res.message };
+            }
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.message || 'Server error';
+            setError(errorMsg);
+            return { success: false, message: errorMsg };
+        } finally {
+            setLoading(false);
         }
-        return res.data;
     };
 
     // Logout
@@ -211,8 +229,8 @@ export const AuthProvider = ({ children }) => {
         verifySignupCode,
         resendSignupCode,
         requestPasswordReset,      // ADD
-        confirmPasswordReset, 
-        handleFirebaseLogin,     // ADD
+        confirmPasswordReset,
+        loginWithGoogle,     // ADD
         logout,
         setError
     };

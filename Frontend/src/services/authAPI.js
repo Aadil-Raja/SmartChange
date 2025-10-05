@@ -44,5 +44,7 @@ export const confirmPasswordReset = async (token, newPassword) => {
   return res.data;
 };
 
-export const firebaseLogin = (idToken) =>
-  api.post("/auth/firebase", { id_token: idToken });
+export const firebaseLogin = async (idToken) => {
+  const res = await api.post("/auth/firebase", { id_token: idToken });
+  return res.data; // Should return the response directly
+};

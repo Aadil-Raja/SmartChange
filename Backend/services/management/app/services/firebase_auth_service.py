@@ -42,19 +42,21 @@ def login_with_google(db: Session, *, id_token: str):
     ensure_firebase_initialized()
 
     # --- 1) Verify Firebase ID token server-side ---
+    # In firebase_auth_service.py, update the verify token section:
+
     try:
-        claims = auth.verify_id_token(id_token, check_revoked=True)
-        # (Optional) debug logs:
-        # print("✅ Firebase token verified", claims.get("email"), claims.get("uid"))
-    except auth.ExpiredIdTokenError:
+        # Add clock_skew_seconds parameter to allow some time difference
+        claims = auth.verify_id_token(id_token, check_revoked=True, clock_skew_seconds=60)
+        print("✅ Firebase token verified", claims.get("email"), claims.get("uid"))
+    except auth.ExpiredIdTokenError as e:
+        print(f"❌ Token expired: {str(e)}")
         return make_response(False, "Firebase token expired", status_code=401)
-    except auth.InvalidIdTokenError:
+    except auth.InvalidIdTokenError as e:
+        print(f"❌ Invalid token: {str(e)}")
         return make_response(False, "Invalid Firebase token", status_code=401)
     except Exception as e:
-        # catch-all: network/config/etc. issues
+        print(f"❌ Token verification failed: {type(e).__name__}: {str(e)}")
         return make_response(False, f"Token verification failed: {str(e)}", status_code=401)
-
-    # --- 2) Extract & validate essential claims ---
     uid = claims.get("uid")
     email = claims.get("email")
     email_verified = claims.get("email_verified", False)
