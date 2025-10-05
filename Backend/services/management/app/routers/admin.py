@@ -126,7 +126,7 @@ def list_employees_route(
 # ---------------------------
 # Team Roles (Admin only)
 # ---------------------------
-@router.get("/teams/roles", status_code=status.HTTP_200_OK)
+@router.get("/team-roles", status_code=status.HTTP_200_OK)
 def get_team_roles_route(
     _admin=Depends(get_current_admin),
 ):
