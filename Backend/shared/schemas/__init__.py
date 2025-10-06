@@ -17,6 +17,7 @@ from .admin import (
     TeamMemberAdd,
     TeamMemberBrief,
     TeamWithMembers,
+    TeamMemberRoleUpdate,
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     # admin
     "AdminLoginIn", "TeamCreate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
-]
+
+    "TeamMemberRoleUpdate",]

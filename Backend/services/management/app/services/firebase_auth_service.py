@@ -8,76 +8,62 @@ from app.core.config import get_settings
 from app.repositories import users_repo
 from app.utils.response_utils import make_response
 
-# shared primitives (no settings/repo imports inside)
 from app.services.shared_utils import (
     normalize_email,
     domain_allowed,
     issue_access_token,
 )
 
-# ----------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------
 settings = get_settings()
-
-# If empty/None => no domain restriction
 ALLOWED_DOMAINS = ["gmail.com", "nu.edu.pk"]
 
 
 def login_with_google(db: Session, *, id_token: str):
     """
-    Accept a Firebase ID token (Google), verify it, enforce domain,
-    upsert a user (firebase_uid + email), and return OUR JWT.
-
-    Steps:
-      1) Ensure Firebase Admin SDK is initialized.
-      2) Verify the ID token (server-side) and extract claims.
-      3) Require a verified Google email and an allowed domain.
-      4) Upsert the user in our DB using (email, firebase uid).
-      5) Issue our own access JWT with token_version snapshot.
-
-    Returns:
-        dict: Response from make_response with login data
+    Authenticate user with Google via Firebase ID token.
+    
+    Flow:
+    1. Verify Firebase ID token
+    2. Validate email and domain
+    3. Create/update user in database
+    4. Issue access token
     """
     ensure_firebase_initialized()
 
-    # --- 1) Verify Firebase ID token server-side ---
+    # Verify Firebase token
     try:
         claims = auth.verify_id_token(id_token, check_revoked=True)
-        # (Optional) debug logs:
-        # print("✅ Firebase token verified", claims.get("email"), claims.get("uid"))
     except auth.ExpiredIdTokenError:
-        return make_response(False, "Firebase token expired", status_code=401)
+        return make_response(False, "Authentication token expired", status_code=401)
     except auth.InvalidIdTokenError:
-        return make_response(False, "Invalid Firebase token", status_code=401)
-    except Exception as e:
-        # catch-all: network/config/etc. issues
-        return make_response(False, f"Token verification failed: {str(e)}", status_code=401)
+        return make_response(False, "Invalid authentication token", status_code=401)
+    except Exception:
+        return make_response(False, "Authentication failed", status_code=401)
 
-    # --- 2) Extract & validate essential claims ---
+    # Extract claims
     uid = claims.get("uid")
     email = claims.get("email")
     email_verified = claims.get("email_verified", False)
 
-    # Require a verified Google email
+    # Validate email verification
     if not email or not email_verified:
-        return make_response(False, "Verified Google email required", status_code=403)
+        return make_response(False, "Email verification required", status_code=403)
 
-    # Domain allow-list (if configured)
+    # Check domain allowlist
     if not domain_allowed(email, ALLOWED_DOMAINS):
         return make_response(False, "Email domain not allowed", status_code=403)
 
-    # --- 3) Upsert/attach this Firebase user in OUR DB ---
+    # Create or update user
     try:
         user = users_repo.upsert_from_firebase(
             db,
             email=normalize_email(email),
             uid=uid,
         )
-    except Exception as e:
-        return make_response(False, "Failed to create or update user", status_code=500)
+    except Exception:
+        return make_response(False, "Failed to process user account", status_code=500)
 
-    # --- 4) Issue our own access token (same shape as local login) ---
+    # Issue access token
     try:
         token = issue_access_token(
             user_id=user.id,
@@ -86,14 +72,13 @@ def login_with_google(db: Session, *, id_token: str):
             jwt_secret=settings.jwt_secret,
             jwt_algorithm=settings.jwt_algorithm,
         )
-    except Exception as e:
+    except Exception:
         return make_response(False, "Failed to generate access token", status_code=500)
 
     return make_response(
         True,
         "Login successful",
         data={
-            "loggedIn": True,
             "access_token": token,
             "token_type": "bearer"
         },

@@ -51,3 +51,9 @@ class TeamMemberBrief(BaseModel):
 class TeamWithMembers(BaseModel):
     team: TeamOut
     members: list[TeamMemberBrief]
+
+class TeamMemberRoleUpdate(BaseModel):
+    """
+    Schema for updating a user's role within a specific team.
+    """
+    role_in_team:  RoleInTeam

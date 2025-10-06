@@ -4,10 +4,9 @@ from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
 from app.repositories import auth_repo, users_repo
 from app.core.config import get_settings
-from app.services.email_service import send_otp_email, send_welcome_email,send_password_reset_email
+from app.services.email_service import send_otp_email, send_welcome_email, send_password_reset_email
 from app.utils.response_utils import make_response
 
-# central primitives (no settings/repo imports inside utils)
 from app.services.shared_utils import (
     normalize_email,
     domain_allowed,
@@ -21,17 +20,11 @@ from app.services.shared_utils import (
     decode_token,
 )
 
-# ----------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------
 settings = get_settings()
-
-# If empty/None => no domain restriction
-ALLOWED_DOMAINS = ["gmail.com", "nu.edu.pk"]
-
+ALLOWED_DOMAINS = ['gmail.com', 'yahoo.com','nu.edu.pk']  # Example allowed domains; replace with settings.allowed_domains_raw.split(',')
 
 # ----------------------------------------------------------------------
-# Sign-up / Verification / Login (password & code) / Reset Password
+# SIGNUP & VERIFICATION
 # ----------------------------------------------------------------------
 
 async def signup(
@@ -43,28 +36,24 @@ async def signup(
     background_tasks: BackgroundTasks,
 ):
     """
-    Create a new user (email/password/name).
-    - Normalizes and domain-checks the email.
-    - Fails if user already exists.
-    - Persists the user with email_verified=False.
-    - Generates a 6-digit OTP, stores its hash, and emails the code.
+    Create a new user account.
+    Returns: next_action="verify_email" to guide frontend flow.
     """
     email_norm = normalize_email(email)
+    
     if not domain_allowed(email_norm, ALLOWED_DOMAINS):
         return make_response(False, "Email domain not allowed", status_code=403)
 
-    existing = users_repo.get_by_email(db, email_norm)
-    if existing:
+    if users_repo.get_by_email(db, email_norm):
         return make_response(False, "Email already registered", status_code=409)
 
-    # hash & create user
+    # Create user
     password_hash = hash_password(password)
     user = users_repo.create(db, email=email_norm, password_hash=password_hash)
 
-    # ensure verified flag stored
     try:
         user.email_verified = False
-        if name and not getattr(user, "name", None):
+        if name:
             user.name = name
         db.commit()
         db.refresh(user)
@@ -72,18 +61,18 @@ async def signup(
         db.rollback()
         return make_response(False, "Failed to create user", status_code=500)
 
-    # create and email OTP
+    # Send OTP
     code = gen_code_6()
     code_hash = sha256_str(code)
     auth_repo.create_otp(db, email=email_norm, code_hash=code_hash, ttl_minutes=10)
-
     background_tasks.add_task(send_otp_email, email_norm, code, "verification")
     
     return make_response(
         True,
-        "Sign-up successful. Check your email for verification code.",
-        data={"dev_code": code},  # Remove in production
-        status_code=201
+        "Account created. Please verify your email.",
+        data={"email": email_norm},  # Only essential info
+        next_action="verify_email",
+        status_code=201,
     )
 
 
@@ -94,37 +83,29 @@ async def request_code(
     background_tasks: BackgroundTasks,
 ):
     """
-    Resend an OTP for an *existing* but *unverified* account.
-    - Normalizes and domain-checks the email.
-    - Fails if user does not exist.
-    - Fails if already verified.
-    - Issues a fresh code and emails it.
+    Resend verification code for unverified account.
     """
     email_norm = normalize_email(email)
+    
     if not domain_allowed(email_norm, ALLOWED_DOMAINS):
         return make_response(False, "Email domain not allowed", status_code=403)
 
     user = users_repo.get_by_email(db, email_norm)
     if not user:
-        return make_response(False, "Signup required", status_code=404)
+        return make_response(False, "Account not found", status_code=404)
 
-    try:
-        if getattr(user, "email_verified", False):
-            return make_response(False, "Already verified", status_code=409)
-    except AttributeError:
-        # If the column doesn't exist yet, treat as unverified
-        pass
+    if getattr(user, "email_verified", False):
+        return make_response(False, "Email already verified", status_code=409)
 
+    # Send new code
     code = gen_code_6()
     code_hash = sha256_str(code)
     auth_repo.create_otp(db, email=email_norm, code_hash=code_hash, ttl_minutes=10)
-
     background_tasks.add_task(send_otp_email, email_norm, code, "verification")
     
     return make_response(
         True,
-        "If the account exists and is unverified, a code was sent to your email.",
-        data={"dev_code": code},  # Remove in production
+        "Verification code sent to your email",
         status_code=200
     )
 
@@ -138,37 +119,30 @@ async def verify_code(
     background_tasks: BackgroundTasks,
 ):
     """
-    Verify an OTP for an existing, unverified user.
-    - Fails if user doesn't exist.
-    - Fails if already verified.
-    - Validates against the latest active OTP using a constant-time compare.
-    - Consumes OTP and marks user as verified.
-    - Sends a welcome email.
+    Verify email with OTP code.
     """
     email_norm = normalize_email(email)
     user = users_repo.get_by_email(db, email_norm)
+    
     if not user:
-        return make_response(False, "Signup required", status_code=404)
+        return make_response(False, "Account not found", status_code=404)
 
-    try:
-        if getattr(user, "email_verified", False):
-            return make_response(False, "Already verified", status_code=409)
-    except AttributeError:
-        pass
+    if getattr(user, "email_verified", False):
+        return make_response(False, "Email already verified", status_code=409)
 
     otp = auth_repo.get_latest_active(db, email_norm)
     if not otp:
-        return make_response(False, "No active code; request a new one.", status_code=400)
+        return make_response(False, "No active code. Please request a new one.", status_code=400)
 
     if not safe_equals(otp.code_hash, sha256_str(code)):
         auth_repo.increment_attempts(db, otp)
-        return make_response(False, "Invalid code.", status_code=400)
+        return make_response(False, "Invalid verification code", status_code=400)
 
-    # consume & mark verified
+    # Mark as verified
     auth_repo.consume(db, otp)
     try:
         user.email_verified = True
-        if name and not getattr(user, "name", None):
+        if name:
             user.name = name
         db.commit()
         db.refresh(user)
@@ -176,15 +150,19 @@ async def verify_code(
         db.rollback()
         return make_response(False, "Failed to verify email", status_code=500)
 
-    background_tasks.add_task(send_welcome_email, email_norm, "send name")
+    background_tasks.add_task(send_welcome_email, email_norm, user.name or "")
     
     return make_response(
         True,
-        "Email verified successfully! Welcome email sent.",
-        data={"codeVerified": True, "dev_code": code},  # Remove dev_code in production
+        "Email verified successfully",
+        next_action="login",  # Guide user to login
         status_code=200
     )
 
+
+# ----------------------------------------------------------------------
+# LOGIN
+# ----------------------------------------------------------------------
 
 async def login_password(
     db: Session,
@@ -194,37 +172,32 @@ async def login_password(
     background_tasks: BackgroundTasks,
 ):
     """
-    Password login flow.
-    - Fails if user not found.
-    - Verifies password.
-    - If user isn't verified, emails a login OTP and returns a 'requireVerification' response.
-    - If verified, issues an access JWT (bearer).
+    Login with email/password.
     """
-    user = users_repo.get_by_email(db, normalize_email(email))
+    email_norm = normalize_email(email)
+    user = users_repo.get_by_email(db, email_norm)
+    
     if not user:
-        return make_response(False, "No account. Please sign up.", status_code=404)
+        return make_response(False, "Invalid email or password", status_code=401)
 
     if not verify_password(password, getattr(user, "password_hash", None)):
-        return make_response(False, "Invalid credentials", status_code=401)
+        return make_response(False, "Invalid email or password", status_code=401)
 
+    # Check if email verified
     if not getattr(user, "email_verified", False):
-        # send a login OTP
         code = gen_code_6()
-        auth_repo.create_otp(db, email=user.email, code_hash=sha256_str(code), ttl_minutes=10)
-        background_tasks.add_task(send_otp_email, user.email, code, "login")
+        auth_repo.create_otp(db, email=email_norm, code_hash=sha256_str(code), ttl_minutes=10)
+        background_tasks.add_task(send_otp_email, email_norm, code, "login")
         
         return make_response(
-            True,
-            "Verification required. Check your email for login code.",
-            data={
-                "loggedIn": False,
-                "requireVerification": True,
-                "dev_code": code  # Remove in production
-            },
-            status_code=200
+            False,
+            "Please verify your email to continue",
+            data={"email": email_norm},
+            next_action="verify_email",
+            status_code=403,  # Forbidden until verified
         )
 
-    # issue access token
+    # Issue token
     token = issue_access_token(
         user_id=user.id,
         token_version=getattr(user, "token_version", 0) or 0,
@@ -237,7 +210,6 @@ async def login_password(
         True,
         "Login successful",
         data={
-            "loggedIn": True,
             "access_token": token,
             "token_type": "bearer"
         },
@@ -252,14 +224,13 @@ async def login_send_code(
     background_tasks: BackgroundTasks,
 ):
     """
-    Send (or resend) a login OTP for an existing user.
-    - Fails if account doesn't exist.
-    - Issues a fresh code and emails it.
+    Send login OTP (passwordless login).
     """
     email_norm = normalize_email(email)
     user = users_repo.get_by_email(db, email_norm)
+    
     if not user:
-        return make_response(False, "No account. Please sign up.", status_code=404)
+        return make_response(False, "Account not found", status_code=404)
 
     code = gen_code_6()
     auth_repo.create_otp(db, email=email_norm, code_hash=sha256_str(code), ttl_minutes=10)
@@ -267,8 +238,9 @@ async def login_send_code(
     
     return make_response(
         True,
-        "Login code sent to your email.",
-        data={"dev_code": code},  # Remove in production
+        "Login code sent to your email",
+        data={"email": email_norm},
+        next_action="verify_login_code",
         status_code=200
     )
 
@@ -280,35 +252,35 @@ async def login_verify_code(
     code: str,
 ):
     """
-    Verify a login OTP.
-    - Fails if account doesn't exist.
-    - Validates the latest active OTP and consumes it.
-    - Auto-sets email_verified=True if it was False.
-    - Issues an access JWT on success.
+    Verify login OTP and issue token.
     """
     email_norm = normalize_email(email)
     user = users_repo.get_by_email(db, email_norm)
+    
     if not user:
-        return make_response(False, "No account. Please sign up.", status_code=404)
+        return make_response(False, "Account not found", status_code=404)
 
     otp = auth_repo.get_latest_active(db, email_norm)
     if not otp:
-        return make_response(False, "No active code; request a new one.", status_code=400)
+        return make_response(False, "No active code. Please request a new one.", status_code=400)
 
     if not safe_equals(otp.code_hash, sha256_str(code)):
         auth_repo.increment_attempts(db, otp)
-        return make_response(False, "Invalid code.", status_code=400)
+        return make_response(False, "Invalid login code", status_code=400)
 
     auth_repo.consume(db, otp)
+    
+    # Auto-verify email if not verified
     try:
-        if getattr(user, "email_verified", False) is False:
+        if not getattr(user, "email_verified", False):
             user.email_verified = True
-        db.commit()
-        db.refresh(user)
+            db.commit()
+            db.refresh(user)
     except Exception:
         db.rollback()
-        return make_response(False, "Failed to verify code", status_code=500)
+        return make_response(False, "Login failed", status_code=500)
 
+    # Issue token
     token = issue_access_token(
         user_id=user.id,
         token_version=getattr(user, "token_version", 0) or 0,
@@ -321,13 +293,16 @@ async def login_verify_code(
         True,
         "Login successful",
         data={
-            "loggedIn": True,
             "access_token": token,
             "token_type": "bearer"
         },
         status_code=200
     )
 
+
+# ----------------------------------------------------------------------
+# PASSWORD RESET
+# ----------------------------------------------------------------------
 
 def request_password_reset(
     db: Session,
@@ -336,39 +311,27 @@ def request_password_reset(
     background_tasks: BackgroundTasks,
 ):
     """
-    Generate a password reset link for this email.
-    - Always returns a 200 (do not leak account existence).
-    - If user exists, embeds a short-lived reset token in the link.
-    - Otherwise returns a dummy-shaped link.
+    Request password reset link.
+    Always returns success to prevent email enumeration.
     """
     email_norm = normalize_email(email)
     user = users_repo.get_by_email(db, email_norm)
 
     if user:
-        token_version = getattr(user, "token_version", 0) or 0
         token = issue_reset_token(
             user_id=user.id,
-            token_version=token_version,
+            token_version=getattr(user, "token_version", 0) or 0,
             ttl_seconds=3600,
             jwt_secret=settings.jwt_secret,
             jwt_algorithm=settings.jwt_algorithm,
         )
         base = getattr(settings, "reset_password_url", "http://localhost:5173/reset-password")
         link = f"{base}?token={token}"
-        background_tasks.add_task(
-            send_password_reset_email,
-            email=email_norm,
-            link=link,
-        )
-
-    else:
-        # keep response shape consistent; do not reveal existence
-        link = "http://localhost:5173/reset-password?token=dummy"
+        background_tasks.add_task(send_password_reset_email, email_norm, link)
 
     return make_response(
         True,
-        "If the email exists, a reset link has been generated.",
-        data={"dev_link": link},  # Remove in production
+        "If an account exists, a password reset link has been sent",
         status_code=200
     )
 
@@ -380,13 +343,8 @@ def confirm_password_reset(
     new_password: str,
 ):
     """
-    Confirm a password reset using the provided token.
-    - Decodes and validates the token (type, expiry).
-    - Checks token_version for revocation protection.
-    - Updates the user's password hash.
-    - Bumps token_version to invalidate any previously issued tokens.
+    Reset password using token.
     """
-    # decode & basic validation
     try:
         data = decode_token(
             token,
@@ -394,27 +352,26 @@ def confirm_password_reset(
             jwt_algorithm=settings.jwt_algorithm,
         )
     except Exception as e:
-        err = str(e)
-        if "Signature has expired" in err:
-            return make_response(False, "Reset link expired", status_code=400)
-        return make_response(False, "Invalid reset token", status_code=400)
+        if "expired" in str(e).lower():
+            return make_response(False, "Reset link has expired", status_code=400)
+        return make_response(False, "Invalid reset link", status_code=400)
 
     if data.get("typ") != "reset":
-        return make_response(False, "Invalid token type", status_code=400)
+        return make_response(False, "Invalid reset link", status_code=400)
 
     user_id = int(data.get("sub"))
     token_tv = data.get("tv", 0)
 
     user = users_repo.get_by_id(db, user_id)
     if not user:
-        return make_response(False, "Invalid token (user)", status_code=400)
+        return make_response(False, "Invalid reset link", status_code=400)
 
-    # verify token_version matches the user's current snapshot
+    # Check token version
     current_tv = getattr(user, "token_version", 0) or 0
     if token_tv != current_tv:
-        return make_response(False, "Reset link no longer valid", status_code=400)
+        return make_response(False, "Reset link already used or expired", status_code=400)
 
-    # set new password & bump token_version
+    # Update password
     user.password_hash = hash_password(new_password)
     try:
         if hasattr(user, "token_version"):
@@ -423,10 +380,11 @@ def confirm_password_reset(
         db.refresh(user)
     except Exception:
         db.rollback()
-        return make_response(False, "Could not update password", status_code=500)
+        return make_response(False, "Failed to update password", status_code=500)
     
     return make_response(
         True,
         "Password updated successfully",
+        next_action="login",
         status_code=200
     )
