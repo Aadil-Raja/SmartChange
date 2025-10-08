@@ -20,3 +20,5 @@ def list_non_admin_users(db: Session):
         .order_by(User.id.asc())
     )
     return query.all()
+
+

@@ -2,5 +2,7 @@
 # This file imports all routers for the app-api service
 
 from . import health
-
-__all__ = [ "health"]
+from . import auth
+from . import admin 
+from . import employee
+__all__ = [ "health","auth", "admin", "employee" ]

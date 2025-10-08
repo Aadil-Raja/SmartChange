@@ -17,8 +17,9 @@ from .admin import (
     TeamMemberAdd,
     TeamMemberBrief,
     TeamWithMembers,
+    TeamMemberRoleUpdate,
 )
-
+from .employee import JoinCodeIn
 __all__ = [
     # user
     "UserCreate", "UserOut",
@@ -31,4 +32,5 @@ __all__ = [
     # admin
     "AdminLoginIn", "TeamCreate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
-]
+
+    "TeamMemberRoleUpdate","JoinCodeIn"]

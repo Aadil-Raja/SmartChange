@@ -7,12 +7,12 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore"
     )
-
+    
     project_name: str = "SmartChange Management API"
     database_url: str
-   
-    jwt_secret: str
+    allowed_domains_raw: str = ""
     jwt_algorithm: str = "HS256"
+    jwt_secret: str
     mail_username: str
     mail_password: str
     mail_from: str

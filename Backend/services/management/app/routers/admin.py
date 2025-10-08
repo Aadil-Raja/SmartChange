@@ -90,6 +90,21 @@ def add_member_route(
     except Exception as e:
         return make_response(False, "Could not add member", status_code=500)
 
+@router.patch("/team-members/{id}", status_code=status.HTTP_200_OK)
+def update_team_member_role(
+    id: int,
+    payload: schemas.TeamMemberRoleUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Update a member's role by their TeamMember ID.
+    """
+    try:
+       return admin_service.update_team_member_role(db, team_member_id=id, new_role=payload.role_in_team)
+    except Exception:
+        return make_response(False, "Could not update team member role", status_code=500)
+
 
 @router.delete("/teams/{id}/members/{user_id}", status_code=status.HTTP_200_OK)
 def remove_member_route(
@@ -137,3 +152,25 @@ def get_team_roles_route(
         return admin_service.get_team_roles()
     except Exception as e:
         return make_response(False, "Could not fetch team roles", status_code=500)
+
+
+
+# ---------------------------
+# User Management (Admin only)
+# ---------------------------
+@router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
+def delete_user_route(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Delete a user by ID. Cannot delete admin users.
+    """
+    try:
+        return admin_service.delete_user(db, user_id=user_id)
+    except Exception as e:
+        return make_response(False, "Could not delete user", status_code=500)
+
+
+
