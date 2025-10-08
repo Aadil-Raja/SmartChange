@@ -13,7 +13,7 @@ settings = get_settings()
 
 
 # ----------------------------------------------------------------------
-# ADMIN AUTHENTICATION
+# ADMIN AUTHENTICATIONs
 # ----------------------------------------------------------------------
 
 def admin_login(db: Session, *, email: str, password: str):

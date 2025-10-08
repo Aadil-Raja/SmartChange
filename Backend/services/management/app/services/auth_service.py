@@ -86,10 +86,10 @@ async def request_code(
     Resend verification code for unverified account.
     """
     email_norm = normalize_email(email)
-    
+    print("here")
     if not domain_allowed(email_norm, ALLOWED_DOMAINS):
         return make_response(False, "Email domain not allowed", status_code=403)
-
+    print("here1")
     user = users_repo.get_by_email(db, email_norm)
     if not user:
         return make_response(False, "Account not found", status_code=404)
@@ -126,7 +126,7 @@ async def verify_code(
     
     if not user:
         return make_response(False, "Account not found", status_code=404)
-
+    print("here")
     if getattr(user, "email_verified", False):
         return make_response(False, "Email already verified", status_code=409)
 
@@ -137,12 +137,12 @@ async def verify_code(
     if not safe_equals(otp.code_hash, sha256_str(code)):
         auth_repo.increment_attempts(db, otp)
         return make_response(False, "Invalid verification code", status_code=400)
-
+    
     # Mark as verified
     auth_repo.consume(db, otp)
     try:
         user.email_verified = True
-        if name:
+        if name and not getattr(user, "name", None):
             user.name = name
         db.commit()
         db.refresh(user)
@@ -150,7 +150,7 @@ async def verify_code(
         db.rollback()
         return make_response(False, "Failed to verify email", status_code=500)
 
-    background_tasks.add_task(send_welcome_email, email_norm, user.name or "")
+    background_tasks.add_task(send_welcome_email, email_norm, "set name")
     
     return make_response(
         True,

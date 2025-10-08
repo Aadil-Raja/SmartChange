@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     database_url: str
     allowed_domains_raw: str = ""
     jwt_algorithm: str = "HS256"
+    jwt_secret: str
     mail_username: str
     mail_password: str
     mail_from: str

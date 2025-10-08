@@ -3,9 +3,10 @@ from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.deps.db import init_db, SessionLocal
-from app.routers import health, auth
+from app import routers
 from app.core.seeder import seed_superadmin  # <-- call your seeder here
-from app.routers import admin
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,10 +45,11 @@ app.add_middleware(
 )
 
 # Routers
-app.include_router(health.router, prefix="/health", tags=["health"])
+app.include_router(routers.health.router, prefix="/health", tags=["health"])
 
-app.include_router(auth.router,   prefix="/auth",   tags=["auth"])
-app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(routers.auth.router,   prefix="/auth",   tags=["auth"])
+app.include_router(routers.admin.router, prefix="/admin", tags=["admin"])
+app.include_router(routers.employee.router, prefix="/employee", tags=["employee "])
 @app.get("/")
 def root():
     return {"message": "SmartChange API running"}
