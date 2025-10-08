@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.deps.db import get_db
 from app.deps.auth import get_current_admin
 import shared.schemas as schemas
-from app.services import admin_service
+from app.services import admin_service,documents_service
 from app.utils.response_utils import make_response  # ✅ new import
 
 router = APIRouter()
@@ -174,3 +174,29 @@ def delete_user_route(
 
 
 
+@router.post("/documents/upload")
+async def upload_document(
+    f: UploadFile = File(...),
+    db: Session = Depends(get_db),  # keep for future DB integration
+):
+    """
+    Temporary public upload endpoint.
+    Saves uploaded file to local storage.
+    """
+    # Optional: limit file types
+    # if f.content_type != "application/pdf":
+    #     raise HTTPException(status_code=415, detail="Only PDF supported right now")
+
+    data = await f.read()
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file"
+        )
+
+    # use dummy user_id=1 for now
+    result = documents_service.upload_document_local(
+        user_id=1,
+        file_bytes=data,
+        filename=f.filename,
+    )
+    return result
