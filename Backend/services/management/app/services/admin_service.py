@@ -4,7 +4,7 @@ from app.repositories import users_repo, teams_repo, employees_repo
 from shared.models import UserRole, TeamMemberRole, TeamMember
 from app.utils.response_utils import make_response
 
-from app.services.shared_utils import (
+from app.utils.shared_utils import (
     verify_password,
     issue_access_token,
 )
@@ -181,24 +181,33 @@ def remove_member(db: Session, *, team_id: int, user_id: int):
     )
 
 
-def update_team_member_role(db: Session, *, team_member_id: int, new_role: TeamMemberRole):
+def update_team_member_role(db: Session, *, team_id: int, user_id: int, new_role: TeamMemberRole):
     """
-    Update a team member's role by their team_member.id
+    Update a team member's role by (team_id, user_id).
     """
-    tm = db.query(TeamMember).filter_by(id=team_member_id).first()
+    tm = (
+        db.query(TeamMember)
+        .filter_by(team_id=team_id, user_id=user_id)
+        .first()
+    )
     if not tm:
-        return make_response(False, "Team member not found", status_code=404)
+        return make_response(False, "Member not found in team", status_code=404)
 
     tm.role_in_team = new_role
     db.commit()
     db.refresh(tm)
 
-    return make_response(True, "Role updated successfully", data={
-        "team_member_id": tm.id,
-        "team_id": tm.team_id,
-        "user_id": tm.user_id,
-        "new_role": tm.role_in_team.value,
-    }, status_code=200)
+    return make_response(
+        True,
+        "Role updated successfully",
+        data={
+            "team_member_id": tm.id,
+            "team_id": tm.team_id,
+            "user_id": tm.user_id,
+            "new_role": tm.role_in_team.value,
+        },
+        status_code=200,
+    )
 # ----------------------------------------------------------------------
 # EMPLOYEE MANAGEMENT
 # ----------------------------------------------------------------------

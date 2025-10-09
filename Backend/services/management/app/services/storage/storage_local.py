@@ -1,5 +1,5 @@
 from pathlib import Path
-from .filename_utils import secure_filename
+from app.utils.filename_utils import secure_filename
 from app.core.paths import storage_root, bucket_name
 
 

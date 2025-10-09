@@ -90,21 +90,27 @@ def add_member_route(
     except Exception as e:
         return make_response(False, "Could not add member", status_code=500)
 
-@router.patch("/team-members/{id}", status_code=status.HTTP_200_OK)
-def update_team_member_role(
+
+@router.patch("/teams/{id}/members/{user_id}", status_code=status.HTTP_200_OK)
+def update_team_member_role_route(
     id: int,
+    user_id: int,
     payload: schemas.TeamMemberRoleUpdate,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _admin = Depends(get_current_admin),
 ):
     """
-    Update a member's role by their TeamMember ID.
+    Update a member's role using team_id + user_id.
     """
     try:
-       return admin_service.update_team_member_role(db, team_member_id=id, new_role=payload.role_in_team)
+        return admin_service.update_team_member_role(
+            db,
+            team_id=id,
+            user_id=user_id,
+            new_role=payload.role_in_team,
+        )
     except Exception:
         return make_response(False, "Could not update team member role", status_code=500)
-
 
 @router.delete("/teams/{id}/members/{user_id}", status_code=status.HTTP_200_OK)
 def remove_member_route(
@@ -174,29 +180,22 @@ def delete_user_route(
 
 
 
+
 @router.post("/documents/upload")
 async def upload_document(
     f: UploadFile = File(...),
-    db: Session = Depends(get_db),  # keep for future DB integration
+    db: Session = Depends(get_db),
+     _admin=Depends(get_current_admin),
 ):
-    """
-    Temporary public upload endpoint.
-    Saves uploaded file to local storage.
-    """
-    # Optional: limit file types
-    # if f.content_type != "application/pdf":
-    #     raise HTTPException(status_code=415, detail="Only PDF supported right now")
-
     data = await f.read()
     if not data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
 
-    # use dummy user_id=1 for now
-    result = documents_service.upload_document_local(
-        user_id=1,
+    # dummy uploader for now; later use get_current_admin().id
+    return documents_service.upload_document_local(
+        db,
+        user_id=_admin.id,
         file_bytes=data,
         filename=f.filename,
+        mime=f.content_type,
     )
-    return result

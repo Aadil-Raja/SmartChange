@@ -72,3 +72,5 @@ Thumbs.db
 secrets/*.json
 *.pem
 *.p12
+
+data/
