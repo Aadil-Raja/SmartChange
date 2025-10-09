@@ -39,8 +39,8 @@ export const AuthProvider = ({ children }) => {
                     return { requiresCode: true };
                 } else {
                     setToken(res.token);
-                    localStorage.setItem('token', res.token);
                     setUser({ email, authenticated: true });
+                    localStorage.setItem('token', res.data.access_token);
                     return { success: true };
                 }
             } else {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
@@ -20,6 +21,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 const Login = () => {
+  const navigate = useNavigate(); // Add this
   const { login, verifyCode, requestCode, loginWithGoogle, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,19 +33,41 @@ const Login = () => {
     e.preventDefault();
     setMessage('');
 
-    const result = await login(email, password);
+    try {
+      const result = await login(email, password);
 
-    if (result.requiresCode) {
-      setStep('code-requested');
-      setMessage('OTP sent to your email. Enter it below.');
-    } else if (result.success) {
-      setStep('verified');
-      setMessage('Login successful!');
-      setTimeout(() => window.location.href = '/admin', 1500);
-    } else {
-      setMessage(result.message || 'Login failed');
+      console.log('Backend login response:', result);
+
+      // --- CASE 1: Full success (verified user) ---
+      if (result.success) {
+        setMessage('Login successful!');
+        setTimeout(() => (window.location.href = '/admin'), 1500);
+        return;
+      }
+
+      // --- CASE 2: Unverified email (backend may return success=false or different message) ---
+      const msg = result.message?.toLowerCase() || '';
+      if (
+        msg.includes('unverified') ||
+        msg.includes('verify your email') ||
+        msg.includes('verification code') ||
+        msg.includes('otp') ||
+        msg.includes('Please verify your email to continue')
+      ) {
+        console.log('Email unverified → redirecting to verify page');
+        navigate('/verify-code', { state: { email } });
+        return;
+      }
+
+      // --- CASE 3: Invalid login ---
+      setMessage(result.message || 'Invalid email or password');
+    } catch (error) {
+      console.error('Login error:', error);
+      setMessage('Something went wrong. Please try again.');
     }
   };
+
+
 
   const handleGoogleLogin = async () => {
     try {
@@ -176,28 +200,7 @@ const Login = () => {
           </>
         )}
 
-        {step === 'code-requested' && (
-          <div className="space-y-6">
-            <p className="text-center text-sm text-gray-600">
-              We sent a verification code to <span className="font-semibold text-[#F58220]">{email}</span>
-            </p>
-            <Input
-              label="Verification Code"
-              type="text"
-              id="code"
-              placeholder="Enter 6-digit code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              required
-            />
-            <Button onClick={handleVerifyCode} disabled={loading}>
-              {loading ? 'Verifying...' : 'Verify Code'}
-            </Button>
-            <Button onClick={handleRequestCode} variant="secondary" disabled={loading}>
-              Resend Code
-            </Button>
-          </div>
-        )}
+
 
         {step === 'verified' && (
           <div className="space-y-6 text-center">

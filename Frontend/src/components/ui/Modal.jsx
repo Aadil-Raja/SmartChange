@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Card from './Card';
 import { Menu, X, Home, Users, Settings, FileText, Eye, Edit2, Trash2 } from 'lucide-react';
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;

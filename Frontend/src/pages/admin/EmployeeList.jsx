@@ -1,361 +1,194 @@
-// Employee Form Modal
-import React, { useState } from 'react';
-import { Menu, Home, Users, Settings, FileText, Search, Plus, Eye, Edit2, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Menu, Home, Users, Settings, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import Sidebar from '../../components/ui/Sidebar';
-import Modal from '../../components/ui/Modal';
 import Card from '../../components/ui/Card';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Button from '../../components/ui/Button';
+import { useAdmin } from '../../hooks/useAdmin';
 
-const EmployeeFormModal = ({ isOpen, onClose, onSubmit, editingEmployee }) => {
-  const [formData, setFormData] = useState(editingEmployee || {
-    name: '',
-    email: '',
-    phone: '',
-    department: '',
-    position: '',
-    status: 'Active'
-  });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-    onClose();
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editingEmployee ? 'Edit Employee' : 'Add New Employee'}>
-      <div className="space-y-4">
-        <Input
-          label="Full Name"
-          id="name"
-          name="name"
-          placeholder="Enter employee name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-
-        <Input
-          label="Email"
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Enter email address"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-
-        <Input
-          label="Phone Number"
-          type="tel"
-          id="phone"
-          name="phone"
-          placeholder="Enter phone number"
-          value={formData.phone}
-          onChange={handleChange}
-        />
-
-        <Select
-          label="Department"
-          id="department"
-          name="department"
-          value={formData.department}
-          onChange={handleChange}
-          options={[
-            { value: '', label: 'Select Department' },
-            { value: 'Engineering', label: 'Engineering' },
-            { value: 'HR', label: 'Human Resources' },
-            { value: 'Finance', label: 'Finance' },
-            { value: 'Operations', label: 'Operations' },
-            { value: 'Marketing', label: 'Marketing' }
-          ]}
-          required
-        />
-
-        <Input
-          label="Position"
-          id="position"
-          name="position"
-          placeholder="Enter job position"
-          value={formData.position}
-          onChange={handleChange}
-          required
-        />
-
-        <Select
-          label="Status"
-          id="status"
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          options={[
-            { value: 'Active', label: 'Active' },
-            { value: 'Inactive', label: 'Inactive' },
-            { value: 'On Leave', label: 'On Leave' }
-          ]}
-        />
-
-        <div className="flex gap-3 pt-4">
-          <Button onClick={handleSubmit} className="flex-1">
-            {editingEmployee ? 'Update Employee' : 'Add Employee'}
-          </Button>
-          <Button onClick={onClose} variant="secondary">
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-// Employee Details Modal
-const EmployeeDetailsModal = ({ isOpen, onClose, employee, onEdit }) => {
-  if (!employee) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Employee Details">
-      <div className="space-y-4">
-        <div className="flex items-center justify-center pb-4">
-          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] text-3xl font-bold text-white">
-            {employee.name.charAt(0).toUpperCase()}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Full Name</p>
-            <p className="text-lg font-semibold text-[#333333]">{employee.name}</p>
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Employee ID</p>
-            <p className="text-lg font-semibold text-[#333333]">{employee.id}</p>
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Email</p>
-          <p className="rounded-lg bg-gray-50 p-3 text-[#333333]">{employee.email}</p>
-        </div>
-
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Phone Number</p>
-          <p className="rounded-lg bg-gray-50 p-3 text-[#333333]">{employee.phone}</p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Department</p>
-            <p className="rounded-lg bg-gray-50 p-3 text-[#333333]">{employee.department}</p>
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Position</p>
-            <p className="rounded-lg bg-gray-50 p-3 text-[#333333]">{employee.position}</p>
-          </div>
-        </div>
-
-        <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Status</p>
-          <span className={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${
-            employee.status === 'Active' ? 'bg-green-100 text-green-800' :
-            employee.status === 'Inactive' ? 'bg-red-100 text-red-800' :
-            'bg-yellow-100 text-yellow-800'
-          }`}>
-            {employee.status}
-          </span>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button onClick={onClose} variant="secondary" className="flex-1">
-            Close
-          </Button>
-          <Button onClick={() => {
-            onEdit(employee);
-            onClose();
-          }} className="flex-1">
-            Edit Employee
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-};
-
-// Main Employee Management Page
-const EmployeeManagement = () => {
+const EmployeeList = () => {
+  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateMemberRole, deleteEmployee } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [employees, setEmployees] = useState([
-    { id: 'EMP001', name: 'Ahmed Khan', email: 'ahmed.khan@ke.com', phone: '+92 300 1234567', department: 'Engineering', position: 'Senior Engineer', status: 'Active' },
-    { id: 'EMP002', name: 'Sara Ali', email: 'sara.ali@ke.com', phone: '+92 301 2345678', department: 'HR', position: 'HR Manager', status: 'Active' },
-    { id: 'EMP003', name: 'Bilal Ahmed', email: 'bilal.ahmed@ke.com', phone: '+92 302 3456789', department: 'Finance', position: 'Accountant', status: 'On Leave' },
-    { id: 'EMP004', name: 'Fatima Malik', email: 'fatima.malik@ke.com', phone: '+92 303 4567890', department: 'Operations', position: 'Operations Lead', status: 'Active' },
-    { id: 'EMP005', name: 'Hassan Raza', email: 'hassan.raza@ke.com', phone: '+92 304 5678901', department: 'Marketing', position: 'Marketing Executive', status: 'Inactive' }
-  ]);
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [filterRole, setFilterRole] = useState('');
+  const [filterTeam, setFilterTeam] = useState('');
+  const [editingRole, setEditingRole] = useState(null);
+  const [expandedEmployees, setExpandedEmployees] = useState(new Set());
 
-  // Define navigation items for sidebar
+  useEffect(() => {
+    loadEmployees();
+    loadTeamRoles();
+  }, []);
+
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Employees', path: '/admin/employees' },
-    { icon: FileText, label: 'Documents', path: '/admin/documents' },
+    { icon: Users, label: 'Teams', path: '/admin/teams' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' }
   ];
 
-  const currentPath = '/admin/employees';
+  // Group employees by user ID to consolidate multiple team entries
+  const groupedEmployees = React.useMemo(() => {
+    const grouped = {};
 
-  // Filter employees
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = !filterDepartment || emp.department === filterDepartment;
-    const matchesStatus = !filterStatus || emp.status === filterStatus;
-    return matchesSearch && matchesDepartment && matchesStatus;
+    employees.forEach(emp => {
+      if (!grouped[emp.id]) {
+        grouped[emp.id] = {
+          id: emp.id,
+          email: emp.email,
+          name: emp.name,
+          role: emp.role,
+          created_at: emp.created_at,
+          teams: []
+        };
+      }
+
+      // Add team info if employee is in a team
+      if (emp.team_id) {
+        grouped[emp.id].teams.push({
+          team_id: emp.team_id,
+          team_name: emp.team_name,
+          team_role: emp.team_role,
+          team_member_id: emp.team_member_id
+        });
+      }
+    });
+
+    return Object.values(grouped);
+  }, [employees]);
+
+  const filteredEmployees = groupedEmployees.filter(emp => {
+    const matchesSearch =
+      emp.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.email?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesRole = !filterRole || emp.teams.some(t => t.team_role === filterRole);
+    const matchesTeam = !filterTeam || emp.teams.some(t => t.team_name === filterTeam);
+
+    return matchesSearch && matchesRole && matchesTeam;
   });
 
-  const handleAddEmployee = (employeeData) => {
-    if (editingEmployee) {
-      setEmployees(employees.map(emp => 
-        emp.id === editingEmployee.id ? { ...employeeData, id: editingEmployee.id } : emp
-      ));
-      setEditingEmployee(null);
+  const uniqueTeams = [...new Set(employees.filter(e => e.team_name).map(e => e.team_name))];
+
+  const handleRoleChange = async (teamMemberId, newRole) => {
+    // Validate inputs
+    if (!teamMemberId) {
+      alert('Invalid team member ID');
+      return;
+    }
+
+    if (!newRole) {
+      alert('Please select a role');
+      return;
+    }
+
+    // Call the API to update the role
+    const result = await updateMemberRole(teamMemberId, newRole);
+
+    if (result.success) {
+      setEditingRole(null);
+      // Optionally show a success message
+      // alert('Role updated successfully');
     } else {
-      const newEmployee = {
-        ...employeeData,
-        id: `EMP${String(employees.length + 1).padStart(3, '0')}`
-      };
-      setEmployees([...employees, newEmployee]);
+      alert(result.message || 'Failed to update role');
     }
   };
 
-  const handleDeleteEmployee = (id) => {
-    if (window.confirm('Are you sure you want to delete this employee?')) {
-      setEmployees(employees.filter(emp => emp.id !== id));
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this employee? This will remove them from all teams.')) {
+      const result = await deleteEmployee(userId);
+      if (!result.success) {
+        alert(result.message || 'Failed to delete employee');
+      }
     }
   };
 
-  const handleViewEmployee = (employee) => {
-    setSelectedEmployee(employee);
-    setShowDetailsModal(true);
-  };
-
-  const handleEditEmployee = (employee) => {
-    setEditingEmployee(employee);
-    setShowAddModal(true);
-  };
-
-  const resetFilters = () => {
-    setSearchQuery('');
-    setFilterDepartment('');
-    setFilterStatus('');
+  const toggleExpanded = (employeeId) => {
+    const newExpanded = new Set(expandedEmployees);
+    if (newExpanded.has(employeeId)) {
+      newExpanded.delete(employeeId);
+    } else {
+      newExpanded.add(employeeId);
+    }
+    setExpandedEmployees(newExpanded);
   };
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Sidebar 
-        isOpen={sidebarOpen} 
+      <Sidebar
+        isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         navItems={navItems}
-        currentPath={currentPath}
+        currentPath="/admin/employees"
       />
 
-      {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        {/* Header */}
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-[#333333] transition-colors hover:text-[#FDB913] lg:hidden"
-            >
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
             <h1 className="text-xl font-bold text-[#333333]">Employee Management</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-md" />
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="p-4 sm:p-6">
           <div className="mx-auto max-w-7xl space-y-6">
-            {/* Search and Filter Section */}
-            <Card className="p-6 shadow-lg">
+            <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220]">
-                    <Search size={20} className="text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold text-[#333333]">Search & Filter</h2>
-                </div>
-                <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
-                  <Plus size={18} />
-                  <span className="hidden sm:inline">Add Employee</span>
-                </Button>
+                <h2 className="text-xl font-bold text-[#333333]">Search & Filter</h2>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div className="relative md:col-span-2">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 transform text-gray-400" size={18} />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                   <input
                     type="text"
-                    placeholder="Search by name, email, or ID..."
+                    placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2.5 pl-10 pr-4 text-[#333333] transition-colors focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
+                    className="w-full rounded-md border border-gray-300 py-2.5 pl-10 pr-4 focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
                   />
                 </div>
 
                 <select
-                  value={filterDepartment}
-                  onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="rounded-md border border-gray-300 px-4 py-2.5 text-[#333333] transition-colors focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                  className="rounded-md border border-gray-300 px-4 py-2.5 focus:border-[#FDB913] focus:outline-none"
                 >
-                  <option value="">All Departments</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="HR">Human Resources</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Marketing">Marketing</option>
+                  <option value="">All Roles</option>
+                  {teamRoles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
                 </select>
 
                 <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="rounded-md border border-gray-300 px-4 py-2.5 text-[#333333] transition-colors focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
+                  value={filterTeam}
+                  onChange={(e) => setFilterTeam(e.target.value)}
+                  className="rounded-md border border-gray-300 px-4 py-2.5 focus:border-[#FDB913] focus:outline-none"
                 >
-                  <option value="">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                  <option value="On Leave">On Leave</option>
+                  <option value="">All Teams</option>
+                  {uniqueTeams.map(team => (
+                    <option key={team} value={team}>{team}</option>
+                  ))}
                 </select>
               </div>
 
-              {(searchQuery || filterDepartment || filterStatus) && (
+              {(searchQuery || filterRole || filterTeam) && (
                 <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-50 p-3">
                   <p className="text-sm text-gray-600">
-                    Showing {filteredEmployees.length} of {employees.length} employees
+                    Showing {filteredEmployees.length} of {groupedEmployees.length} employees
                   </p>
                   <button
-                    onClick={resetFilters}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterRole('');
+                      setFilterTeam('');
+                    }}
                     className="text-sm font-medium text-[#F58220] hover:text-[#FDB913]"
                   >
                     Clear Filters
@@ -364,113 +197,136 @@ const EmployeeManagement = () => {
               )}
             </Card>
 
-            {/* Employee List */}
-            <Card className="p-6 shadow-lg">
+            <Card className="p-6">
               <div className="mb-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220]">
-                    <Users size={20} className="text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#333333]">All Employees</h2>
-                </div>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">
+                <h2 className="text-2xl font-bold text-[#333333]">All Employees</h2>
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium">
                   {filteredEmployees.length} {filteredEmployees.length === 1 ? 'Employee' : 'Employees'}
                 </span>
               </div>
 
-              {filteredEmployees.length === 0 ? (
+              {loading ? (
+                <div className="py-12 text-center text-gray-500">Loading...</div>
+              ) : filteredEmployees.length === 0 ? (
                 <div className="py-12 text-center">
                   <Users size={48} className="mx-auto mb-4 text-gray-300" />
                   <p className="text-gray-500">No employees found</p>
-                  <p className="mt-1 text-sm text-gray-400">Try adjusting your search or filters</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-gray-200">
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">ID</th>
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Name</th>
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Email</th>
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Department</th>
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Position</th>
-                        <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Status</th>
-                        <th className="pb-3 text-center text-sm font-semibold text-[#333333]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredEmployees.map((employee) => (
-                        <tr key={employee.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                          <td className="py-4 text-sm font-medium text-[#333333]">{employee.id}</td>
-                          <td className="py-4 text-sm font-medium text-[#333333]">{employee.name}</td>
-                          <td className="py-4 text-sm text-gray-600">{employee.email}</td>
-                          <td className="py-4 text-sm text-gray-600">{employee.department}</td>
-                          <td className="py-4 text-sm text-gray-600">{employee.position}</td>
-                          <td className="py-4">
-                            <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                              employee.status === 'Active' ? 'bg-green-100 text-green-800' :
-                              employee.status === 'Inactive' ? 'bg-red-100 text-red-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {employee.status}
-                            </span>
-                          </td>
-                          <td className="py-4">
-                            <div className="flex justify-center gap-2">
+                <div className="space-y-4">
+                  {filteredEmployees.map((employee) => {
+                    const isExpanded = expandedEmployees.has(employee.id);
+                    const hasMultipleTeams = employee.teams.length > 1;
+
+                    return (
+                      <div
+                        key={employee.id}
+                        className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
+                      >
+                        {/* Main Employee Row */}
+                        <div className="flex items-center justify-between p-4">
+                          <div className="flex flex-1 items-center gap-6">
+                            {/* Employee Info */}
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-medium text-gray-500">ID: {employee.id}</span>
+                                <span className="text-base font-semibold text-[#333333]">
+                                  {employee.name || employee.email}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600">{employee.email}</p>
+                            </div>
+
+                            {/* Teams Summary */}
+                            <div className="flex-1">
+                              {employee.teams.length === 0 ? (
+                                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-500">
+                                  No Teams
+                                </span>
+                              ) : employee.teams.length === 1 ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                                    {employee.teams[0].team_name}
+                                  </span>
+                                  <span className="text-sm text-gray-600">as {employee.teams[0].team_role}</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => toggleExpanded(employee.id)}
+                                  className="flex items-center gap-2 text-sm font-medium text-[#F58220] hover:text-[#FDB913]"
+                                >
+                                  {employee.teams.length} Teams
+                                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleViewEmployee(employee)}
-                                className="rounded-md p-2 text-blue-600 transition-colors hover:bg-blue-50"
-                                title="View Details"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleEditEmployee(employee)}
-                                className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-orange-50"
-                                title="Edit"
-                              >
-                                <Edit2 size={18} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteEmployee(employee.id)}
+                                onClick={() => handleDelete(employee.id)}
                                 className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
-                                title="Delete"
+                                title="Delete Employee"
                               >
                                 <Trash2 size={18} />
                               </button>
                             </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+                        </div>
+
+                        {/* Expanded Team Details */}
+                        {(isExpanded || employee.teams.length === 1) && employee.teams.length > 0 && (
+                          <div className="border-t border-gray-100 bg-gray-50 p-4">
+                            <div className="space-y-3">
+                              {employee.teams.map((team, idx) => (
+                                <div
+                                  key={`${employee.id}-${team.team_id}-${idx}`}
+                                  className="flex items-center justify-between rounded-md bg-white p-3 shadow-sm"
+                                >
+                                  <div className="flex items-center gap-4">
+                                    <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                                      {team.team_name}
+                                    </span>
+
+                                    {editingRole === `${employee.id}-${team.team_id}` ? (
+                                      <select
+                                        defaultValue={team.team_role}
+                                        onChange={(e) => handleRoleChange(team.team_member_id, e.target.value)}
+                                        onBlur={() => setEditingRole(null)}
+                                        className="rounded border border-[#FDB913] px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB913]"
+                                        autoFocus
+                                      >
+                                        {teamRoles.map(role => (
+                                          <option key={role} value={role}>{role}</option>
+                                        ))}
+                                      </select>
+                                    ) : (
+                                      <button
+                                        onClick={() => setEditingRole(`${employee.id}-${team.team_id}`)}
+                                        className="rounded-md px-3 py-1 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                                      >
+                                        Role: <span className="text-[#F58220]">{team.team_role}</span>
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  <span className="text-xs text-gray-500">Team ID: {team.team_id}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </Card>
           </div>
         </main>
       </div>
-
-      {/* Add/Edit Employee Modal */}
-      <EmployeeFormModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingEmployee(null);
-        }}
-        onSubmit={handleAddEmployee}
-        editingEmployee={editingEmployee}
-      />
-
-      {/* Employee Details Modal */}
-      <EmployeeDetailsModal
-        isOpen={showDetailsModal}
-        onClose={() => setShowDetailsModal(false)}
-        employee={selectedEmployee}
-        onEdit={handleEditEmployee}
-      />
     </div>
   );
 };
 
-export default EmployeeManagement;
+export default EmployeeList;

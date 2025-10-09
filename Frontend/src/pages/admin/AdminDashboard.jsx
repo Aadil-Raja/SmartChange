@@ -18,7 +18,7 @@ const AdminDashboard = () => {
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: FileText, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Users', path: '/admin/users' },
+    { icon: Users, label: 'Users', path: '/admin/teams' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' }
   ];
 
