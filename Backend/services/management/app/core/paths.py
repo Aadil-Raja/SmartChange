@@ -1,23 +1,9 @@
 from pathlib import Path
 from app.core.config import get_settings
 
-# ---------------------------------------------------------
-# Smart storage root resolver
-#  - Reads values from .env via config.py
-#  - Always anchors under the actual "Backend" folder
-#  - Never creates nested "Backend/Backend"
-# ---------------------------------------------------------
-
 def storage_root() -> Path:
     """
     Resolves the absolute path to the storage root.
-
-    Example:
-      STORAGE_LOCAL_ROOT=./data/uploads
-      STORAGE_BUCKET=smartchange-docs
-
-    Final Path:
-      <project_root>/Backend/data/uploads
     """
     settings = get_settings()
     env_path = Path(settings.storage_local_root).expanduser()

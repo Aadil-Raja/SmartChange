@@ -16,3 +16,6 @@ passlib[bcrypt]==1.7.4
 fastapi-mail
 firebase-admin
 python-multipart
+redis
+rq
+PyPDF2

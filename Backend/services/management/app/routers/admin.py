@@ -179,7 +179,9 @@ def delete_user_route(
         return make_response(False, "Could not delete user", status_code=500)
 
 
-
+# ---------------------------
+# Document Management (Admin only)
+# ---------------------------
 
 @router.post("/documents/upload")
 async def upload_document(
@@ -192,10 +194,39 @@ async def upload_document(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
 
     # dummy uploader for now; later use get_current_admin().id
-    return documents_service.upload_document_local(
-        db,
-        user_id=_admin.id,
-        file_bytes=data,
-        filename=f.filename,
-        mime=f.content_type,
-    )
+    try:
+            return documents_service.upload_document_local(
+                db,
+                user_id=_admin.id,
+                file_bytes=data,
+                filename=f.filename,
+                mime=f.content_type,
+            )
+    except Exception as e:
+            return make_response(False, "Could not upload document", status_code=500)
+
+
+
+@router.get("/documents/list")
+async def upload_document(
+
+    db: Session = Depends(get_db),
+     _admin=Depends(get_current_admin),
+):
+    try:
+        return documents_service.list_documents(
+            db)
+    except Exception as e:
+        return make_response(False, "Could not list documents", status_code=500)
+
+
+@router.post("/documents/{document_id}/queue")
+async def queue_document_route(
+    document_id: int ,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),  # re-enable later
+):
+    try:
+        return documents_service.queue_document(db, document_id=document_id)
+    except Exception as e:
+        return make_response(False, "Could not queue Document", status_code=500)

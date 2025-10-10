@@ -1,11 +1,29 @@
 # app/services/documents_service.py
+from sqlalchemy.orm import Session
 from app.repositories import documents_repo
 from app.services.storage.storage_local import save_bytes
-from shared.models import DocStatus
+from app.utils.response_utils import make_response
+from shared.models import DocStatus  # assuming DocStatus is exported from shared.models
 
+
+
+def _doc_to_dict(row) -> dict:
+    doc, uploader_email = row  # unpack tuple from join query
+    return {
+        "id": doc.id,
+        "title": doc.title,
+        "original_filename": doc.original_filename,
+        "storage_key": doc.storage_key,
+        "mime_type": doc.mime_type,
+        "size_bytes": doc.size_bytes,
+        "status": doc.status.value,
+        "uploader_email": uploader_email,  # pulled from join
+        "created_at": doc.created_at,
+        "updated_at": doc.updated_at,
+    }
 
 def upload_document_local(
-    db,
+    db: Session,
     *,
     user_id: int,
     file_bytes: bytes,
@@ -13,6 +31,10 @@ def upload_document_local(
     mime: str | None = None,
     title: str | None = None,
 ):
+    """
+    Save file to local storage, then create a Document row.
+    Returns a make_response payload (201).
+    """
     # 1) store bytes to disk
     storage_key = save_bytes(
         file_bytes,
@@ -32,12 +54,47 @@ def upload_document_local(
         status=DocStatus.STORED,
     )
 
-    return {
-        "ok": True,
-        "document_id": doc.id,
-        "title": doc.title,
-        "storage_key": doc.storage_key,
-        "status": doc.status.value,
-        "mime_type": doc.mime_type,
-        "size_bytes": doc.size_bytes,
-    }
+    return make_response(
+        True,
+        "Document uploaded successfully",
+        data={"document": _doc_to_dict(doc)},
+        status_code=201,
+    )
+
+def list_documents(db: Session):
+    """
+    Get all documents (joined with uploader email).
+    """
+    rows = documents_repo.list_documents(db)
+
+    return make_response(
+        True,
+        "Documents retrieved successfully",
+        data={
+            "documents": [_doc_to_dict(r) for r in rows],
+            "count": len(rows),
+        },
+        status_code=200,
+    )
+
+
+def queue_document(db, *, document_id: int):
+    doc = documents_repo.get_document(db, document_id)
+    if not doc:
+        return make_response(False, "Document not found", status_code=404)
+
+    # If already queued/processing/processed, make this idempotent
+    if doc.status in {DocStatus.QUEUED, DocStatus.PROCESSING, DocStatus.PROCESSED}:
+        return make_response(True, "Already queued or processed", data={"document_id": doc.id, "status": doc.status.value}, status_code=200)
+
+    # q = get_queue()
+    # job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+
+    documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
+
+    return make_response(
+        True,
+        "Document queued for processing",
+        data={"document_id": doc.id, "job_id": 1, "status": DocStatus.QUEUED.value},
+        status_code=202,
+    )
