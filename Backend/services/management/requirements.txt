@@ -19,3 +19,4 @@ python-multipart
 redis
 rq
 PyPDF2
+python-dotenv

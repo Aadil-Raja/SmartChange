@@ -6,7 +6,7 @@ from app.deps.auth import get_current_admin
 import shared.schemas as schemas
 from app.services import admin_service,documents_service
 from app.utils.response_utils import make_response  # ✅ new import
-
+from fastapi import Path
 router = APIRouter()
 
 # ---------------------------
@@ -230,3 +230,9 @@ async def queue_document_route(
         return documents_service.queue_document(db, document_id=document_id)
     except Exception as e:
         return make_response(False, "Could not queue Document", status_code=500)
+    
+
+
+@router.get("/jobs/{job_id}")
+async def get_job(job_id: str = Path(...)):
+    return documents_service.get_job_info(job_id)

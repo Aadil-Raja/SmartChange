@@ -4,9 +4,9 @@ from app.repositories import documents_repo
 from app.services.storage.storage_local import save_bytes
 from app.utils.response_utils import make_response
 from shared.models import DocStatus  # assuming DocStatus is exported from shared.models
-
-
-
+from app.services.queue.factory import get_queue
+from rq.job import Job
+from app.services.queue.redis_conn import get_redis
 def _doc_to_dict(row) -> dict:
     doc, uploader_email = row  # unpack tuple from join query
     return {
@@ -77,6 +77,7 @@ def list_documents(db: Session):
         status_code=200,
     )
 
+RQ_TASK = "processing_worker.app.tasks.process_document"
 
 def queue_document(db, *, document_id: int):
     doc = documents_repo.get_document(db, document_id)
@@ -87,14 +88,37 @@ def queue_document(db, *, document_id: int):
     if doc.status in {DocStatus.QUEUED, DocStatus.PROCESSING, DocStatus.PROCESSED}:
         return make_response(True, "Already queued or processed", data={"document_id": doc.id, "status": doc.status.value}, status_code=200)
 
-    # q = get_queue()
-    # job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    q = get_queue()
+    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
 
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
 
     return make_response(
         True,
         "Document queued for processing",
-        data={"document_id": doc.id, "job_id": 1, "status": DocStatus.QUEUED.value},
+        data={"document_id": doc.id, "job_id": job_id, "status": DocStatus.QUEUED.value},
         status_code=202,
+    )
+
+def get_job_info(job_id: str):
+    conn = get_redis()
+    try:
+        job = Job.fetch(job_id, connection=conn)
+    except Exception:
+        return make_response(False, "Job not found", status_code=404)
+
+    return make_response(
+        True,
+        "Job fetched",
+        data={
+            "id": job.id,
+            "status": job.get_status(),
+            "created_at": job.created_at,
+            "enqueued_at": job.enqueued_at,
+            "started_at": job.started_at,
+            "ended_at": job.ended_at,
+            "result": job.result,         # None unless your task returns something
+            "exc_info": job.exc_info,     # traceback string if failed
+        },
+        status_code=200,
     )

@@ -169,3 +169,9 @@ This project is part of a Final Year Project (FYP) for academic purposes.
 - Check the API documentation at `/docs`
 - Review error logs in the console
 - Ensure all environment variables are properly set
+
+
+
+
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+python processing_worker/app/main_rq.py
