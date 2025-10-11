@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     storage_local_root: str 
     storage_bucket: str 
    
-
+    redis_url : str
+    queue_backend : str
+    queue_name : str
+    rq_process_task : str
 
 @lru_cache()
 def get_settings() -> Settings:

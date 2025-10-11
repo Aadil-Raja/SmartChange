@@ -1,23 +1,26 @@
 import os
 import sys
 
-# CRITICAL: Set Python path BEFORE any imports
-# This ensures RQ can find all modules including processing_worker
-backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if backend_dir not in sys.path:
-    sys.path.insert(0, backend_dir)
+# ---- Load .env early (for QUEUE_NAME, REDIS_URL, etc.) ----
+try:
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv())  # loads nearest .env (repo root recommended)
+except Exception:
+    pass  # optional: keep running even if python-dotenv is not installed
 
-print(f"[Worker Init] Backend directory: {backend_dir}")
-print(f"[Worker Init] Python path: {sys.path[0]}")
-print(f"[Worker Init] Current working directory: {os.getcwd()}")
+# ---- Make sure Python can import project packages ----
+# <this file> = .../Backend/processing_worker/app/main_rq.py
+
+
 
 import redis
 from rq import Queue, Worker
 from rq.worker import SimpleWorker
 
+
 def main():
-    queue_name = os.getenv("QUEUE_NAME", "docs")
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    queue_name = os.getenv("QUEUE_NAME")
+    redis_url  = os.getenv("REDIS_URL")
 
     print(f"[Worker] Queue name: {queue_name}")
     print(f"[Worker] Redis URL: {redis_url}")

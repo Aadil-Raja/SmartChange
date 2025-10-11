@@ -174,4 +174,4 @@ This project is part of a Final Year Project (FYP) for academic purposes.
 
 
 docker run -d --name redis -p 6379:6379 redis:7-alpine
-python processing_worker/app/main_rq.py
+python -m processing_worker.app.main_rq

@@ -1,15 +1,27 @@
-# Backend/processing_worker/app/tasks.py
 import os
+
+# ---- Load .env early so DATABASE_URL is available ----
+try:
+    from dotenv import load_dotenv, find_dotenv
+    load_dotenv(find_dotenv())
+except Exception:
+    pass
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from PyPDF2 import PdfReader
 
-from shared.models.Document import Document, DocStatus  # use correct module name/case
+# ⚠️ Ensure this import path matches your actual file: shared/models/document.py
+from shared.models.Document import Document, DocStatus
 
-# ⛔️ Don’t hardcode credentials in code. Prefer env/.env.
-DATABASE_URL = ""
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not set. Set it in .env or the environment.")
+
 _engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
 _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
+
 
 def _count_pdf_pages(path: str) -> int:
     try:
@@ -18,12 +30,13 @@ def _count_pdf_pages(path: str) -> int:
     except Exception:
         return -1  # sentinel if unreadable
 
+
 def process_document(document_id: int) -> dict:
     """
     - mark PROCESSING
-    - count pages if PDF
+    - if PDF, count pages
     - mark PROCESSED (or FAILED)
-    - RETURN the result so RQ stores it in job.result
+    - return a dict so RQ stores it in job.result
     """
     db = _SessionLocal()
     try:
@@ -39,16 +52,16 @@ def process_document(document_id: int) -> dict:
         doc.status = DocStatus.PROCESSED
         db.commit()
 
-        # ✅ This return populates job.result
         return {"ok": True, "document_id": doc.id, "page_count": pages}
 
-    except Exception as e:
+    except Exception:
         try:
-            if 'doc' in locals() and doc:
+            # best-effort failure mark
+            doc = locals().get("doc")
+            if doc:
                 doc.status = DocStatus.FAILED
                 db.commit()
         finally:
-            # Returning an error also shows up in job.exc_info
             raise
     finally:
         db.close()

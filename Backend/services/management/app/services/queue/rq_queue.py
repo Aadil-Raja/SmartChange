@@ -1,15 +1,23 @@
+# NOW: RQ client wrapper used by the API to enqueue background jobs into Redis.
+# FUTURE: Swap this out (same interface) for Celery/SQS/etc. without touching your services.
+
 import os
 from rq import Queue
 import redis
+from app.core.config import get_settings
+
+settings = get_settings()
 
 class RQClient:
-    def __init__(self, *, redis_url: str | None = None, queue_name: str | None = None):
-        self.redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        self.queue_name = queue_name or os.getenv("QUEUE_NAME", "docs")
+    def __init__(self, *, redis_url: str, queue_name: str):
+        """Initialize RQ client with Redis connection and queue name."""
+        self.redis_url = redis_url
+        self.queue_name = queue_name
         self.conn = redis.from_url(self.redis_url)
         self.queue = Queue(self.queue_name, connection=self.conn)
 
     def enqueue(self, task_name: str, **kwargs) -> str:
+        """Enqueue a background job into the RQ queue."""
         job = self.queue.enqueue(
             task_name,
             **kwargs,

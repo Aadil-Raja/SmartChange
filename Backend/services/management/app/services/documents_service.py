@@ -7,6 +7,10 @@ from shared.models import DocStatus  # assuming DocStatus is exported from share
 from app.services.queue.factory import get_queue
 from rq.job import Job
 from app.services.queue.redis_conn import get_redis
+from app.core.config import get_settings
+
+settings = get_settings()
+
 def _doc_to_dict(row) -> dict:
     doc, uploader_email = row  # unpack tuple from join query
     return {
@@ -53,11 +57,11 @@ def upload_document_local(
         uploaded_by=user_id,
         status=DocStatus.STORED,
     )
-
+    
     return make_response(
         True,
         "Document uploaded successfully",
-        data={"document": _doc_to_dict(doc)},
+        data={"document": doc},
         status_code=201,
     )
 
@@ -77,20 +81,21 @@ def list_documents(db: Session):
         status_code=200,
     )
 
-RQ_TASK = "processing_worker.app.tasks.process_document"
+RQ_TASK = settings.rq_process_task  
 
 def queue_document(db, *, document_id: int):
     doc = documents_repo.get_document(db, document_id)
     if not doc:
         return make_response(False, "Document not found", status_code=404)
-
+    
     # If already queued/processing/processed, make this idempotent
     if doc.status in {DocStatus.QUEUED, DocStatus.PROCESSING, DocStatus.PROCESSED}:
         return make_response(True, "Already queued or processed", data={"document_id": doc.id, "status": doc.status.value}, status_code=200)
-
+   
     q = get_queue()
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
 
+    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
 
     return make_response(
