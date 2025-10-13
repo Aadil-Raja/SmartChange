@@ -20,3 +20,12 @@ redis
 rq
 PyPDF2
 python-dotenv
+
+
+# NEW - Add these
+
+python-docx                      # DOCX extraction
+pytesseract                      # OCR for images
+Pillow                           # Image handling
+google-generativeai              # Google AI embeddings
+pgvector
