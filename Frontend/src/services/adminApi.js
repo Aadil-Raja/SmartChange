@@ -29,8 +29,8 @@ export const removeTeamMember = async (teamId, userId) => {
   return res.data;
 };
 
-export const updateTeamMemberRole = async (teamMemberId, newRole) => {
-  const res = await api.patch(`/admin/team-members/${teamMemberId}`, {
+export const updateTeamMemberRole = async (teamId, userId, newRole) => {
+  const res = await api.patch(`/admin/teams/${teamId}/members/${userId}`, {
     role_in_team: newRole
   });
   return res.data;
@@ -56,5 +56,59 @@ export const fetchTeamRoles = async () => {
 // Admin Login
 export const adminLogin = async (email, password) => {
   const res = await api.post("/admin/login", { email, password });
+  return res.data;
+};
+
+// ============ DOCUMENTS ============
+// In your frontend API call file
+export const uploadDocument = async (file, title = null) => {
+  const formData = new FormData();
+  // ---- FIX IS HERE ----
+  formData.append('f', file); // Changed 'file' to 'f' to match the backend
+  
+  if (title) {
+    formData.append('title', title);
+  }
+  
+  console.log("Uploading file with form data...");
+  const res = await api.post("/admin/documents/upload", formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  console.log("Upload response:", res.data);
+  return res.data;
+};
+
+// Changed from /admin/documents to /admin/documents/list
+export const fetchDocuments = async () => {
+  const res = await api.get("/admin/documents/list");
+  return res.data;
+};
+
+export const getDocument = async (documentId) => {
+  const res = await api.get(`/admin/documents/${documentId}`);
+  return res.data;
+};
+
+export const queueDocument = async (documentId) => {
+  const res = await api.post(`/admin/documents/${documentId}/queue`);
+  return res.data;
+};
+
+export const getJobStatus = async (jobId) => {
+  const res = await api.get(`/admin/jobs/${jobId}`);
+  return res.data;
+};
+
+export const downloadDocument = async (documentId) => {
+  const res = await api.get(`/admin/documents/${documentId}/download`, {
+    responseType: 'blob',
+  });
+  return res.data;
+};
+
+export const deleteDocument = async (documentId) => {
+  const res = await api.delete(`/admin/documents/${documentId}`);
   return res.data;
 };

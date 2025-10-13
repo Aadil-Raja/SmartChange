@@ -5,7 +5,7 @@ import Card from '../../components/ui/Card';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const EmployeeList = () => {
-  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateMemberRole, deleteEmployee } = useAdmin();
+  const { teams,employees, teamRoles, loading, loadEmployees,loadTeams, loadTeamRoles, updateTeamMemberRole, deleteEmployee } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,10 +69,17 @@ const EmployeeList = () => {
 
   const uniqueTeams = [...new Set(employees.filter(e => e.team_name).map(e => e.team_name))];
 
-  const handleRoleChange = async (teamMemberId, newRole) => {
+  const handleRoleChange = async (teamId,userId, newRole) => {
     // Validate inputs
-    if (!teamMemberId) {
+    console.log(userId);
+    if (!userId) {
+      
       alert('Invalid team member ID');
+      return;
+    }
+        if (!teamId) {
+          console.log(teamId);
+      alert('Invalid team ID');
       return;
     }
 
@@ -82,7 +89,7 @@ const EmployeeList = () => {
     }
 
     // Call the API to update the role
-    const result = await updateMemberRole(teamMemberId, newRole);
+    const result = await updateTeamMemberRole(teamId,userId, newRole);
 
     if (result.success) {
       setEditingRole(null);
@@ -291,7 +298,7 @@ const EmployeeList = () => {
                                     {editingRole === `${employee.id}-${team.team_id}` ? (
                                       <select
                                         defaultValue={team.team_role}
-                                        onChange={(e) => handleRoleChange(team.team_member_id, e.target.value)}
+                                        onChange={(e) => handleRoleChange(team.team_id,employee.id, e.target.value)}
                                         onBlur={() => setEditingRole(null)}
                                         className="rounded border border-[#FDB913] px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB913]"
                                         autoFocus

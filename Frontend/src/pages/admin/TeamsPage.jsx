@@ -4,7 +4,7 @@ import Sidebar from '../../components/ui/Sidebar';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const TeamsPage = () => {
-  const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateMemberRole } = useAdmin();
+  const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole } = useAdmin();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -15,6 +15,7 @@ const TeamsPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [expandedTeams, setExpandedTeams] = useState(new Set());
+    const [editingRole, setEditingRole] = useState(null);
 
   useEffect(() => {
     loadTeams();
@@ -126,12 +127,32 @@ const TeamsPage = () => {
     }
   };
 
-  const handleUpdateMemberRole = async (teamMemberId, newRole) => {
-    if (!teamMemberId || !newRole) return;
-    
-    const result = await updateMemberRole(teamMemberId, newRole);
+  const handleUpdateMemberRole = async (teamId,userId, newRole) => {
+    // Validate inputs
+    console.log(userId);
+    if (!userId) {
+      
+      alert('Invalid team member ID');
+      return;
+    }
+        if (!teamId) {
+          console.log(teamId);
+      alert('Invalid team ID');
+      return;
+    }
+
+    if (!newRole) {
+      alert('Please select a role');
+      return;
+    }
+
+    // Call the API to update the role
+    const result = await updateTeamMemberRole(teamId,userId, newRole);
+
     if (result.success) {
-      setEditingMemberId(null);
+      setEditingRole(null);
+      // Optionally show a success message
+      // alert('Role updated successfully');
     } else {
       alert(result.message || 'Failed to update role');
     }
@@ -270,10 +291,11 @@ const TeamsPage = () => {
 
                                 <div className="flex items-center gap-3">
                                   {/* Role Editor */}
-                                  {editingMemberId === member.team_member_id ? (
+                                  {editingMemberId === member.id ? (
                                     <select
+  
                                       defaultValue={member.role_in_team}
-                                      onChange={(e) => handleUpdateMemberRole(member.team_member_id, e.target.value)}
+                                      onChange={(e) => handleUpdateMemberRole(team.id,member.id, e.target.value)}
                                       onBlur={() => setEditingMemberId(null)}
                                       className="rounded-md border border-[#FDB913] px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB913]"
                                       autoFocus
@@ -284,7 +306,7 @@ const TeamsPage = () => {
                                     </select>
                                   ) : (
                                     <button
-                                      onClick={() => setEditingMemberId(member.team_member_id)}
+                                      onClick={() => setEditingMemberId(member.id)}
                                       className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-white"
                                     >
                                       <span className="text-[#F58220]">{member.role_in_team}</span>
