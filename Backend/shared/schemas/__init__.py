@@ -20,9 +20,9 @@ from .admin import (
     TeamMemberRoleUpdate,
 )
 from .employee import JoinCodeIn
-__all__ = [
+from .announcements import AnnouncementCreateIn, AnnouncementOut, CommentCreateIn, CommentOut, AnnouncementWithComments
     # user
-    "UserCreate", "UserOut",
+__all__ =[   "UserCreate", "UserOut",
 
     # auth
     "RequestCodeIn", "VerifyCodeIn", "TokenOut", "MeOut",
@@ -33,4 +33,4 @@ __all__ = [
     "AdminLoginIn", "TeamCreate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
 
-    "TeamMemberRoleUpdate","JoinCodeIn"]
+    "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments"]

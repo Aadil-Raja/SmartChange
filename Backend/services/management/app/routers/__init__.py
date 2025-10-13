@@ -5,4 +5,5 @@ from . import health
 from . import auth
 from . import admin 
 from . import employee
-__all__ = [ "health","auth", "admin", "employee" ]
+from . import announcements
+__all__ = [ "health","auth", "admin", "employee","announcements" ]

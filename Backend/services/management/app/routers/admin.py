@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.deps.db import get_db
 from app.deps.auth import get_current_admin
 import shared.schemas as schemas
-from app.services import admin_service
+from app.services import admin_service,documents_service
 from app.utils.response_utils import make_response  # ✅ new import
-
+from fastapi import Path
 router = APIRouter()
 
 # ---------------------------
@@ -90,21 +90,27 @@ def add_member_route(
     except Exception as e:
         return make_response(False, "Could not add member", status_code=500)
 
-@router.patch("/team-members/{id}", status_code=status.HTTP_200_OK)
-def update_team_member_role(
+
+@router.patch("/teams/{id}/members/{user_id}", status_code=status.HTTP_200_OK)
+def update_team_member_role_route(
     id: int,
+    user_id: int,
     payload: schemas.TeamMemberRoleUpdate,
     db: Session = Depends(get_db),
-    _admin=Depends(get_current_admin),
+    _admin = Depends(get_current_admin),
 ):
     """
-    Update a member's role by their TeamMember ID.
+    Update a member's role using team_id + user_id.
     """
     try:
-       return admin_service.update_team_member_role(db, team_member_id=id, new_role=payload.role_in_team)
+        return admin_service.update_team_member_role(
+            db,
+            team_id=id,
+            user_id=user_id,
+            new_role=payload.role_in_team,
+        )
     except Exception:
         return make_response(False, "Could not update team member role", status_code=500)
-
 
 @router.delete("/teams/{id}/members/{user_id}", status_code=status.HTTP_200_OK)
 def remove_member_route(
@@ -173,4 +179,60 @@ def delete_user_route(
         return make_response(False, "Could not delete user", status_code=500)
 
 
+# ---------------------------
+# Document Management (Admin only)
+# ---------------------------
 
+@router.post("/documents/upload")
+async def upload_document(
+    f: UploadFile = File(...),
+    db: Session = Depends(get_db),
+     _admin=Depends(get_current_admin),
+):
+    data = await f.read()
+    if not data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+
+    # dummy uploader for now; later use get_current_admin().id
+    try:
+            return documents_service.upload_document_local(
+                db,
+                user_id=_admin.id,
+                file_bytes=data,
+                filename=f.filename,
+                mime=f.content_type,
+            )
+    except Exception as e:
+            return make_response(False, "Could not upload document", status_code=500)
+
+
+
+@router.get("/documents/list")
+async def upload_document(
+
+    db: Session = Depends(get_db),
+     _admin=Depends(get_current_admin),
+):
+    try:
+        return documents_service.list_documents(
+            db)
+    except Exception as e:
+        return make_response(False, "Could not list documents", status_code=500)
+
+
+@router.post("/documents/{document_id}/queue")
+async def queue_document_route(
+    document_id: int ,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),  # re-enable later
+):
+    try:
+        return documents_service.queue_document(db, document_id=document_id)
+    except Exception as e:
+        return make_response(False, "Could not queue Document", status_code=500)
+    
+
+
+@router.get("/jobs/{job_id}")
+async def get_job(job_id: str = Path(...)):
+    return documents_service.get_job_info(job_id)

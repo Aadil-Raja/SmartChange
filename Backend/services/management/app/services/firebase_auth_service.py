@@ -8,7 +8,7 @@ from app.core.config import get_settings
 from app.repositories import users_repo
 from app.utils.response_utils import make_response
 
-from app.services.shared_utils import (
+from app.utils.shared_utils import (
     normalize_email,
     domain_allowed,
     issue_access_token,

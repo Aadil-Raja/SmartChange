@@ -7,7 +7,7 @@ from app.core.config import get_settings
 from app.services.email_service import send_otp_email, send_welcome_email, send_password_reset_email
 from app.utils.response_utils import make_response
 
-from app.services.shared_utils import (
+from app.utils.shared_utils import (
     normalize_email,
     domain_allowed,
     hash_password,

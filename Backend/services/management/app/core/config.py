@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
-
+from pathlib import Path
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -27,6 +27,15 @@ class Settings(BaseSettings):
     firebase_credentials_file: str
     init_admin_email: str | None = None
     init_admin_password: str | None = None
+
+    storage_backend: str               
+    storage_local_root: str 
+    storage_bucket: str 
+   
+    redis_url : str
+    queue_backend : str
+    queue_name : str
+    rq_process_task : str
 
 @lru_cache()
 def get_settings() -> Settings:
