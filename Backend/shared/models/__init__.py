@@ -4,6 +4,6 @@
 from .user import User, Base, UserRole
 from .email_otp import EmailOTP
 from .team import Team, TeamMember,TeamMemberRole
-from .Document import Document,DocStatus
+from .Document import Document,DocStatus, DocumentChunk
 from .announcement import Announcement, AnnouncementComment
-__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment"]
+__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk"]
