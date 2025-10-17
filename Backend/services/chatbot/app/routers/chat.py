@@ -16,12 +16,9 @@ def respond_route(
     chunk_db: Session = Depends(get_chunk_db),
 ):
     try:
-        user_id = 1  # replace with real user
+        user_id = 1  
 
-        # Defensive: coerce falsy values to None
         chathead_id = payload.chathead_id
-        if isinstance(chathead_id, int) and chathead_id < 1:
-            chathead_id = None
 
         result = chat_service.respond_turn(
             db,

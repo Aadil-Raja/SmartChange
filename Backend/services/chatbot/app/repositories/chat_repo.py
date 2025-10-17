@@ -19,6 +19,27 @@ def add_message(db: Session, *, chathead_id: int, role: str, message: str, activ
     db.flush()
     return msg
 
-def get_last_messages(db: Session, *, chathead_id: int, limit: int = 10):
-    stmt = select(ChatMessage).where(ChatMessage.chathead_id == chathead_id).order_by(desc(ChatMessage.created_at)).limit(limit)
-    return list(reversed(db.execute(stmt).scalars().all()))
+
+def get_messages(db: Session, *, chathead_id: int, limit: int = 20):
+    """
+    Get messages for a chathead, ordered by creation time (oldest first).
+    
+    Args:
+        db: Database session
+        chathead_id: ID of the chathead
+        limit: Maximum number of messages to return
+    
+    Returns:
+        List of Message objects
+    """
+   
+    
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.chathead_id == chathead_id)
+        .order_by(ChatMessage.created_at.asc())  # Oldest first for chronological order
+        .limit(limit)
+        .all()
+    )
+    
+    return messages
