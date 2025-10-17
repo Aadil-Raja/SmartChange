@@ -1,9 +1,11 @@
-# SmartChange FYP – Management Service
+# SmartChange FYP – Chatbot Service
 
-## 📌 Project Overview
+🤖 **Project Overview**
 
-SmartChange is a role-based Learning & SOP Management Platform with AI features (chatbot, summarization, quiz generator).  
-This repository contains the **Management Service** (Employee/Manager/Admin core backend).
+The Chatbot Service powers SmartChange's AI assistant — enabling document-based Q&A, RAG (Retrieval-Augmented Generation), and interactive chat sessions between users and the AI. It connects to two databases:
+
+* **Chatbot DB** – Stores chat sessions, chat messages, and user context.
+* **Chunk DB** – Stores document chunks and embeddings for retrieval.
 
 ---
 
@@ -12,23 +14,25 @@ This repository contains the **Management Service** (Employee/Manager/Admin core
 ```
 Backend/
 ├── services/
-│   └── management/
+│   └── chatbot/
 │       ├── app/
 │       │   ├── core/           # Config (loads .env, settings)
-│       │   ├── deps/           # Dependencies (DB session, init_db)
-│       │   ├── models/         # (Local models if needed)
-│       │   ├── routers/        # API endpoints (users, auth, content, health)
-│       │   ├── schemas/        # (Local schemas if needed)
+│       │   ├── deps/           # DB dependencies (chatbot + chunk DB)
+│       │   ├── models/         # ChatHead, ChatMessage models
+│       │   ├── routers/        # API endpoints (chat routes)
+│       │   ├── schemas/        # Pydantic schemas for API requests
+│       │   ├── services/       # Core logic (chat_service, agent_service)
+│       │   ├── tools/          # RAG + LLM tools if needed
 │       │   └── main.py         # FastAPI entrypoint
-│       ├── .env                # Service-specific environment variables
-│       └── requirements.txt    # Python dependencies for this service
-├── shared/                     # Shared models/schemas used across services
+│       ├── .env                # Environment variables for this service
+│       └── requirements.txt    # Python dependencies
+├── shared/                     # Common models/schemas used across services
 │   ├── models/
 │   ├── schemas/
 │   ├── core/
 │   └── __init__.py
-├── setup.py                    # Makes shared/ installable as a package
-└── venv/                       # Local virtual environment (ignored by git)
+├── setup.py                    # Allows shared/ to be installed as a package
+└── venv/                       # Local virtual environment
 ```
 
 ---
@@ -60,7 +64,13 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Install shared as a package
+### 3. Install Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Install Shared Package
 
 ```bash
 pip install -e .
@@ -68,110 +78,41 @@ pip install -e .
 
 This makes the `shared/` folder importable from anywhere.
 
-### 4. Install Dependencies for Management Service
+### 5. Navigate to Chatbot Service
 
 ```bash
-cd services/management
-pip install -r requirements.txt
+cd services/chatbot
 ```
 
-### 5. Configure .env
+### 6. Configure `.env`
 
-Create a `.env` in `services/management/`:
+Create a `.env` file inside `services/chatbot/`:
 
 ```env
-DATABASE_URL=postgresql+psycopg2://<user>:<password>@<host>/<db>
+CHATBOT_DATABASE_URL=postgresql+psycopg2://<user>:<password>@<host>/<chatbot_db>
+CHUNK_DATABASE_URL=postgresql+psycopg2://<user>:<password>@<host>/<chunk_db>
+GOOGLE_API_KEY=<your_google_api_key>
+LLM_MODEL=gemini-2.5-flash
+DEBUG=true
 ```
 
-### 6. Run the Management API
+---
 
-From inside `services/management/`:
+## 🚀 Run the Chatbot API
+
+From inside `services/chatbot`:
 
 ```bash
 uvicorn app.main:app --reload --port 8001
 ```
 
-**Open:** http://localhost:8000
+**Open:** [http://localhost:8001/docs](http://localhost:8001/docs)
 
 ---
 
-## 🔧 Development
+## 📝 Additional Notes
 
-
-### Adding New Features
-
-1. Create models in `app/models/` or `shared/models/`
-2. Define schemas in `app/schemas/` or `shared/schemas/`
-3. Implement API endpoints in `app/routers/`
-4. Update dependencies in `app/deps/` if needed
-
----
-
-## 🧪 Testing
-
-
----
-
-## 📝 Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql+psycopg2://user:pass@localhost/db` |
-
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is part of a Final Year Project (FYP) for academic purposes.
-
----
-
-## 👥 Team
-
-- **Project Type:** Final Year Project (FYP)
-- **Domain:** Learning & SOP Management Platform
-- **Technology Stack:** FastAPI, PostgreSQL, AI Integration
-
----
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Import Error for shared package:**
-   ```bash
-   pip install -e .  # From Backend/ directory
-   ```
-
-2. **Database Connection Error:**
-   - Check your PostgreSQL server is running
-   - Verify DATABASE_URL in .env file
-   - Ensure database exists
-
-3. **Port Already in Use:**
-   ```bash
-   uvicorn app.main:app --reload --port 8001  # Use different port
-   ```
-
-### Getting Help
-
-- Check the API documentation at `/docs`
-- Review error logs in the console
-- Ensure all environment variables are properly set
-
-
-
-
-docker run -d --name redis -p 6379:6379 redis:7-alpine
-python -m processing_worker.app.main_rq
+- Ensure both PostgreSQL databases (Chatbot DB and Chunk DB) are running and accessible
+- The API documentation is available via FastAPI's auto-generated Swagger UI at `/docs`
+- Use `--reload` flag during development for auto-reloading on code changes
+- The service runs on port `8001` by default to avoid conflicts with other services

@@ -1,3 +1,3 @@
-from .chat import ChatTurnIn
+from .chat import ChatTurnIn,ChatRenameIn
 
-__all__ = ["ChatTurnIn"]
+__all__ = ["ChatTurnIn","ChatRenameIn"]

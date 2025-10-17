@@ -11,3 +11,6 @@ class ChatTurnIn(BaseModel):
     active_doc_id: int = Field(..., ge=1, description="Selected document ID for this turn")
     chathead_id: Optional[int] = Field(default=None, ge=1, description="Existing chathead to continue")
     title: Optional[str] = Field(default=None, description="Optional title (used only when creating a new chat)")
+
+class ChatRenameIn(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)

@@ -42,6 +42,7 @@ app.add_middleware(
 # Routers
 app.include_router(routers.health.router, prefix="/health", tags=["health"])
 app.include_router(routers.chat.router, prefix="/chat", tags=["chat"])
+app.include_router(routers.chat_manage.router, prefix="/chat/manage", tags=["chat_manage"])
 @app.get("/")
 def root():
     return {"message": "Chatbot API running"}

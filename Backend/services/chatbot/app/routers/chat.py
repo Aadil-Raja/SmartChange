@@ -5,6 +5,7 @@ from app.deps.db import get_db, get_chunk_db
 from app.services import chat_service
 from app.schemas import ChatTurnIn
 from app.utils.response_utils import make_response
+from app.deps.auth import get_current_user
 
 router = APIRouter()
 
@@ -14,10 +15,11 @@ def respond_route(
     payload: ChatTurnIn,
     db: Session = Depends(get_db),
     chunk_db: Session = Depends(get_chunk_db),
+     user=Depends(get_current_user),
 ):
     try:
-        user_id = 1  
-
+        user_id = int(user)
+        print(user_id)
         chathead_id = payload.chathead_id
 
         result = chat_service.respond_turn(

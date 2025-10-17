@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     chunk_database_url: str
     google_api_key: str
     llm_model: str 
+    jwt_secret: str
+    jwt_algorithm: str
 
 @lru_cache()
 def get_settings() -> Settings:

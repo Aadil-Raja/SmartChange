@@ -58,6 +58,7 @@ venv\Scripts\activate
 **Linux/Mac/WSL:**
 ```bash
 source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ### 3. Install shared as a package
@@ -72,7 +73,7 @@ This makes the `shared/` folder importable from anywhere.
 
 ```bash
 cd services/management
-pip install -r requirements.txt
+
 ```
 
 ### 5. Configure .env

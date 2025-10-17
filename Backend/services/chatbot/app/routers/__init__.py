@@ -3,4 +3,5 @@
 
 from . import health
 from . import chat
-__all__ = [ "health","chat"]
+from . import chat_manage
+__all__ = [ "health","chat", "chat_manage"]

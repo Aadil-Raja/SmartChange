@@ -1,8 +1,10 @@
 # app/services/chat_service.py
 from sqlalchemy.orm import Session
+from datetime import datetime
 from langchain_core.messages import HumanMessage, AIMessage
 from app.repositories import chat_repo
 from app.services.agent_service import DocumentAgent
+from app.models import MessageRole  # ← Import the enum
 import sys, traceback
 
 def ensure_chathead(db: Session, *, user_id: int, chathead_id: int | None, title: str | None) -> int:
@@ -35,7 +37,7 @@ def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
     """
     print(f"[load_chat_history] Loading history for chathead_id={chathead_id}, limit={limit}", file=sys.stderr)
     
-    # Get messages from repository (assuming you have this method)
+    # Get messages from repository
     messages = chat_repo.get_messages(db, chathead_id=chathead_id, limit=limit * 2)
     
     print(f"[load_chat_history] Loaded {len(messages)} messages from DB", file=sys.stderr)
@@ -43,10 +45,11 @@ def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
     # Convert to LangChain format
     chat_history = []
     for msg in messages:
-        if msg.role == "user":
+        # Use enum comparison instead of string comparison
+        if msg.role == MessageRole.USER:
             chat_history.append(HumanMessage(content=msg.message))
             print(f"  [USER] {msg.message[:50]}...", file=sys.stderr)
-        elif msg.role == "assistant":
+        elif msg.role == MessageRole.ASSISTANT:
             chat_history.append(AIMessage(content=msg.message))
             print(f"  [ASST] {msg.message[:50]}...", file=sys.stderr)
     
@@ -71,8 +74,16 @@ def respond_turn(
         print("[respond_turn] loading chat history", file=sys.stderr)
         chat_history = load_chat_history(db, chathead_id=cid, limit=10)  # Last 10 exchanges
         print(chat_history)
+        
         print("[respond_turn] saving user message", file=sys.stderr)
-        chat_repo.add_message(db, chathead_id=cid, role="user", message=message, active_doc_id=active_doc_id)
+        # Pass MessageRole enum instead of string
+        chat_repo.add_message(
+            db, 
+            chathead_id=cid, 
+            role=MessageRole.USER,  # ← Use enum
+            message=message, 
+            active_doc_id=active_doc_id
+        )
 
         print("[respond_turn] running agent", file=sys.stderr)
         agent = DocumentAgent(db, chunk_db)
@@ -84,9 +95,22 @@ def respond_turn(
         print(f"[respond_turn] agent result keys={list(out.keys())}", file=sys.stderr)
 
         print("[respond_turn] saving assistant message", file=sys.stderr)
-        chat_repo.add_message(db, chathead_id=cid, role="assistant", message=out["answer"], active_doc_id=active_doc_id)
+        # Pass MessageRole enum instead of string
+        chat_repo.add_message(
+            db, 
+            chathead_id=cid, 
+            role=MessageRole.ASSISTANT,  # ← Use enum
+            message=out["answer"], 
+            active_doc_id=active_doc_id
+        )
 
+        chat = chat_repo.get_chathead(db, cid)
+        chat.last_active_at = datetime.utcnow()
+        db.add(chat)
+
+        # ✅ One commit only
         db.commit()
+        db.refresh(chat)
         print("[respond_turn] committed", file=sys.stderr)
         return {"chathead_id": cid, "answer": out["answer"]}
 
