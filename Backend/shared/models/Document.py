@@ -36,6 +36,9 @@ class Document(Base):
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    # 🔹 Cloudinary fields (optional but recommended)
+    cloudinary_url = Column(String, nullable=True)         # Secure URL to access PDF
+    cloudinary_public_id = Column(String, nullable=True)   # Used for delete/update via API
 
     # optional relationship (useful when you join documents with users)
     uploader = relationship("User", backref="documents")

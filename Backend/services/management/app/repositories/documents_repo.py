@@ -68,3 +68,15 @@ def update_status(
     db.commit()
     db.refresh(doc)
     return doc
+
+
+def attach_cloudinary_fields(db: Session, *, document_id: int, url: str, public_id: str | None):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        return None
+    doc.cloudinary_url = url
+    doc.cloudinary_public_id = public_id
+    db.add(doc)
+    db.commit()
+    db.refresh(doc)
+    return doc

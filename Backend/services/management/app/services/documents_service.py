@@ -2,13 +2,14 @@
 from sqlalchemy.orm import Session
 from app.repositories import documents_repo
 from app.services.storage.storage_local import save_bytes
+from app.services.storage.storage_cloudinary import upload_raw_bytes
 from app.utils.response_utils import make_response
 from shared.models import DocStatus  # assuming DocStatus is exported from shared.models
 from app.services.queue.factory import get_queue
 from rq.job import Job
 from app.services.queue.redis_conn import get_redis
 from app.core.config import get_settings
-
+import sys, traceback
 settings = get_settings()
 
 def _doc_to_dict(row) -> dict:
@@ -64,6 +65,95 @@ def upload_document_local(
         data={"document": doc},
         status_code=201,
     )
+
+
+def upload_document_dual(
+    db,
+    *,
+    user_id: int,
+    file_bytes: bytes,
+    filename: str,
+    mime: str | None = None,
+    title: str | None = None,
+    fail_if_cloudinary_fails: bool = False,
+):
+    print(f"[upload_document_dual] Start uploading document for user_id={user_id}, filename={filename}", file=sys.stderr)
+
+    # 1) Save locally + DB row
+    try:
+        storage_key = save_bytes(
+            file_bytes,
+            user_id=user_id,
+            original_name=filename,
+        )
+        print(f"[upload_document_dual] File saved locally at {storage_key}", file=sys.stderr)
+    except Exception as e:
+        print("[upload_document_dual] ERROR saving file locally:", e, file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Local file save failed: {e}", status_code=500)
+
+    try:
+        doc = documents_repo.create_document(
+            db,
+            title=title or filename,
+            original_filename=filename,
+            storage_key=storage_key,
+            mime_type=mime or "application/octet-stream",
+            size_bytes=len(file_bytes),
+            uploaded_by=user_id,
+            status=DocStatus.STORED,
+        )
+        print(f"[upload_document_dual] Document row created with ID={doc.id}", file=sys.stderr)
+    except Exception as e:
+        print("[upload_document_dual] ERROR creating document row:", e, file=sys.stderr)
+
+        return make_response(False, f"DB insert failed: {e}", status_code=500)
+
+    cloud_info = None
+    cloud_err = None
+
+    # 2) Upload to Cloudinary
+    try:
+        print("[upload_document_dual] Uploading file to Cloudinary...", file=sys.stderr)
+        result = upload_raw_bytes(file_bytes)
+        print(f"[upload_document_dual] Cloudinary upload result: {result}", file=sys.stderr)
+
+        secure_url = result.get("secure_url")
+        public_id = result.get("public_id")
+
+        if secure_url:
+            doc = documents_repo.attach_cloudinary_fields(
+                db,
+                document_id=doc.id,
+                url=secure_url,
+                public_id=public_id,
+            )
+            cloud_info = {
+                "cloudinary_url": secure_url,
+                "cloudinary_public_id": public_id,
+            }
+            print(f"[upload_document_dual] Cloudinary fields attached for doc_id={doc.id}", file=sys.stderr)
+        else:
+            print("[upload_document_dual] No secure_url returned from Cloudinary!", file=sys.stderr)
+
+    except Exception as e:
+        cloud_err = str(e)
+        print("[upload_document_dual] ERROR during Cloudinary upload:", e, file=sys.stderr)
+     
+        if fail_if_cloudinary_fails:
+            return make_response(False, f"Cloud upload failed: {cloud_err}", status_code=500)
+
+    data = {"document": doc}
+    if cloud_info:
+        data.update(cloud_info)
+    if cloud_err:
+        data["cloudinary_error"] = cloud_err
+        print(f"[upload_document_dual] Cloudinary upload failed gracefully: {cloud_err}", file=sys.stderr)
+
+    print("[upload_document_dual] Upload process completed successfully.", file=sys.stderr)
+    return make_response(True, "Document uploaded successfully", data=data, status_code=201)
+
+
 
 def list_documents(db: Session):
     """
