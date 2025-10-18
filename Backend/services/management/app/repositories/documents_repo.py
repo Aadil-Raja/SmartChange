@@ -33,6 +33,15 @@ def create_document(
     db.refresh(doc)
     return doc
 
+def list_processed_documents(db: Session) -> dict:
+    """Return all processed documents (id + title only)."""
+    docs = (
+        db.query(Document)
+        .filter(Document.status == DocStatus.PROCESSED)
+        .order_by(desc(Document.created_at))
+        .all()
+    )
+    return {"documents": [{"id": d.id, "title": d.title} for d in docs]}
 
 def get_document(db: Session, document_id: int) -> Document | None:
     return db.query(Document).filter(Document.id == document_id).first()

@@ -1,8 +1,10 @@
 from app.repositories import teams_repo
 from app.utils.response_utils import make_response
 from sqlalchemy.orm import Session
-
+from typing import Dict, Any
 from shared.models import Team, TeamMember, TeamMemberRole
+from app.repositories import progress_repo as prog_repo
+from app.repositories import courseContent_repo as content_repo
 def get_my_teams(db, user):
     rows = teams_repo.get_teams_for_user(db, user.id)
     data = []
@@ -71,3 +73,57 @@ def regenerate_team_code(db: Session, *, user_id: int, team_id: int):
         "team_name": team.name,
         "join_code": team.join_code
     }, status_code=200)
+
+
+def update_progress(
+    db: Session,
+    *,
+    user_id: int,
+    content_id: int,
+    progress: float,
+    completed: bool | None,
+) -> Dict[str, Any]:
+    mark_complete = bool(completed) or progress >= 100.0
+    row = prog_repo.upsert_progress(
+        db,
+        user_id=user_id,
+        content_id=content_id,
+        progress=progress,
+        mark_complete=mark_complete,
+    )
+    return {
+        "content_id": row.content_id,
+        "progress": float(row.progress),
+        "completed_at": row.completed_at,
+        "last_viewed_at": row.last_viewed_at,
+    }
+
+
+def course_progress(
+    db: Session,
+    *,
+    user_id: int,
+    course_id: int,
+) -> Dict[str, Any]:
+    # all items in the course
+    items = content_repo.list_items_for_course(db, course_id=course_id)
+    content_ids = [it.id for it in items]
+    total_items = len(content_ids)
+    
+    if total_items == 0:
+        return {"course_id": course_id, "completed_items": 0, "total_items": 0, "percent": 0.0}
+    
+    # user progress rows
+    rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
+    
+    # completed = completed_at not null OR progress >= 100
+    completed_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
+    completed_items = len(completed_ids)
+    percent = round((completed_items / total_items) * 100.0, 2)
+    
+    return {
+        "course_id": course_id,
+        "completed_items": completed_items,
+        "total_items": total_items,
+        "percent": percent,
+    }

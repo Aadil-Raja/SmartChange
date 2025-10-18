@@ -1,6 +1,3 @@
-# ============================================================================
-# FILE: app/services/courseContent_service.py
-# ============================================================================
 from sqlalchemy.orm import Session
 from shared.schemas.training_admin import CourseCreateIn, CourseUpdateIn, ContentItemCreateIn, ContentItemUpdateIn
 from app.repositories import courseContent_repo as repo
@@ -19,6 +16,27 @@ def _validate_content_payload(body: ContentItemCreateIn | ContentItemUpdateIn, t
             raise ValueError("external_url is required for type=link")
     else:
         raise ValueError(f"Invalid content type: {type_str}")
+
+
+def _validate_type_specific_fields(values: dict, type_str: str):
+    """
+    Validate that only appropriate fields are being updated for the content type.
+    Raises ValueError if wrong fields are provided.
+    """
+    # Define allowed fields for each type (besides title and description)
+    type_field_map = {
+        "document": {"document_id"},
+        "video": {"storage_url"},
+        "link": {"external_url"}
+    }
+    
+    allowed_fields = type_field_map.get(type_str, set())
+    all_type_fields = {"document_id", "storage_url", "external_url"}
+    
+    # Check if any disallowed type-specific fields are present
+    for field in all_type_fields:
+        if field in values and field not in allowed_fields:
+            raise ValueError(f"Cannot update '{field}' for content type '{type_str}'. Only {allowed_fields} allowed.")
 
 
 # ---------------------- COURSE ----------------------
@@ -67,7 +85,7 @@ def set_course_thumbnail(db: Session, *, course_id: int, file_bytes: bytes):
     if not course:
         raise ValueError("Course not found")
     
-    result = upload_raw_bytes(file_bytes)  # ✅ Fixed spacing
+    result = upload_raw_bytes(file_bytes)
     url = result.get("secure_url")
     if not url:
         raise ValueError("Failed to upload thumbnail")
@@ -116,6 +134,9 @@ def update_content_item(db: Session, *, content_id: int, body: ContentItemUpdate
     
     if not values:
         raise ValueError("No fields to update")
+
+    # ✅ NEW: Validate that only appropriate fields are being updated
+    _validate_type_specific_fields(values, type_str)
 
     # Validate the merged state to ensure type requirements are still met
     after_doc = values.get("document_id", item.document_id)

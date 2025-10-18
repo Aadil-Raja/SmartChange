@@ -25,7 +25,10 @@ def _doc_to_dict(row) -> dict:
         "uploader_email": uploader_email,  # pulled from join
         "created_at": doc.created_at,
         "updated_at": doc.updated_at,
+        "cloudinary_url": doc.cloudinary_url,           # handy for preview/open
+        "cloudinary_public_id": doc.cloudinary_public_id,
     }
+
 
 def upload_document_local(
     db: Session,
