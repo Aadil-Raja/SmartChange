@@ -6,4 +6,6 @@ from .email_otp import EmailOTP
 from .team import Team, TeamMember,TeamMemberRole
 from .Document import Document,DocStatus, DocumentChunk
 from .announcement import Announcement, AnnouncementComment
-__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk"]
+from .course import Course
+from .course_content import ContentItem, ContentType
+__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType"]
