@@ -21,6 +21,7 @@ from .admin import (
 )
 from .employee import JoinCodeIn
 from .announcements import AnnouncementCreateIn, AnnouncementOut, CommentCreateIn, CommentOut, AnnouncementWithComments
+from .progress import ProgressUpdateIn  
     # user
 __all__ =[   "UserCreate", "UserOut",
 
@@ -33,4 +34,4 @@ __all__ =[   "UserCreate", "UserOut",
     "AdminLoginIn", "TeamCreate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
 
-    "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments"]
+    "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments","ProgressUpdateIn"]

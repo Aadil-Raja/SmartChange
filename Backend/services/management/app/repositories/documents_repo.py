@@ -33,6 +33,15 @@ def create_document(
     db.refresh(doc)
     return doc
 
+def list_processed_documents(db: Session) -> dict:
+    """Return all processed documents (id + title only)."""
+    docs = (
+        db.query(Document)
+        .filter(Document.status == DocStatus.PROCESSED)
+        .order_by(desc(Document.created_at))
+        .all()
+    )
+    return {"documents": [{"id": d.id, "title": d.title} for d in docs]}
 
 def get_document(db: Session, document_id: int) -> Document | None:
     return db.query(Document).filter(Document.id == document_id).first()
@@ -65,6 +74,18 @@ def update_status(
     doc.status = status
     # also bump updated_at if you want immediate timestamp change:
     doc.updated_at = func.now()
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def attach_cloudinary_fields(db: Session, *, document_id: int, url: str, public_id: str | None):
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        return None
+    doc.cloudinary_url = url
+    doc.cloudinary_public_id = public_id
+    db.add(doc)
     db.commit()
     db.refresh(doc)
     return doc

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+import sys, traceback
 from app.deps.db import get_db
 from app.deps.auth import get_current_admin
 import shared.schemas as schemas
@@ -183,29 +183,85 @@ def delete_user_route(
 # Document Management (Admin only)
 # ---------------------------
 
-@router.post("/documents/upload")
+# @router.post("/documents/upload")
+# async def upload_document(
+#     f: UploadFile = File(...),
+#     db: Session = Depends(get_db),
+#      _admin=Depends(get_current_admin),
+# ):
+#     data = await f.read()
+#     if not data:
+#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+
+#     # dummy uploader for now; later use get_current_admin().id
+#     try:
+#             return documents_service.upload_document_local(
+#                 db,
+#                 user_id=_admin.id,
+#                 file_bytes=data,
+#                 filename=f.filename,
+#                 mime=f.content_type,
+#             )
+#     except Exception as e:
+#             return make_response(False, "Could not upload document", status_code=500)
+
+
+# @router.post("/documents/upload", status_code=status.HTTP_201_CREATED)
+# async def upload_document(
+#     f: UploadFile = File(...),
+#     db: Session = Depends(get_db),
+#     _admin=Depends(get_current_admin),
+# ):
+#     data = await f.read()
+#     if not data:
+#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+
+#     try:
+     
+#         return documents_service.upload_document_dual(
+#             db,
+#             user_id=_admin.id,
+#             file_bytes=data,
+#             filename=f.filename,
+#             mime=f.content_type,
+#             title=None,
+#             fail_if_cloudinary_fails=False,
+#         )
+#     except Exception:
+#         return make_response(False, "Could not upload document", status_code=500)
+
+
+@router.post("/documents/upload", status_code=status.HTTP_201_CREATED)
 async def upload_document(
     f: UploadFile = File(...),
     db: Session = Depends(get_db),
-     _admin=Depends(get_current_admin),
+    _admin=Depends(get_current_admin),
 ):
-    data = await f.read()
-    if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
-
-    # dummy uploader for now; later use get_current_admin().id
+    print("[upload_document] Received upload request", file=sys.stderr)
     try:
-            return documents_service.upload_document_local(
-                db,
-                user_id=_admin.id,
-                file_bytes=data,
-                filename=f.filename,
-                mime=f.content_type,
-            )
+        data = await f.read()
+        print(f"[upload_document] File received: {f.filename}, size={len(data)} bytes", file=sys.stderr)
+
+        if not data:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
+
+        response = documents_service.upload_document_dual(
+            db,
+            user_id=_admin.id,
+            file_bytes=data,
+            filename=f.filename,
+            mime=f.content_type,
+            title=None,
+            fail_if_cloudinary_fails=False,
+        )
+
+        print("[upload_document] Upload successful", file=sys.stderr)
+        return response
+
     except Exception as e:
-            return make_response(False, "Could not upload document", status_code=500)
-
-
+        print("[upload_document] ERROR while uploading:", e, file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Could not upload document: {e}", status_code=500)
 
 @router.get("/documents/list")
 async def upload_document(

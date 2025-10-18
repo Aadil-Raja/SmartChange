@@ -1,0 +1,101 @@
+
+# ============================================================================
+# FILE: app/routers/admin_training.py
+# ============================================================================
+from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException
+from sqlalchemy.orm import Session
+from app.deps.db import get_db
+from app.deps.auth import get_current_admin
+from app.utils.response_utils import make_response
+from shared.schemas.training_admin import (
+    CourseCreateIn, CourseUpdateIn,
+    ContentItemCreateIn, ContentItemUpdateIn
+)
+from app.services import courseContent_service as svc
+
+router = APIRouter()
+
+# --------------------------- COURSES ---------------------------
+
+@router.get("/courses", status_code=status.HTTP_200_OK)
+def list_courses(db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "OK", data=svc.list_courses(db))
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.post("/courses", status_code=status.HTTP_201_CREATED)
+def create_course(body: CourseCreateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "Course created", data=svc.create_course(db, admin_id=_admin.id, body=body))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.patch("/courses/{course_id}", status_code=status.HTTP_200_OK)
+def update_course(course_id: int, body: CourseUpdateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "Course updated", data=svc.update_course(db, course_id=course_id, body=body))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_404_NOT_FOUND if "not found" in str(e).lower() else status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.post("/courses/{course_id}/thumbnail", status_code=status.HTTP_200_OK)
+async def set_course_thumbnail(course_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        data = await file.read()
+        if not data:
+            raise ValueError("Empty file")
+        return make_response(True, "Thumbnail updated", data=svc.set_course_thumbnail(db, course_id=course_id, file_bytes=data))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.get("/courses/{course_id}", status_code=status.HTTP_200_OK)
+def get_course_detail(course_id: int, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "OK", data=svc.get_course_with_items(db, course_id=course_id))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# --------------------------- CONTENT ITEMS ---------------------------
+
+@router.post("/courses/{course_id}/content", status_code=status.HTTP_201_CREATED)
+def add_content_item(course_id: int, body: ContentItemCreateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "Content added", data=svc.add_content_item(db, course_id=course_id, body=body))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.patch("/content/{content_id}", status_code=status.HTTP_200_OK)
+def update_content_item(content_id: int, body: ContentItemUpdateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "Content updated", data=svc.update_content_item(db, content_id=content_id, body=body))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_404_NOT_FOUND if "not found" in str(e).lower() else status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@router.delete("/content/{content_id}", status_code=status.HTTP_200_OK)
+def delete_content_item(content_id: int, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
+    try:
+        return make_response(True, "Content deleted", data=svc.delete_content_item(db, content_id=content_id))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return make_response(False, str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

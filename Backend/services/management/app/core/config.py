@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     queue_backend : str
     queue_name : str
     rq_process_task : str
+    cloudinary_cloud_name: str
+    cloudinary_api_key: str
+    cloudinary_api_secret: str
+    cloudinary_folder: str
 
 @lru_cache()
 def get_settings() -> Settings:
