@@ -8,4 +8,6 @@ from .Document import Document,DocStatus, DocumentChunk
 from .announcement import Announcement, AnnouncementComment
 from .course import Course
 from .course_content import ContentItem, ContentType
-__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType"]
+from .Audit import DocumentProcessingAudit, ProcessingStatus, ProcessingStage
+__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage"]
+

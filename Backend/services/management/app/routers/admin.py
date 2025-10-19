@@ -285,10 +285,30 @@ async def queue_document_route(
     try:
         return documents_service.queue_document(db, document_id=document_id)
     except Exception as e:
-        return make_response(False, "Could not queue Document", status_code=500)
-    
+        print(f"Error queueing document {document_id}: {e}")
+        traceback.print_exc()
+        return make_response(False, f"Could not queue Document: {str(e)}", status_code=500)
+        
 
 
 @router.get("/jobs/{job_id}")
 async def get_job(job_id: str = Path(...)):
     return documents_service.get_job_info(job_id)
+
+
+@router.get("/processing-jobs", status_code=status.HTTP_200_OK)
+def get_processing_jobs(
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Get all document processing jobs with their current status.
+    
+    Returns:
+        - List of jobs with status, stage, timing, and error details
+        - Summary statistics
+    """
+    try:
+        return documents_service.list_processing_jobs(db)
+    except Exception as e:
+        return make_response(False, "Could not fetch processing jobs", status_code=500)

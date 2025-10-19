@@ -16,116 +16,30 @@ from shared.models.Document import DocumentChunk
 from shared.models.Document import Document
 from repos.chunks_repo import get_chunks_repo
 from repos.documents_repo import DocumentsRepository
-from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv())
+from core.config import get_settings
+from pipeline.embeddings import create_embedding_service, EmbeddingConfig
+
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+settings = get_settings()
 
-if not GOOGLE_API_KEY:
-    print("ERROR: GOOGLE_API_KEY environment variable not set!")
-    sys.exit(1)
-
-# Initialize Gemini
-genai.configure(api_key=GOOGLE_API_KEY)
+# Initialize embedding service using factory function
+embedding_config = EmbeddingConfig(
+    model_name=settings.embedding_model,
+    batch_size=settings.embedding_batch_size,
+    max_retries=settings.embedding_max_retries,
+    dimension=settings.embedding_dimension,
+)
+embedding_service = create_embedding_service(settings.google_api_key, embedding_config)
 
 # Database setup
-engine = create_engine(DATABASE_URL)
+engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine)
 
 
-def get_document_info(db, document_id: int) -> Dict[str, Any]:
-    """Get document metadata."""
-    docs_repo = DocumentsRepository(db)
-    doc = docs_repo.get_by_id(document_id)
-    
-    if not doc:
-        return None
-    
-    return {
-        "id": doc.id,
-        "title": doc.title,
-        "original_filename": doc.original_filename,
-        "mime_type": doc.mime_type,
-        "status": doc.status,
-        "size_bytes": doc.size_bytes,
-        "created_at": doc.created_at
-    }
-
-
-def get_all_chunks(db, document_id: int) -> List[DocumentChunk]:
-    """Fetch all chunks for a document."""
-    chunks = db.query(DocumentChunk).filter(
-        DocumentChunk.document_id == document_id
-    ).order_by(DocumentChunk.chunk_index).all()
-    
-    return chunks
-
-
 def generate_query_embedding(query: str) -> List[float]:
-    """Generate embedding for user query."""
-    try:
-        result = genai.embed_content(
-            model="models/text-embedding-004",
-            content=query,
-            task_type="retrieval_query"
-        )
-        
-        # Debug: print result structure
-        print(f"  Debug - Result type: {type(result)}")
-        print(f"  Debug - Has 'embedding': {hasattr(result, 'embedding')}")
-        
-        if hasattr(result, 'embedding'):
-            emb = result.embedding
-            print(f"  Debug - Embedding type: {type(emb)}")
-            print(f"  Debug - Has 'values': {hasattr(emb, 'values')}")
-            
-            if hasattr(emb, 'values'):
-                return emb.values
-            elif isinstance(emb, list):
-                return emb
-            else:
-                # Try to convert to list
-                return list(emb)
-        
-        # If no embedding attribute, maybe it's a dict
-        if isinstance(result, dict) and 'embedding' in result:
-            return result['embedding']
-        
-        raise ValueError(f"Unexpected result structure: {type(result)}, attributes: {dir(result)}")
-        
-    except Exception as e:
-        print(f"  Error details: {e}")
-        import traceback
-        traceback.print_exc()
-        raise ValueError(f"Failed to generate query embedding: {e}")
-
-
-def search_similar_chunks(db, document_id: int, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
-    """Search for similar chunks using vector similarity."""
-    # Note: This uses pgvector's cosine distance
-    # You need to have pgvector extension installed in PostgreSQL
-    
-    chunks = db.query(DocumentChunk).filter(
-        DocumentChunk.document_id == document_id
-    ).order_by(
-        DocumentChunk.embedding.cosine_distance(query_embedding)
-    ).limit(top_k).all()
-    
-    results = []
-    for chunk in chunks:
-        results.append({
-            "chunk_id": chunk.id,
-            "chunk_index": chunk.chunk_index,
-            "text": chunk.text,
-            "section_title": chunk.section_title,
-            "page_num": chunk.page_num,
-            "char_start": chunk.char_start,
-            "char_end": chunk.char_end,
-            "token_count": chunk.token_count
-        })
-    
-    return results
+    """Generate embedding for user query using the EmbeddingService."""
+    embeddings = embedding_service.embed_texts([query])
+    return embeddings[0]
 
 
 def answer_question(query: str, context_chunks: List[Dict[str, Any]], document_info: Dict[str, Any]) -> str:
@@ -162,8 +76,8 @@ You are a helpful AI assistant answering questions about a document.
 **Answer:**
 """
     
-    # Generate response
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    # Generate response using genai (already configured in embedding_service)
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
     response = model.generate_content(prompt)
     
     return response.text
@@ -179,7 +93,10 @@ def interactive_query(document_id: int):
         print("LOADING DOCUMENT...")
         print("=" * 80)
         
-        doc_info = get_document_info(db, document_id)
+        docs_repo = DocumentsRepository(db)
+        chunks_repo = get_chunks_repo(db)
+        
+        doc_info = docs_repo.get_document_info(document_id)
         if not doc_info:
             print(f"ERROR: Document {document_id} not found!")
             return
@@ -193,7 +110,7 @@ def interactive_query(document_id: int):
         print()
         
         # Get chunk count
-        chunks = get_all_chunks(db, document_id)
+        chunks = chunks_repo.get_by_document(document_id, include_embeddings=False)
         print(f"Total chunks available: {len(chunks)}")
         
         if len(chunks) == 0:
@@ -233,8 +150,12 @@ def interactive_query(document_id: int):
                 print("\n⏳ Searching relevant chunks...")
                 query_embedding = generate_query_embedding(query)
                 
-                # Search similar chunks
-                similar_chunks = search_similar_chunks(db, document_id, query_embedding, top_k=5)
+                # Search similar chunks using repository
+                similar_chunks = chunks_repo.search_similar(
+                    query_embedding=query_embedding,
+                    limit=5,
+                    document_id=document_id
+                )
                 
                 print(f"✓ Found {len(similar_chunks)} relevant chunks")
                 
@@ -269,8 +190,11 @@ def single_query(document_id: int, question: str):
     db = SessionLocal()
     
     try:
+        docs_repo = DocumentsRepository(db)
+        chunks_repo = get_chunks_repo(db)
+        
         # Get document info
-        doc_info = get_document_info(db, document_id)
+        doc_info = docs_repo.get_document_info(document_id)
         if not doc_info:
             print(f"ERROR: Document {document_id} not found!")
             return
@@ -281,8 +205,12 @@ def single_query(document_id: int, question: str):
         # Generate query embedding
         query_embedding = generate_query_embedding(question)
         
-        # Search similar chunks
-        similar_chunks = search_similar_chunks(db, document_id, query_embedding, top_k=5)
+        # Search similar chunks using repository
+        similar_chunks = chunks_repo.search_similar(
+            query_embedding=query_embedding,
+            limit=5,
+            document_id=document_id
+        )
         
         if not similar_chunks:
             print("No relevant chunks found!")

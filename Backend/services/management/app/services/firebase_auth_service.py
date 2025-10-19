@@ -21,7 +21,7 @@ def login_with_google(db: Session, *, id_token: str):
     ensure_firebase_initialized()
 
     # Add retry logic for clock skew
-    max_retries = 2
+    max_retries = 4
     for attempt in range(max_retries):
         try:
             print(f"🔍 Verifying token (attempt {attempt + 1})...")

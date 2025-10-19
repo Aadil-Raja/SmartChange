@@ -3,39 +3,28 @@ RQ Tasks - Entry point for background job processing.
 Now delegates to the full pipeline orchestrator.
 """
 
-import os
 import logging
-
-# Load .env early
-try:
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv())
-except Exception:
-    pass
+from datetime import datetime
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from shared.models.Document import Document, DocStatus
+from shared.models.Audit import ProcessingStatus, ProcessingStage
+from shared.repos.audit_repo import get_audit_repo
 from pipeline.run_document import process_document_task
+from core.config import get_settings
 
 # Setup logging
+settings = get_settings()
 logging.basicConfig(
-    level=logging.INFO,
+    level=settings.log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set. Set it in .env or the environment.")
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY is not set. Set it in .env or the environment.")
-
-_engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+_engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
 _SessionLocal = sessionmaker(bind=_engine, autoflush=False, autocommit=False)
 
 
@@ -62,6 +51,7 @@ def process_document(document_id: int) -> dict:
     logger.info(f"=" * 60)
     
     db = _SessionLocal()
+    audit_repo = get_audit_repo(db)
     
     try:
         # Verify document exists
@@ -73,26 +63,60 @@ def process_document(document_id: int) -> dict:
         logger.info(f"Processing: {doc.title} ({doc.mime_type})")
         logger.info(f"Storage: {doc.storage_key}")
         
+        # Update audit - worker started processing
+        audit_repo.update_stage(
+            document_id=document_id,
+            current_stage=ProcessingStage.LOADING,
+            started_at=datetime.now()
+        )
+        audit_repo.update_status(document_id=document_id, status=ProcessingStatus.PROCESSING)
+        
         # Run the full pipeline
         result = process_document_task(
             document_id=document_id,
             db_session=db,
-            google_api_key=GOOGLE_API_KEY,
+            google_api_key=settings.google_api_key,
         )
         
-        # Log results
+        # Update audit based on result
         if result["success"]:
             logger.info(f"✓ Pipeline completed successfully")
             logger.info(f"  - Chunks created: {result['chunks_created']}")
             logger.info(f"  - Metadata: {result['metadata']}")
+            
+            # Update audit record with completion details
+            audit_repo.update_complete(
+                document_id=document_id,
+                chunks_created=result['chunks_created'],
+                pages_processed=result['metadata'].get('pages', 0)
+            )
+            audit_repo.update_status(document_id=document_id, status=ProcessingStatus.COMPLETED)
         else:
             logger.error(f"✗ Pipeline failed: {result['error']}")
+            
+            # Update audit record with failure details
+            error_stage = result.get('metadata', {}).get('error_stage', 'UNKNOWN')
+            audit_repo.update_failed(
+                document_id=document_id,
+                error_message=result.get('error', 'Unknown error'),
+                error_stage=error_stage
+            )
         
         logger.info(f"=" * 60)
         return result
         
     except Exception as e:
         logger.error(f"Unexpected error in process_document task: {e}", exc_info=True)
+        
+        # Update audit record with exception details
+        try:
+            audit_repo.update_failed(
+                document_id=document_id,
+                error_message=str(e),
+                error_stage='UNKNOWN'
+            )
+        except Exception as audit_error:
+            logger.error(f"Failed to update audit record: {audit_error}")
         
         # Try to mark document as FAILED
         try:
@@ -141,3 +165,4 @@ def reprocess_document(document_id: int) -> dict:
         db.close()
 
 
+# process_document(36)
