@@ -103,7 +103,6 @@ def queue_document(db, *, document_id: int):
     # Create audit record
     audit_repo = get_audit_repo(db)
     audit_repo.create_audit_record(
-        db,
         document_id=doc.id,
         job_id=job.id,
         status=ProcessingStatus.QUEUED,
