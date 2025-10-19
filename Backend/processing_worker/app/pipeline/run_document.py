@@ -19,6 +19,10 @@ from repos.documents_repo import DocumentsRepository
 
 # Models
 from shared.models.Document import DocStatus
+from shared.models.Audit import ProcessingStage
+
+# Audit repository
+from shared.repos.audit_repo import get_audit_repo
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +86,10 @@ def run_document_pipeline(
     """
     logger.info(f"Starting pipeline for document {document_id}")
     
+    # Initialize audit repository
+    audit_repo = get_audit_repo(db)
+    current_stage = ProcessingStage.LOADING
+    
     try:
         # Initialize repositories
         docs_repo = DocumentsRepository(db)
@@ -100,16 +108,22 @@ def run_document_pipeline(
         logger.info(f"Document {document_id} marked as PROCESSING")
         
         # Step 1: Load document text
+        current_stage = ProcessingStage.LOADING
+        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
         logger.info("Step 1: Loading document...")
         loader_result = extract_text(doc.storage_key, doc.mime_type)
         logger.info(f"Loaded {loader_result.total_pages} pages")
         
         # Step 2: Preprocess
+        current_stage = ProcessingStage.PREPROCESSING
+        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
         logger.info("Step 2: Preprocessing...")
         preprocess_result = preprocess_document(loader_result)
         logger.info(f"Created {len(preprocess_result.segments)} segments")
         
         # Step 3: Chunk
+        current_stage = ProcessingStage.CHUNKING
+        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
         logger.info("Step 3: Chunking...")
         chunks = chunk_document(
             preprocess_result,
@@ -121,6 +135,7 @@ def run_document_pipeline(
         if not chunks:
             logger.warning("No chunks created - document may be empty")
             docs_repo.update_status(document_id, DocStatus.PROCESSED)
+            audit_repo.update_stage(document_id=document_id, current_stage=ProcessingStage.COMPLETED)
             return PipelineResult(
                 success=True,
                 document_id=document_id,
@@ -129,6 +144,8 @@ def run_document_pipeline(
             )
         
         # Step 4: Generate embeddings
+        current_stage = ProcessingStage.EMBEDDING
+        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
         logger.info("Step 4: Generating embeddings...")
         embeddings = generate_embeddings(
             chunks,
@@ -138,6 +155,8 @@ def run_document_pipeline(
         logger.info(f"Generated {len(embeddings)} embeddings")
         
         # Step 5: Store chunks + embeddings
+        current_stage = ProcessingStage.STORING
+        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
         logger.info("Step 5: Storing chunks in database...")
         chunk_records = chunks_repo.bulk_insert(document_id, chunks, embeddings)
         logger.info(f"Stored {len(chunk_records)} chunks")
@@ -148,8 +167,9 @@ def run_document_pipeline(
             # TODO: Implement summarization
             pass
         
-        # Step 7: Mark document as PROCESSED
+        # Step 7: Mark document as PROCESSED and update to COMPLETED stage
         docs_repo.update_status(document_id, DocStatus.PROCESSED)
+        audit_repo.update_stage(document_id=document_id, current_stage=ProcessingStage.COMPLETED)
         logger.info(f"Document {document_id} marked as PROCESSED")
         
         # Return success
@@ -176,10 +196,12 @@ def run_document_pipeline(
         except Exception as update_error:
             logger.error(f"Failed to update status: {update_error}")
         
+        # Return failure with error_stage
         return PipelineResult(
             success=False,
             document_id=document_id,
-            error=str(e)
+            error=str(e),
+            metadata={"error_stage": current_stage.value}
         )
 
 

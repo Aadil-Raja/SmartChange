@@ -8,6 +8,8 @@ from app.services.queue.factory import get_queue
 from rq.job import Job
 from app.services.queue.redis_conn import get_redis
 from app.core.config import get_settings
+from shared.repos.audit_repo import get_audit_repo
+from shared.models.Audit import ProcessingStatus, ProcessingStage
 
 settings = get_settings()
 
@@ -94,14 +96,25 @@ def queue_document(db, *, document_id: int):
    
     q = get_queue()
 
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    job = q.enqueue(RQ_TASK, document_id=doc.id)
     
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
+
+    # Create audit record
+    audit_repo = get_audit_repo(db)
+    audit_repo.create_audit_record(
+        db,
+        document_id=doc.id,
+        job_id=job.id,
+        status=ProcessingStatus.QUEUED,
+        current_stage=ProcessingStage.QUEUED,
+        attempt_number=1
+    )
 
     return make_response(
         True,
         "Document queued for processing",
-        data={"document_id": doc.id, "job_id": job_id, "status": DocStatus.QUEUED.value},
+        data={"document_id": doc.id, "job_id": job.id, "status": DocStatus.QUEUED.value},
         status_code=202,
     )
 
@@ -126,4 +139,68 @@ def get_job_info(job_id: str):
             "exc_info": job.exc_info,     # traceback string if failed
         },
         status_code=200,
+    )
+
+def list_processing_jobs(db: Session):
+    """
+    Get all processing jobs with calculated fields and statistics.
+    
+    Returns:
+        Response with jobs list and summary statistics
+    """
+    from datetime import datetime
+    
+    audit_repo = get_audit_repo(db)
+    audits = audit_repo.list_all_audits()
+    
+    jobs = []
+    stats = {"queued": 0, "processing": 0, "completed": 0, "failed": 0}
+    
+    # Stage to progress percentage mapping
+    stage_progress = {
+        ProcessingStage.QUEUED: 0,
+        ProcessingStage.LOADING: 20,
+        ProcessingStage.PREPROCESSING: 40,
+        ProcessingStage.CHUNKING: 60,
+        ProcessingStage.EMBEDDING: 80,
+        ProcessingStage.STORING: 90,
+        ProcessingStage.COMPLETED: 100
+    }
+    
+    for audit, document in audits:
+        # Calculate time elapsed
+        if audit.started_at:
+            end_time = audit.completed_at or datetime.now()
+            elapsed = (end_time - audit.started_at).total_seconds()
+        else:
+            elapsed = 0
+        
+        # Calculate progress percentage
+        progress = stage_progress.get(audit.current_stage, 0)
+        
+        jobs.append({
+            "document_id": audit.document_id,
+            "document_title": document.title,
+            "job_id": audit.job_id,
+            "status": audit.status.value,
+            "current_stage": audit.current_stage.value,
+            "progress_percentage": progress,
+            "time_elapsed_seconds": elapsed,
+            "queued_at": audit.queued_at,
+            "started_at": audit.started_at,
+            "completed_at": audit.completed_at,
+            "chunks_created": audit.chunks_created,
+            "pages_processed": audit.pages_processed,
+            "error_message": audit.error_message,
+            "error_stage": audit.error_stage
+        })
+        
+        # Update stats
+        stats[audit.status.value.lower()] += 1
+    
+    return make_response(
+        True,
+        "Processing jobs retrieved",
+        data={"jobs": jobs, "total": len(jobs), "stats": stats},
+        status_code=200
     )

@@ -29,3 +29,4 @@ pytesseract                      # OCR for images
 Pillow                           # Image handling
 google-generativeai              # Google AI embeddings
 pgvector
+tiktoken

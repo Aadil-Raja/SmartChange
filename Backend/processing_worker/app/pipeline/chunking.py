@@ -1,14 +1,18 @@
 """
 Chunking strategies - split text into embedable chunks.
-Supports fixed-size, semantic, and recursive splitting with configurable overlap.
+Supports semantic splitting with configurable overlap.
 """
 
 import re
 import logging
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
+import tiktoken
 
 logger = logging.getLogger(__name__)
+
+# Initialize tokenizer (cl100k_base is used by GPT-4 and text-embedding models)
+_tokenizer = tiktoken.get_encoding("cl100k_base")
 
 
 @dataclass
@@ -31,28 +35,23 @@ class ChunkingConfig:
         chunk_size: int = 512,  # tokens
         overlap: int = 50,  # tokens
         min_chunk_size: int = 100,  # minimum tokens
-        use_semantic: bool = True,  # prefer sentence boundaries
     ):
         self.chunk_size = chunk_size
         self.overlap = overlap
         self.min_chunk_size = min_chunk_size
-        self.use_semantic = use_semantic
 
 
-def estimate_tokens(text: str) -> int:
+def count_tokens(text: str) -> int:
     """
-    Rough token count estimation (words * 1.3).
-    For production, use tiktoken or similar.
+    Accurate token count using tiktoken.
     
     Args:
         text: Input text
         
     Returns:
-        Estimated token count
+        Exact token count
     """
-    # Rough approximation: 1 token ≈ 0.75 words
-    words = len(text.split())
-    return int(words * 1.3)
+    return len(_tokenizer.encode(text))
 
 
 def find_sentence_boundaries(text: str) -> List[int]:
@@ -99,7 +98,7 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
     
     for i in range(len(boundaries) - 1):
         sentence = text[boundaries[i]:boundaries[i + 1]]
-        sentence_tokens = estimate_tokens(sentence)
+        sentence_tokens = count_tokens(sentence)
         
         # If single sentence exceeds chunk_size, force split it
         if sentence_tokens > config.chunk_size:
@@ -112,7 +111,7 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
             words = sentence.split()
             temp_chunk = ""
             for word in words:
-                if estimate_tokens(temp_chunk + " " + word) > config.chunk_size:
+                if count_tokens(temp_chunk + " " + word) > config.chunk_size:
                     if temp_chunk:
                         chunks.append(temp_chunk.strip())
                     temp_chunk = word
@@ -121,7 +120,7 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
             
             if temp_chunk:
                 current_chunk = temp_chunk
-                current_tokens = estimate_tokens(temp_chunk)
+                current_tokens = count_tokens(temp_chunk)
             continue
         
         # Try adding sentence to current chunk
@@ -140,7 +139,7 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
             # Add sentences from end of previous chunk for overlap
             for j in range(len(chunks) - 1, -1, -1):
                 potential_overlap = chunks[j].split('.')[-1] + '.'
-                potential_tokens = estimate_tokens(potential_overlap)
+                potential_tokens = count_tokens(potential_overlap)
                 if overlap_tokens + potential_tokens <= config.overlap:
                     overlap_text = potential_overlap + overlap_text
                     overlap_tokens += potential_tokens
@@ -148,7 +147,7 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
                     break
             
             current_chunk = overlap_text + sentence
-            current_tokens = estimate_tokens(current_chunk)
+            current_tokens = count_tokens(current_chunk)
     
     # Add final chunk (allow smaller chunks if it's the only content)
     if current_chunk.strip():
@@ -159,41 +158,6 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
     
     return chunks
 
-
-def chunk_by_tokens_fixed(text: str, config: ChunkingConfig) -> List[str]:
-    """
-    Chunk text by fixed token count (word-based, no sentence boundary respect).
-    
-    Args:
-        text: Input text
-        config: ChunkingConfig
-        
-    Returns:
-        List of text chunks
-    """
-    words = text.split()
-    chunks = []
-    
-    # Rough conversion: chunk_size tokens ≈ chunk_size / 1.3 words
-    words_per_chunk = int(config.chunk_size / 1.3)
-    overlap_words = int(config.overlap / 1.3)
-    
-    i = 0
-    while i < len(words):
-        chunk_words = words[i:i + words_per_chunk]
-        chunk_text = " ".join(chunk_words)
-        token_count = estimate_tokens(chunk_text)
-        
-        # Keep chunk if it meets min size OR if it's the only/first chunk (handles small documents)
-        if token_count >= config.min_chunk_size or len(chunks) == 0:
-            chunks.append(chunk_text)
-            logger.debug(f"Added chunk: {token_count} tokens")
-        else:
-            logger.debug(f"Skipped small chunk: {token_count} tokens < {config.min_chunk_size} min")
-        
-        i += words_per_chunk - overlap_words
-    
-    return chunks
 
 
 def create_chunks_from_segments(
@@ -221,16 +185,14 @@ def create_chunks_from_segments(
     logger.debug(f"Processing {len(segments)} segments with config: chunk_size={config.chunk_size}, min_chunk_size={config.min_chunk_size}")
     
     for segment in segments:
-        logger.debug(f"Segment {segments.index(segment)}: {len(segment.text)} chars, ~{estimate_tokens(segment.text)} tokens")
-        # Choose chunking strategy
-        if config.use_semantic and len(segment.text) > config.chunk_size:
-            chunk_texts = chunk_by_tokens_semantic(segment.text, config)
-        else:
-            chunk_texts = chunk_by_tokens_fixed(segment.text, config)
+        logger.debug(f"Segment {segments.index(segment)}: {len(segment.text)} chars, ~{count_tokens(segment.text)} tokens")
+        
+        # Use semantic chunking
+        chunk_texts = chunk_by_tokens_semantic(segment.text, config)
         
         # Create Chunk objects
         for chunk_text in chunk_texts:
-            token_count = estimate_tokens(chunk_text)
+            token_count = count_tokens(chunk_text)
             logger.debug(f"Chunk candidate: {token_count} tokens (min required: {config.min_chunk_size})")
             
             chunk = Chunk(

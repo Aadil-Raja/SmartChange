@@ -116,3 +116,27 @@ class DocumentsRepository:
         
         logger.info(f"Document {document_id} deleted")
         return True
+    
+    def get_document_info(self, document_id: int) -> Optional[dict]:
+        """
+        Get document metadata as a dictionary.
+        
+        Args:
+            document_id: Document ID
+            
+        Returns:
+            Dictionary with document info or None if not found
+        """
+        doc = self.get_by_id(document_id)
+        if not doc:
+            return None
+        
+        return {
+            "id": doc.id,
+            "title": doc.title,
+            "original_filename": doc.original_filename,
+            "mime_type": doc.mime_type,
+            "status": doc.status,
+            "size_bytes": doc.size_bytes,
+            "created_at": doc.created_at
+        }

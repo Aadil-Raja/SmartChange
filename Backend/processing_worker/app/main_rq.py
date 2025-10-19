@@ -1,26 +1,17 @@
 import os
 import sys
 
-# ---- Load .env early (for QUEUE_NAME, REDIS_URL, etc.) ----
-try:
-    from dotenv import load_dotenv, find_dotenv
-    load_dotenv(find_dotenv())  # loads nearest .env (repo root recommended)
-except Exception:
-    pass  # optional: keep running even if python-dotenv is not installed
-
-# ---- Make sure Python can import project packages ----
-# <this file> = .../Backend/processing_worker/app/main_rq.py
-
-
-
 import redis
 from rq import Queue, Worker
 from rq.worker import SimpleWorker
 
+from core.config import get_settings
+
 
 def main():
-    queue_name = os.getenv("QUEUE_NAME")
-    redis_url  = os.getenv("REDIS_URL")
+    settings = get_settings()
+    queue_name = settings.queue_name
+    redis_url = settings.redis_url
 
     print(f"[Worker] Queue name: {queue_name}")
     print(f"[Worker] Redis URL: {redis_url}")

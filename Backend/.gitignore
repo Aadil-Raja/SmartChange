@@ -28,6 +28,7 @@ build/
 .vscode/
 .idea/
 *.swp
+.kiro/
 
 # Testing / coverage
 .coverage
