@@ -17,43 +17,61 @@ from app.utils.shared_utils import (
 settings = get_settings()
 ALLOWED_DOMAINS = ["gmail.com", "nu.edu.pk"]
 
-
 def login_with_google(db: Session, *, id_token: str):
-    """
-    Authenticate user with Google via Firebase ID token.
-    
-    Flow:
-    1. Verify Firebase ID token
-    2. Validate email and domain
-    3. Create/update user in database
-    4. Issue access token
-    """
     ensure_firebase_initialized()
 
-    # Verify Firebase token
-    try:
-        claims = auth.verify_id_token(id_token, check_revoked=True)
-    except auth.ExpiredIdTokenError:
-        return make_response(False, "Authentication token expired", status_code=401)
-    except auth.InvalidIdTokenError:
-        return make_response(False, "Invalid authentication token", status_code=401)
-    except Exception:
-        return make_response(False, "Authentication failed", status_code=401)
+    # Add retry logic for clock skew
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            print(f"🔍 Verifying token (attempt {attempt + 1})...")
+            
+            # verify_id_token has built-in 5-minute clock skew tolerance
+            claims = auth.verify_id_token(id_token, check_revoked=True)
+            
+            print(f"✅ Token verified! UID: {claims.get('uid')}, Email: {claims.get('email')}")
+            break
+            
+        except auth.ExpiredIdTokenError as e:
+            print(f"❌ Token expired: {e}")
+            return make_response(False, "Authentication token expired", status_code=401)
+            
+        except auth.InvalidIdTokenError as e:
+            error_msg = str(e)
+            
+            # Check if it's a clock skew issue
+            if "used too early" in error_msg or "used too late" in error_msg:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ Clock skew detected, retrying in 1 second...")
+                    import time
+                    time.sleep(1)
+                    continue
+                else:
+                    print(f"❌ Clock skew persists: {e}")
+                    return make_response(
+                        False, 
+                        "Server time synchronization issue. Please try again.", 
+                        status_code=401
+                    )
+            
+            print(f"❌ Invalid token: {e}")
+            return make_response(False, "Invalid authentication token", status_code=401)
+            
+        except Exception as e:
+            print(f"❌ Unexpected error: {type(e).__name__}: {e}")
+            return make_response(False, f"Authentication failed: {str(e)}", status_code=401)
 
-    # Extract claims
+    # Rest of your code...
     uid = claims.get("uid")
     email = claims.get("email")
     email_verified = claims.get("email_verified", False)
-
-    # Validate email verification
+    
     if not email or not email_verified:
         return make_response(False, "Email verification required", status_code=403)
-
-    # Check domain allowlist
+    
     if not domain_allowed(email, ALLOWED_DOMAINS):
         return make_response(False, "Email domain not allowed", status_code=403)
-
-    # Create or update user
+    
     try:
         user = users_repo.upsert_from_firebase(
             db,
@@ -62,8 +80,7 @@ def login_with_google(db: Session, *, id_token: str):
         )
     except Exception:
         return make_response(False, "Failed to process user account", status_code=500)
-
-    # Issue access token
+    
     try:
         token = issue_access_token(
             user_id=user.id,
@@ -74,7 +91,7 @@ def login_with_google(db: Session, *, id_token: str):
         )
     except Exception:
         return make_response(False, "Failed to generate access token", status_code=500)
-
+    
     return make_response(
         True,
         "Login successful",
