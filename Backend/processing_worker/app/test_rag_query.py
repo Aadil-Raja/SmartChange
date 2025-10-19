@@ -14,8 +14,8 @@ from typing import List, Dict, Any
 # Import models and repos
 from shared.models.Document import DocumentChunk
 from shared.models.Document import Document
-from repos.chunks_repo import get_chunks_repo
-from repos.documents_repo import DocumentsRepository
+from repos import chunks_repo
+from shared.repos import documents_repo as docs_repo
 from core.config import get_settings
 from pipeline.embeddings import create_embedding_service, EmbeddingConfig
 
@@ -93,10 +93,7 @@ def interactive_query(document_id: int):
         print("LOADING DOCUMENT...")
         print("=" * 80)
         
-        docs_repo = DocumentsRepository(db)
-        chunks_repo = get_chunks_repo(db)
-        
-        doc_info = docs_repo.get_document_info(document_id)
+        doc_info = docs_repo.get_document_info(db, document_id)
         if not doc_info:
             print(f"ERROR: Document {document_id} not found!")
             return
@@ -110,7 +107,7 @@ def interactive_query(document_id: int):
         print()
         
         # Get chunk count
-        chunks = chunks_repo.get_by_document(document_id, include_embeddings=False)
+        chunks = chunks_repo.get_by_document(db, document_id, include_embeddings=False)
         print(f"Total chunks available: {len(chunks)}")
         
         if len(chunks) == 0:
@@ -152,6 +149,7 @@ def interactive_query(document_id: int):
                 
                 # Search similar chunks using repository
                 similar_chunks = chunks_repo.search_similar(
+                    db,
                     query_embedding=query_embedding,
                     limit=5,
                     document_id=document_id
@@ -190,9 +188,6 @@ def single_query(document_id: int, question: str):
     db = SessionLocal()
     
     try:
-        docs_repo = DocumentsRepository(db)
-        chunks_repo = get_chunks_repo(db)
-        
         # Get document info
         doc_info = docs_repo.get_document_info(document_id)
         if not doc_info:
@@ -207,6 +202,7 @@ def single_query(document_id: int, question: str):
         
         # Search similar chunks using repository
         similar_chunks = chunks_repo.search_similar(
+            db,
             query_embedding=query_embedding,
             limit=5,
             document_id=document_id

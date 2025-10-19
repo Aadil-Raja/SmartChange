@@ -14,15 +14,15 @@ from .chunking import chunk_document, ChunkingConfig
 from .embeddings import generate_embeddings, EmbeddingConfig
 
 # Repositories
-from repos.chunks_repo import get_chunks_repo
-from repos.documents_repo import DocumentsRepository
+from repos import chunks_repo
+from shared.repos import documents_repo as docs_repo
 
 # Models
 from shared.models.Document import DocStatus
 from shared.models.Audit import ProcessingStage
 
 # Audit repository
-from shared.repos.audit_repo import get_audit_repo
+from shared.repos import audit_repo
 
 logger = logging.getLogger(__name__)
 
@@ -86,17 +86,12 @@ def run_document_pipeline(
     """
     logger.info(f"Starting pipeline for document {document_id}")
     
-    # Initialize audit repository
-    audit_repo = get_audit_repo(db)
+    # Initialize current stage
     current_stage = ProcessingStage.LOADING
     
     try:
-        # Initialize repositories
-        docs_repo = DocumentsRepository(db)
-        chunks_repo = get_chunks_repo(db)
-        
         # Step 0: Get document and mark as PROCESSING
-        doc = docs_repo.get_by_id(document_id)
+        doc = docs_repo.get_by_id(db, document_id)
         if not doc:
             return PipelineResult(
                 success=False,
@@ -104,26 +99,26 @@ def run_document_pipeline(
                 error="Document not found"
             )
         
-        docs_repo.update_status(document_id, DocStatus.PROCESSING)
+        docs_repo.update_status(db, document_id, DocStatus.PROCESSING)
         logger.info(f"Document {document_id} marked as PROCESSING")
         
         # Step 1: Load document text
         current_stage = ProcessingStage.LOADING
-        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 1: Loading document...")
         loader_result = extract_text(doc.storage_key, doc.mime_type)
         logger.info(f"Loaded {loader_result.total_pages} pages")
         
         # Step 2: Preprocess
         current_stage = ProcessingStage.PREPROCESSING
-        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 2: Preprocessing...")
         preprocess_result = preprocess_document(loader_result)
         logger.info(f"Created {len(preprocess_result.segments)} segments")
         
         # Step 3: Chunk
         current_stage = ProcessingStage.CHUNKING
-        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 3: Chunking...")
         chunks = chunk_document(
             preprocess_result,
@@ -134,8 +129,8 @@ def run_document_pipeline(
         
         if not chunks:
             logger.warning("No chunks created - document may be empty")
-            docs_repo.update_status(document_id, DocStatus.PROCESSED)
-            audit_repo.update_stage(document_id=document_id, current_stage=ProcessingStage.COMPLETED)
+            docs_repo.update_status(db, document_id, DocStatus.PROCESSED)
+            audit_repo.update_stage(db, document_id=document_id, current_stage=ProcessingStage.COMPLETED)
             return PipelineResult(
                 success=True,
                 document_id=document_id,
@@ -145,7 +140,7 @@ def run_document_pipeline(
         
         # Step 4: Generate embeddings
         current_stage = ProcessingStage.EMBEDDING
-        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 4: Generating embeddings...")
         embeddings = generate_embeddings(
             chunks,
@@ -156,9 +151,9 @@ def run_document_pipeline(
         
         # Step 5: Store chunks + embeddings
         current_stage = ProcessingStage.STORING
-        audit_repo.update_stage(document_id=document_id, current_stage=current_stage)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 5: Storing chunks in database...")
-        chunk_records = chunks_repo.bulk_insert(document_id, chunks, embeddings)
+        chunk_records = chunks_repo.bulk_insert(db, document_id, chunks, embeddings)
         logger.info(f"Stored {len(chunk_records)} chunks")
         
         # Step 6: Optional - Generate summary (future feature)
@@ -168,8 +163,8 @@ def run_document_pipeline(
             pass
         
         # Step 7: Mark document as PROCESSED and update to COMPLETED stage
-        docs_repo.update_status(document_id, DocStatus.PROCESSED)
-        audit_repo.update_stage(document_id=document_id, current_stage=ProcessingStage.COMPLETED)
+        docs_repo.update_status(db, document_id, DocStatus.PROCESSED)
+        audit_repo.update_stage(db, document_id=document_id, current_stage=ProcessingStage.COMPLETED)
         logger.info(f"Document {document_id} marked as PROCESSED")
         
         # Return success
@@ -188,10 +183,17 @@ def run_document_pipeline(
     except Exception as e:
         logger.error(f"Pipeline failed for document {document_id}: {e}", exc_info=True)
         
+        # Cleanup any partial chunks that may have been stored
+        try:
+            deleted_count = chunks_repo.delete_by_document(db, document_id)
+            if deleted_count > 0:
+                logger.info(f"Cleaned up {deleted_count} partial chunks for failed document {document_id}")
+        except Exception as cleanup_error:
+            logger.error(f"Failed to cleanup chunks: {cleanup_error}")
+        
         # Mark document as FAILED
         try:
-            docs_repo = DocumentsRepository(db)
-            docs_repo.update_status(document_id, DocStatus.FAILED)
+            docs_repo.update_status(db, document_id, DocStatus.FAILED)
             logger.info(f"Document {document_id} marked as FAILED")
         except Exception as update_error:
             logger.error(f"Failed to update status: {update_error}")

@@ -6,9 +6,8 @@ from app.services import employee_service
 from app.utils.response_utils import make_response
 import shared.schemas as schemas
 from typing import Optional, Dict, Any, List
-from app.repositories import documents_repo
+from shared.repos import documents_repo
 from app.services import courseContent_service as svc
-from app.repositories import documents_repo 
 from shared.schemas.progress import ProgressUpdateIn
 router = APIRouter()
 

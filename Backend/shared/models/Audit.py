@@ -67,9 +67,6 @@ class DocumentProcessingAudit(Base):
     error_message = Column(Text, nullable=True)
     error_stage = Column(String(50), nullable=True)
     
-    # Retry tracking
-    attempt_number = Column(Integer, nullable=False, default=1)
-    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

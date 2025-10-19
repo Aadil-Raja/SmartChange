@@ -1,6 +1,10 @@
 # SHARED: Repository layer for database operations
-# This file exports repository classes that can be imported by any service
+# This file exports repository modules that can be imported by any service
 
-from .audit_repo import AuditRepository, get_audit_repo
+from . import audit_repo
+from . import documents_repo
 
-__all__ = ["AuditRepository", "get_audit_repo"]
+__all__ = [
+    "audit_repo",
+    "documents_repo",
+]

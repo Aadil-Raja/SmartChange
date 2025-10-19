@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 from shared.models.Document import Document, DocStatus
 from shared.models.Audit import ProcessingStatus, ProcessingStage
-from shared.repos.audit_repo import get_audit_repo
+from shared.repos import audit_repo
 from pipeline.run_document import process_document_task
 from core.config import get_settings
 
@@ -51,7 +51,6 @@ def process_document(document_id: int) -> dict:
     logger.info(f"=" * 60)
     
     db = _SessionLocal()
-    audit_repo = get_audit_repo(db)
     
     try:
         # Verify document exists
@@ -65,11 +64,12 @@ def process_document(document_id: int) -> dict:
         
         # Update audit - worker started processing
         audit_repo.update_stage(
+            db,
             document_id=document_id,
             current_stage=ProcessingStage.LOADING,
             started_at=datetime.now()
         )
-        audit_repo.update_status(document_id=document_id, status=ProcessingStatus.PROCESSING)
+        audit_repo.update_status(db, document_id=document_id, status=ProcessingStatus.PROCESSING)
         
         # Run the full pipeline
         result = process_document_task(
@@ -86,17 +86,28 @@ def process_document(document_id: int) -> dict:
             
             # Update audit record with completion details
             audit_repo.update_complete(
+                db,
                 document_id=document_id,
                 chunks_created=result['chunks_created'],
                 pages_processed=result['metadata'].get('pages', 0)
             )
-            audit_repo.update_status(document_id=document_id, status=ProcessingStatus.COMPLETED)
+            audit_repo.update_status(db, document_id=document_id, status=ProcessingStatus.COMPLETED)
         else:
             logger.error(f"✗ Pipeline failed: {result['error']}")
+            
+            # Cleanup any partial chunks that may have been stored
+            from repos import chunks_repo
+            try:
+                deleted_count = chunks_repo.delete_by_document(db, document_id)
+                if deleted_count > 0:
+                    logger.info(f"Cleaned up {deleted_count} partial chunks for failed document {document_id}")
+            except Exception as cleanup_error:
+                logger.error(f"Failed to cleanup chunks: {cleanup_error}")
             
             # Update audit record with failure details
             error_stage = result.get('metadata', {}).get('error_stage', 'UNKNOWN')
             audit_repo.update_failed(
+                db,
                 document_id=document_id,
                 error_message=result.get('error', 'Unknown error'),
                 error_stage=error_stage
@@ -108,9 +119,19 @@ def process_document(document_id: int) -> dict:
     except Exception as e:
         logger.error(f"Unexpected error in process_document task: {e}", exc_info=True)
         
+        # Cleanup any partial chunks that may have been stored
+        from repos import chunks_repo
+        try:
+            deleted_count = chunks_repo.delete_by_document(db, document_id)
+            if deleted_count > 0:
+                logger.info(f"Cleaned up {deleted_count} partial chunks after exception for document {document_id}")
+        except Exception as cleanup_error:
+            logger.error(f"Failed to cleanup chunks: {cleanup_error}")
+        
         # Update audit record with exception details
         try:
             audit_repo.update_failed(
+                db,
                 document_id=document_id,
                 error_message=str(e),
                 error_stage='UNKNOWN'
@@ -148,14 +169,13 @@ def reprocess_document(document_id: int) -> dict:
     Returns:
         Processing result dict
     """
-    from app.repos.chunks_repo import get_chunks_repo
+    from repos import chunks_repo
     
     db = _SessionLocal()
     
     try:
         # Delete existing chunks
-        chunks_repo = get_chunks_repo(db)
-        deleted = chunks_repo.delete_by_document(document_id)
+        deleted = chunks_repo.delete_by_document(db, document_id)
         logger.info(f"Deleted {deleted} existing chunks for document {document_id}")
         
         # Run pipeline again

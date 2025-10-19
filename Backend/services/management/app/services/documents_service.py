@@ -1,6 +1,6 @@
 # app/services/documents_service.py
 from sqlalchemy.orm import Session
-from app.repositories import documents_repo
+from shared.repos import documents_repo
 from app.services.storage.storage_local import save_bytes
 from app.services.storage.storage_cloudinary import upload_raw_bytes
 from app.utils.response_utils import make_response
@@ -10,7 +10,7 @@ from rq.job import Job
 from app.services.queue.redis_conn import get_redis
 from app.core.config import get_settings
 import sys, traceback
-from shared.repos.audit_repo import get_audit_repo
+from shared.repos import audit_repo
 from shared.models.Audit import ProcessingStatus, ProcessingStage
 
 settings = get_settings()
@@ -185,29 +185,28 @@ def queue_document(db, *, document_id: int):
         return make_response(False, "Document not found", status_code=404)
     
     # If already queued/processing/processed, make this idempotent
-    if doc.status in { DocStatus.PROCESSED}:
-        return make_response(True, "Already Processed", data={"document_id": doc.id, "status": doc.status.value}, status_code=200)
+    if doc.status in {DocStatus.PROCESSED, DocStatus.QUEUED, DocStatus.PROCESSING}:
+        return make_response(True, f"Already {doc.status.value}", data={"document_id": doc.id, "status": doc.status.value}, status_code=200)
    
     q = get_queue()
 
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    job = q.enqueue(RQ_TASK, document_id=doc.id)
     
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
 
     # Create audit record
-    audit_repo = get_audit_repo(db)
     audit_repo.create_audit_record(
+        db,
         document_id=doc.id,
-        job_id=job_id,
+        job_id=job.id,
         status=ProcessingStatus.QUEUED,
-        current_stage=ProcessingStage.QUEUED,
-        attempt_number=1
+        current_stage=ProcessingStage.QUEUED
     )
 
     return make_response(
         True,
         "Document queued for processing",
-        data={"document_id": doc.id, "job_id": job_id, "status": DocStatus.QUEUED.value},
+        data={"document_id": doc.id, "job_id": job.id, "status": DocStatus.QUEUED.value},
         status_code=202,
     )
 
@@ -243,8 +242,7 @@ def list_processing_jobs(db: Session):
     """
     from datetime import datetime
     
-    audit_repo = get_audit_repo(db)
-    audits = audit_repo.list_all_audits()
+    audits = audit_repo.list_all_audits(db)
     
     jobs = []
     stats = {"queued": 0, "processing": 0, "completed": 0, "failed": 0}
