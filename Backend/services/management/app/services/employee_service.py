@@ -1,7 +1,7 @@
 from app.repositories import teams_repo
 from app.utils.response_utils import make_response
 from sqlalchemy.orm import Session
-from typing import Dict, Any
+from typing import Dict, Any, List
 from shared.models import Team, TeamMember, TeamMemberRole
 from app.repositories import progress_repo as prog_repo
 from app.repositories import courseContent_repo as content_repo
@@ -127,3 +127,39 @@ def course_progress(
         "total_items": total_items,
         "percent": percent,
     }
+
+def course_items_progress(
+    db: Session,
+    *,
+    user_id: int,
+    course_id: int,
+) -> Dict[str, Any]:
+    # All items in the course
+    items = content_repo.list_items_for_course(db, course_id=course_id)
+    content_ids: List[int] = [it.id for it in items]
+
+    # If no items, return empty list
+    if not content_ids:
+        return {"course_id": course_id, "items": []}
+
+    # Get progress rows for this user across these items
+    rows = prog_repo.list_for_user_and_content_ids(
+        db, user_id=user_id, content_ids=content_ids
+    )
+    by_id = {r.content_id: r for r in rows}
+
+    # Build per-item progress (default 0 if no row yet)
+    result = []
+    for it in items:
+        r = by_id.get(it.id)
+        t = it.type.value if hasattr(it.type, "value") else str(it.type)
+        result.append({
+            "content_id": it.id,
+            "title": it.title,
+            "type": t,
+            "progress": float(r.progress) if r else 0.0,
+            "completed_at": r.completed_at if r else None,
+            "last_viewed_at": r.last_viewed_at if r else None,
+        })
+
+    return {"course_id": course_id, "items": result}

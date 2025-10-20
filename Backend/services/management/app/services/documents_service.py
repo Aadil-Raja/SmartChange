@@ -190,7 +190,7 @@ def queue_document(db, *, document_id: int):
    
     q = get_queue()
 
-    job = q.enqueue(RQ_TASK, document_id=doc.id)
+    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
     
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
 
@@ -198,7 +198,7 @@ def queue_document(db, *, document_id: int):
     audit_repo.create_audit_record(
         db,
         document_id=doc.id,
-        job_id=job.id,
+        job_id=job_id,
         status=ProcessingStatus.QUEUED,
         current_stage=ProcessingStage.QUEUED
     )
@@ -206,7 +206,7 @@ def queue_document(db, *, document_id: int):
     return make_response(
         True,
         "Document queued for processing",
-        data={"document_id": doc.id, "job_id": job.id, "status": DocStatus.QUEUED.value},
+        data={"document_id": doc.id, "job_id": job_id, "status": DocStatus.QUEUED.value},
         status_code=202,
     )
 

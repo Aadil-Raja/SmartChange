@@ -203,3 +203,34 @@ def get_course_progress_route(
         return make_response(True, "OK", data=data)
     except Exception as e:
         return make_response(False, str(e), status_code=500)
+    
+
+@router.get("/courses/{course_id}/progress/items", status_code=status.HTTP_200_OK)
+def get_course_items_progress_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Return the current user's progress for each item in a course.
+    Shape:
+    {
+      "course_id": <int>,
+      "items": [
+        {
+          "content_id": <int>,
+          "title": "...",
+          "type": "document|video|link",
+          "progress": 0..100,
+          "completed_at": "... or null",
+          "last_viewed_at": "... or null"
+        },
+        ...
+      ]
+    }
+    """
+    try:
+        data = employee_service.course_items_progress(db, user_id=user.id, course_id=course_id)
+        return make_response(True, "OK", data=data)
+    except Exception as e:
+        return make_response(False, str(e), status_code=500)

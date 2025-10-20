@@ -239,6 +239,12 @@ async def upload_document(
 ):
     print("[upload_document] Received upload request", file=sys.stderr)
     try:
+        if not f.filename.lower().endswith(".pdf"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only PDF files are allowed"
+            )
+
         data = await f.read()
         print(f"[upload_document] File received: {f.filename}, size={len(data)} bytes", file=sys.stderr)
 
