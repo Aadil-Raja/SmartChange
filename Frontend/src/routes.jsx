@@ -10,6 +10,8 @@ import EmployeeList from "./pages/admin/EmployeeList";
 import TeamsPage from "./pages/admin/TeamsPage";
 import MyTeams from "./pages/employee/MyTeams";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import MyCourses from './pages/employee/MyCourses';
+import CourseContent from './pages/employee/CourseContent';
 
 function AppRoutes() {
   return (
@@ -53,6 +55,8 @@ function AppRoutes() {
 
         {/* ---------- Employee Routes ---------- */}
         <Route path="/employee/myteams" element={<MyTeams />} />
+        <Route path="/employee/mycourses" element={<MyCourses />} />
+        <Route path="/employee/course/:id" element={<CourseContent />} />
 
         {/* ---------- Default Redirect ---------- */}
         <Route path="*" element={<Navigate to="/login" replace />} />

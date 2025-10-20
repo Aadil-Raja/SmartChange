@@ -41,7 +41,7 @@ const Login = () => {
       // --- CASE 1: Full success (verified user) ---
       if (result.success) {
         setMessage('Login successful!');
-        setTimeout(() => (window.location.href = '/admin'), 1500);
+        setTimeout(() => (window.location.href = '/employee/myteams'), 1500);
         return;
       }
 
@@ -87,7 +87,7 @@ const Login = () => {
       if (response.success) {
         setStep('verified');
         setMessage('Login successful!');
-        setTimeout(() => window.location.href = '/admin', 1500);
+        setTimeout(() => window.location.href = '/employee/myteams', 1500);
       } else {
         setMessage(response.message || 'Google login failed');
       }
@@ -111,7 +111,7 @@ const Login = () => {
     if (result.success) {
       setStep('verified');
       setMessage('Login successful!');
-      setTimeout(() => window.location.href = '/admin', 1500);
+      setTimeout(() => window.location.href = '/employee/myteams', 1500);
     } else {
       setMessage(result.message || 'Invalid code');
     }
