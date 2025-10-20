@@ -8,20 +8,20 @@ import Button from '../../components/ui/Button';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const AdminDashboard = () => {
-  const { 
-    documents, 
-    loading, 
-    error, 
+  const {
+    documents,
+    loading,
+    error,
     jobStatuses,
-    loadDocuments, 
-    uploadDoc, 
-    queueDoc, 
+    loadDocuments,
+    uploadDoc,
+    queueDoc,
     checkJobStatus,
-    deleteDoc, 
+    deleteDoc,
     downloadDoc,
-    clearError 
+    clearError
   } = useAdmin();
-  
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -36,7 +36,7 @@ const AdminDashboard = () => {
     loadDocuments();
   }, []);
 
-  
+
   // Poll for job status updates
   useEffect(() => {
     const pollInterval = setInterval(() => {
@@ -54,12 +54,19 @@ const AdminDashboard = () => {
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: FileText, label: 'Employees', path: '/admin/employees' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' }
   ];
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
+      const maxSize = 100 * 1024 * 1024; // 100MB in bytes
+
+      if (file.size > maxSize) {
+        // alert(`File size (${formatFileSize(file.size)}) exceeds the 100MB limit`);
+        e.target.value = ''; // Reset the file input
+        return;
+      }
+
       setUploadingFile(file);
       // Auto-fill title with filename if empty
       if (!uploadTitle) {
@@ -82,10 +89,10 @@ const AdminDashboard = () => {
         setUploadingFile(null);
         setUploadTitle('');
       } else {
-        alert(result.message || 'Upload failed');
+        // alert(result.message || 'Upload failed');
       }
     } catch (err) {
-      alert('Upload error: ' + err.message);
+      // alert('Upload error: ' + err.message);
     } finally {
       setUploading(false);
     }
@@ -97,17 +104,17 @@ const AdminDashboard = () => {
       const result = await queueDoc(documentId);
       if (!result.success) {
         // This handles cases where the API returns a structured error (e.g., 404)
-        alert(`Failed to queue document: ${result.message}`);
+        // alert(`Failed to queue document: ${result.message}`);
       }
     } catch (err) {
       // --- THIS IS THE IMPORTANT PART FOR A 500 ERROR ---
       // The error object 'err' from Axios/fetch contains the server response
       const status = err.response?.status;
-      if (status === 500) {
-        alert('Queue Error: The server encountered an unexpected issue. Please contact support or check the backend logs.');
-      } else {
-        alert('Queue error: ' + err.message);
-      }
+      // if (status === 500) {
+      //   alert('Queue Error: The server encountered an unexpected issue. Please contact support or check the backend logs.');
+      // } else {
+      //   alert('Queue error: ' + err.message);
+      // }
       // --------------------------------------------------------
     } finally {
       setProcessingDocs(prev => {
@@ -123,7 +130,7 @@ const AdminDashboard = () => {
     if (window.confirm('Are you sure you want to delete this document?')) {
       const result = await deleteDoc(documentId);
       if (!result.success) {
-        alert(result.message || 'Failed to delete document');
+        // alert(result.message || 'Failed to delete document');
       }
     }
   };
@@ -131,7 +138,7 @@ const AdminDashboard = () => {
   const handleDownload = async (documentId, filename) => {
     const result = await downloadDoc(documentId, filename);
     if (!result.success) {
-      alert(result.message || 'Failed to download document');
+      // alert(result.message || 'Failed to download document');
     }
   };
 
@@ -172,8 +179,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Sidebar 
-        isOpen={sidebarOpen} 
+      <Sidebar
+        isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         navItems={navItems}
@@ -252,7 +259,7 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold text-[#333333]">Upload Documents</h2>
                   <p className="text-sm text-gray-600">Upload and manage your documents</p>
                 </div>
-                <Button 
+                <Button
                   onClick={() => setShowUploadModal(true)}
                   className="flex items-center gap-2"
                 >
@@ -265,7 +272,7 @@ const AdminDashboard = () => {
             {/* Documents List */}
             <Card className="p-6">
               <h2 className="mb-6 text-2xl font-bold text-[#333333]">Documents</h2>
-              
+
               {loading ? (
                 <div className="py-12 text-center text-gray-500">Loading documents...</div>
               ) : documents.length === 0 ? (
@@ -281,13 +288,13 @@ const AdminDashboard = () => {
                     const isProcessing = processingDocs.has(doc.id);
 
                     return (
-                      <div 
-                        key={doc.id} 
+                      <div
+                        key={doc.id}
                         className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 transition-all hover:shadow-md"
                       >
                         <div className="flex flex-1 items-start gap-4">
                           <FileText size={32} className="mt-1 text-gray-400" />
-                          
+
                           <div className="flex-1">
                             <h3 className="font-semibold text-[#333333]">{doc.title}</h3>
                             <p className="text-xs text-gray-500">{doc.original_filename}</p>
@@ -345,13 +352,13 @@ const AdminDashboard = () => {
                           </button>
 
                           {/* Delete Button */}
-                          <button
+                          {/* <button
                             onClick={() => handleDelete(doc.id)}
                             className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
                             title="Delete"
                           >
                             <Trash2 size={18} />
-                          </button>
+                          </button> */}
                         </div>
                       </div>
                     );
@@ -364,8 +371,8 @@ const AdminDashboard = () => {
       </div>
 
       {/* Upload Modal */}
-      <Modal 
-        isOpen={showUploadModal} 
+      <Modal
+        isOpen={showUploadModal}
         onClose={() => {
           setShowUploadModal(false);
           setUploadingFile(null);
@@ -392,7 +399,7 @@ const AdminDashboard = () => {
               className="hidden"
               id="file-input"
             />
-            <label 
+            <label
               htmlFor="file-input"
               className="flex cursor-pointer flex-col items-center justify-center text-center"
             >
@@ -407,14 +414,14 @@ const AdminDashboard = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button 
-              onClick={handleUpload} 
+            <Button
+              onClick={handleUpload}
               className="flex-1"
               disabled={!uploadingFile || uploading}
             >
               {uploading ? 'Uploading...' : 'Upload'}
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 setShowUploadModal(false);
                 setUploadingFile(null);
@@ -471,14 +478,14 @@ const AdminDashboard = () => {
             </div>
 
             <div className="mt-6 flex gap-3">
-              <Button 
+              <Button
                 onClick={() => handleDownload(selectedDoc.id, selectedDoc.original_filename)}
                 className="flex-1 flex items-center justify-center gap-2"
               >
                 <Download size={16} />
                 Download
               </Button>
-              <Button 
+              <Button
                 onClick={() => setShowPreview(false)}
                 variant="secondary"
                 className="flex-1"

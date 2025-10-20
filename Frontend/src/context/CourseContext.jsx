@@ -19,10 +19,14 @@ export const CourseProvider = ({ children }) => {
     // Load courses on mount if employee is logged in
     useEffect(() => {
         const token = localStorage.getItem('employeeToken');
-        if (token) {
+        console.log('Employee token on CourseProvider mount:', token);
+        // Only fetch courses if employee token exists AND path starts with /employee
+        if (token && window.location.pathname.startsWith('/employee')) {
+            console.log('Fetching courses for employee');
             fetchCourses();
         }
     }, []);
+
 
     // Fetch all courses
     const fetchCourses = async () => {
@@ -82,7 +86,7 @@ export const CourseProvider = ({ children }) => {
     const fetchActualCourseProgress = async (courseId) => {
         // Prevent duplicate fetches
         if (fetchingProgress.current.has(courseId)) {
-          
+
             return { success: false, message: 'Already fetching' };
         }
 
@@ -91,10 +95,10 @@ export const CourseProvider = ({ children }) => {
         try {
 
             const res = await getCourseProgress(courseId);
-           
+
 
             if (res.success && res.data) {
-              
+
                 const progressData = res.data;
 
                 setCourses(prevCourses =>
@@ -126,7 +130,7 @@ export const CourseProvider = ({ children }) => {
             }, 1000);
         }
     };
-    
+
     // UPDATE the fetchCourseDetails function to fetch progress:
     const fetchCourseDetails = async (courseId) => {
         setLoading(true);

@@ -3,6 +3,7 @@ import api from "./api"; // your axios instance with baseURL & interceptors
 // Teams
 export const fetchTeams = async () => {
   const res = await api.get("/admin/teams");
+  console.log("Fetched teams:", res.data);
   return res.data;
 };
 
