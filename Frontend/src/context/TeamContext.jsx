@@ -13,8 +13,12 @@ export const TeamProvider = ({ children }) => {
 
   // ✅ Fetch teams on mount
   useEffect(() => {
-    loadTeams();
+    // Only load teams on employee routes
+    if (window.location.pathname.startsWith('/employee')) {
+      loadTeams();
+    }
   }, []);
+
 
 
   // ✅ Load teams (was fetchTeams)
@@ -55,19 +59,19 @@ export const TeamProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-    console.log('Regenerating team code for team ID:', teamId);
+      console.log('Regenerating team code for team ID:', teamId);
       const response = await teamapi.regenerateTeamCode(teamId);
       await loadTeams();
-        return { success: true, data: response.data, message: response.message };
+      return { success: true, data: response.data, message: response.message };
     } catch (err) {
-        console.error('Error regenerating team code:', err);
+      console.error('Error regenerating team code:', err);
       const errorMessage = err.response?.data?.message || 'Failed to regenerate team code';
       setError(errorMessage);
       return { success: false, message: errorMessage };
     } finally {
       setLoading(false);
     }
-    };
+  };
 
 
   const value = {
