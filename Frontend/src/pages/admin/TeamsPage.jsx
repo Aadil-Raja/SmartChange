@@ -27,7 +27,7 @@ const TeamsPage = () => {
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Employees', path: '/admin/employees' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' }
+   
   ];
 
   // Group employees by ID to get unique list

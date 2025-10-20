@@ -23,7 +23,7 @@ const EmployeeList = () => {
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Employees', path: '/admin/employees' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' }
+   
   ];
 
   // Group employees by user ID to consolidate multiple team entries
@@ -269,7 +269,7 @@ const EmployeeList = () => {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2">
+                            {/* <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleDelete(employee.id)}
                                 className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
@@ -277,7 +277,7 @@ const EmployeeList = () => {
                               >
                                 <Trash2 size={18} />
                               </button>
-                            </div>
+                            </div> */}
                           </div>
                         </div>
 
