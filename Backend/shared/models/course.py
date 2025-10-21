@@ -10,7 +10,7 @@ class Course(Base):
     description = Column(Text, nullable=True)
     department = Column(String, nullable=True)
     thumbnail_url = Column(String, nullable=True)
-
+    thumbnail_public_id = Column(String, nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_active = Column(Boolean, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -68,6 +68,77 @@ def get_course_detail(course_id: int, db: Session = Depends(get_db), _admin=Depe
     except Exception as e:
         return make_response(False, "Failed to retrieve course details", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
+@router.patch("/courses/{course_id}/deactivate", status_code=status.HTTP_200_OK)
+def deactivate_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Mark a course as inactive (soft hide from employees).
+    """
+    try:
+        data = svc.deactivate_course(db, course_id=course_id)
+        return make_response(True, "Course marked as inactive", data=data)
+    except ValueError as e:
+        return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to deactivate course", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.patch("/courses/{course_id}/activate", status_code=status.HTTP_200_OK)
+def activate_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Re-activate a course (make visible to employees again).
+    """
+    try:
+        data = svc.activate_course(db, course_id=course_id)
+        return make_response(True, "Course activated", data=data)
+    except ValueError as e:
+        return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to activate course", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
+def delete_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Permanently delete a course (and its content items if cascade is enabled).
+    """
+    try:
+        data = svc.delete_course(db, course_id=course_id)
+        return make_response(True, "Course deleted successfully", data=data)
+    except ValueError as e:
+        return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to delete course", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+@router.delete("/courses/{course_id}/thumbnail", status_code=status.HTTP_200_OK)
+def delete_course_thumbnail_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Delete the course thumbnail from Cloudinary and clear its record in DB.
+    """
+    try:
+        return make_response(True, "Thumbnail deleted", data=svc.delete_thumbnail(db, course_id=course_id))
+    except ValueError as e:
+        return make_response(False, str(e), status_code=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return make_response(False, "Failed to delete thumbnail", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+
 
 # --------------------------- CONTENT ITEMS ---------------------------
 

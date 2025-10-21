@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from shared.schemas.training_admin import CourseCreateIn, CourseUpdateIn, ContentItemCreateIn, ContentItemUpdateIn
 from app.repositories import courseContent_repo as repo
 from app.services.storage.storage_cloudinary import upload_raw_bytes
+from app.services.storage.storage_cloudinary import delete_file_by_public_id
 
 def _validate_content_payload(body: ContentItemCreateIn | ContentItemUpdateIn, type_str: str, creating=True):
     """Validate content payload based on type and operation."""
@@ -63,10 +64,9 @@ def update_course(db: Session, *, course_id: int, body: CourseUpdateIn):
     return {"course": repo.course_to_dict(course)}
 
 
-def list_courses(db: Session):
-    rows = repo.list_courses(db)
+def list_courses(db: Session, active_only: bool = False):
+    rows = repo.list_courses(db, active_only=active_only)
     return {"courses": [repo.course_to_dict(c) for c in rows]}
-
 
 def get_course_with_items(db: Session, *, course_id: int):
     course = repo.get_course(db, course_id=course_id)
@@ -87,11 +87,51 @@ def set_course_thumbnail(db: Session, *, course_id: int, file_bytes: bytes):
     
     result = upload_raw_bytes(file_bytes)
     url = result.get("secure_url")
+    public_id = result.get("public_id")
     if not url:
         raise ValueError("Failed to upload thumbnail")
+    if not public_id:
+        raise ValueError("Failed to get public_id for thumbnail")
     
-    course = repo.set_course_thumbnail(db, course_id=course_id, url=url)
+    course = repo.set_course_thumbnail(db, course_id=course_id, url=url,public_id=public_id)
     return {"course": repo.course_to_dict(course)}
+
+def deactivate_course(db: Session, *, course_id: int) -> dict:
+    ok = repo.set_course_active(db, course_id=course_id, is_active=False)
+    if not ok:
+        raise ValueError("Course not found")
+    return {"updated": True, "is_active": False}
+
+def activate_course(db: Session, *, course_id: int) -> dict:
+    ok = repo.set_course_active(db, course_id=course_id, is_active=True)
+    if not ok:
+        raise ValueError("Course not found")
+    return {"updated": True, "is_active": True}
+
+def delete_course(db: Session, *, course_id: int) -> dict:
+    ok = repo.delete_course(db, course_id=course_id)
+    if not ok:
+        raise ValueError("Course not found")
+    return {"deleted": True}
+
+
+def delete_thumbnail(db: Session, *, course_id: int) -> dict:
+    course = repo.get_course(db, course_id=course_id)
+    if not course:
+        raise ValueError("Course not found")
+
+    if not course.thumbnail_public_id:
+        raise ValueError("Thumbnail not found")
+
+    # delete from Cloudinary
+    delete_file_by_public_id(course.thumbnail_public_id)
+
+    # clear from DB
+    ok = repo.delete_course_thumbnail(db, course_id)
+    if not ok:
+        raise ValueError("Failed to update database record")
+
+    return {"deleted": True}
 
 
 # ---------------------- CONTENT ----------------------

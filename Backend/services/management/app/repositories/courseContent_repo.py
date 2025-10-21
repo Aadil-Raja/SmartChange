@@ -54,11 +54,12 @@ def update_course(db: Session, *, course_id: int, values: dict) -> Optional[Cour
     db.refresh(course)
     return course
 
-def set_course_thumbnail(db: Session, *, course_id: int, url: str) -> Optional[Course]:
+def set_course_thumbnail(db: Session, *, course_id: int, url: str,public_id:str) -> Optional[Course]:
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         return None
     course.thumbnail_url = url
+    course.thumbnail_public_id = public_id
     db.commit()
     db.refresh(course)
     return course
@@ -66,8 +67,50 @@ def set_course_thumbnail(db: Session, *, course_id: int, url: str) -> Optional[C
 def get_course(db: Session, *, course_id: int) -> Optional[Course]:
     return db.query(Course).filter(Course.id == course_id).first()
 
-def list_courses(db: Session) -> List[Course]:
-    return db.query(Course).order_by(Course.created_at.desc()).all()
+def list_courses(db: Session, active_only: bool = False):
+    query = db.query(Course)
+    if active_only:
+        query = query.filter(Course.is_active == True)
+    return query.order_by(Course.created_at.desc()).all()
+
+def delete_course(db: Session, course_id: int) -> bool:
+    """Hard-delete a course and cascade delete its content items."""
+    course = get_course(db, course_id=course_id)
+    if not course:
+        return False
+    db.delete(course)
+    db.commit()
+    return True
+
+def set_course_active(db: Session, course_id: int, is_active: bool) -> bool:
+    """
+    Soft-toggle is_active.
+    """
+    course = get_course(db, course_id=course_id)
+    if not course:
+        return False
+    course.is_active = is_active
+    db.add(course)
+    db.commit()
+    db.refresh(course)
+    return True
+
+def delete_course_thumbnail(db: Session, course_id: int) -> bool:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        return False
+
+    if not course.thumbnail_url:
+        return True  # nothing to delete
+
+    # Clear fields
+    course.thumbnail_url = None
+    course.thumbnail_public_id = None
+
+    db.commit()
+    db.refresh(course)
+    return True
+
 
 # ---- content items ----
 def list_items_for_course(db: Session, *, course_id: int) -> List[ContentItem]:

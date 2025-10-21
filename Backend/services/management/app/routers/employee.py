@@ -108,7 +108,7 @@ def list_courses_route(
     Reuses courseContent_service.list_courses, then filters to is_active==True.
     """
     try:
-        data = svc.list_courses(db)  # { "courses": [ { ... } ] }
+        data = svc.list_courses(db,active_only=True)  # { "courses": [ { ... } ] }
         # keep only active for employees
         courses = [c for c in data.get("courses", []) if c.get("is_active")]
         return make_response(True, "OK", data={"courses": courses})

@@ -45,3 +45,13 @@ def upload_raw_bytes(file_bytes: bytes, public_id: str | None = None):
         "secure_url": result.get("secure_url"),
         "public_id": result.get("public_id"),
     }
+
+
+def delete_file_by_public_id(public_id: str):
+    """
+    Delete a file from Cloudinary by its public ID.
+    """
+    try:
+        cloudinary.uploader.destroy(public_id)
+    except Exception as e:
+        print(f"[delete_file_by_public_id] Failed to delete: {e}")
