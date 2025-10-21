@@ -14,7 +14,8 @@ export const TeamProvider = ({ children }) => {
   // ✅ Fetch teams on mount
   useEffect(() => {
     // Only load teams on employee routes
-    if (window.location.pathname.startsWith('/employee')) {
+   
+    if ( window.location.pathname.startsWith('/employee/myteams')) {
       loadTeams();
     }
   }, []);

@@ -12,6 +12,10 @@ import MyTeams from "./pages/employee/MyTeams";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import MyCourses from './pages/employee/MyCourses';
 import CourseContent from './pages/employee/CourseContent';
+import AdminTrainingList from './pages/admin/AdminTrainingList';
+import AdminTrainingForm from './pages/admin/AdminTrainingForm';
+import AdminCourseDetails from './pages/admin/AdminCourseDetails';
+import AdminContentForm from "./pages/admin/AdminContentForm.jsx";
 
 function AppRoutes() {
   return (
@@ -49,6 +53,56 @@ function AppRoutes() {
           element={
             <AdminProtectedRoute>
               <TeamsPage />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/training"
+          element={
+            <AdminProtectedRoute>
+              <AdminTrainingList />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/training/create"
+          element={
+            <AdminProtectedRoute>
+              <AdminTrainingForm />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/training/edit/:id"
+          element={
+            <AdminProtectedRoute>
+              <AdminTrainingForm />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/training/course/:id"
+          element={
+            <AdminProtectedRoute>
+              <AdminCourseDetails />
+            </AdminProtectedRoute>
+          }
+        />
+                
+        <Route
+          path="/admin/training/course/:courseId/content/add"
+          element={
+            <AdminProtectedRoute>
+              <AdminContentForm />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/training/course/:courseId/content/edit/:contentId"
+          element={
+            <AdminProtectedRoute>
+              <AdminContentForm />
             </AdminProtectedRoute>
           }
         />

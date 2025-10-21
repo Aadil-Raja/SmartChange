@@ -56,6 +56,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 422) {
       console.error("❌ 422 Validation Error:", error.response.data);
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);

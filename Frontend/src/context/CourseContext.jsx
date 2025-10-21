@@ -18,10 +18,10 @@ export const CourseProvider = ({ children }) => {
     const fetchingProgress = useRef(new Set());
     // Load courses on mount if employee is logged in
     useEffect(() => {
-        const token = localStorage.getItem('employeeToken');
-        console.log('Employee token on CourseProvider mount:', token);
+       
+        
         // Only fetch courses if employee token exists AND path starts with /employee
-        if (token && window.location.pathname.startsWith('/employee')) {
+        if (window.location.pathname.startsWith('/employee/mycourses')) {
             console.log('Fetching courses for employee');
             fetchCourses();
         }
