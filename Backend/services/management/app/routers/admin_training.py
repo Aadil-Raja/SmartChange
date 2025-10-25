@@ -179,14 +179,12 @@ def delete_content_item(content_id: int, db: Session = Depends(get_db), _admin=D
 
 @router.post("/links", status_code=status.HTTP_201_CREATED)
 def create_external_link(
-    title: str,
-    url: str,
-    description: str | None = None,
+    body: LinkCreate,
     db: Session = Depends(get_db),
     _admin = Depends(get_current_admin),
 ):
     try:
-        data = link_svc.create_link(db, admin_id=_admin.id, title=title, url=url, description=description)
+        data = link_svc.create_link(db, admin_id=_admin.id, body=body)
         return make_response(True, "External link added", data=data)
     except ValueError as e:
         return make_response(False, "Invalid link data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))

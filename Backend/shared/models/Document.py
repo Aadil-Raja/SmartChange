@@ -39,7 +39,7 @@ class Document(Base):
     # 🔹 Cloudinary fields (optional but recommended)
     cloudinary_url = Column(String, nullable=True)         # Secure URL to access PDF
     cloudinary_public_id = Column(String, nullable=True)   # Used for delete/update via API
-
+    cloudinary_thumbnail_url = Column(String, nullable=True)  
     # optional relationship (useful when you join documents with users)
     uploader = relationship("User", backref="documents")
 

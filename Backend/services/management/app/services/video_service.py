@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.repositories import videos_repo
 from app.services.storage.storage_cloudinary import upload_video_bytes, delete_video_from_cloudinary
 from shared.schemas.training_admin import VideoCreate
+from app.services.storage.storage_cloudinary import delete_with_thumbnail
 
 def upload_video(
     db: Session,
@@ -82,7 +83,7 @@ def delete_video(db: Session, video_id: int):
     
     # Delete from Cloudinary
     try:
-        delete_video_from_cloudinary(video.cloudinary_public_id)
+        delete_with_thumbnail(video.cloudinary_public_id)
     except Exception as e:
         # Log the error but continue with DB deletion
         print(f"Warning: Failed to delete video from Cloudinary: {e}")

@@ -250,16 +250,18 @@ def attach_cloudinary_fields(
     *,
     document_id: int,
     url: str,
-    public_id: Optional[str]
+    public_id: Optional[str],
+    thumbnail_url: Optional[str] = None  # 🆕 NEW PARAMETER
 ) -> Optional[Document]:
     """
-    Attach Cloudinary URL and public_id to a document.
+    Attach Cloudinary URL, public_id, and thumbnail URL to a document.
     
     Args:
         db: SQLAlchemy session
         document_id: Document ID
         url: Cloudinary URL
         public_id: Cloudinary public ID
+        thumbnail_url: Cloudinary thumbnail URL (optional)
         
     Returns:
         Updated Document or None if not found
@@ -270,6 +272,8 @@ def attach_cloudinary_fields(
     
     doc.cloudinary_url = url
     doc.cloudinary_public_id = public_id
+    if thumbnail_url: 
+        doc.cloudinary_thumbnail_url = thumbnail_url  
     db.commit()
     db.refresh(doc)
     

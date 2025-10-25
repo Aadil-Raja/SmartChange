@@ -12,7 +12,7 @@ from app.core.config import get_settings
 import sys, traceback
 from shared.repos import audit_repo
 from shared.models.Audit import ProcessingStatus, ProcessingStage
-
+from app.services.storage.storage_cloudinary import upload_document_bytes
 settings = get_settings()
 
 def _doc_to_dict(row) -> dict:
@@ -30,6 +30,7 @@ def _doc_to_dict(row) -> dict:
         "updated_at": doc.updated_at,
         "cloudinary_url": doc.cloudinary_url,           # handy for preview/open
         "cloudinary_public_id": doc.cloudinary_public_id,
+        "cloudinary_thumbnail_url": doc.cloudinary_thumbnail_url,
     }
 
 
@@ -83,6 +84,10 @@ def upload_document_dual(
     title: str | None = None,
     fail_if_cloudinary_fails: bool = False,
 ):
+    """
+    Save document to both local storage and Cloudinary.
+    Uses the new upload_document_bytes function for Cloudinary with thumbnail generation.
+    """
     print(f"[upload_document_dual] Start uploading document for user_id={user_id}, filename={filename}", file=sys.stderr)
 
     # 1) Save locally + DB row
@@ -112,20 +117,24 @@ def upload_document_dual(
         print(f"[upload_document_dual] Document row created with ID={doc.id}", file=sys.stderr)
     except Exception as e:
         print("[upload_document_dual] ERROR creating document row:", e, file=sys.stderr)
-
         return make_response(False, f"DB insert failed: {e}", status_code=500)
 
     cloud_info = None
     cloud_err = None
 
-    # 2) Upload to Cloudinary
+    # 2) Upload to Cloudinary using the new upload_document_bytes function 🆕 CHANGED
     try:
         print("[upload_document_dual] Uploading file to Cloudinary...", file=sys.stderr)
-        result = upload_raw_bytes(file_bytes)
+        result = upload_document_bytes(  # 🆕 USING NEW FUNCTION
+            file_bytes=file_bytes,
+            filename=filename,
+            mime_type=mime
+        )
         print(f"[upload_document_dual] Cloudinary upload result: {result}", file=sys.stderr)
 
         secure_url = result.get("secure_url")
         public_id = result.get("public_id")
+        thumbnail_url = result.get("thumbnail_url")  # 🆕 NEW LINE
 
         if secure_url:
             doc = documents_repo.attach_cloudinary_fields(
@@ -133,10 +142,12 @@ def upload_document_dual(
                 document_id=doc.id,
                 url=secure_url,
                 public_id=public_id,
+                thumbnail_url=thumbnail_url,  # 🆕 NEW PARAMETER
             )
             cloud_info = {
                 "cloudinary_url": secure_url,
                 "cloudinary_public_id": public_id,
+                "cloudinary_thumbnail_url": thumbnail_url,  # 🆕 NEW LINE
             }
             print(f"[upload_document_dual] Cloudinary fields attached for doc_id={doc.id}", file=sys.stderr)
         else:
@@ -145,21 +156,19 @@ def upload_document_dual(
     except Exception as e:
         cloud_err = str(e)
         print("[upload_document_dual] ERROR during Cloudinary upload:", e, file=sys.stderr)
+        traceback.print_exc()
      
         if fail_if_cloudinary_fails:
             return make_response(False, f"Cloud upload failed: {cloud_err}", status_code=500)
 
     data = {"document": doc}
-    if cloud_info:
-        data.update(cloud_info)
+
     if cloud_err:
         data["cloudinary_error"] = cloud_err
         print(f"[upload_document_dual] Cloudinary upload failed gracefully: {cloud_err}", file=sys.stderr)
 
     print("[upload_document_dual] Upload process completed successfully.", file=sys.stderr)
     return make_response(True, "Document uploaded successfully", data=data, status_code=201)
-
-
 
 def list_documents(db: Session):
     """
