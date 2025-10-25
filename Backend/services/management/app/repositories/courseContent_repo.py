@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from shared.models.course import Course
 from shared.models.course_content import ContentItem, ContentType
+from shared.models.Video import Video
+from shared.models.external_link import ExternalLink
 
 # ---- serializers (simple & explicit) ----
 def course_to_dict(c: Course) -> dict:
@@ -26,8 +28,9 @@ def item_to_dict(i: ContentItem) -> dict:
         "description": i.description,
         "type": i.type.value if hasattr(i.type, "value") else str(i.type),
         "document_id": i.document_id,
-        "storage_url": i.storage_url,
-        "external_url": i.external_url,
+        "video_id": i.video_id,
+        "external_link_id": i.external_link_id,
+        "created_at": i.created_at,
     }
 
 # ---- courses ----
@@ -54,7 +57,7 @@ def update_course(db: Session, *, course_id: int, values: dict) -> Optional[Cour
     db.refresh(course)
     return course
 
-def set_course_thumbnail(db: Session, *, course_id: int, url: str,public_id:str) -> Optional[Course]:
+def set_course_thumbnail(db: Session, *, course_id: int, url: str, public_id: str) -> Optional[Course]:
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         return None
@@ -117,7 +120,7 @@ def list_items_for_course(db: Session, *, course_id: int) -> List[ContentItem]:
     return (
         db.query(ContentItem)
           .filter(ContentItem.course_id == course_id)
-          .order_by(ContentItem.id.asc())
+          .order_by(ContentItem.created_at.asc())
           .all()
     )
 
@@ -129,8 +132,8 @@ def add_content_item(
     description: Optional[str],
     type_str: str,
     document_id: Optional[int],
-    storage_url: Optional[str],
-    external_url: Optional[str],
+    video_id: Optional[int],
+    external_link_id: Optional[int],
 ) -> ContentItem:
     # Validate enum value
     try:
@@ -144,8 +147,8 @@ def add_content_item(
         description=description,
         type=content_type,
         document_id=document_id,
-        storage_url=storage_url,
-        external_url=external_url,
+        video_id=video_id,
+        external_link_id=external_link_id,
     )
     db.add(item)
     db.commit()
@@ -163,7 +166,7 @@ def update_content_item(db: Session, *, content_id: int, values: dict) -> Option
     # Validate type if it's being updated
     if "type" in values:
         try:
-            ContentType(values["type"])
+            values["type"] = ContentType(values["type"])
         except ValueError:
             raise ValueError(f"Invalid content type: {values['type']}. Must be one of: document, video, link")
     

@@ -24,13 +24,26 @@ class ContentItemCreateIn(BaseModel):
     type: ContentType
   
     document_id: Optional[int] = None
-    storage_url: Optional[HttpUrl] = None
-    external_url: Optional[HttpUrl] = None
+    video_id: Optional[int] = None
+    external_link_id: Optional[int] = None
 
 class ContentItemUpdateIn(BaseModel):
     title: Optional[str] = Field(None, min_length=1)
     description: Optional[str] = None
-
+    type: Optional[ContentType] = None  # Allow type updates
+    
     document_id: Optional[int] = None
-    storage_url: Optional[HttpUrl] = None
-    external_url: Optional[HttpUrl] = None
+    video_id: Optional[int] = None
+    external_link_id: Optional[int] = None
+
+
+class LinkCreate(BaseModel):
+    title: str
+    url: str
+
+class VideoCreate(BaseModel):
+    title: str
+
+class LinkUpdate(BaseModel):
+    title: Optional[str] = None
+    url: Optional[str] = None

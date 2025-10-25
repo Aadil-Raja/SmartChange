@@ -1,14 +1,17 @@
 # ============================================================================
 # FILE: app/routers/admin_training.py
 # ============================================================================
-from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, status, HTTPException,Form
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
+
 from app.deps.auth import get_current_admin
+from app.services import external_link_service as link_svc
+from app.services import video_service as vsvc
 from app.utils.response_utils import make_response
 from shared.schemas.training_admin import (
     CourseCreateIn, CourseUpdateIn,
-    ContentItemCreateIn, ContentItemUpdateIn
+    ContentItemCreateIn, ContentItemUpdateIn, LinkCreate,VideoCreate, LinkUpdate
 )
 from app.services import courseContent_service as svc
 
@@ -172,3 +175,154 @@ def delete_content_item(content_id: int, db: Session = Depends(get_db), _admin=D
         return make_response(False, "Content not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
     except Exception as e:
         return make_response(False, "Failed to delete content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+    
+
+@router.post("/links", status_code=status.HTTP_201_CREATED)
+def create_external_link(
+    title: str,
+    url: str,
+    description: str | None = None,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    try:
+        data = link_svc.create_link(db, admin_id=_admin.id, title=title, url=url, description=description)
+        return make_response(True, "External link added", data=data)
+    except ValueError as e:
+        return make_response(False, "Invalid link data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to create external link", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+@router.get("/links", status_code=status.HTTP_200_OK)
+def list_links(db: Session = Depends(get_db), _admin = Depends(get_current_admin)):
+    try:
+        return make_response(True, "OK", data=link_svc.list_links(db))
+    except Exception as e:
+        return make_response(False, "Failed to retrieve links", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+@router.get("/links/{link_id}", status_code=status.HTTP_200_OK)
+def get_external_link(
+    link_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    try:
+        return make_response(True, "OK", data=link_svc.get_link_by_id(db, link_id=link_id))
+    except ValueError as e:
+        return make_response(False, "Link not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to retrieve link", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+@router.patch("/links/{link_id}", status_code=status.HTTP_200_OK)
+def update_external_link(
+    link_id: int,
+    body: LinkUpdate,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Update an external link's title and/or URL.
+    """
+    try:
+        data = link_svc.update_link(db, link_id=link_id, body=body)
+        return make_response(True, "External link updated", data=data)
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            return make_response(False, "Link not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        return make_response(False, "Invalid link data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to update external link", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+@router.delete("/links/{link_id}", status_code=status.HTTP_200_OK)
+def delete_external_link(
+    link_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Delete an external link.
+    """
+    try:
+        data = link_svc.delete_link(db, link_id=link_id)
+        return make_response(True, "External link deleted", data=data)
+    except ValueError as e:
+        return make_response(False, "Link not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to delete external link", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.post("/videos", status_code=status.HTTP_201_CREATED)
+async def upload_video_route(
+    title: str = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Upload a new lecture/MP4 to Cloudinary and store in the videos library.
+    """
+    try:
+        data = await file.read()
+        if not data:
+            return make_response(False, "Empty file", status_code=status.HTTP_400_BAD_REQUEST)
+        
+        out = vsvc.upload_video(
+            db,
+            admin_id=_admin.id,
+            file_bytes=data,
+            filename=file.filename,
+            title=title,
+            mime=file.content_type,
+        )
+        return make_response(True, "Video uploaded", data=out)
+    except ValueError as e:
+        return make_response(False, "Invalid video", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to upload video", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+    
+@router.get("/videos", status_code=status.HTTP_200_OK)
+def list_videos_route(
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    List videos in the reusable library (pick one to attach to a course content item).
+    """
+    try:
+        return make_response(True, "OK", data=vsvc.list_videos(db))
+    except Exception as e:
+        return make_response(False, "Failed to list videos", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.get("/videos/{video_id}", status_code=status.HTTP_200_OK)
+def get_video_route(
+    video_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Get a single video by ID.
+    """
+    try:
+        return make_response(True, "OK", data=vsvc.get_video_by_id(db, video_id=video_id))
+    except ValueError as e:
+        return make_response(False, "Video not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to retrieve video", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.delete("/videos/{video_id}", status_code=status.HTTP_200_OK)
+def delete_video_route(
+    video_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Delete a video from Cloudinary and the database.
+    """
+    try:
+        return make_response(True, "Video deleted", data=vsvc.delete_video(db, video_id=video_id))
+    except ValueError as e:
+        return make_response(False, "Video not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to delete video", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))

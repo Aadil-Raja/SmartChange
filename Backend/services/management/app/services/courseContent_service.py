@@ -10,11 +10,11 @@ def _validate_content_payload(body: ContentItemCreateIn | ContentItemUpdateIn, t
         if creating and not body.document_id:
             raise ValueError("document_id is required for type=document")
     elif type_str == "video":
-        if creating and not body.storage_url:
-            raise ValueError("storage_url is required for type=video")
+        if creating and not body.video_id:
+            raise ValueError("video_id is required for type=video")
     elif type_str == "link":
-        if creating and not body.external_url:
-            raise ValueError("external_url is required for type=link")
+        if creating and not body.external_link_id:
+            raise ValueError("external_link_id is required for type=link")
     else:
         raise ValueError(f"Invalid content type: {type_str}")
 
@@ -27,12 +27,12 @@ def _validate_type_specific_fields(values: dict, type_str: str):
     # Define allowed fields for each type (besides title and description)
     type_field_map = {
         "document": {"document_id"},
-        "video": {"storage_url"},
-        "link": {"external_url"}
+        "video": {"video_id"},
+        "link": {"external_link_id"}
     }
     
     allowed_fields = type_field_map.get(type_str, set())
-    all_type_fields = {"document_id", "storage_url", "external_url"}
+    all_type_fields = {"document_id", "video_id", "external_link_id"}
     
     # Check if any disallowed type-specific fields are present
     for field in all_type_fields:
@@ -93,7 +93,7 @@ def set_course_thumbnail(db: Session, *, course_id: int, file_bytes: bytes):
     if not public_id:
         raise ValueError("Failed to get public_id for thumbnail")
     
-    course = repo.set_course_thumbnail(db, course_id=course_id, url=url,public_id=public_id)
+    course = repo.set_course_thumbnail(db, course_id=course_id, url=url, public_id=public_id)
     return {"course": repo.course_to_dict(course)}
 
 def deactivate_course(db: Session, *, course_id: int) -> dict:
@@ -151,9 +151,9 @@ def add_content_item(db: Session, *, course_id: int, body: ContentItemCreateIn):
         title=body.title,
         description=body.description,
         type_str=body.type,
-        document_id=body.document_id,
-        storage_url=str(body.storage_url) if body.storage_url else None,
-        external_url=str(body.external_url) if body.external_url else None,
+        document_id=body.document_id if body.type == "document" else None,
+        video_id=body.video_id if body.type == "video" else None,
+        external_link_id=body.external_link_id if body.type == "link" else None,
     )
     return {"item": repo.item_to_dict(item)}
 
@@ -166,33 +166,45 @@ def update_content_item(db: Session, *, content_id: int, body: ContentItemUpdate
     # Get current type
     type_str = item.type.value if hasattr(item.type, "value") else str(item.type)
     
-    # Convert URL fields to strings
-    values = {
-        k: (str(v) if "url" in k and v is not None else v)
-        for k, v in body.model_dump(exclude_unset=True).items()
-    }
+    values = {k: v for k, v in body.model_dump(exclude_unset=True).items()}
     
     if not values:
         raise ValueError("No fields to update")
 
-    # ✅ NEW: Validate that only appropriate fields are being updated
-    _validate_type_specific_fields(values, type_str)
-
-    # Validate the merged state to ensure type requirements are still met
-    after_doc = values.get("document_id", item.document_id)
-    after_store = values.get("storage_url", item.storage_url)
-    after_ext = values.get("external_url", item.external_url)
-    
-    # Create validation object with merged state
-    validation_obj = ContentItemCreateIn(
-        title=item.title,
-        description=item.description,
-        type=type_str,
-        document_id=after_doc,
-        storage_url=after_store,
-        external_url=after_ext
-    )
-    _validate_content_payload(validation_obj, type_str, creating=True)
+    # If type is being updated, validate the change
+    new_type = values.get("type", type_str)
+    if new_type != type_str:
+        # Type is changing - clear old IDs and validate new requirements
+        values["document_id"] = None
+        values["video_id"] = None
+        values["external_link_id"] = None
+        
+        # Now validate that the required ID for the new type is present
+        if new_type == "document" and not values.get("document_id"):
+            raise ValueError("document_id is required when changing to type=document")
+        elif new_type == "video" and not values.get("video_id"):
+            raise ValueError("video_id is required when changing to type=video")
+        elif new_type == "link" and not values.get("external_link_id"):
+            raise ValueError("external_link_id is required when changing to type=link")
+    else:
+        # Type is NOT changing - validate that only appropriate fields are being updated
+        _validate_type_specific_fields(values, type_str)
+        
+        # Validate the merged state to ensure type requirements are still met
+        after_doc = values.get("document_id", item.document_id)
+        after_video = values.get("video_id", item.video_id)
+        after_link = values.get("external_link_id", item.external_link_id)
+        
+        # Create validation object with merged state
+        validation_obj = ContentItemCreateIn(
+            title=item.title,
+            description=item.description,
+            type=type_str,
+            document_id=after_doc,
+            video_id=after_video,
+            external_link_id=after_link
+        )
+        _validate_content_payload(validation_obj, type_str, creating=True)
 
     updated = repo.update_content_item(db, content_id=content_id, values=values)
     return {"item": repo.item_to_dict(updated)}

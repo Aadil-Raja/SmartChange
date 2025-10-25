@@ -19,14 +19,14 @@ class ContentItem(Base):
     type = Column(Enum(ContentType, name="content_type_t", create_type=True), nullable=False)
 
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
-    storage_url = Column(String, nullable=True)
-    external_url = Column(String, nullable=True)
-
+    video_id = Column(Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
+    external_link_id = Column(Integer, ForeignKey("external_links.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     course = relationship("Course", back_populates="contents")
     document = relationship("Document", lazy="joined")
-
+    video = relationship("Video", lazy="joined")
+    external_link = relationship("ExternalLink", lazy="joined")
     __table_args__ = (
         # Removed order_index references
         Index("ix_content_course_created", "course_id", "created_at"),
