@@ -1,96 +1,127 @@
-import { Users, Key, Copy, Check, RefreshCw } from 'lucide-react';
+// src/components/ui/TeamCard.jsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone } from 'lucide-react';
 
 const TeamCard = ({ team, onRegenerateCode, loading }) => {
-  const [copied, setCopied] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const isManager = team.role_in_team === 'manager';
-  const memberCount = team.members?.length || 0;
+    const navigate = useNavigate();
+    const [copied, setCopied] = useState(false);
+    const [regenerating, setRegenerating] = useState(false);
 
-  const handleCopyCode = () => {
-    if (team.join_code) {
-      navigator.clipboard.writeText(team.join_code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+    const isManager = team.role_in_team === 'manager';
 
-  const handleRegenerateCode = async () => {
-    if (window.confirm('Are you sure you want to regenerate the join code? The old code will no longer work.')) {
-      setRegenerating(true);
-      await onRegenerateCode(team.team_id);
-      setRegenerating(false);
-    }
-  };
+    const handleCopyCode = async (e) => {
+        e.stopPropagation(); // Prevent card click
+        try {
+            await navigator.clipboard.writeText(team.join_code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
 
-  return (
-    <div className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-      {/* Manager Badge */}
-      {isManager && (
-        <div className="absolute right-4 top-4">
-          <span className="inline-flex items-center rounded-full bg-gradient-to-r from-[#FDB913] to-[#F58220] px-3 py-1 text-xs font-semibold text-white">
-            Manager
-          </span>
+    const handleRegenerateCode = async (e) => {
+        e.stopPropagation(); // Prevent card click
+        setRegenerating(true);
+        await onRegenerateCode(team.team_id);
+        setRegenerating(false);
+    };
+
+    // Navigate to announcements when card is clicked
+    const handleCardClick = () => {
+        navigate(`/employee/team/${team.team_id}/announcements`);
+    };
+
+    return (
+        <div
+            onClick={handleCardClick}
+            className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-xl hover:scale-105 cursor-pointer"
+        >
+            {/* Gradient background effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-gray-50 opacity-0 transition-opacity group-hover:opacity-100"></div>
+
+            <div className="relative z-10">
+                {/* Team Icon & Name */}
+                <div className="mb-4 flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+                            <Users size={24} className="text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
+                                {team.team_name}
+                            </h3>
+                            <div className="flex items-center gap-1 mt-1">
+                                {isManager ? (
+                                    <>
+                                        <Crown size={14} className="text-amber-500" />
+                                        <span className="text-xs font-medium text-amber-600">Manager</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserCheck size={14} className="text-blue-500" />
+                                        <span className="text-xs font-medium text-blue-600">Member</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <Megaphone size={20} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                </div>
+
+                {/* Team Code Section - Only show for managers */}
+                {isManager && (
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <p className="mb-2 text-xs font-medium text-gray-600">Team Join Code</p>
+                        <div className="flex items-center justify-between gap-2">
+                            <code className="rounded bg-white px-3 py-1 font-mono text-sm font-bold text-[#F58220]">
+                                {team.join_code}
+                            </code>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={handleCopyCode}
+                                    disabled={loading}
+                                    className="rounded-lg p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] disabled:opacity-50"
+                                    title="Copy code"
+                                >
+                                    {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                                </button>
+                                <button
+                                    onClick={handleRegenerateCode}
+                                    disabled={loading || regenerating}
+                                    className="rounded-lg p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] disabled:opacity-50"
+                                    title="Regenerate code"
+                                >
+                                    <RefreshCw size={16} className={regenerating ? 'animate-spin' : ''} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* View Announcements CTA */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-sm text-gray-600 group-hover:text-indigo-600 transition-colors">
+                        <span className="font-medium">View Announcements</span>
+                        <svg
+                            className="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            </div>
         </div>
-      )}
-
-      {/* Team Info */}
-      <div className="mb-4">
-        <h3 className="mb-2 text-xl font-bold text-[#333333]">{team.team_name}</h3>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Users size={16} />
-          <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}</span>
-        </div>
-      </div>
-
-      {/* Join Code (Only for Managers) */}
-      {isManager && team.join_code && (
-        <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Key size={16} />
-            <span>Join Code</span>
-          </div>
-          <div className="flex items-center justify-between mb-3">
-            <code className="text-2xl font-bold tracking-wider text-[#F58220]">
-              {team.join_code}
-            </code>
-            <button
-              onClick={handleCopyCode}
-              className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
-            >
-              {copied ? (
-                <>
-                  <Check size={16} className="text-green-600" />
-                  <span className="text-green-600">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy size={16} />
-                  <span>Copy</span>
-                </>
-              )}
-            </button>
-          </div>
-          {/* Regenerate Button */}
-          <button
-            onClick={handleRegenerateCode}
-            disabled={regenerating || loading}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-white border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RefreshCw size={16} className={regenerating ? 'animate-spin' : ''} />
-            <span>{regenerating ? 'Regenerating...' : 'Regenerate Code'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Role Badge */}
-      <div className="mt-4 pt-4 border-t border-gray-100">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-          Role: {team.role_in_team}
-        </span>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default TeamCard;

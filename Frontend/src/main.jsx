@@ -8,6 +8,7 @@ import { AdminProvider } from './context/AdminContext.jsx'
 import { TeamProvider } from './context/TeamContext.jsx'
 import { CourseProvider } from './context/CourseContext';
 import { AdminTrainingProvider } from './context/AdminTrainingContext';
+import { AnnouncementProvider } from './context/AnnouncementContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,9 +17,11 @@ createRoot(document.getElementById('root')).render(
         <AdminProvider>
           <AdminTrainingProvider>
           <TeamProvider>
+            <AnnouncementProvider>
             <CourseProvider>
             <App />
             </CourseProvider>
+            </AnnouncementProvider>
           </TeamProvider>
           </AdminTrainingProvider>
         </AdminProvider>
