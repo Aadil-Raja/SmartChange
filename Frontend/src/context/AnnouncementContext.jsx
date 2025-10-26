@@ -25,15 +25,36 @@ export const AnnouncementProvider = ({ children }) => {
 
   // ==================== ANNOUNCEMENTS ====================
 
-  // Fetch all announcements for a team
+  // Fetch all announcements for a team WITH COMMENTS
   const fetchAnnouncements = async (teamId) => {
     setLoading(true);
     setError(null);
     try {
       const res = await getTeamAnnouncements(teamId);
       if (res?.success) {
-        setAnnouncements(res.data || []);
-        return { success: true, data: res.data };
+        const announcementsList = res.data || [];
+        
+        // Fetch details (including comments) for each announcement
+        const announcementsWithComments = await Promise.all(
+          announcementsList.map(async (announcement) => {
+            try {
+              const detailsRes = await getAnnouncementDetails(teamId, announcement.id);
+              if (detailsRes?.success && detailsRes.data?.announcement) {
+                // Return the full announcement object with comments
+                return detailsRes.data.announcement;
+              }
+              // Fallback: return announcement without comments
+              return { ...announcement, comments: [] };
+            } catch (err) {
+              console.error(`Failed to fetch comments for announcement ${announcement.id}:`, err);
+              // Return announcement without comments on error
+              return { ...announcement, comments: [] };
+            }
+          })
+        );
+        
+        setAnnouncements(announcementsWithComments);
+        return { success: true, data: announcementsWithComments };
       } else {
         throw new Error(res.message || "Failed to fetch announcements");
       }
@@ -103,8 +124,22 @@ export const AnnouncementProvider = ({ children }) => {
       const res = await addComment(teamId, announcementId, { body: commentBody });
       if (res?.success) {
         setSuccess("Comment added successfully");
-        // Add comment to local state
+        
+        // Update the specific announcement in the announcements list
+        setAnnouncements((prevAnnouncements) =>
+          prevAnnouncements.map((announcement) =>
+            announcement.id === announcementId
+              ? {
+                  ...announcement,
+                  comments: [...(announcement.comments || []), res.data],
+                }
+              : announcement
+          )
+        );
+        
+        // Also add to separate comments state if needed
         setComments((prev) => [...prev, res.data]);
+        
         return { success: true, data: res.data };
       } else {
         throw new Error(res.message || "Failed to add comment");

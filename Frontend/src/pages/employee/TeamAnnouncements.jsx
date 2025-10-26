@@ -31,6 +31,7 @@ const TeamAnnouncements = () => {
     error,
     success,
     fetchAnnouncements,
+    fetchAnnouncementDetails,
     addNewComment,
     clearMessages,
   } = useAnnouncements();
