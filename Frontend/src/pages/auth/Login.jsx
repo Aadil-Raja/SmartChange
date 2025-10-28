@@ -118,17 +118,19 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
-      <Card className="w-full max-w-md p-8">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-white px-4 py-8">
+      <Card className="w-full max-w-md p-8 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
         <div className="mb-8 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-xl">
             <span className="text-3xl font-bold text-white">KE</span>
           </div>
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-[#333333]">KE Smart Change</h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="mb-2 text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">
+            KE Smart Change
+          </h1>
+          <p className="text-sm text-gray-600 font-medium">
             {step === 'code-requested' ? 'Enter verification code' : 'Sign in to continue'}
           </p>
         </div>
@@ -166,7 +168,7 @@ const Login = () => {
               </Button>
               <div className="text-center">
                 <span className="text-sm text-gray-600">Don't have an account? </span>
-                <a href="/signup" className="text-sm font-medium text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
+                <a href="/signup" className="text-sm font-semibold text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
                   Signup
                 </a>
               </div>
@@ -213,7 +215,7 @@ const Login = () => {
 
         {step === 'password' && (
           <div className="mt-6 text-center">
-            <a href="/forgot-password" className="text-sm font-medium text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
+            <a href="/forgot-password" className="text-sm font-semibold text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
               Forgot Password?
             </a>
           </div>

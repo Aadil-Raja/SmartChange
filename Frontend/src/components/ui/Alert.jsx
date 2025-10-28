@@ -19,9 +19,9 @@ const Alert = ({
       icon: <AlertCircle size={20} className="text-red-600" />,
     },
     warning: {
-      bg: "bg-yellow-50 border-yellow-200",
-      text: "text-yellow-800",
-      icon: <AlertCircle size={20} className="text-yellow-600" />,
+      bg: "bg-[#FDB913]/10 border-[#FDB913]/30",
+      text: "text-[#FDB913]",
+      icon: <AlertCircle size={20} className="text-[#FDB913]" />,
     },
     info: {
       bg: "bg-blue-50 border-blue-200",

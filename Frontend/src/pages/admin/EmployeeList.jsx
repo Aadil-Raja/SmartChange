@@ -120,7 +120,7 @@ const EmployeeList = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -135,7 +135,7 @@ const EmployeeList = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold text-[#333333]">Employee Management</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Employee Management</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
@@ -147,7 +147,7 @@ const EmployeeList = () => {
           <div className="mx-auto max-w-7xl space-y-6">
             <Card className="p-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#333333]">Search & Filter</h2>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Search & Filter</h2>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -206,7 +206,7 @@ const EmployeeList = () => {
 
             <Card className="p-6">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-[#333333]">All Employees</h2>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">All Employees</h2>
                 <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium">
                   {filteredEmployees.length} {filteredEmployees.length === 1 ? 'Employee' : 'Employees'}
                 </span>

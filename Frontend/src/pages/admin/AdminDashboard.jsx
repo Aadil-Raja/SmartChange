@@ -178,7 +178,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -193,7 +193,7 @@ const AdminDashboard = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold text-[#333333]">Dashboard</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
@@ -228,23 +228,23 @@ const AdminDashboard = () => {
             <Card className="p-6">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Total Documents</p>
-                  <p className="text-3xl font-bold text-[#333333]">{documents.length}</p>
+                  <p className="text-sm text-gray-500 font-medium">Total Documents</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">{documents.length}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Stored</p>
+                  <p className="text-sm text-gray-500 font-medium">Stored</p>
                   <p className="text-3xl font-bold text-blue-600">
                     {documents.filter(d => d.status === 'STORED').length}
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Processing</p>
-                  <p className="text-3xl font-bold text-orange-600">
+                  <p className="text-sm text-gray-500 font-medium">Processing</p>
+                  <p className="text-3xl font-bold text-[#F58220]">
                     {documents.filter(d => d.status === 'PROCESSING' || d.status === 'QUEUED').length}
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Processed</p>
+                  <p className="text-sm text-gray-500 font-medium">Processed</p>
                   <p className="text-3xl font-bold text-green-600">
                     {documents.filter(d => d.status === 'PROCESSED').length}
                   </p>
@@ -256,8 +256,8 @@ const AdminDashboard = () => {
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#333333]">Upload Documents</h2>
-                  <p className="text-sm text-gray-600">Upload and manage your documents</p>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Upload Documents</h2>
+                  <p className="text-sm text-gray-600 font-medium">Upload and manage your documents</p>
                 </div>
                 <Button
                   onClick={() => setShowUploadModal(true)}
@@ -271,7 +271,7 @@ const AdminDashboard = () => {
 
             {/* Documents List */}
             <Card className="p-6">
-              <h2 className="mb-6 text-2xl font-bold text-[#333333]">Documents</h2>
+              <h2 className="mb-6 text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Documents</h2>
 
               {loading ? (
                 <div className="py-12 text-center text-gray-500">Loading documents...</div>

@@ -1,4 +1,4 @@
-// src/components/chatbot/ChatSidebar.jsx
+// src/components/ui/ChatSidebar.jsx
 import { useState } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
 import {
@@ -9,11 +9,14 @@ import {
   Trash2,
   Check,
   X,
+  FileText,
 } from "lucide-react";
-import Button from "../ui/Button";
-import LoadingSpinner from "../ui/LoadingSpinner";
+import PrimaryButton from "./PrimaryButton";
+import IconButton from "./IconButton";
+import ChatCard from "./ChatCard";
+import LoadingSpinner from "./LoadingSpinner";
 
-const ChatSidebar = () => {
+const ChatSidebar = ({ onNewChat }) => {
   const {
     chatHeads,
     activeChatId,
@@ -67,17 +70,27 @@ const ChatSidebar = () => {
     }
   };
 
+  const handleNewChat = () => {
+    if (onNewChat) {
+      onNewChat(); // Open document selector first
+    } else {
+      startNewChat(); // Fallback to original behavior
+    }
+  };
+
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg">
+    <div className="w-80 sm:w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600">
-        <Button
-          onClick={startNewChat}
-          className="w-full bg-white text-indigo-600 hover:bg-gray-50 shadow-md font-semibold"
+      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-[#FDB913] to-[#F58220]">
+        <PrimaryButton
+          onClick={handleNewChat}
+          variant="secondary"
+          size="lg"
+          className="w-full shadow-md font-semibold"
         >
           <Plus size={20} />
           <span className="ml-2">New Chat</span>
-        </Button>
+        </PrimaryButton>
       </div>
 
       {/* Chat List */}
@@ -88,20 +101,28 @@ const ChatSidebar = () => {
           </div>
         ) : chatHeads.length === 0 ? (
           <div className="text-center py-8 px-4">
-            <MessageSquare size={48} className="mx-auto text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">
-              No chats yet. Start a new conversation!
+            <div className="p-4 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-xl mb-4">
+              <MessageSquare size={48} className="mx-auto text-[#FDB913] mb-3" />
+            </div>
+            <p className="text-gray-600 text-sm font-medium mb-2">
+              No conversations yet
+            </p>
+            <p className="text-gray-500 text-xs">
+              Click "New Chat" to start your first conversation!
             </p>
           </div>
         ) : (
           chatHeads.map((chat) => (
-            <div
+            <ChatCard
               key={chat.id}
               onClick={() => !editingChatId && switchToChat(chat.id)}
-              className={`group relative p-3 rounded-lg cursor-pointer transition-all ${
+              variant={activeChatId === chat.id ? "primary" : "default"}
+              padding="md"
+              hover={!editingChatId}
+              className={`group relative cursor-pointer transition-all ${
                 activeChatId === chat.id
-                  ? "bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-400 shadow-md"
-                  : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                  ? "border-2 border-[#FDB913] shadow-md bg-gradient-to-r from-[#FDB913]/5 to-[#F58220]/5"
+                  : "hover:border-gray-300"
               }`}
             >
               {editingChatId === chat.id ? (
@@ -110,59 +131,77 @@ const ChatSidebar = () => {
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="flex-1 px-2 py-1 text-sm border border-indigo-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 px-3 py-2 text-sm border-2 border-[#FDB913]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FDB913]/20 focus:border-[#FDB913]"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSaveEdit(chat.id);
                       if (e.key === "Escape") handleCancelEdit();
                     }}
                   />
-                  <button
+                  <IconButton
                     onClick={() => handleSaveEdit(chat.id)}
-                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                    variant="ghost"
+                    size="sm"
+                    className="text-green-600 hover:bg-green-100"
                   >
                     <Check size={16} />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     onClick={handleCancelEdit}
-                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:bg-red-100"
                   >
                     <X size={16} />
-                  </button>
+                  </IconButton>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className={`text-sm font-semibold line-clamp-1 flex-1 ${
-                      activeChatId === chat.id ? "text-indigo-900" : "text-gray-900"
-                    }`}>
-                      {chat.title || "New Chat"}
-                    </h3>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className={`p-1.5 rounded-lg ${
+                        activeChatId === chat.id 
+                          ? "bg-[#FDB913]/20" 
+                          : "bg-gray-100"
+                      }`}>
+                        <FileText size={14} className={
+                          activeChatId === chat.id ? "text-[#FDB913]" : "text-gray-600"
+                        } />
+                      </div>
+                      <h3 className={`text-sm font-semibold truncate ${
+                        activeChatId === chat.id ? "text-[#FDB913]" : "text-gray-900"
+                      }`}>
+                        {chat.title || "New Chat"}
+                      </h3>
+                    </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <IconButton
                         onClick={(e) => {
                           e.stopPropagation();
                           handleStartEdit(chat);
                         }}
-                        className="p-1 text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-500 hover:text-[#FDB913]"
                       >
                         <Edit2 size={14} />
-                      </button>
-                      <button
+                      </IconButton>
+                      <IconButton
                         onClick={(e) => handleDelete(chat.id, e)}
-                        className="p-1 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded"
+                        variant="danger"
+                        size="sm"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
                     <Clock size={12} />
                     <span>{formatRelativeTime(chat.last_active_at || chat.created_at)}</span>
                   </div>
                 </>
               )}
-            </div>
+            </ChatCard>
           ))
         )}
       </div>

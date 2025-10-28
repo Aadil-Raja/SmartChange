@@ -1,11 +1,12 @@
+// src/components/ui/ChatCard.jsx
 import React from 'react';
 
-const Card = ({ 
+const ChatCard = ({ 
   children, 
   className = '', 
   variant = 'default',
   padding = 'md',
-  shadow = 'md',
+  shadow = true,
   hover = false,
   onClick,
   ...props 
@@ -16,8 +17,7 @@ const Card = ({
     secondary: 'bg-gray-50 border border-gray-200',
     success: 'bg-green-50 border border-green-200',
     warning: 'bg-yellow-50 border border-yellow-200',
-    error: 'bg-red-50 border border-red-200',
-    glass: 'bg-white/95 backdrop-blur-sm border border-white/20'
+    error: 'bg-red-50 border border-red-200'
   };
 
   const paddings = {
@@ -28,16 +28,8 @@ const Card = ({
     xl: 'p-8'
   };
 
-  const shadows = {
-    none: '',
-    sm: 'shadow-sm',
-    md: 'shadow-md',
-    lg: 'shadow-lg',
-    xl: 'shadow-xl',
-    '2xl': 'shadow-2xl'
-  };
-
-  const hoverClasses = hover ? 'hover:shadow-lg hover:scale-[1.02] cursor-pointer' : '';
+  const shadowClasses = shadow ? 'shadow-sm hover:shadow-md' : '';
+  const hoverClasses = hover ? 'hover:scale-[1.02] cursor-pointer' : '';
   const clickableClasses = onClick ? 'cursor-pointer' : '';
 
   return (
@@ -47,7 +39,7 @@ const Card = ({
         rounded-xl transition-all duration-200
         ${variants[variant]}
         ${paddings[padding]}
-        ${shadows[shadow]}
+        ${shadowClasses}
         ${hoverClasses}
         ${clickableClasses}
         ${className}
@@ -59,4 +51,4 @@ const Card = ({
   );
 };
 
-export default Card;
+export default ChatCard;

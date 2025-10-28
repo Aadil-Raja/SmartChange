@@ -63,11 +63,11 @@ const MyTeams = () => {
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed left-4 top-4 z-10 rounded-lg bg-white p-2 shadow-lg lg:hidden">
                         <Menu size={24} className="text-gray-700" />
                     </button>
-                    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                         <div className="mx-auto max-w-7xl">
                             <div className="mb-8">
-                                <h1 className="text-3xl font-bold text-[#333333]">My Teams</h1>
-                                <p className="mt-2 text-gray-600">Loading your teams...</p>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">My Teams</h1>
+                                <p className="mt-2 text-gray-600 font-medium">Loading your teams...</p>
                             </div>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {[1, 2, 3].map((i) => (
@@ -101,7 +101,7 @@ const MyTeams = () => {
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed left-4 top-4 z-10 rounded-lg bg-white p-2 shadow-lg lg:hidden">
                         <Menu size={24} className="text-gray-700" />
                     </button>
-                    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                         <div className="mx-auto max-w-7xl">
                             <div className="rounded-lg bg-red-100 p-6 text-center">
                                 <p className="text-lg font-semibold text-red-800">{error}</p>
@@ -128,12 +128,12 @@ const MyTeams = () => {
                 <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="fixed left-4 top-4 z-10 rounded-lg bg-white p-2 shadow-lg lg:hidden">
                     <Menu size={24} className="text-gray-700" />
                 </button>
-                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                     <div className="mx-auto max-w-7xl">
                         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold text-[#333333]">My Teams</h1>
-                                <p className="mt-2 text-gray-600">
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">My Teams</h1>
+                                <p className="mt-2 text-gray-600 font-medium">
                                     {teams.length === 0
                                         ? 'You are not part of any team yet'
                                         : `You are part of ${teams.length} ${teams.length === 1 ? 'team' : 'teams'}`}

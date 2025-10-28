@@ -58,11 +58,11 @@ const MyCourses = () => {
                         <Menu size={24} className="text-gray-700" />
                     </button>
                     {/* YOUR ORIGINAL LOADING CONTENT */}
-                    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                         <div className="mx-auto max-w-7xl">
                             <div className="mb-8">
-                                <h1 className="text-3xl font-bold text-[#333333]">My Courses</h1>
-                                <p className="mt-2 text-gray-600">Loading your courses...</p>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">My Courses</h1>
+                                <p className="mt-2 text-gray-600 font-medium">Loading your courses...</p>
                             </div>
                             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {[1, 2, 3].map((i) => (
@@ -98,7 +98,7 @@ const MyCourses = () => {
                         <Menu size={24} className="text-gray-700" />
                     </button>
                     {/* YOUR ORIGINAL ERROR CONTENT */}
-                    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                         <div className="mx-auto max-w-7xl">
                             <div className="rounded-lg bg-red-100 p-6 text-center">
                                 <p className="text-lg font-semibold text-red-800">{error}</p>
@@ -132,11 +132,11 @@ const MyCourses = () => {
                     <Menu size={24} className="text-gray-700" />
                 </button>
                 {/* YOUR ORIGINAL MAIN CONTENT - EXACTLY AS IT WAS */}
-                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 pt-20 lg:pt-6">
+                <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6 pt-20 lg:pt-6">
                     <div className="mx-auto max-w-7xl">
                         <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-[#333333]">My Courses</h1>
-                            <p className="mt-2 text-gray-600">
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">My Courses</h1>
+                            <p className="mt-2 text-gray-600 font-medium">
                                 {courses.length === 0
                                     ? 'No courses assigned yet'
                                     : `You have ${courses.length} ${courses.length === 1 ? 'course' : 'courses'} available`}

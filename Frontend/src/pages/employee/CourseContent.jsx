@@ -27,7 +27,7 @@ const CourseContent = () => {
   // Loading State
   if (loading && !selectedCourse) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-center py-20">
             <Loader2 size={48} className="animate-spin text-[#F58220]" />
@@ -40,7 +40,7 @@ const CourseContent = () => {
   // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6">
         <div className="mx-auto max-w-5xl">
           <div className="rounded-lg bg-red-100 p-6 text-center">
             <p className="text-lg font-semibold text-red-800">{error}</p>
@@ -59,20 +59,20 @@ const CourseContent = () => {
   if (!selectedCourse) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white p-6">
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <button
           onClick={() => navigate('/employee/mycourses')}
-          className="mb-6 flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900"
+          className="mb-6 flex items-center gap-2 text-gray-600 transition-colors hover:text-[#FDB913] font-medium"
         >
           <ArrowLeft size={20} />
           <span>Back to Courses</span>
         </button>
 
         {/* Course Info */}
-        <div className="mb-8 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h1 className="mb-2 text-3xl font-bold text-[#333333]">
+        <div className="mb-8 rounded-xl border border-gray-200 bg-white/95 backdrop-blur-sm p-6 shadow-lg">
+          <h1 className="mb-2 text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">
             {selectedCourse.title}
           </h1>
           {selectedCourse.description && (
@@ -91,7 +91,7 @@ const CourseContent = () => {
         <div className="space-y-6">
           {selectedCourse.items && selectedCourse.items.length > 0 ? (
             selectedCourse.items.map((item, index) => (
-              <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <div key={item.id} className="rounded-xl border border-gray-200 bg-white/95 backdrop-blur-sm p-6 shadow-lg">
                 {/* Item Header */}
                 <div className="mb-4 flex items-start justify-between">
                   <div className="flex-1">
@@ -99,7 +99,7 @@ const CourseContent = () => {
                       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] text-sm font-bold text-white">
                         {index + 1}
                       </span>
-                      <h3 className="text-xl font-bold text-[#333333]">{item.title}</h3>
+                      <h3 className="text-xl font-bold text-gray-900">{item.title}</h3>
                       {completedItems.has(item.id) && (
                         <CheckCircle size={20} className="text-green-600" />
                       )}
@@ -124,8 +124,8 @@ const CourseContent = () => {
               </div>
             ))
           ) : (
-            <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-              <p className="text-gray-600">No modules available for this course</p>
+            <div className="rounded-xl border border-gray-200 bg-white/95 backdrop-blur-sm p-12 text-center shadow-lg">
+              <p className="text-gray-600 font-medium">No modules available for this course</p>
             </div>
           )}
         </div>

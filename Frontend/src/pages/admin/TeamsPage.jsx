@@ -169,7 +169,7 @@ const TeamsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
       <Sidebar 
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -184,7 +184,7 @@ const TeamsPage = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold text-[#333333]">Team Management</h1>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Team Management</h1>
           </div>
           <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2 text-white hover:from-[#F58220] hover:to-[#FDB913]">
             <Plus size={18} />
@@ -199,7 +199,7 @@ const TeamsPage = () => {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Total Teams</p>
-                  <p className="text-3xl font-bold text-[#333333]">{teams.length}</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">{teams.length}</p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-500">Available Employees</p>

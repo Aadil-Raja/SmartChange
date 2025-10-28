@@ -21,17 +21,17 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4 py-8">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-white px-4 py-8">
+      <div className="w-full max-w-md rounded-xl bg-white/95 backdrop-blur-sm p-8 shadow-2xl border-0">
         <div className="mb-8 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-xl">
             <span className="text-3xl font-bold text-white">KE</span>
           </div>
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-[#333333]">Admin Login</h1>
-          <p className="text-sm text-gray-600">Sign in to continue</p>
+          <h1 className="mb-2 text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Admin Login</h1>
+          <p className="text-sm text-gray-600 font-medium">Sign in to continue</p>
         </div>
 
         {error && (
