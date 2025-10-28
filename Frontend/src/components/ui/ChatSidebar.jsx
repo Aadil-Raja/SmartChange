@@ -71,11 +71,8 @@ const ChatSidebar = ({ onNewChat }) => {
   };
 
   const handleNewChat = () => {
-    if (onNewChat) {
-      onNewChat(); // Open document selector first
-    } else {
       startNewChat(); // Fallback to original behavior
-    }
+    
   };
 
   return (

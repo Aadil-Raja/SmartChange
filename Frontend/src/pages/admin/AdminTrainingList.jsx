@@ -1,16 +1,26 @@
 // src/pages/admin/training/AdminTrainingList.jsx
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { Plus, BookOpen, Calendar } from "lucide-react";
+import { Plus, BookOpen, Calendar, Menu, Home, Users, Settings, FileText } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
+import Sidebar from "../../components/ui/Sidebar";
 
 const AdminTrainingList = () => {
   const navigate = useNavigate();
   const { courses, loading, error, fetchCourses, clearMessages } = useAdminTraining();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const navItems = [
+    { icon: Home, label: 'Dashboard', path: '/admin' },
+    { icon: FileText, label: 'Employees', path: '/admin/employees' },
+    { icon: Users, label: 'Teams', path: '/admin/teams' },
+    { icon: Settings, label: 'Training', path: '/admin/training' },
+  ];
 
   useEffect(() => {
     fetchCourses();
@@ -27,19 +37,56 @@ const AdminTrainingList = () => {
 
   if (loading && courses.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="large" />
+      <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
+        <Sidebar
+          isOpen={sidebarOpen}
+          isCollapsed={sidebarCollapsed}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          navItems={navItems}
+          currentPath="/admin/training"
+        />
+        <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          <div className="flex items-center justify-center min-h-screen">
+            <LoadingSpinner size="large" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
+      <Sidebar
+        isOpen={sidebarOpen}
+        isCollapsed={sidebarCollapsed}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        navItems={navItems}
+        currentPath="/admin/training"
+      />
+
+      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
+              <Menu size={24} />
+            </button>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Training Management</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
+          </div>
+        </header>
+
+        <main className="p-4 sm:p-6">
+          <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Training Courses</h1>
-          <p className="text-gray-600 mt-1">Manage all training courses and content</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Training Courses</h1>
+          <p className="text-gray-600 mt-1 font-medium">Manage all training courses and content</p>
         </div>
         <Button
           onClick={() => navigate("/admin/training/create")}
@@ -137,6 +184,9 @@ const AdminTrainingList = () => {
           ))}
         </div>
       )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };

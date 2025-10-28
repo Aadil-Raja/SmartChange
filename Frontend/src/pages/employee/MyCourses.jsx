@@ -22,20 +22,23 @@ const MyCourses = () => {
 
     // ADD NAV ITEMS
     const navItems = [
-        { icon: Home, label: 'Dashboard', path: '/employee/dashboard' },
         { icon: GraduationCap, label: 'My Courses', path: '/employee/mycourses' },
         { icon: User, label: 'My Teams', path: '/employee/myteams' },
-        { icon: Settings, label: 'Settings', path: '/employee/settings' },
+        { icon: Settings, label: 'Chatbot', path: '/employee/chatbot' },
     ];
 
-    // YOUR ORIGINAL useEffect - DON'T TOUCH
+    // Optimized useEffect to prevent multiple API calls
     useEffect(() => {
         const fetchProgressForCourses = async () => {
             if (courses.length > 0) {
-                const progressPromises = courses.map(course =>
-                    fetchActualCourseProgress(course.id)
-                );
-                await Promise.allSettled(progressPromises);
+                // Only fetch progress for courses that don't already have progress data
+                const coursesNeedingProgress = courses.filter(course => !course.progressData);
+                if (coursesNeedingProgress.length > 0) {
+                    const progressPromises = coursesNeedingProgress.map(course =>
+                        fetchActualCourseProgress(course.id)
+                    );
+                    await Promise.allSettled(progressPromises);
+                }
             }
         };
         fetchProgressForCourses();

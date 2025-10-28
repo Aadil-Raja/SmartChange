@@ -17,15 +17,16 @@ export const CourseProvider = ({ children }) => {
     const [progressLoading, setProgressLoading] = useState(false);
     const fetchingProgress = useRef(new Set());
     // Load courses on mount if employee is logged in
+    const [hasInitialized, setHasInitialized] = useState(false);
+    
     useEffect(() => {
-       
-        
-        // Only fetch courses if employee token exists AND path starts with /employee
-        if (window.location.pathname.startsWith('/employee/mycourses')) {
+        // Only fetch courses if employee token exists AND path starts with /employee AND not already initialized
+        if (window.location.pathname.startsWith('/employee/mycourses') && !hasInitialized) {
             console.log('Fetching courses for employee');
             fetchCourses();
+            setHasInitialized(true);
         }
-    }, []);
+    }, [hasInitialized]);
 
 
     // Fetch all courses

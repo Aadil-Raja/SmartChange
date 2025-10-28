@@ -12,13 +12,15 @@ export const TeamProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   // ✅ Fetch teams on mount
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
   useEffect(() => {
-    // Only load teams on employee routes
-   
-    if ( window.location.pathname.startsWith('/employee/myteams')) {
+    // Only load teams on employee routes and not already initialized
+    if (window.location.pathname.startsWith('/employee/myteams') && !hasInitialized) {
       loadTeams();
+      setHasInitialized(true);
     }
-  }, []);
+  }, [hasInitialized]);
 
 
 

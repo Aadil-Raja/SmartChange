@@ -18,10 +18,9 @@ const MyTeams = () => {
 
     // ADD NAV ITEMS
     const navItems = [
-        { icon: Home, label: 'Dashboard', path: '/employee/dashboard' },
         { icon: GraduationCap, label: 'My Courses', path: '/employee/mycourses' },
         { icon: Users, label: 'My Teams', path: '/employee/myteams' },
-        { icon: Settings, label: 'Settings', path: '/employee/settings' },
+        { icon: Settings, label: 'Chatbot', path: '/employee/chatbot' },
     ];
 
     // YOUR ORIGINAL HANDLERS - DON'T TOUCH

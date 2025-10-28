@@ -34,7 +34,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [loadDocuments]);
 
 
   // Poll for job status updates
@@ -54,6 +54,7 @@ const AdminDashboard = () => {
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: FileText, label: 'Employees', path: '/admin/employees' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
+    { icon: Settings, label: 'Training', path: '/admin/training' },
   ];
 
   const handleFileSelect = (e) => {

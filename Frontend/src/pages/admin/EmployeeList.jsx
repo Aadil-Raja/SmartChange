@@ -23,7 +23,7 @@ const EmployeeList = () => {
     { icon: Home, label: 'Dashboard', path: '/admin' },
     { icon: Users, label: 'Employees', path: '/admin/employees' },
     { icon: Users, label: 'Teams', path: '/admin/teams' },
-   
+    { icon: Settings, label: 'Training', path: '/admin/training' },
   ];
 
   // Group employees by user ID to consolidate multiple team entries
