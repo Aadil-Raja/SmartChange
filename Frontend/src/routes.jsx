@@ -17,6 +17,7 @@ import AdminTrainingForm from './pages/admin/AdminTrainingForm';
 import AdminCourseDetails from './pages/admin/AdminCourseDetails';
 import AdminContentForm from "./pages/admin/AdminContentForm.jsx";
 import TeamAnnouncements from './pages/employee/TeamAnnouncements';
+import Chatbot from './pages/employee/Chatbot';
 
 function AppRoutes() {
   return (
@@ -113,6 +114,7 @@ function AppRoutes() {
         <Route path="/employee/mycourses" element={<MyCourses />} />
         <Route path="/employee/course/:id" element={<CourseContent />} />
         <Route path="/employee/team/:teamId/announcements" element={<TeamAnnouncements />} />
+        <Route path="/employee/chatbot" element={<Chatbot />} />
         {/* ---------- Default Redirect ---------- */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

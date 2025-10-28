@@ -9,6 +9,7 @@ import { TeamProvider } from './context/TeamContext.jsx'
 import { CourseProvider } from './context/CourseContext';
 import { AdminTrainingProvider } from './context/AdminTrainingContext';
 import { AnnouncementProvider } from './context/AnnouncementContext.jsx'
+import { ChatbotProvider } from './context/ChatbotContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')).render(
           <TeamProvider>
             <AnnouncementProvider>
             <CourseProvider>
+              <ChatbotProvider>
             <App />
+            </ChatbotProvider>
             </CourseProvider>
             </AnnouncementProvider>
           </TeamProvider>

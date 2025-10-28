@@ -1,0 +1,314 @@
+// src/context/ChatbotContext.jsx
+import { createContext, useState, useCallback } from "react";
+import {
+  getChatHeads,
+  getChatMessages,
+  sendChatMessage,
+  renameChatHead,
+  deleteChatHead,
+} from "../services/chatbotService";
+import { getProcessedDocuments } from "../services/documentService";
+
+export const ChatbotContext = createContext(null);
+
+export const ChatbotProvider = ({ children }) => {
+  const [chatHeads, setChatHeads] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [messages, setMessages] = useState({});
+  const [selectedDocumentId, setSelectedDocumentId] = useState(null);
+  const [availableDocuments, setAvailableDocuments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Clear messages
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  // ==================== CHAT HEADS ====================
+
+  // Fetch all chat sessions
+  const fetchChatHeads = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getChatHeads(20, 0);
+      if (res?.success) {
+        setChatHeads(res.data?.items || []);
+        return { success: true, data: res.data?.items };
+      } else {
+        throw new Error(res.message || "Failed to fetch chats");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Rename chat
+  const renameChat = async (chatHeadId, newTitle) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await renameChatHead(chatHeadId, newTitle);
+      if (res?.success) {
+        setSuccess("Chat renamed successfully");
+        // Update local state
+        setChatHeads((prev) =>
+          prev.map((chat) =>
+            chat.id === chatHeadId ? { ...chat, title: newTitle } : chat
+          )
+        );
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to rename chat");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete chat
+  const deleteChat = async (chatHeadId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await deleteChatHead(chatHeadId);
+      if (res?.success) {
+        setSuccess("Chat deleted successfully");
+        // Remove from local state
+        setChatHeads((prev) => prev.filter((chat) => chat.id !== chatHeadId));
+        // Clear messages for this chat
+        setMessages((prev) => {
+          const newMessages = { ...prev };
+          delete newMessages[chatHeadId];
+          return newMessages;
+        });
+        // Clear active chat if it was deleted
+        if (activeChatId === chatHeadId) {
+          setActiveChatId(null);
+        }
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to delete chat");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== MESSAGES ====================
+
+  // Fetch messages for a chat
+  const fetchMessages = async (chatHeadId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getChatMessages(chatHeadId, 50);
+      if (res?.success) {
+        setMessages((prev) => ({
+          ...prev,
+          [chatHeadId]: res.data?.items || [],
+        }));
+        return { success: true, data: res.data?.items };
+      } else {
+        throw new Error(res.message || "Failed to fetch messages");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Send message
+  const sendMessage = async (messageText, chatHeadId = null, title = null) => {
+    if (!selectedDocumentId) {
+      setError("Please select a document first");
+      return { success: false, message: "No document selected" };
+    }
+    console.log("Sending message:", { messageText, chatHeadId, title });
+
+    setLoading(true);
+    setError(null);
+
+    // Optimistically add user message
+    const tempUserMessage = {
+      id: Date.now(),
+      role: "user",
+      message: messageText,
+      created_at: new Date().toISOString(),
+      active_doc_id: selectedDocumentId,
+    };
+
+     
+    console.log("Temp user message:", tempUserMessage);
+    const currentChatId = chatHeadId || activeChatId;
+    if (currentChatId) {
+      setMessages((prev) => ({
+        ...prev,
+        [currentChatId]: [...(prev[currentChatId] || []), tempUserMessage],
+      }));
+    }
+    console.log("Messages after adding temp message:", messages);
+    try {
+      console.log("Calling sendChatMessage API");
+      console.log("Parameters:", {
+        chathead_id: chatHeadId,
+        active_doc_id: selectedDocumentId,
+        message: messageText,
+        title: title,
+      });
+      const res = await sendChatMessage({
+        message: messageText,
+        active_doc_id: selectedDocumentId,
+        chathead_id: chatHeadId,
+        title: title,
+      });
+      console.log("Send message response:", res);
+
+      if (res?.success) {
+        const newChatId = res.data?.chathead_id;
+        const assistantResponse = res.data?.answer;
+
+        // Update active chat ID if this was a new chat
+        if (!chatHeadId && newChatId) {
+          setActiveChatId(newChatId);
+        }
+
+        // Add assistant message
+        const assistantMessage = {
+          id: Date.now() + 1,
+          role: "assistant",
+          message: assistantResponse,
+          created_at: new Date().toISOString(),
+          active_doc_id: selectedDocumentId,
+        };
+
+        setMessages((prev) => ({
+          ...prev,
+          [newChatId]: [...(prev[newChatId] || []), assistantMessage],
+        }));
+
+        // Refresh chat heads to show new chat or updated timestamp
+        await fetchChatHeads();
+
+        return { success: true, chathead_id: newChatId };
+      } else {
+        throw new Error(res.message || "Failed to send message");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      
+      // Remove optimistic message on error
+      if (currentChatId) {
+        setMessages((prev) => ({
+          ...prev,
+          [currentChatId]: (prev[currentChatId] || []).filter(
+            (msg) => msg.id !== tempUserMessage.id
+          ),
+        }));
+      }
+      
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== DOCUMENTS ====================
+
+  // Fetch available documents
+  const fetchDocuments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getProcessedDocuments();
+      if (res?.success) {
+        setAvailableDocuments(res.data?.documents || []);
+        return { success: true, data: res.data?.documents };
+      } else {
+        throw new Error(res.message || "Failed to fetch documents");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Select document
+  const selectDocument = (documentId) => {
+    setSelectedDocumentId(documentId);
+  };
+
+  // ==================== CHAT ACTIONS ====================
+
+  // Start new chat
+  const startNewChat = () => {
+    setActiveChatId(null);
+    clearMessages();
+  };
+
+  // Switch to existing chat
+  const switchToChat = useCallback(async (chatHeadId) => {
+    setActiveChatId(chatHeadId);
+    clearMessages();
+    
+    // Fetch messages if not already loaded
+    if (!messages[chatHeadId]) {
+      await fetchMessages(chatHeadId);
+    }
+  }, [messages]);
+
+  return (
+    <ChatbotContext.Provider
+      value={{
+        // State
+        chatHeads,
+        activeChatId,
+        messages,
+        selectedDocumentId,
+        availableDocuments,
+        loading,
+        error,
+        success,
+        // Chat Head Functions
+        fetchChatHeads,
+        renameChat,
+        deleteChat,
+        // Message Functions
+        fetchMessages,
+        sendMessage,
+        // Document Functions
+        fetchDocuments,
+        selectDocument,
+        // Chat Actions
+        startNewChat,
+        switchToChat,
+        // Utility
+        clearMessages,
+      }}
+    >
+      {children}
+    </ChatbotContext.Provider>
+  );
+};
