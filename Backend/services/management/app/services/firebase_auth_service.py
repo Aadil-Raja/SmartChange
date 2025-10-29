@@ -65,6 +65,7 @@ def login_with_google(db: Session, *, id_token: str):
     uid = claims.get("uid")
     email = claims.get("email")
     email_verified = claims.get("email_verified", False)
+    name = claims.get("name", "")
     
     if not email or not email_verified:
         return make_response(False, "Email verification required", status_code=403)
@@ -77,6 +78,7 @@ def login_with_google(db: Session, *, id_token: str):
             db,
             email=normalize_email(email),
             uid=uid,
+            name=name
         )
     except Exception:
         return make_response(False, "Failed to process user account", status_code=500)

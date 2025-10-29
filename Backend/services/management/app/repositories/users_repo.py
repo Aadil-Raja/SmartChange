@@ -23,7 +23,7 @@ def get_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).get(user_id)
 
 
-def upsert_from_firebase(db: Session, *, email: str, uid: str) -> User:
+def upsert_from_firebase(db: Session, *, email: str, uid: str,name : str) -> User:
     """
     Find user by email; if missing, create minimal row.
     Attach firebase_uid if not already set.
@@ -59,6 +59,10 @@ def upsert_from_firebase(db: Session, *, email: str, uid: str) -> User:
         user.auth_provider = "google"
         changed = True
 
+    if not user.name and name:
+        user.name = name
+        changed = True
+        
     if changed:
         db.commit()
         db.refresh(user)
