@@ -241,12 +241,23 @@ const AdminCourseDetails = () => {
       {/* Content Items Section */}
       <div className="mb-6 flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Course Content</h2>
-        <Button 
-          onClick={handleAddContent}
-        className="flex items-center gap-2">
-          <Plus size={20} />
-          Add Content
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/training/library")}
+            className="flex items-center gap-2"
+          >
+            <FileText size={20} />
+            Content Library
+          </Button>
+          <Button 
+            onClick={handleAddContent}
+            className="flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Add Content
+          </Button>
+        </div>
       </div>
 
       {/* Content Items List */}

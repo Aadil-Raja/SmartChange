@@ -1,7 +1,7 @@
 import api from "./api"; // your axios instance with baseURL & interceptors
 
-export const signup = async (email, password) => {
-  return api.post("/auth/signup", { email, password });
+export const signup = async (email, password,name) => {
+  return api.post("/auth/signup", { email, password,name });
 };
 
 export const requestCode = async (email) => {

@@ -59,7 +59,7 @@ def upsert_from_firebase(db: Session, *, email: str, uid: str,name : str) -> Use
         user.auth_provider = "google"
         changed = True
 
-    if not user.name and name:
+    if not user.Name and name:
         user.name = name
         changed = True
         

@@ -1,7 +1,7 @@
-import { FileText, Video, ExternalLink, AlertCircle } from 'lucide-react';
+import { FileText, Video, ExternalLink, AlertCircle, Play } from 'lucide-react';
 
 const CourseContentPreview = ({ item }) => {
-  const { type, url, title, description } = item;
+  const { type, url, title, description, thumbnail_url, duration_sec } = item;
 
   // Render based on content type
   const renderContent = () => {
@@ -18,15 +18,53 @@ const CourseContentPreview = ({ item }) => {
 
     switch (type) {
       case 'video':
+        if (!url) {
+          return (
+            <div className="aspect-video w-full overflow-hidden rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center">
+              <div className="text-center">
+                <Video size={48} className="mx-auto mb-2 text-purple-400" />
+                <p className="text-sm text-gray-600">Video not available</p>
+              </div>
+            </div>
+          );
+        }
+        
         return (
-          <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-            <video 
-              controls 
-              className="h-full w-full"
-              src={url}
-            >
-              Your browser does not support the video tag.
-            </video>
+          <div className="aspect-video w-full overflow-hidden rounded-lg bg-black relative group">
+            {thumbnail_url ? (
+              <div className="relative w-full h-full">
+                <img
+                  src={thumbnail_url}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => window.open(url, '_blank')}
+                    className="bg-white/90 rounded-full p-4 hover:bg-white transition-colors"
+                  >
+                    <Play size={32} className="text-purple-600 ml-1" />
+                  </button>
+                </div>
+                {duration_sec && (
+                  <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    {Math.floor(duration_sec / 60)}:{(duration_sec % 60).toString().padStart(2, '0')}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-purple-50 to-purple-100 flex items-center justify-center">
+                <button
+                  onClick={() => window.open(url, '_blank')}
+                  className="flex flex-col items-center gap-3 text-purple-600 hover:text-purple-700 transition-colors"
+                >
+                  <div className="bg-white/90 rounded-full p-4">
+                    <Play size={32} className="ml-1" />
+                  </div>
+                  <span className="text-sm font-medium">Click to watch video</span>
+                </button>
+              </div>
+            )}
           </div>
         );
 

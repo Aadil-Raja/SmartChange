@@ -2,8 +2,12 @@ import { createContext, useState, useEffect, useRef } from "react";
 import {
     getEmployeeCourses,
     getCourseById,
-    updateContentProgress,  // ADD THIS
-    getCourseProgress       // ADD THIS
+    updateContentProgress,
+    getCourseProgress,
+    getCourseItemsProgress,
+    getProcessedDocuments,
+    getVideos,
+    getExternalLinks
 } from "../services/courseApi";
 
 export const CourseContext = createContext(null);
@@ -12,13 +16,17 @@ export const CourseProvider = ({ children }) => {
     const [courses, setCourses] = useState([]);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [completedItems, setCompletedItems] = useState(new Set());
+    const [courseItemsProgress, setCourseItemsProgress] = useState({});
+    const [processedDocuments, setProcessedDocuments] = useState([]);
+    const [videos, setVideos] = useState([]);
+    const [externalLinks, setExternalLinks] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [progressLoading, setProgressLoading] = useState(false);
     const fetchingProgress = useRef(new Set());
     // Load courses on mount if employee is logged in
     const [hasInitialized, setHasInitialized] = useState(false);
-    
+
     useEffect(() => {
         // Only fetch courses if employee token exists AND path starts with /employee AND not already initialized
         if (window.location.pathname.startsWith('/employee/mycourses') && !hasInitialized) {
@@ -50,8 +58,9 @@ export const CourseProvider = ({ children }) => {
         }
     };
 
+    // Mark content as complete or update progress
     const markModuleDone = async (itemId, itemType = 'document') => {
-        setLoading(true);
+        setProgressLoading(true);
         setError(null);
         try {
             // Prepare payload based on item type
@@ -62,12 +71,15 @@ export const CourseProvider = ({ children }) => {
             const res = await updateContentProgress(itemId, payload);
 
             if (res.success) {
-                // Update local state
+                // Update local completed items state
                 setCompletedItems(prev => new Set([...prev, itemId]));
 
-                // If we have a selected course, refresh its progress
+                // If we have a selected course, refresh its progress and items progress
                 if (selectedCourse) {
-                    await fetchActualCourseProgress(selectedCourse.id);
+                    await Promise.all([
+                        fetchActualCourseProgress(selectedCourse.id),
+                        fetchCourseItemsProgress(selectedCourse.id)
+                    ]);
                 }
 
                 return { success: true, data: res.data };
@@ -79,7 +91,35 @@ export const CourseProvider = ({ children }) => {
             setError(errorMsg);
             return { success: false, message: errorMsg };
         } finally {
-            setLoading(false);
+            setProgressLoading(false);
+        }
+    };
+
+    // Update video progress (for video content with progress tracking)
+    const updateVideoProgress = async (itemId, progressPercent) => {
+        try {
+            const payload = {
+                progress: Math.min(Math.max(progressPercent, 0), 100),
+                completed: progressPercent >= 100
+            };
+
+            const res = await updateContentProgress(itemId, payload);
+
+            if (res.success && selectedCourse) {
+                // Refresh course items progress to show updated progress
+                await fetchCourseItemsProgress(selectedCourse.id);
+
+                // If completed, also refresh overall course progress
+                if (progressPercent >= 100) {
+                    await fetchActualCourseProgress(selectedCourse.id);
+                    setCompletedItems(prev => new Set([...prev, itemId]));
+                }
+            }
+
+            return res;
+        } catch (err) {
+            console.error('Failed to update video progress:', err);
+            return { success: false, message: err.message };
         }
     };
 
@@ -132,20 +172,58 @@ export const CourseProvider = ({ children }) => {
         }
     };
 
-    // UPDATE the fetchCourseDetails function to fetch progress:
+    // Fetch detailed progress for all items in a course
+    const fetchCourseItemsProgress = async (courseId) => {
+        try {
+            const res = await getCourseItemsProgress(courseId);
+            if (res.success && res.data) {
+                const itemsProgressData = res.data;
+
+                // Update course items progress state
+                setCourseItemsProgress(prev => ({
+                    ...prev,
+                    [courseId]: itemsProgressData
+                }));
+
+                // Update completed items set based on backend data
+                const completedItemIds = itemsProgressData.items
+                    ?.filter(item => item.completed_at || item.progress >= 100)
+                    ?.map(item => item.content_id) || [];
+
+                setCompletedItems(prev => {
+                    const newSet = new Set(prev);
+                    completedItemIds.forEach(id => newSet.add(id));
+                    return newSet;
+                });
+
+                return { success: true, data: itemsProgressData };
+            }
+            return { success: false };
+        } catch (err) {
+            console.error('Failed to fetch course items progress:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Fetch course details with items and progress
     const fetchCourseDetails = async (courseId) => {
         setLoading(true);
         setError(null);
         try {
             const res = await getCourseById(courseId);
             if (res.success) {
-                setSelectedCourse({
+                const courseData = {
                     ...res.data.course,
                     items: res.data.items || []
-                });
+                };
 
-                // Fetch actual progress from backend
-                await fetchActualCourseProgress(courseId);
+                setSelectedCourse(courseData);
+
+                // Fetch both overall progress and detailed items progress
+                await Promise.all([
+                    fetchActualCourseProgress(courseId),
+                    fetchCourseItemsProgress(courseId)
+                ]);
 
                 return { success: true, data: res.data };
             } else {
@@ -159,14 +237,76 @@ export const CourseProvider = ({ children }) => {
             setLoading(false);
         }
     };
+    // Fetch processed documents for chatbot/viewing
+    const fetchProcessedDocuments = async () => {
+        try {
+            const res = await getProcessedDocuments();
+            if (res.success) {
+                setProcessedDocuments(res.data.documents || []);
+                return { success: true, data: res.data };
+            }
+            return { success: false, message: res.message };
+        } catch (err) {
+            console.error('Failed to fetch processed documents:', err);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Fetch all videos (using admin training API)
+    const fetchVideos = async () => {
+        try {
+            const res = await getVideos();
+            if (res?.success) {
+                console.log('CourseContext: Videos fetched:', res.data);
+                setVideos(res.data || []);
+                return { success: true, data: res.data };
+            } else {
+                throw new Error(res.message || 'Failed to fetch videos');
+            }
+        } catch (err) {
+            console.error('CourseContext: Failed to fetch videos:', err);
+            const errorMsg = err.response?.data?.message || err.message;
+            setError(errorMsg);
+            return { success: false, message: errorMsg };
+        }
+    };
+
+    // Fetch all external links (using admin training API)
+    const fetchExternalLinks = async () => {
+        try {
+            const res = await getExternalLinks();
+            if (res?.success) {
+                console.log('CourseContext: External links fetched:', res.data);
+                setExternalLinks(res.data || []);
+                return { success: true, data: res.data };
+            } else {
+                throw new Error(res.message || 'Failed to fetch external links');
+            }
+        } catch (err) {
+            console.error('CourseContext: Failed to fetch external links:', err);
+            const errorMsg = err.response?.data?.message || err.message;
+            setError(errorMsg);
+            return { success: false, message: errorMsg };
+        }
+    };
+
+    // Get video by ID
+    const getVideoById = (videoId) => {
+        return videos.find(video => video.id === videoId) || null;
+    };
+
+    // Get external link by ID
+    const getExternalLinkById = (linkId) => {
+        return externalLinks.find(link => link.id === linkId) || null;
+    };
+
     // Check if all items in a course are completed
     const isCourseCompleted = (courseItems) => {
         if (!courseItems || courseItems.length === 0) return false;
         return courseItems.every(item => completedItems.has(item.id));
     };
 
-    // Get progress for a course
-    // UPDATE the getCourseProgress function (rename to getLocalCourseProgress):
+    // Get local progress calculation for a course (fallback)
     const getLocalCourseProgress = (courseItems) => {
         if (!courseItems || courseItems.length === 0) return { completed: 0, total: 0, percentage: 0 };
         const completed = courseItems.filter(item => completedItems.has(item.id)).length;
@@ -175,22 +315,58 @@ export const CourseProvider = ({ children }) => {
         return { completed, total, percentage };
     };
 
+    // Get progress for a specific item
+    const getItemProgress = (courseId, itemId) => {
+        const courseProgress = courseItemsProgress[courseId];
+        if (!courseProgress || !courseProgress.items) return null;
+
+        return courseProgress.items.find(item => item.content_id === itemId) || null;
+    };
+
+    // Check if an item is completed
+    const isItemCompleted = (itemId) => {
+        return completedItems.has(itemId);
+    };
+
     return (
         <CourseContext.Provider
             value={{
+                // State
                 courses,
                 selectedCourse,
                 completedItems,
-                progressLoading,
+                courseItemsProgress,
+                processedDocuments,
+                videos,
+                externalLinks,
                 loading,
+                progressLoading,
                 error,
+
+                // Course functions
                 fetchCourses,
                 fetchCourseDetails,
+
+                // Progress functions
                 markModuleDone,
-                isCourseCompleted,
-                getCourseProgress: getLocalCourseProgress,  // Keep local calc for fallback
+                updateVideoProgress,
                 fetchActualCourseProgress,
-                // ADD THIS - fetch from API
+                fetchCourseItemsProgress,
+
+                // Document functions
+                fetchProcessedDocuments,
+
+                // Video & Link functions
+                fetchVideos,
+                fetchExternalLinks,
+                getVideoById,
+                getExternalLinkById,
+
+                // Utility functions
+                isCourseCompleted,
+                getCourseProgress: getLocalCourseProgress,  // Local calculation fallback
+                getItemProgress,
+                isItemCompleted,
             }}
         >
             {children}

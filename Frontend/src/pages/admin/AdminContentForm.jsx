@@ -5,7 +5,7 @@ import { X, Save } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input2 from "../../components/ui/Input2";
 import TextArea2 from "../../components/ui/TextArea2";
-import Select2 from "../../components/ui/Select2";  // CHANGE TO Select2
+import Select2 from "../../components/ui/Select2";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 
@@ -17,25 +17,66 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
     description: "",
     type: "document",
     document_id: "",
-    storage_url: "",
-    external_url: "",
+    video_id: "",
+    external_link_id: "",
   });
+
+  const [availableDocuments, setAvailableDocuments] = useState([]);
+  const [availableVideos, setAvailableVideos] = useState([]);
+  const [availableLinks, setAvailableLinks] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
 
-  // Populate form if editing
+  // Load available resources and populate form if editing
   useEffect(() => {
+    loadAvailableResources();
+
     if (editingContent) {
       setFormData({
         title: editingContent.title || "",
         description: editingContent.description || "",
         type: editingContent.type || "document",
         document_id: editingContent.document_id?.toString() || "",
-        storage_url: editingContent.storage_url || "",
-        external_url: editingContent.external_url || "",
+        video_id: editingContent.video_id?.toString() || "",
+        external_link_id: editingContent.external_link_id?.toString() || "",
       });
     }
   }, [editingContent]);
+
+  const {
+    fetchProcessedDocuments,
+    fetchVideos,
+    fetchExternalLinks
+  } = useAdminTraining();
+
+  const loadAvailableResources = async () => {
+    try {
+      const docsResult = await fetchProcessedDocuments();
+      if (docsResult.success) {
+        setAvailableDocuments(docsResult.data?.documents || []);
+      }
+    } catch (err) {
+      console.error('Failed to load documents:', err);
+    }
+
+    try {
+      const videosResult = await fetchVideos();
+      if (videosResult.success) {
+        setAvailableVideos(videosResult.data?.videos || []);
+      }
+    } catch (err) {
+      console.error('Failed to load videos:', err);
+    }
+
+    try {
+      const linksResult = await fetchExternalLinks();
+      if (linksResult.success) {
+        setAvailableLinks(linksResult.data?.links || []);
+      }
+    } catch (err) {
+      console.error('Failed to load links:', err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,7 +85,7 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // ADD THIS CHECK
     if (!courseId) {
       console.error('courseId is missing!');
@@ -69,9 +110,9 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
     if (formData.type === "document") {
       submitData.document_id = formData.document_id ? parseInt(formData.document_id) : null;
     } else if (formData.type === "video") {
-      submitData.storage_url = formData.storage_url.trim() || null;
+      submitData.video_id = formData.video_id ? parseInt(formData.video_id) : null;
     } else if (formData.type === "link") {
-      submitData.external_url = formData.external_url.trim() || null;
+      submitData.external_link_id = formData.external_link_id ? parseInt(formData.external_link_id) : null;
     }
 
     console.log('Submitting to courseId:', courseId); // DEBUG
@@ -171,46 +212,98 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
 
           {/* Type-specific fields */}
           {formData.type === "document" && (
-            <Input2
-              label="Document ID"
+            <Select2
+              label="Select Document"
               name="document_id"
-              type="number"
               value={formData.document_id}
               onChange={handleChange}
-              placeholder="Enter document ID"
               required
               disabled={submitting}
-              helpText="The ID of the uploaded document"
+              options={[
+                { label: "Select a document...", value: "" },
+                ...availableDocuments.map(doc => ({
+                  label: doc.title || doc.filename,
+                  value: doc.id.toString()
+                }))
+              ]}
+              helpText="Choose from uploaded and processed documents"
             />
           )}
 
           {formData.type === "video" && (
-            <Input2
-              label="Video URL"
-              name="storage_url"
-              type="url"
-              value={formData.storage_url}
+            <Select2
+              label="Select Video"
+              name="video_id"
+              value={formData.video_id}
               onChange={handleChange}
-              placeholder="https://example.com/video.mp4"
               required
               disabled={submitting}
-              helpText="URL to the video file"
+              options={[
+                { label: "Select a video...", value: "" },
+                ...availableVideos.map(video => ({
+                  label: video.title,
+                  value: video.id.toString()
+                }))
+              ]}
+              helpText="Choose from uploaded videos"
             />
           )}
 
           {formData.type === "link" && (
-            <Input2
-              label="External URL"
-              name="external_url"
-              type="url"
-              value={formData.external_url}
+            <Select2
+              label="Select External Link"
+              name="external_link_id"
+              value={formData.external_link_id}
               onChange={handleChange}
-              placeholder="https://example.com"
               required
               disabled={submitting}
-              helpText="External link or resource URL"
+              options={[
+                { label: "Select a link...", value: "" },
+                ...availableLinks.map(link => ({
+                  label: `${link.title} (${link.url})`,
+                  value: link.id.toString()
+                }))
+              ]}
+              helpText="Choose from created external links"
             />
           )}
+
+          {/* Quick Actions */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <p className="text-sm text-gray-600 mb-3">Need to add new content?</p>
+            <div className="flex gap-2">
+              {formData.type === "video" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('/admin/training/library', '_blank')}
+                >
+                  Upload New Video
+                </Button>
+              )}
+              {formData.type === "link" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('/admin/training/library', '_blank')}
+                >
+                  Create New Link
+                </Button>
+              )}
+              {formData.type === "document" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('/admin')}
+                >
+                  Upload New Document
+                </Button>
+              )}
+            </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-4">

@@ -2,18 +2,32 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { Plus, BookOpen, Calendar, Menu, Home, Users, Settings, FileText } from "lucide-react";
+import { Plus, BookOpen, Calendar, Menu, Home, Users, Settings, FileText, Search, Filter, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 import Sidebar from "../../components/ui/Sidebar";
+import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const AdminTrainingList = () => {
   const navigate = useNavigate();
-  const { courses, loading, error, fetchCourses, clearMessages } = useAdminTraining();
+  const { 
+    courses, 
+    loading, 
+    error, 
+    success,
+    fetchCourses, 
+    activateExistingCourse,
+    deactivateExistingCourse,
+    deleteExistingCourse,
+    clearMessages 
+  } = useAdminTraining();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [filter, setFilter] = useState('all'); // 'all', 'active', 'inactive'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/admin' },
@@ -33,6 +47,34 @@ const AdminTrainingList = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Filter courses based on search and status
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (course.department && course.department.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesFilter = filter === 'all' || 
+                         (filter === 'active' && course.is_active) ||
+                         (filter === 'inactive' && !course.is_active);
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleToggleStatus = async (course) => {
+    if (course.is_active) {
+      await deactivateExistingCourse(course.id);
+    } else {
+      await activateExistingCourse(course.id);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    const result = await deleteExistingCourse(courseId);
+    if (result.success) {
+      setShowDeleteConfirm(null);
+    }
   };
 
   if (loading && courses.length === 0) {
@@ -87,53 +129,189 @@ const AdminTrainingList = () => {
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Training Courses</h1>
           <p className="text-gray-600 mt-1 font-medium">Manage all training courses and content</p>
+          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+            <span>Total: {courses.length}</span>
+            <span className="text-green-600">Active: {courses.filter(c => c.is_active).length}</span>
+            <span className="text-gray-500">Inactive: {courses.filter(c => !c.is_active).length}</span>
+          </div>
         </div>
-        <Button
-          onClick={() => navigate("/admin/training/create")}
-          className="flex items-center gap-2"
-        >
-          <Plus size={20} />
-          Create Course
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/admin/training/library")}
+            className="flex items-center gap-2"
+          >
+            <FileText size={20} />
+            Content Library
+          </Button>
+          <Button
+            onClick={() => navigate("/admin/training/create")}
+            className="flex items-center gap-2"
+          >
+            <Plus size={20} />
+            Create Course
+          </Button>
+        </div>
       </div>
 
-      {/* Error Alert */}
+      {/* Alerts */}
+      {success && (
+        <Alert variant="success" className="mb-6" onClose={clearMessages}>
+          {success}
+        </Alert>
+      )}
       {error && (
         <Alert variant="error" className="mb-6" onClose={clearMessages}>
           {error}
         </Alert>
       )}
 
+      {/* Filters and Search */}
+      <Card className="mb-6">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search courses..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FDB913] focus:border-[#FDB913]"
+            />
+          </div>
+          
+          {/* Status Filter */}
+          <div className="flex gap-2">
+            <Button
+              variant={filter === 'all' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('all')}
+            >
+              All
+            </Button>
+            <Button
+              variant={filter === 'active' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('active')}
+            >
+              Active
+            </Button>
+            <Button
+              variant={filter === 'inactive' ? 'primary' : 'outline'}
+              size="sm"
+              onClick={() => setFilter('inactive')}
+            >
+              Inactive
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       {/* Courses Grid */}
-      {courses.length === 0 ? (
+      {filteredCourses.length === 0 ? (
         <Card className="text-center py-16">
           <BookOpen size={64} className="mx-auto text-gray-300 mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">
-            No courses yet
+            {courses.length === 0 ? "No courses yet" : "No courses match your filters"}
           </h3>
           <p className="text-gray-500 mb-6">
-            Get started by creating your first training course
+            {courses.length === 0 
+              ? "Get started by creating your first training course"
+              : "Try adjusting your search or filter criteria"
+            }
           </p>
-          <Button onClick={() => navigate("/admin/training/create")}>
-            Create First Course
-          </Button>
+          {courses.length === 0 && (
+            <Button onClick={() => navigate("/admin/training/create")}>
+              Create First Course
+            </Button>
+          )}
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {filteredCourses.map((course) => (
             <Card
               key={course.id}
-              className="hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => navigate(`/admin/training/course/${course.id}`)}
+              className="hover:shadow-lg transition-shadow group relative"
             >
+              {/* Course Actions Dropdown */}
+              <div className="absolute top-4 right-4 z-10">
+                <div className="relative group/menu">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical size={16} />
+                  </Button>
+                  
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/training/course/${course.id}`);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <BookOpen size={16} />
+                      View Details
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/training/edit/${course.id}`);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Edit size={16} />
+                      Edit Course
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(course);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      {course.is_active ? (
+                        <>
+                          <PowerOff size={16} />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <Power size={16} />
+                          Activate
+                        </>
+                      )}
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(course);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Thumbnail */}
-              <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg overflow-hidden mb-4">
+              <div 
+                className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg overflow-hidden mb-4 cursor-pointer"
+                onClick={() => navigate(`/admin/training/course/${course.id}`)}
+              >
                 {course.thumbnail_url ? (
                   <img
                     src={course.thumbnail_url}
                     alt={course.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    onClick={() => navigate(`/admin/training/course/${course.id}`)}
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -143,8 +321,10 @@ const AdminTrainingList = () => {
               </div>
 
               {/* Content */}
-              <div className="px-4 pb-4"
-              onClick={() => navigate(`/admin/training/course/${course.id}`)}>
+              <div 
+                className="px-4 pb-4 cursor-pointer"
+                onClick={() => navigate(`/admin/training/course/${course.id}`)}
+              >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
                   {course.title}
                 </h3>
@@ -155,7 +335,7 @@ const AdminTrainingList = () => {
                   </p>
                 )}
 
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                   <div className="flex items-center gap-1">
                     <Calendar size={14} />
                     <span>{formatDate(course.created_at)}</span>
@@ -168,7 +348,7 @@ const AdminTrainingList = () => {
                 </div>
 
                 {/* Status Badge */}
-                <div className="mt-3">
+                <div className="flex items-center justify-between">
                   <span
                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                       course.is_active
@@ -178,11 +358,39 @@ const AdminTrainingList = () => {
                   >
                     {course.is_active ? "Active" : "Inactive"}
                   </span>
+                  
+                  {/* Quick Actions */}
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/training/edit/${course.id}`);
+                      }}
+                      className="text-gray-500 hover:text-indigo-600"
+                    >
+                      <Edit size={14} />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete Course"
+          message={`Are you sure you want to delete "${showDeleteConfirm.title}"? This action cannot be undone and will remove all course content.`}
+          confirmText="Delete Course"
+          cancelText="Cancel"
+          onConfirm={() => handleDeleteCourse(showDeleteConfirm.id)}
+          onCancel={() => setShowDeleteConfirm(null)}
+          variant="danger"
+        />
       )}
           </div>
         </main>

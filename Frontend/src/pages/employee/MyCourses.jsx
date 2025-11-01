@@ -27,13 +27,14 @@ const MyCourses = () => {
         { icon: Settings, label: 'Chatbot', path: '/employee/chatbot' },
     ];
 
-    // Optimized useEffect to prevent multiple API calls
+    // Fetch progress for courses when they are loaded
     useEffect(() => {
         const fetchProgressForCourses = async () => {
             if (courses.length > 0) {
                 // Only fetch progress for courses that don't already have progress data
                 const coursesNeedingProgress = courses.filter(course => !course.progressData);
                 if (coursesNeedingProgress.length > 0) {
+                    console.log('Fetching progress for courses:', coursesNeedingProgress.map(c => c.id));
                     const progressPromises = coursesNeedingProgress.map(course =>
                         fetchActualCourseProgress(course.id)
                     );
