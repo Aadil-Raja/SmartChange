@@ -1,7 +1,7 @@
 # ============================================================================
 # FILE: app/repositories/courseContent_repo.py
 # ============================================================================
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session , joinedload
 from typing import Optional, List
 from shared.models.course import Course
 from shared.models.course_content import ContentItem, ContentType
@@ -21,18 +21,31 @@ def course_to_dict(c: Course) -> dict:
     }
 
 def item_to_dict(i: ContentItem) -> dict:
+    content_type = i.type.value if hasattr(i.type, "value") else str(i.type)
+
+    if content_type == "document":
+        access_url = i.document.cloudinary_url if i.document else None
+    elif content_type == "video":
+        access_url = i.video.cloudinary_url if i.video else None
+    elif content_type == "link":
+        access_url = i.external_link.url if i.external_link else None
+    else:
+        access_url = None
+
     return {
         "id": i.id,
         "course_id": i.course_id,
         "title": i.title,
         "description": i.description,
-        "type": i.type.value if hasattr(i.type, "value") else str(i.type),
+        "type": content_type,
         "document_id": i.document_id,
         "video_id": i.video_id,
         "external_link_id": i.external_link_id,
         "created_at": i.created_at,
-    }
 
+        # 🔽 only new field
+        "access_url": access_url,
+    }
 # ---- courses ----
 def create_course(db: Session, *, title: str, description: Optional[str], department: Optional[str], created_by: int) -> Course:
     course = Course(
@@ -119,11 +132,15 @@ def delete_course_thumbnail(db: Session, course_id: int) -> bool:
 def list_items_for_course(db: Session, *, course_id: int) -> List[ContentItem]:
     return (
         db.query(ContentItem)
-          .filter(ContentItem.course_id == course_id)
-          .order_by(ContentItem.created_at.asc())
-          .all()
+        .options(
+            joinedload(ContentItem.document),
+            joinedload(ContentItem.video),
+            joinedload(ContentItem.external_link),
+        )
+        .filter(ContentItem.course_id == course_id)
+        .order_by(ContentItem.created_at.asc())
+        .all()
     )
-
 def add_content_item(
     db: Session,
     *,

@@ -32,7 +32,7 @@ async def signup(
     *,
     email: str,
     password: str,
-    name: str | None = None,
+    name: str,
     background_tasks: BackgroundTasks,
 ):
     """
@@ -54,7 +54,7 @@ async def signup(
     try:
         user.email_verified = False
         if name:
-            user.name = name
+            user.Name = name
         db.commit()
         db.refresh(user)
     except Exception:

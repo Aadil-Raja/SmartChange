@@ -135,9 +135,8 @@ def get_course_route(
         if not course or not course.get("is_active"):
             return make_response(False, "Course not found", status_code=404)
 
-        items_raw: List[Dict[str, Any]] = data.get("items", [])
-        items = [_shape_employee_item(db, it) for it in items_raw]
-
+       
+        items=data.get("items", [])
         return make_response(True, "OK", data={"course": course, "items": items})
     except Exception as e:
         return make_response(False, str(e), status_code=500)

@@ -24,7 +24,7 @@ async def signup(
             db,
             email=payload.email,
             password=payload.password,
-            # name=payload.name,
+            name=payload.name,
             background_tasks=background_tasks
         )
     except Exception as e:

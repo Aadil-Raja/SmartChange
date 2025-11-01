@@ -14,7 +14,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
-
+    Name = Column(String)
     password_hash = Column(String, nullable=True)
     firebase_uid = Column(String, unique=True, nullable=True, index=True)
     auth_provider = Column(String, default="local", nullable=False)  # "local" | "google"

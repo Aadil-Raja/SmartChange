@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from shared.models import Announcement, AnnouncementComment
 
 def create_announcement(db: Session, *, team_id: int, author_id: int, title: str, body: str) -> Announcement:
