@@ -11,5 +11,7 @@ from .course_content import ContentItem, ContentType
 from .Audit import DocumentProcessingAudit, ProcessingStatus, ProcessingStage
 from .Video import Video
 from .external_link import ExternalLink
-__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video","ExternalLink"]
+from .progress import UserProgress, UserCourseStar
+__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
+           "ExternalLink","UserProgress","UserCourseStar"]
 

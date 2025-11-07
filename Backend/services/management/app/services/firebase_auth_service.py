@@ -100,6 +100,7 @@ def login_with_google(db: Session, *, id_token: str):
         data={
             "access_token": token,
             "token_type": "bearer"
+            ,"name": user.Name
         },
         status_code=200
     )

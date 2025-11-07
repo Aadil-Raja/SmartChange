@@ -21,3 +21,22 @@ class UserProgress(Base):
 
     # relationships (optional, for joined queries)
     content = relationship("ContentItem", lazy="joined")
+
+
+
+class UserCourseStar(Base):
+    """Track which courses a user has starred/bookmarked"""
+    __tablename__ = "user_course_stars"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False)
+    starred_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "course_id", name="uq_user_course_star"),
+    )
+
+    # relationships
+    user = relationship("User", backref="starred_courses")
+    course = relationship("Course", backref="starred_by_users")

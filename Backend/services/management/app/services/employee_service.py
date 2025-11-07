@@ -5,6 +5,8 @@ from typing import Dict, Any, List
 from shared.models import Team, TeamMember, TeamMemberRole
 from app.repositories import progress_repo as prog_repo
 from app.repositories import courseContent_repo as content_repo
+from app.repositories import course_stars_repo
+from app.services import courseContent_service
 def get_my_teams(db, user):
     rows = teams_repo.get_teams_for_user(db, user.id)
     data = []
@@ -163,3 +165,122 @@ def course_items_progress(
         })
 
     return {"course_id": course_id, "items": result}
+
+
+
+
+def star_course(db: Session, *, user_id: int, course_id: int) -> Dict[str, Any]:
+    """Star/bookmark a course"""
+    # Verify course exists and is active
+    course = content_repo.get_course(db, course_id=course_id)
+    if not course:
+        return make_response(False, "Course not found", status_code=404)
+    
+    if not course.is_active:
+        return make_response(False, "Cannot star inactive course", status_code=400)
+    
+    # Star it (idempotent)
+    star = course_stars_repo.star_course(db, user_id=user_id, course_id=course_id)
+    
+    return make_response(True, "Course starred successfully", data={
+        "course_id": course_id,
+        "starred_at": star.starred_at
+    }, status_code=200)
+
+
+def unstar_course(db: Session, *, user_id: int, course_id: int) -> Dict[str, Any]:
+    """Remove star/bookmark from a course"""
+    deleted = course_stars_repo.unstar_course(db, user_id=user_id, course_id=course_id)
+    
+    if not deleted:
+        return make_response(False, "Course was not starred", status_code=404)
+    
+    return make_response(True, "Course unstarred successfully", data={
+        "course_id": course_id
+    }, status_code=200)
+
+
+def get_starred_courses(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """Get all starred courses with their progress"""
+    starred_course_ids = course_stars_repo.list_starred_course_ids(db, user_id=user_id)
+    
+    if not starred_course_ids:
+        return {"starred_courses": []}
+    
+    # Get course details
+    courses = content_repo.list_courses_by_ids(db, course_ids=starred_course_ids)
+    
+    # Calculate progress for each
+    result = []
+    for course in courses:
+        if not course.get("is_active"):
+            continue  # Skip inactive courses
+        
+        progress_data = course_progress(db, user_id=user_id, course_id=course["id"])
+        
+        result.append({
+            "id": course["id"],
+            "title": course["title"],
+            "description": course.get("description"),
+            "progress": progress_data["percent"],
+            "completed_items": progress_data["completed_items"],
+            "total_items": progress_data["total_items"],
+            "is_completed": progress_data["percent"] >= 100.0,
+             "department": course.get("department"),
+                "thumbnail_url": course.get("thumbnail_url"),
+        })
+    
+    return {"starred_courses": result}
+
+
+def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Get comprehensive overview of user's courses categorized by:
+    - Starred courses
+    - In Progress courses (not completed)
+    - Completed courses
+    """
+    # Get all active courses
+    all_courses_data = courseContent_service.list_courses(db, active_only=True)
+    all_courses = all_courses_data.get("courses", [])
+    
+    # Get starred course IDs
+    starred_ids = set(course_stars_repo.list_starred_course_ids(db, user_id=user_id))
+    
+    starred_courses = []
+    in_progress_courses = []
+    completed_courses = []
+    
+    for course in all_courses:
+        course_id = course["id"]
+        
+        # Calculate progress
+        progress_data = course_progress(db, user_id=user_id, course_id=course_id)
+        percent = progress_data["percent"]
+        
+        course_info = {
+            "id": course_id,
+            "title": course["title"],
+            "description": course.get("description"),
+            "progress": percent,
+            "completed_items": progress_data["completed_items"],
+            "total_items": progress_data["total_items"],
+            "is_starred": course_id in starred_ids,
+            "department": course.get("department"),
+                "thumbnail_url": course.get("thumbnail_url"),
+        }
+        
+        # Categorize
+        if course_id in starred_ids:
+            starred_courses.append(course_info)
+        
+        if percent >= 100.0:
+            completed_courses.append(course_info)
+        elif percent > 0:
+            in_progress_courses.append(course_info)
+    
+    return {
+        "starred": starred_courses,
+        "in_progress": in_progress_courses,
+        "completed": completed_courses,
+    }

@@ -233,3 +233,104 @@ def get_course_items_progress_route(
         return make_response(True, "OK", data=data)
     except Exception as e:
         return make_response(False, str(e), status_code=500)
+    
+
+
+
+
+    
+# ---------------------------
+# Starred Courses (Bookmarks)
+# ---------------------------
+@router.post("/courses/{course_id}/star", status_code=status.HTTP_200_OK)
+def star_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Star/bookmark a course for the current user.
+    Idempotent - can be called multiple times safely.
+    """
+    try:
+        return employee_service.star_course(db, user_id=user.id, course_id=course_id)
+    except Exception as e:
+        return make_response(False, str(e), status_code=500)
+
+
+@router.delete("/courses/{course_id}/star", status_code=status.HTTP_200_OK)
+def unstar_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Remove star/bookmark from a course.
+    Returns 404 if the course wasn't starred.
+    """
+    try:
+        return employee_service.unstar_course(db, user_id=user.id, course_id=course_id)
+    except Exception as e:
+        return make_response(False, str(e), status_code=500)
+
+
+@router.get("/courses-starred", status_code=status.HTTP_200_OK)
+def get_starred_courses_route(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Get all starred courses for the current user with their progress.
+    Returns:
+    {
+      "starred_courses": [
+        {
+          "id": 1,
+          "title": "...",
+          "description": "...",
+          "progress": 45.5,
+          "completed_items": 5,
+          "total_items": 11,
+          "is_completed": false
+        },
+        ...
+      ]
+    }
+    """
+
+    try:
+        data = employee_service.get_starred_courses(db, user_id=user.id)
+        return make_response(True, "OK", data=data)
+    except Exception as e:
+        return make_response(False, str(e), status_code=500)
+
+
+# ---------------------------
+# Personal Course Overview
+# ---------------------------
+@router.get("/me/courses/overview", status_code=status.HTTP_200_OK)
+def get_my_courses_overview_route(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Get a comprehensive overview of all courses categorized by:
+    - Starred: Courses the user has bookmarked
+    - In Progress: Courses with 0 < progress < 100
+    - Completed: Courses with progress = 100
+    
+    Each course includes progress data.
+    This is ideal for a personal dashboard/profile page.
+    
+    Returns:
+    {
+      "starred": [...],
+      "in_progress": [...],
+      "completed": [...]
+    }
+    """
+    try:
+        data = employee_service.get_courses_overview(db, user_id=user.id)
+        return make_response(True, "OK", data=data)
+    except Exception as e:
+        return make_response(False, str(e), status_code=500)

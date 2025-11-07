@@ -211,7 +211,8 @@ async def login_password(
         "Login successful",
         data={
             "access_token": token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "name": user.Name
         },
         status_code=200
     )
@@ -295,6 +296,7 @@ async def login_verify_code(
         data={
             "access_token": token,
             "token_type": "bearer"
+            ,"name": user.Name
         },
         status_code=200
     )

@@ -2,7 +2,7 @@
 # FILE: app/repositories/courseContent_repo.py
 # ============================================================================
 from sqlalchemy.orm import Session , joinedload
-from typing import Optional, List
+from typing import Optional, List ,Dict, Any
 from shared.models.course import Course
 from shared.models.course_content import ContentItem, ContentType
 from shared.models.Video import Video
@@ -200,3 +200,31 @@ def delete_content_item(db: Session, *, content_id: int) -> bool:
     db.delete(item)
     db.commit()
     return True
+
+
+
+def list_courses_by_ids(db: Session, *, course_ids: List[int]) -> List[Dict[str, Any]]:
+    """
+    Get multiple courses by their IDs.
+    Returns list of course dictionaries.
+    """
+    from shared.models.course import Course
+    
+    courses = (
+        db.query(Course)
+        .filter(Course.id.in_(course_ids))
+        .all()
+    )
+    
+    return [
+        {
+            "id": c.id,
+            "title": c.title,
+            "description": c.description,
+            "is_active": c.is_active,
+             "department": c.department,
+              "thumbnail_url": c.thumbnail_url,
+             
+        }
+        for c in courses
+    ]
