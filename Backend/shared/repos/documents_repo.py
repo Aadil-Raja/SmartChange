@@ -251,7 +251,7 @@ def attach_cloudinary_fields(
     document_id: int,
     url: str,
     public_id: Optional[str],
-    thumbnail_url: Optional[str] = None  # 🆕 NEW PARAMETER
+    thumbnail_url: Optional[str] = None
 ) -> Optional[Document]:
     """
     Attach Cloudinary URL, public_id, and thumbnail URL to a document.
@@ -279,3 +279,67 @@ def attach_cloudinary_fields(
     
     logger.info(f"Attached Cloudinary fields to document {document_id}")
     return doc
+
+
+# 🆕 NEW FUNCTION: Update main topics
+def update_main_topics(
+    db: Session,
+    *,
+    document_id: int,
+    main_topics: dict
+) -> Optional[Document]:
+    """
+    Update the main topics for a document.
+    Topics are stored as key-value pairs: {topic_name: description}
+    
+    Args:
+        db: SQLAlchemy session
+        document_id: Document ID
+        main_topics: Dictionary of {topic_name: description/sub-topics}
+        
+    Returns:
+        Updated Document or None if not found
+    """
+    doc = get_by_id(db, document_id)
+    if not doc:
+        logger.warning(f"Document {document_id} not found for main topics update")
+        return None
+    
+    doc.main_topics = main_topics
+    doc.updated_at = func.now()
+    db.commit()
+    db.refresh(doc)
+    
+    logger.info(f"Updated main topics for document {document_id}: {list(main_topics.keys())}")
+    return doc
+
+
+# 🆕 NEW FUNCTION: Get all unique main topics with descriptions
+def get_all_main_topics(db: Session,    *,
+    document_id: int) -> dict:
+    """
+    Get all unique main topics across all documents with their descriptions.
+    If the same topic appears in multiple documents, uses the first occurrence.
+    
+    Args:
+        db: SQLAlchemy session
+        
+    Returns:
+        Dictionary of {topic_name: description}, sorted by topic name
+    """
+    # Query all documents that have main_topics
+    doc = get_by_id(db, document_id)
+    
+    # Collect all unique topics with their descriptions
+    topics_dict = {}
+    if doc.main_topics and isinstance(doc.main_topics, dict):
+            for topic_name, description in doc.main_topics.items():
+          
+                if topic_name not in topics_dict:
+                    topics_dict[topic_name] = description
+    
+    # Return sorted dictionary by topic name
+    sorted_topics = dict(sorted(topics_dict.items()))
+    
+    logger.info(f"Retrieved {len(sorted_topics)} unique main topics")
+    return sorted_topics

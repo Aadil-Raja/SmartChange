@@ -4,8 +4,9 @@ import sys, traceback
 from app.deps.db import get_db
 from app.deps.auth import get_current_admin
 import shared.schemas as schemas
+from shared.schemas.training_admin import MainTopicsUpdate  # 🆕 Import MainTopicsUpdate
 from app.services import admin_service,documents_service
-from app.utils.response_utils import make_response  # ✅ new import
+from app.utils.response_utils import make_response
 from fastapi import Path
 router = APIRouter()
 
@@ -183,54 +184,6 @@ def delete_user_route(
 # Document Management (Admin only)
 # ---------------------------
 
-# @router.post("/documents/upload")
-# async def upload_document(
-#     f: UploadFile = File(...),
-#     db: Session = Depends(get_db),
-#      _admin=Depends(get_current_admin),
-# ):
-#     data = await f.read()
-#     if not data:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
-
-#     # dummy uploader for now; later use get_current_admin().id
-#     try:
-#             return documents_service.upload_document_local(
-#                 db,
-#                 user_id=_admin.id,
-#                 file_bytes=data,
-#                 filename=f.filename,
-#                 mime=f.content_type,
-#             )
-#     except Exception as e:
-#             return make_response(False, "Could not upload document", status_code=500)
-
-
-# @router.post("/documents/upload", status_code=status.HTTP_201_CREATED)
-# async def upload_document(
-#     f: UploadFile = File(...),
-#     db: Session = Depends(get_db),
-#     _admin=Depends(get_current_admin),
-# ):
-#     data = await f.read()
-#     if not data:
-#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
-
-#     try:
-     
-#         return documents_service.upload_document_dual(
-#             db,
-#             user_id=_admin.id,
-#             file_bytes=data,
-#             filename=f.filename,
-#             mime=f.content_type,
-#             title=None,
-#             fail_if_cloudinary_fails=False,
-#         )
-#     except Exception:
-#         return make_response(False, "Could not upload document", status_code=500)
-
-
 @router.post("/documents/upload", status_code=status.HTTP_201_CREATED)
 async def upload_document(
     f: UploadFile = File(...),
@@ -270,23 +223,21 @@ async def upload_document(
         return make_response(False, f"Could not upload document: {e}", status_code=500)
 
 @router.get("/documents/list")
-async def upload_document(
-
+async def list_documents_route(
     db: Session = Depends(get_db),
-     _admin=Depends(get_current_admin),
+    _admin=Depends(get_current_admin),
 ):
     try:
-        return documents_service.list_documents(
-            db)
+        return documents_service.list_documents(db)
     except Exception as e:
         return make_response(False, "Could not list documents", status_code=500)
 
 
 @router.post("/documents/{document_id}/queue")
 async def queue_document_route(
-    document_id: int ,
+    document_id: int,
     db: Session = Depends(get_db),
-    _admin = Depends(get_current_admin),  # re-enable later
+    _admin = Depends(get_current_admin),
 ):
     try:
         return documents_service.queue_document(db, document_id=document_id)
@@ -294,7 +245,6 @@ async def queue_document_route(
         print(f"Error queueing document {document_id}: {e}")
         traceback.print_exc()
         return make_response(False, f"Could not queue Document: {str(e)}", status_code=500)
-        
 
 
 @router.get("/jobs/{job_id}")
@@ -318,3 +268,49 @@ def get_processing_jobs(
         return documents_service.list_processing_jobs(db)
     except Exception as e:
         return make_response(False, "Could not fetch processing jobs", status_code=500)
+
+
+# 🆕 NEW ROUTES: Main Topics Management
+
+@router.patch("/documents/{document_id}/main-topics", status_code=status.HTTP_200_OK)
+async def update_document_main_topics(
+    document_id: int,
+    payload: MainTopicsUpdate,  # 🆕 Using imported schema
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Update the main topics for a document.
+    
+    Args:
+        document_id: ID of the document to update
+        payload: MainTopicsUpdate schema with list of topics
+        
+    Returns:
+        Updated document with new main topics
+    """
+    try:
+        return documents_service.update_main_topics(
+            db, 
+            document_id=document_id, 
+            main_topics=payload.main_topics
+        )
+    except Exception as e:
+        print(f"Error updating main topics for document {document_id}: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Could not update main topics: {str(e)}", status_code=500)
+
+
+@router.get("/documents/{document_id}/main-topics", status_code=status.HTTP_200_OK)
+async def get_all_main_topics(
+       document_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+  
+    try:
+        return documents_service.list_main_topics(db,document_id=document_id)
+    except Exception as e:
+        print(f"Error fetching main topics: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Could not fetch main topics: {str(e)}", status_code=500)

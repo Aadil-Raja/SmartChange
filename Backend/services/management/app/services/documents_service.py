@@ -31,6 +31,7 @@ def _doc_to_dict(row) -> dict:
         "cloudinary_url": doc.cloudinary_url,           # handy for preview/open
         "cloudinary_public_id": doc.cloudinary_public_id,
         "cloudinary_thumbnail_url": doc.cloudinary_thumbnail_url,
+        "main_topics": doc.main_topics,  # 🆕 NEW FIELD
     }
 
 
@@ -304,3 +305,75 @@ def list_processing_jobs(db: Session):
         data={"jobs": jobs, "total": len(jobs), "stats": stats},
         status_code=200
     )
+
+
+# 🆕 NEW FUNCTION: Update main topics
+def update_main_topics(db: Session, *, document_id: int, main_topics: dict):
+    """
+    Update the main topics for a document.
+    Topics are stored as key-value pairs (topic name -> description/sub-topics).
+    
+    Args:
+        db: SQLAlchemy session
+        document_id: Document ID
+        main_topics: Dictionary of {topic_name: description}
+        
+    Returns:
+        Response with updated document
+    """
+    print(f"[update_main_topics] Updating topics for document_id={document_id}", file=sys.stderr)
+    print(f"[update_main_topics] Topics data: {main_topics}", file=sys.stderr)
+    
+    try:
+        doc = documents_repo.update_main_topics(db, document_id=document_id, main_topics=main_topics)
+        
+        if not doc:
+            return make_response(False, "Document not found", status_code=404)
+        
+        print(f"[update_main_topics] Topics updated successfully for doc_id={document_id}", file=sys.stderr)
+        
+        return make_response(
+            True,
+            "Main topics updated successfully",
+            data={
+                "document_id": doc.id,
+                "main_topics": doc.main_topics,
+                "updated_at": doc.updated_at
+            },
+            status_code=200
+        )
+    except Exception as e:
+        print(f"[update_main_topics] ERROR updating topics: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Failed to update topics: {str(e)}", status_code=500)
+
+
+# 🆕 NEW FUNCTION: Get all unique main topics with their descriptions
+def list_main_topics(db: Session, *, document_id: int):
+    """
+    Get all unique main topics across all documents with their descriptions.
+    Returns a merged view of all topics with example descriptions.
+    
+    Returns:
+        Response with dictionary of unique topics and their descriptions
+    """
+    print("[list_main_topics] Fetching all main topics", file=sys.stderr)
+    
+    try:
+        topics_dict = documents_repo.get_all_main_topics(db,document_id=document_id)
+        
+       
+        
+        return make_response(
+            True,
+            "Main topics retrieved successfully",
+            data={
+                "topics": topics_dict
+            
+            },
+            status_code=200
+        )
+    except Exception as e:
+        print(f"[list_main_topics] ERROR fetching topics: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, f"Failed to retrieve topics: {str(e)}", status_code=500)

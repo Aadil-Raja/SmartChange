@@ -10,12 +10,33 @@ import sys
 
 settings = get_settings()
 from app.services.tools.doc_qa_tool import make_doc_qa_tool
+from app.services.tools.doc_topics_tool import make_doc_topics_tool
+from app.services.tools.doc_summary_tool import make_doc_summary_tool
 
 SYSTEM_PROMPT = """
 You are a corporate training assistant.
 This chat turn is restricted to ONE selected document.
 Use the conversation history to understand context and follow-up questions.
 When the user says "it", "that", "the previous answer", refer to the chat history.
+
+Available tools:
+- doc_qa_tool: For specific questions about document content
+- doc_topics_tool: For getting an overview or main topics list
+- doc_summary_tool: For generating a comprehensive summary of the document
+
+Use doc_topics_tool when user asks for:
+- Overview or list of topics
+- What topics are covered
+- Main topics/themes
+
+Use doc_summary_tool when user asks for:
+- Summary of the document
+- Summarize this document
+- Give me a summary
+- What does this document say (in summary form)
+
+Use doc_qa_tool for specific questions about document content.
+
 If the tool returns no context, say you don't know. Keep responses concise.
 Always reflect the tool's result faithfully.
 """
@@ -36,7 +57,7 @@ class DocumentAgent:
         # Updated prompt to include chat_history placeholder
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", SYSTEM_PROMPT),
-            ("placeholder", "{chat_history}"),  # ← Added this
+            ("placeholder", "{chat_history}"),
             ("human", "{input}"),
             ("placeholder", "{agent_scratchpad}"),
         ])
@@ -55,7 +76,7 @@ class DocumentAgent:
             agent=agent, 
             tools=tools, 
             verbose=True,
-            max_iterations=2,
+            max_iterations=3,  # Increased to allow both tools if needed
             handle_parsing_errors=True
         )
         return agent, executor
@@ -65,7 +86,7 @@ class DocumentAgent:
         *, 
         active_doc_id: int, 
         user_message: str,
-        chat_history: List = None  # ← Added this parameter
+        chat_history: List = None
     ) -> Dict[str, Any]:
         print(f"\n{'='*80}", file=sys.stderr)
         print(f"[AGENT] Processing query", file=sys.stderr)
@@ -78,16 +99,18 @@ class DocumentAgent:
         if chat_history is None:
             chat_history = []
         
-        # Bind tool with the server-known doc_id (LLM cannot change it)
+        # Create all tools with the server-known doc_id
         doc_qa_tool = make_doc_qa_tool(self.chunk_db, active_doc_id)
-        tools = [doc_qa_tool]
+        doc_topics_tool = make_doc_topics_tool(self.chunk_db, active_doc_id)
+        doc_summary_tool = make_doc_summary_tool(self.chunk_db, active_doc_id)
+        tools = [doc_qa_tool, doc_topics_tool, doc_summary_tool]
 
         agent, executor = self._build(tools)
         
         print(f"[AGENT] Invoking executor with {len(chat_history)} history messages...", file=sys.stderr)
         result = executor.invoke({
             "input": user_message,
-            "chat_history": chat_history  # ← Pass history to agent
+            "chat_history": chat_history
         })
         
         print(f"\n[AGENT] Executor result keys: {result.keys()}", file=sys.stderr)

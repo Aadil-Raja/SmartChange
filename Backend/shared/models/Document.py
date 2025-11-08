@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, func, Index,Text
+from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, func, Index,Text,JSON
 from sqlalchemy.orm import relationship
 import enum
 
@@ -17,13 +17,14 @@ class DocStatus(enum.Enum):
 
 
 # ---------- Document Model ----------
+
 class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)                     # logical title (e.g., “Safety SOP”)
-    original_filename = Column(String, nullable=False)          # uploaded filename
-    storage_key = Column(String, nullable=False)                # local path or S3 key
+    title = Column(String, nullable=False)
+    original_filename = Column(String, nullable=False)
+    storage_key = Column(String, nullable=False)
     mime_type = Column(String, nullable=False)
     size_bytes = Column(Integer, nullable=False)
 
@@ -36,11 +37,20 @@ class Document(Base):
     uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    # 🔹 Cloudinary fields (optional but recommended)
-    cloudinary_url = Column(String, nullable=True)         # Secure URL to access PDF
-    cloudinary_public_id = Column(String, nullable=True)   # Used for delete/update via API
-    cloudinary_thumbnail_url = Column(String, nullable=True)  
-    # optional relationship (useful when you join documents with users)
+
+    # 🔹 Cloudinary fields (optional)
+    cloudinary_url = Column(String, nullable=True)
+    cloudinary_public_id = Column(String, nullable=True)
+    cloudinary_thumbnail_url = Column(String, nullable=True)
+
+    # 🔹 New JSON column for main topics
+    main_topics = Column(
+        JSON,
+        nullable=False,
+        server_default="{}"   # ensures it's never null, default empty JSON
+    )
+
+    # Relationship
     uploader = relationship("User", backref="documents")
 
 
