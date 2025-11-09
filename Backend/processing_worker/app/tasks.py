@@ -185,4 +185,4 @@ def reprocess_document(document_id: int) -> dict:
         db.close()
 
 
-# process_document(36)
+process_document(3)

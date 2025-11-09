@@ -20,7 +20,7 @@ redis
 rq
 PyPDF2
 python-dotenv
-
+PyMuPDF
 
 # NEW - Add these
 

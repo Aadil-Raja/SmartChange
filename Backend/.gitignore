@@ -75,3 +75,5 @@ secrets/*.json
 *.p12
 
 data/
+
+.log
