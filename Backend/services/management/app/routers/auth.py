@@ -28,7 +28,7 @@ async def signup(
             background_tasks=background_tasks
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not create account", status_code=500, error=str(e))
 
 
 @router.post("/request-code", status_code=status.HTTP_200_OK)
@@ -47,7 +47,7 @@ async def request_code(
             background_tasks=background_tasks
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not send verification code", status_code=500, error=str(e))
 
 
 @router.post("/verify-code", status_code=status.HTTP_200_OK)
@@ -64,11 +64,10 @@ async def verify_code(
             db,
             email=payload.email,
             code=payload.code,
-            # name=payload.name,
             background_tasks=background_tasks
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not verify code", status_code=500, error=str(e))
 
 
 # ----- LOGIN (password) -----
@@ -89,7 +88,7 @@ async def login_password(
             background_tasks=background_tasks
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Login failed", status_code=500, error=str(e))
 
 
 # ----- LOGIN (code: resend) -----
@@ -109,7 +108,7 @@ async def login_request_code(
             background_tasks=background_tasks
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not send login code", status_code=500, error=str(e))
 
 
 # ----- LOGIN (code: verify) -----
@@ -128,13 +127,13 @@ async def login_verify_code(
             code=payload.code
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not verify login code", status_code=500, error=str(e))
 
 
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)
 def password_reset_request(
     payload: schemas.PasswordResetRequestIn,
-     background_tasks: BackgroundTasks,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -142,9 +141,9 @@ def password_reset_request(
     In PROD you would email this link to the user instead of returning it.
     """
     try:
-        return auth_service.request_password_reset(db, email=payload.email,   background_tasks=background_tasks)
+        return auth_service.request_password_reset(db, email=payload.email, background_tasks=background_tasks)
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not process password reset request", status_code=500, error=str(e))
 
 
 @router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
@@ -163,7 +162,7 @@ def password_reset_confirm(
             new_password=payload.new_password
         )
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not reset password", status_code=500, error=str(e))
 
 
 @router.post("/firebase", status_code=status.HTTP_200_OK)
@@ -177,4 +176,4 @@ def firebase_login(
     try:
         return firebase_auth_service.login_with_google(db, id_token=payload.id_token)
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Google login failed", status_code=500, error=str(e))

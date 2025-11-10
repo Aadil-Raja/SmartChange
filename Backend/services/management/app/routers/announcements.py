@@ -21,7 +21,7 @@ def create_announcement_route(
             db, team_id=team_id, author_id=current_user.id, title=payload.title, body=payload.body
         )
     except Exception as e:
-        return make_response(False, "Could not create announcement {e}", status_code=500)
+        return make_response(False, "Could not create announcement", status_code=500, error=str(e))
 
 # List announcements (team members only)
 @router.get("/{team_id}/announcements", status_code=status.HTTP_200_OK)
@@ -32,8 +32,8 @@ def list_announcements_route(
 ):
     try:
         return announcements_service.list_team_announcements(db, team_id=team_id, user_id=current_user.id)
-    except Exception:
-        return make_response(False, "Could not fetch announcements", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not fetch announcements", status_code=500, error=str(e))
 
 # Get single announcement (with comments)
 @router.get("/{team_id}/announcements/{announcement_id}", status_code=status.HTTP_200_OK)
@@ -47,8 +47,8 @@ def get_announcement_route(
         return announcements_service.get_announcement_with_comments(
             db, team_id=team_id, announcement_id=announcement_id, user_id=current_user.id
         )
-    except Exception:
-        return make_response(False, "Could not fetch announcement", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not fetch announcement", status_code=500, error=str(e))
 
 # Add comment (team members only)
 @router.post("/{team_id}/announcements/{announcement_id}/comments", status_code=status.HTTP_201_CREATED)
@@ -63,5 +63,5 @@ def add_comment_route(
         return announcements_service.add_comment(
             db, team_id=team_id, announcement_id=announcement_id, user_id=current_user.id, body=payload.body
         )
-    except Exception:
-        return make_response(False, "Could not add comment", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not add comment", status_code=500, error=str(e))

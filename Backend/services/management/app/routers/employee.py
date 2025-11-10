@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, List
 from shared.repos import documents_repo
 from app.services import courseContent_service as svc
 from shared.schemas.progress import ProgressUpdateIn
+
 router = APIRouter()
 
 # ---------------------------
@@ -26,7 +27,7 @@ def my_teams_route(
     try:
         return employee_service.get_my_teams(db, user)
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(False, "Could not fetch your teams", status_code=500, error=str(e))
 
 
 # ---------------------------
@@ -44,8 +45,7 @@ def join_team_with_code_route(
     try:
         return employee_service.join_with_code(db, user_id=current_user.id, code=payload.code)
     except Exception as e:
-        return make_response(False, "Unexpected server error", status_code=500)
-
+        return make_response(False, "Could not join team", status_code=500, error=str(e))
 
 
 @router.post("/{team_id}/regenerate-code", status_code=status.HTTP_200_OK)
@@ -57,8 +57,8 @@ def regenerate_team_code_route(
     """Regenerate the 6-digit join code (only if caller is a manager of this team)."""
     try:
         return employee_service.regenerate_team_code(db, user_id=current_user.id, team_id=team_id)
-    except Exception:
-        return make_response(False, "Unexpected server error", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not regenerate team code", status_code=500, error=str(e))
 
 
 # ---------------------------
@@ -108,12 +108,12 @@ def list_courses_route(
     Reuses courseContent_service.list_courses, then filters to is_active==True.
     """
     try:
-        data = svc.list_courses(db,active_only=True)  # { "courses": [ { ... } ] }
+        data = svc.list_courses(db, active_only=True)  # { "courses": [ { ... } ] }
         # keep only active for employees
         courses = [c for c in data.get("courses", []) if c.get("is_active")]
         return make_response(True, "OK", data={"courses": courses})
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not fetch courses", status_code=500, error=str(e))
 
 
 @router.get("/courses/{course_id}", status_code=status.HTTP_200_OK)
@@ -135,12 +135,10 @@ def get_course_route(
         if not course or not course.get("is_active"):
             return make_response(False, "Course not found", status_code=404)
 
-       
-        items=data.get("items", [])
+        items = data.get("items", [])
         return make_response(True, "OK", data={"course": course, "items": items})
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
-    
+        return make_response(False, "Could not fetch course details", status_code=500, error=str(e))
 
 
 @router.get("/documents/processed", status_code=status.HTTP_200_OK)
@@ -156,9 +154,7 @@ def list_processed_documents_route(
         data = documents_repo.list_processed_documents(db)
         return make_response(True, "OK", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
-    
-
+        return make_response(False, "Could not fetch processed documents", status_code=500, error=str(e))
 
 
 @router.post("/content/{content_id}/progress", status_code=status.HTTP_200_OK)
@@ -184,7 +180,7 @@ def mark_or_update_progress_route(
         )
         return make_response(True, "Progress updated", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not update progress", status_code=500, error=str(e))
 
 
 @router.get("/courses/{course_id}/progress", status_code=status.HTTP_200_OK)
@@ -201,8 +197,8 @@ def get_course_progress_route(
         data = employee_service.course_progress(db, user_id=user.id, course_id=course_id)
         return make_response(True, "OK", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
-    
+        return make_response(False, "Could not fetch course progress", status_code=500, error=str(e))
+
 
 @router.get("/courses/{course_id}/progress/items", status_code=status.HTTP_200_OK)
 def get_course_items_progress_route(
@@ -232,13 +228,9 @@ def get_course_items_progress_route(
         data = employee_service.course_items_progress(db, user_id=user.id, course_id=course_id)
         return make_response(True, "OK", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
-    
+        return make_response(False, "Could not fetch course items progress", status_code=500, error=str(e))
 
 
-
-
-    
 # ---------------------------
 # Starred Courses (Bookmarks)
 # ---------------------------
@@ -255,7 +247,7 @@ def star_course_route(
     try:
         return employee_service.star_course(db, user_id=user.id, course_id=course_id)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not star course", status_code=500, error=str(e))
 
 
 @router.delete("/courses/{course_id}/star", status_code=status.HTTP_200_OK)
@@ -271,7 +263,7 @@ def unstar_course_route(
     try:
         return employee_service.unstar_course(db, user_id=user.id, course_id=course_id)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not unstar course", status_code=500, error=str(e))
 
 
 @router.get("/courses-starred", status_code=status.HTTP_200_OK)
@@ -297,12 +289,11 @@ def get_starred_courses_route(
       ]
     }
     """
-
     try:
         data = employee_service.get_starred_courses(db, user_id=user.id)
         return make_response(True, "OK", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not fetch starred courses", status_code=500, error=str(e))
 
 
 # ---------------------------
@@ -333,4 +324,4 @@ def get_my_courses_overview_route(
         data = employee_service.get_courses_overview(db, user_id=user.id)
         return make_response(True, "OK", data=data)
     except Exception as e:
-        return make_response(False, str(e), status_code=500)
+        return make_response(False, "Could not fetch courses overview", status_code=500, error=str(e))
