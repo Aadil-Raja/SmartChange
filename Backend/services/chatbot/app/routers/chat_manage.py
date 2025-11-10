@@ -5,6 +5,7 @@ from app.deps.auth import get_current_user
 from app.services import chat_manage_service
 from app.utils.response_utils import make_response
 from app.schemas import ChatRenameIn
+
 router = APIRouter()
 
 @router.get("/heads", status_code=status.HTTP_200_OK)
@@ -19,7 +20,8 @@ def list_heads_route(
         data = chat_manage_service.list_heads(db, user_id=user_id, limit=limit, offset=offset)
         return make_response(True, "OK", data=data, status_code=200)
     except Exception as e:
-        return make_response(False, "Unexpected server error ", status_code=500)
+        return make_response(False, "Could not fetch chat heads", status_code=500, error=str(e))
+
 
 @router.get("/{chathead_id}/messages", status_code=status.HTTP_200_OK)
 def list_messages_route(
@@ -36,10 +38,9 @@ def list_messages_route(
             db, user_id=user_id, chathead_id=chathead_id, limit=limit, before_id=before_id, after_id=after_id
         )
         return make_response(True, "OK", data=data, status_code=200)
-    except PermissionError as e:
-        return make_response(False, str(e), status_code=403)
-    except Exception:
-        return make_response(False, "Unexpected server error", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not fetch messages", status_code=500, error=str(e))
+
 
 @router.patch("/{chathead_id}/title", status_code=status.HTTP_200_OK)
 def rename_head_route(
@@ -50,12 +51,11 @@ def rename_head_route(
 ):
     try:
         user_id = int(user)
-        chat_manage_service.rename_head(db, user_id = user_id, chathead_id=chathead_id, title=payload.title.strip())
-        return make_response(True, "Renamed", data={"chathead_id": chathead_id, "title": payload.title.strip()}, status_code=200)
-    except PermissionError as e:
-        return make_response(False, str(e), status_code=403)
-    except Exception:
-        return make_response(False, "Unexpected server error", status_code=500)
+        chat_manage_service.rename_head(db, user_id=user_id, chathead_id=chathead_id, title=payload.title.strip())
+        return make_response(True, "Chat renamed", data={"chathead_id": chathead_id, "title": payload.title.strip()}, status_code=200)
+    except Exception as e:
+        return make_response(False, "Could not rename chat", status_code=500, error=str(e))
+
 
 @router.delete("/{chathead_id}", status_code=status.HTTP_200_OK)
 def delete_head_route(
@@ -66,8 +66,6 @@ def delete_head_route(
     try:
         user_id = int(user)
         chat_manage_service.delete_head(db, user_id=user_id, chathead_id=chathead_id)
-        return make_response(True, "Deleted", data={"chathead_id": chathead_id}, status_code=200)
-    except PermissionError as e:
-        return make_response(False, str(e), status_code=403)
-    except Exception:
-        return make_response(False, "Unexpected server error", status_code=500)
+        return make_response(True, "Chat deleted", data={"chathead_id": chathead_id}, status_code=200)
+    except Exception as e:
+        return make_response(False, "Could not delete chat", status_code=500, error=str(e))

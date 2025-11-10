@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.deps.db import get_db, get_chunk_db
-# from app.deps.auth import get_current_user
 from app.services import chat_service
 from app.schemas import ChatTurnIn
 from app.utils.response_utils import make_response
@@ -9,13 +8,12 @@ from app.deps.auth import get_current_user
 
 router = APIRouter()
 
-# services/chatbot/app/routers/chat.py
 @router.post("/respond", status_code=status.HTTP_200_OK)
 def respond_route(
     payload: ChatTurnIn,
     db: Session = Depends(get_db),
     chunk_db: Session = Depends(get_chunk_db),
-     user=Depends(get_current_user),
+    user=Depends(get_current_user),
 ):
     try:
         user_id = int(user)
@@ -33,7 +31,5 @@ def respond_route(
         )
         return make_response(True, "OK", data=result, status_code=200)
 
-    except PermissionError as e:
-        return make_response(False, str(e), status_code=403)
-    except Exception:
-        return make_response(False, "Unexpected server error", status_code=500)
+    except Exception as e:
+        return make_response(False, "Could not process chat response", status_code=500, error=str(e))
