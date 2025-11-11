@@ -127,7 +127,7 @@ const TeamAnnouncements = () => {
                 <Button
                   onClick={() => setShowCreateModal(true)}
                   variant="primary"
-                  className="bg-white text-[#F58220] hover:bg-orange-50 shadow-lg font-semibold px-5 py-2 rounded-lg transition-all duration-200"
+                  className="bg-orange text-[#FFFFFF] hover:bg-orange-500 shadow-lg font-semibold px-5 py-2 rounded-lg transition-all duration-200"
                 >
                   <Plus size={18} />
                   <span className="ml-2">New Announcement</span>
