@@ -120,7 +120,7 @@ const EmployeeList = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -135,7 +135,7 @@ const EmployeeList = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Employee Management</h1>
+            <h1 className="text-xl font-bold text-[#333333]">Employee Management</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
@@ -145,9 +145,65 @@ const EmployeeList = () => {
 
         <main className="p-4 sm:p-6">
           <div className="mx-auto max-w-7xl space-y-6">
-            <Card className="p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Search & Filter</h2>
+            {/* Page Header with Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="p-4 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <Users size={24} className="text-[#00ADEF]" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Employees</p>
+                    <p className="text-2xl font-bold text-[#333333]">{groupedEmployees.length}</p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-50 rounded-lg">
+                    <Users size={24} className="text-[#78BE20]" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">In Teams</p>
+                    <p className="text-2xl font-bold text-[#78BE20]">
+                      {groupedEmployees.filter(e => e.teams.length > 0).length}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-50 rounded-lg">
+                    <Users size={24} className="text-[#F58220]" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Unassigned</p>
+                    <p className="text-2xl font-bold text-[#F58220]">
+                      {groupedEmployees.filter(e => e.teams.length === 0).length}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+              <Card className="p-4 border border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <Users size={24} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Active Teams</p>
+                    <p className="text-2xl font-bold text-purple-600">{uniqueTeams.length}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Search & Filter Card */}
+            <Card className="p-6 border border-gray-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <Search size={20} className="text-[#333333]" />
+                </div>
+                <h2 className="text-xl font-bold text-[#333333]">Search & Filter Employees</h2>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -158,14 +214,14 @@ const EmployeeList = () => {
                     placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 py-2.5 pl-10 pr-4 focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
+                    className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all"
                   />
                 </div>
 
                 <select
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
-                  className="rounded-md border border-gray-300 px-4 py-2.5 focus:border-[#FDB913] focus:outline-none"
+                  className="rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all"
                 >
                   <option value="">All Roles</option>
                   {teamRoles.map(role => (
@@ -176,7 +232,7 @@ const EmployeeList = () => {
                 <select
                   value={filterTeam}
                   onChange={(e) => setFilterTeam(e.target.value)}
-                  className="rounded-md border border-gray-300 px-4 py-2.5 focus:border-[#FDB913] focus:outline-none"
+                  className="rounded-lg border border-gray-300 px-4 py-2.5 focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all"
                 >
                   <option value="">All Teams</option>
                   {uniqueTeams.map(team => (
@@ -186,8 +242,8 @@ const EmployeeList = () => {
               </div>
 
               {(searchQuery || filterRole || filterTeam) && (
-                <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-50 p-3">
-                  <p className="text-sm text-gray-600">
+                <div className="mt-4 flex items-center justify-between rounded-lg bg-blue-50 border border-blue-200 p-3">
+                  <p className="text-sm text-gray-700 font-medium">
                     Showing {filteredEmployees.length} of {groupedEmployees.length} employees
                   </p>
                   <button
@@ -196,7 +252,7 @@ const EmployeeList = () => {
                       setFilterRole('');
                       setFilterTeam('');
                     }}
-                    className="text-sm font-medium text-[#F58220] hover:text-[#FDB913]"
+                    className="text-sm font-semibold text-[#00ADEF] hover:text-[#0095CC] transition-colors"
                   >
                     Clear Filters
                   </button>
@@ -204,103 +260,116 @@ const EmployeeList = () => {
               )}
             </Card>
 
-            <Card className="p-6">
+            {/* Employees List Card */}
+            <Card className="p-6 border border-gray-200">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">All Employees</h2>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gray-100 rounded-lg">
+                    <Users size={20} className="text-[#333333]" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-[#333333]">Employee Directory</h2>
+                    <p className="text-sm text-gray-600">Manage employee roles and team assignments</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-gray-100 border border-gray-300 px-4 py-2 text-sm font-semibold text-[#333333]">
                   {filteredEmployees.length} {filteredEmployees.length === 1 ? 'Employee' : 'Employees'}
                 </span>
               </div>
 
               {loading ? (
-                <div className="py-12 text-center text-gray-500">Loading...</div>
+                <div className="py-16 text-center">
+                  <div className="inline-flex p-4 bg-gray-50 rounded-full mb-4 animate-pulse">
+                    <Users size={48} className="text-gray-300" />
+                  </div>
+                  <p className="text-gray-500">Loading employees...</p>
+                </div>
               ) : filteredEmployees.length === 0 ? (
-                <div className="py-12 text-center">
-                  <Users size={48} className="mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500">No employees found</p>
+                <div className="py-16 text-center">
+                  <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
+                    <Users size={64} className="text-gray-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#333333] mb-2">No employees found</h3>
+                  <p className="text-gray-600">
+                    {searchQuery || filterRole || filterTeam 
+                      ? 'Try adjusting your search filters' 
+                      : 'No employees in the system yet'}
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="overflow-hidden rounded-lg border border-gray-200">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-12 gap-4 bg-gray-50 px-6 py-3 border-b border-gray-200">
+                    <div className="col-span-1 text-xs font-semibold text-gray-600 uppercase">ID</div>
+
+                    <div className="col-span-4 text-xs font-semibold text-gray-600 uppercase">Email</div>
+                    <div className="col-span-2 text-xs font-semibold text-gray-600 uppercase">Teams</div>
+                    <div className="col-span-1 text-xs font-semibold text-gray-600 uppercase text-center">Details</div>
+                  </div>
+
+                  {/* Table Body */}
                   {filteredEmployees.map((employee) => {
                     const isExpanded = expandedEmployees.has(employee.id);
-                    const hasMultipleTeams = employee.teams.length > 1;
 
                     return (
-                      <div
-                        key={employee.id}
-                        className="rounded-lg border border-gray-200 bg-white transition-all hover:shadow-md"
-                      >
-                        {/* Main Employee Row */}
-                        <div className="flex items-center justify-between p-4">
-                          <div className="flex flex-1 items-center gap-6">
-                            {/* Employee Info */}
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs font-medium text-gray-500">ID: {employee.id}</span>
-                                <span className="text-base font-semibold text-[#333333]">
-                                  {employee.name || employee.email}
-                                </span>
-                              </div>
-                              <p className="text-sm text-gray-600">{employee.email}</p>
-                            </div>
+                      <div key={employee.id} className="border-b border-gray-200 last:border-b-0">
+                        {/* Employee Row */}
+                        <div 
+                          className="grid grid-cols-12 gap-4 px-6 py-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => toggleExpanded(employee.id)}
+                        >
+                          <div className="col-span-1 flex items-center">
+                            <span className="text-sm font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                              {employee.id}
+                            </span>
+                          </div>
 
-                            {/* Teams Summary */}
-                            <div className="flex-1">
-                              {employee.teams.length === 0 ? (
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-500">
-                                  No Teams
-                                </span>
-                              ) : employee.teams.length === 1 ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-                                    {employee.teams[0].team_name}
-                                  </span>
-                                  <span className="text-sm text-gray-600">as {employee.teams[0].team_role}</span>
-                                </div>
+                          <div className="col-span-4 flex items-center">
+                            <span className="text-sm text-gray-600">{employee.email}</span>
+                          </div>
+                          <div className="col-span-2 flex items-center">
+                            {employee.teams.length === 0 ? (
+                              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                No Teams
+                              </span>
+                            ) : (
+                              <span className="text-xs font-medium text-[#00ADEF] bg-[#00ADEF]/10 px-2 py-1 rounded">
+                                {employee.teams.length} {employee.teams.length === 1 ? 'Team' : 'Teams'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="col-span-1 flex items-center justify-center">
+                            <button className="p-1 hover:bg-gray-200 rounded transition-colors">
+                              {isExpanded ? (
+                                <ChevronUp size={18} className="text-gray-600" />
                               ) : (
-                                <button
-                                  onClick={() => toggleExpanded(employee.id)}
-                                  className="flex items-center gap-2 text-sm font-medium text-[#F58220] hover:text-[#FDB913]"
-                                >
-                                  {employee.teams.length} Teams
-                                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                </button>
+                                <ChevronDown size={18} className="text-gray-600" />
                               )}
-                            </div>
-
-                            {/* Actions */}
-                            {/* <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => handleDelete(employee.id)}
-                                className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
-                                title="Delete Employee"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div> */}
+                            </button>
                           </div>
                         </div>
 
                         {/* Expanded Team Details */}
-                        {(isExpanded || employee.teams.length === 1) && employee.teams.length > 0 && (
-                          <div className="border-t border-gray-100 bg-gray-50 p-4">
+                        {isExpanded && employee.teams.length > 0 && (
+                          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                             <div className="space-y-3">
+                              <h4 className="text-sm font-semibold text-[#333333] mb-3">Team Assignments</h4>
                               {employee.teams.map((team, idx) => (
                                 <div
                                   key={`${employee.id}-${team.team_id}-${idx}`}
-                                  className="flex items-center justify-between rounded-md bg-white p-3 shadow-sm"
+                                  className="flex items-center justify-between rounded-lg bg-white p-4 border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
                                 >
                                   <div className="flex items-center gap-4">
-                                    <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                                    <span className="inline-flex items-center rounded-lg bg-[#00ADEF]/10 px-4 py-2 text-sm font-semibold text-[#0095CC] border border-[#00ADEF]/30">
                                       {team.team_name}
                                     </span>
 
                                     {editingRole === `${employee.id}-${team.team_id}` ? (
                                       <select
                                         defaultValue={team.team_role}
-                                        onChange={(e) => handleRoleChange(team.team_id,employee.id, e.target.value)}
+                                        onChange={(e) => handleRoleChange(team.team_id, employee.id, e.target.value)}
                                         onBlur={() => setEditingRole(null)}
-                                        className="rounded border border-[#FDB913] px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#FDB913]"
+                                        className="rounded-lg border border-[#00ADEF] px-4 py-2 text-sm font-medium focus:border-[#00ADEF] focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/20"
                                         autoFocus
                                       >
                                         {teamRoles.map(role => (
@@ -309,15 +378,20 @@ const EmployeeList = () => {
                                       </select>
                                     ) : (
                                       <button
-                                        onClick={() => setEditingRole(`${employee.id}-${team.team_id}`)}
-                                        className="rounded-md px-3 py-1 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setEditingRole(`${employee.id}-${team.team_id}`);
+                                        }}
+                                        className="rounded-lg px-4 py-2 text-sm font-medium text-[#333333] bg-gray-100 border border-gray-300 transition-all hover:bg-gray-200 hover:border-gray-400"
                                       >
-                                        Role: <span className="text-[#F58220]">{team.team_role}</span>
+                                        Role: <span className="font-semibold">{team.team_role}</span>
                                       </button>
                                     )}
                                   </div>
 
-                                  <span className="text-xs text-gray-500">Team ID: {team.team_id}</span>
+                                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                    Team ID: {team.team_id}
+                                  </span>
                                 </div>
                               ))}
                             </div>

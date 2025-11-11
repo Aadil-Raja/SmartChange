@@ -1,3 +1,250 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* K-Electric Brand Colors */
+@layer utilities {
+  /* Primary Orange */
+  .bg-ke-orange {
+    background-color: #F58220;
+  }
+  
+  .bg-ke-orange-light {
+    background-color: #FF9A4D;
+  }
+  
+  .bg-ke-orange-dark {
+    background-color: #E0741C;
+  }
+  
+  .text-ke-orange {
+    color: #F58220;
+  }
+  
+  .text-ke-orange-light {
+    color: #FF9A4D;
+  }
+  
+  .text-ke-orange-dark {
+    color: #E0741C;
+  }
+  
+  .border-ke-orange {
+    border-color: #F58220;
+  }
+  
+  .border-ke-orange-light {
+    border-color: #FF9A4D;
+  }
+  
+  .border-ke-orange-dark {
+    border-color: #E0741C;
+  }
+  
+  /* Secondary Yellow */
+  .bg-ke-yellow {
+    background-color: #FDB913;
+  }
+  
+  .bg-ke-yellow-light {
+    background-color: #FFCA3A;
+  }
+  
+  .bg-ke-yellow-dark {
+    background-color: #E5A50F;
+  }
+  
+  .text-ke-yellow {
+    color: #FDB913;
+  }
+  
+  .text-ke-yellow-light {
+    color: #FFCA3A;
+  }
+  
+  .text-ke-yellow-dark {
+    color: #E5A50F;
+  }
+  
+  .border-ke-yellow {
+    border-color: #FDB913;
+  }
+  
+  /* Accent Blue */
+  .bg-ke-blue {
+    background-color: #00ADEF;
+  }
+  
+  .bg-ke-blue-light {
+    background-color: #33BFEF;
+  }
+  
+  .text-ke-blue {
+    color: #00ADEF;
+  }
+  
+  .text-ke-blue-light {
+    color: #33BFEF;
+  }
+  
+  .border-ke-blue {
+    border-color: #00ADEF;
+  }
+  
+  /* Accent Green */
+  .bg-ke-green {
+    background-color: #78BE20;
+  }
+  
+  .bg-ke-green-light {
+    background-color: #8FD135;
+  }
+  
+  .text-ke-green {
+    color: #78BE20;
+  }
+  
+  .text-ke-green-light {
+    color: #8FD135;
+  }
+  
+  .border-ke-green {
+    border-color: #78BE20;
+  }
+  
+  /* Neutral Colors */
+  .bg-ke-neutral {
+    background-color: #333333;
+  }
+  
+  .text-ke-neutral {
+    color: #333333;
+  }
+  
+  .text-ke-neutral-light {
+    color: #666666;
+  }
+  
+  .text-ke-neutral-lighter {
+    color: #999999;
+  }
+  
+  /* Brand Gradient Utilities */
+  .bg-ke-gradient {
+    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+  }
+  
+  .bg-ke-gradient-vertical {
+    background: linear-gradient(180deg, #FDB913 0%, #F58220 100%);
+  }
+  
+  .bg-ke-gradient-horizontal {
+    background: linear-gradient(90deg, #FDB913 0%, #F58220 100%);
+  }
+  
+  .text-ke-gradient {
+    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Hover Gradient Utilities */
+  .hover\:bg-ke-gradient:hover {
+    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+  }
+  
+  /* Focus Ring Utilities with Orange Color */
+  .focus-ke {
+    outline: none;
+  }
+  
+  .focus-ke:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px rgba(245, 130, 32, 0.5);
+  }
+  
+  .focus-ke-ring {
+    outline: none;
+  }
+  
+  .focus-ke-ring:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.5);
+  }
+  
+  .focus-visible\:ring-ke-orange:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.5);
+  }
+  
+  .focus\:ring-ke-orange:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.5);
+  }
+  
+  .focus\:ring-ke-orange\/20:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.2);
+  }
+  
+  .focus\:ring-ke-orange\/50:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(245, 130, 32, 0.5);
+  }
+  
+  /* Semantic Color Utilities */
+  .bg-ke-success {
+    background-color: #78BE20;
+  }
+  
+  .bg-ke-success-light {
+    background-color: rgba(120, 190, 32, 0.1);
+  }
+  
+  .text-ke-success {
+    color: #78BE20;
+  }
+  
+  .bg-ke-error {
+    background-color: #EF4444;
+  }
+  
+  .bg-ke-error-light {
+    background-color: #FEF2F2;
+  }
+  
+  .text-ke-error {
+    color: #EF4444;
+  }
+  
+  .bg-ke-warning {
+    background-color: #F59E0B;
+  }
+  
+  .bg-ke-warning-light {
+    background-color: #FFFBEB;
+  }
+  
+  .text-ke-warning {
+    color: #F59E0B;
+  }
+  
+  .bg-ke-info {
+    background-color: #00ADEF;
+  }
+  
+  .bg-ke-info-light {
+    background-color: rgba(0, 173, 239, 0.1);
+  }
+  
+  .text-ke-info {
+    color: #00ADEF;
+  }
+}

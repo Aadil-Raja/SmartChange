@@ -84,7 +84,7 @@ const Chatbot = () => {
                   <MessageSquare size={24} className="text-white sm:w-7 sm:h-7" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 flex items-center gap-2 truncate">
+                  <h1 className="text-lg sm:text-2xl font-bold text-[#333333] flex items-center gap-2 truncate">
                     AI Assistant
                     <Sparkles size={16} className="text-[#FDB913] sm:w-5 sm:h-5 flex-shrink-0" />
                   </h1>

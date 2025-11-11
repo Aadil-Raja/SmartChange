@@ -208,7 +208,7 @@ const AdminContentLibrary = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -224,7 +224,7 @@ const AdminContentLibrary = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Content Library</h1>
+            <h1 className="text-xl font-bold text-[#333333]">Content Library</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
@@ -245,8 +245,8 @@ const AdminContentLibrary = () => {
                   <ArrowLeft size={20} />
                   Back to Training
                 </Button>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Content Library</h1>
-                <p className="text-gray-600 mt-1 font-medium">Manage videos, links, and documents for training courses</p>
+                <h1 className="text-3xl font-bold text-[#333333]">Content Library</h1>
+                <p className="text-gray-600 mt-1">Manage videos, links, and documents for training courses</p>
               </div>
             </div>
 
@@ -265,7 +265,7 @@ const AdminContentLibrary = () => {
             )}
 
             {/* Tabs and Search */}
-            <Card className="mb-6">
+            <Card shadow="md" className="mb-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 {/* Tabs */}
                 <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
@@ -273,8 +273,8 @@ const AdminContentLibrary = () => {
                     onClick={() => setActiveTab('videos')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === 'videos'
-                        ? 'bg-white text-purple-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#F58220] shadow-sm'
+                        : 'text-gray-600 hover:text-[#333333]'
                     }`}
                   >
                     <Video size={16} />
@@ -284,8 +284,8 @@ const AdminContentLibrary = () => {
                     onClick={() => setActiveTab('links')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === 'links'
-                        ? 'bg-white text-green-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#F58220] shadow-sm'
+                        : 'text-gray-600 hover:text-[#333333]'
                     }`}
                   >
                     <LinkIcon size={16} />
@@ -295,8 +295,8 @@ const AdminContentLibrary = () => {
                     onClick={() => setActiveTab('documents')}
                     className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeTab === 'documents'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'bg-white text-[#F58220] shadow-sm'
+                        : 'text-gray-600 hover:text-[#333333]'
                     }`}
                   >
                     <FileText size={16} />
@@ -313,12 +313,13 @@ const AdminContentLibrary = () => {
                       placeholder="Search content..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FDB913] focus:border-[#FDB913]"
+                      className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] transition-colors"
                     />
                   </div>
                   
                   {activeTab === 'videos' && (
                     <Button 
+                      variant="primary"
                       onClick={(e) => {
                         console.log('Upload Video button clicked!');
                         e.preventDefault();
@@ -334,6 +335,7 @@ const AdminContentLibrary = () => {
                   
                   {activeTab === 'links' && (
                     <Button 
+                      variant="primary"
                       onClick={(e) => {
                         console.log('Add Link button clicked!');
                         e.preventDefault();
@@ -359,10 +361,10 @@ const AdminContentLibrary = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {/* Videos Tab */}
                 {activeTab === 'videos' && filterItems(videos, 'video').map((video) => (
-                  <Card key={video.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={video.id} shadow="md" className="hover:shadow-lg transition-shadow">
                     {/* Video Thumbnail/Preview */}
                     <div 
-                      className="aspect-video bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg mb-4 flex items-center justify-center cursor-pointer relative group overflow-hidden"
+                      className="aspect-video bg-gray-100 rounded-md mb-4 flex items-center justify-center cursor-pointer relative group overflow-hidden border border-gray-200"
                       onClick={() => {
                         console.log('Opening video:', video.secure_url || video.cloudinary_url);
                         window.open(video.secure_url || video.cloudinary_url, '_blank');
@@ -373,30 +375,30 @@ const AdminContentLibrary = () => {
                           <img
                             src={video.thumbnail_url}
                             alt={video.title}
-                            className="w-full h-full object-cover rounded-lg"
+                            className="w-full h-full object-cover rounded-md"
                           />
                           {/* Play button overlay */}
                           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="bg-white/90 rounded-full p-3">
-                              <Play size={24} className="text-purple-600 ml-1" />
+                              <Play size={24} className="text-[#F58220] ml-1" />
                             </div>
                           </div>
                         </>
                       ) : (
                         <>
-                          <Video size={48} className="text-purple-400" />
+                          <Video size={48} className="text-gray-400" />
                           {/* Play button overlay for no thumbnail */}
                           <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="bg-white/90 rounded-full p-2">
-                              <Play size={20} className="text-purple-600 ml-0.5" />
+                              <Play size={20} className="text-[#F58220] ml-0.5" />
                             </div>
                           </div>
                         </>
                       )}
                     </div>
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2">{video.title}</h3>
-                      <div className="text-sm text-gray-500 space-y-1">
+                      <h3 className="font-semibold text-[#333333] line-clamp-2">{video.title}</h3>
+                      <div className="text-sm text-gray-600 space-y-1">
                         {video.size_bytes && <p>Size: {formatFileSize(video.size_bytes)}</p>}
                         {video.duration_sec && <p>Duration: {Math.floor(video.duration_sec / 60)}:{(video.duration_sec % 60).toString().padStart(2, '0')}</p>}
                         <p>Uploaded: {formatDate(video.created_at)}</p>
@@ -406,20 +408,20 @@ const AdminContentLibrary = () => {
                       <div className="flex gap-2">
                         {(video.secure_url || video.cloudinary_url) && (
                           <Button
-                            variant="outline"
+                            variant="primary"
                             size="sm"
                             onClick={() => window.open(video.secure_url || video.cloudinary_url, '_blank')}
                             className="flex-1"
                           >
                             <Video size={14} className="mr-1" />
-                            Watch Video
+                            Watch
                           </Button>
                         )}
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteConfirm({ ...video, type: 'video' })}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -430,21 +432,21 @@ const AdminContentLibrary = () => {
 
                 {/* Links Tab */}
                 {activeTab === 'links' && filterItems(externalLinks, 'link').map((link) => (
-                  <Card key={link.id} className="hover:shadow-lg transition-shadow">
-                    <div className="aspect-video bg-gradient-to-br from-green-50 to-green-100 rounded-lg mb-4 flex items-center justify-center">
-                      <LinkIcon size={48} className="text-green-400" />
+                  <Card key={link.id} shadow="md" className="hover:shadow-lg transition-shadow">
+                    <div className="aspect-video bg-gray-100 rounded-md mb-4 flex items-center justify-center border border-gray-200">
+                      <LinkIcon size={48} className="text-gray-400" />
                     </div>
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2">{link.title}</h3>
+                      <h3 className="font-semibold text-[#333333] line-clamp-2">{link.title}</h3>
                       <a
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:underline line-clamp-1"
+                        className="text-sm text-[#F58220] hover:text-[#E0741C] hover:underline line-clamp-1"
                       >
                         {link.url}
                       </a>
-                      <p className="text-sm text-gray-500">Created: {formatDate(link.created_at)}</p>
+                      <p className="text-sm text-gray-600">Created: {formatDate(link.created_at)}</p>
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
@@ -454,7 +456,7 @@ const AdminContentLibrary = () => {
                             setLinkForm({ title: link.title, url: link.url });
                             setShowLinkForm(true);
                           }}
-                          className="text-gray-600 hover:text-gray-700"
+                          className="text-[#F58220] hover:text-[#E0741C] hover:bg-[#F58220]/10"
                         >
                           <Edit size={16} />
                         </Button>
@@ -462,7 +464,7 @@ const AdminContentLibrary = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteConfirm({ ...link, type: 'link' })}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -473,20 +475,20 @@ const AdminContentLibrary = () => {
 
                 {/* Documents Tab */}
                 {activeTab === 'documents' && filterItems(documents, 'document').map((doc) => (
-                  <Card key={doc.id} className="hover:shadow-lg transition-shadow">
-                    <div className="aspect-video bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg mb-4 flex items-center justify-center">
-                      <FileText size={48} className="text-blue-400" />
+                  <Card key={doc.id} shadow="md" className="hover:shadow-lg transition-shadow">
+                    <div className="aspect-video bg-gray-100 rounded-md mb-4 flex items-center justify-center border border-gray-200">
+                      <FileText size={48} className="text-gray-400" />
                     </div>
                     <div className="space-y-3">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2">{doc.title || doc.filename}</h3>
-                      <div className="text-sm text-gray-500 space-y-1">
+                      <h3 className="font-semibold text-[#333333] line-clamp-2">{doc.title || doc.filename}</h3>
+                      <div className="text-sm text-gray-600 space-y-1">
                         <p>Type: PDF Document</p>
                         <p>Status: {doc.processing_status || 'Processed'}</p>
                         <p>Uploaded: {formatDate(doc.created_at)}</p>
                       </div>
                       {doc.cloudinary_url && (
                         <Button
-                          variant="outline"
+                          variant="primary"
                           size="sm"
                           onClick={() => window.open(doc.cloudinary_url, '_blank')}
                           className="w-full"
@@ -504,12 +506,12 @@ const AdminContentLibrary = () => {
             {!loading && (
               <>
                 {activeTab === 'videos' && filterItems(videos, 'video').length === 0 && (
-                  <Card className="text-center py-12">
-                    <Video size={64} className="mx-auto text-purple-300 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                  <Card shadow="md" className="text-center py-12">
+                    <Video size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-[#333333] mb-2">
                       {videos.length === 0 ? 'No videos uploaded yet' : 'No videos match your search'}
                     </h3>
-                    <p className="text-gray-500 mb-6">
+                    <p className="text-gray-600 mb-6">
                       {videos.length === 0 
                         ? 'Upload your first MP4 video to get started' 
                         : 'Try adjusting your search criteria'
@@ -517,6 +519,7 @@ const AdminContentLibrary = () => {
                     </p>
                     {videos.length === 0 && (
                       <Button 
+                        variant="primary"
                         onClick={(e) => {
                           console.log('Empty state Upload Video button clicked!');
                           e.preventDefault();
@@ -532,11 +535,12 @@ const AdminContentLibrary = () => {
                 )}
 
                 {activeTab === 'links' && filterItems(externalLinks, 'link').length === 0 && (
-                  <Card className="text-center py-12">
-                    <LinkIcon size={64} className="mx-auto text-green-300 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No links found</h3>
-                    <p className="text-gray-500 mb-6">Add your first external link</p>
+                  <Card shadow="md" className="text-center py-12">
+                    <LinkIcon size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-[#333333] mb-2">No links found</h3>
+                    <p className="text-gray-600 mb-6">Add your first external link</p>
                     <Button 
+                      variant="primary"
                       onClick={(e) => {
                         console.log('Empty state Add Link button clicked!');
                         e.preventDefault();
@@ -551,11 +555,11 @@ const AdminContentLibrary = () => {
                 )}
 
                 {activeTab === 'documents' && filterItems(documents, 'document').length === 0 && (
-                  <Card className="text-center py-12">
-                    <FileText size={64} className="mx-auto text-blue-300 mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No documents found</h3>
-                    <p className="text-gray-500 mb-6">Upload documents from the main documents section</p>
-                    <Button onClick={() => navigate('/admin/documents')}>
+                  <Card shadow="md" className="text-center py-12">
+                    <FileText size={64} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-xl font-semibold text-[#333333] mb-2">No documents found</h3>
+                    <p className="text-gray-600 mb-6">Upload documents from the main documents section</p>
+                    <Button variant="primary" onClick={() => navigate('/admin/documents')}>
                       Go to Documents
                     </Button>
                   </Card>
@@ -586,7 +590,7 @@ const AdminContentLibrary = () => {
               required
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-[#333333] mb-2">
                 Video File (MP4 only, max 500MB)
               </label>
               <input
@@ -594,14 +598,14 @@ const AdminContentLibrary = () => {
                 type="file"
                 accept=".mp4"
                 onChange={(e) => setVideoForm(prev => ({ ...prev, file: e.target.files[0] }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FDB913] focus:border-[#FDB913]"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] transition-colors"
                 required
               />
             </div>
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <Button 
                 type="button" 
-                variant="outline" 
+                variant="secondary" 
                 onClick={() => {
                   setShowVideoUpload(false);
                   setVideoForm({ title: '', file: null });
@@ -612,7 +616,8 @@ const AdminContentLibrary = () => {
                 Cancel
               </Button>
               <Button 
-                type="submit" 
+                type="submit"
+                variant="primary"
                 disabled={!videoForm.title.trim() || !videoForm.file || submitting}
                 className="flex items-center gap-2"
               >
@@ -656,10 +661,10 @@ const AdminContentLibrary = () => {
               placeholder="https://example.com"
               required
             />
-            <div className="flex justify-end gap-3">
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <Button 
                 type="button" 
-                variant="outline" 
+                variant="secondary" 
                 onClick={() => {
                   setShowLinkForm(false);
                   setEditingLink(null);
@@ -670,7 +675,8 @@ const AdminContentLibrary = () => {
                 Cancel
               </Button>
               <Button 
-                type="submit" 
+                type="submit"
+                variant="primary"
                 disabled={!linkForm.title.trim() || !linkForm.url.trim() || submitting}
                 className="flex items-center gap-2"
               >

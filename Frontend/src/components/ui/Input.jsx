@@ -20,20 +20,20 @@ const Input = forwardRef(({
 }, ref) => {
   const sizes = {
     sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-4 py-3 text-base'
+    md: 'px-3 py-2.5 text-sm',
+    lg: 'px-3 py-3 text-base'
   };
 
   const variants = {
-    default: 'border-gray-300 focus:border-[#FDB913] focus:ring-[#FDB913]',
-    error: 'border-red-300 focus:border-red-500 focus:ring-red-500',
-    success: 'border-green-300 focus:border-green-500 focus:ring-green-500'
+    default: 'border-gray-300 focus:border-[#F58220] focus:ring-[#F58220]/20',
+    error: 'border-red-300 focus:border-red-500 focus:ring-red-500/20',
+    success: 'border-green-300 focus:border-green-500 focus:ring-green-500/20'
   };
 
   const inputClasses = `
-    w-full rounded-lg border transition-all duration-200
+    w-full rounded-md border transition-all duration-200
     text-gray-900 placeholder-gray-500
-    focus:outline-none focus:ring-2 focus:ring-opacity-20
+    focus:outline-none focus:ring-2
     disabled:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50
     ${Icon ? 'pl-10' : ''}
     ${sizes[size]}
@@ -44,7 +44,7 @@ const Input = forwardRef(({
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={id} className="mb-2 block text-sm font-medium text-gray-700">
+        <label htmlFor={id} className="mb-2 block text-sm font-semibold text-[#333333]">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>

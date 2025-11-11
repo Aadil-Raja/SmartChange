@@ -29,34 +29,34 @@ const ContentList = ({ items, onEdit, onDelete, onPreview }) => {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead>
+            <thead className="bg-gray-50">
               <tr className="border-b-2 border-gray-200">
-                <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Document Name</th>
-                <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Description</th>
-                <th className="pb-3 text-left text-sm font-semibold text-[#333333]">File Name</th>
-                <th className="pb-3 text-left text-sm font-semibold text-[#333333]">Upload Date</th>
-                <th className="pb-3 text-center text-sm font-semibold text-[#333333]">Actions</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#333333]">Document Name</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#333333]">Description</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#333333]">File Name</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-[#333333]">Upload Date</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-[#333333]">Actions</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b border-gray-100 transition-colors hover:bg-gray-50">
-                  <td className="py-4 text-sm font-medium text-[#333333]">{item.name}</td>
-                  <td className="py-4 text-sm text-gray-600">{item.description}</td>
-                  <td className="py-4 text-sm text-gray-600">{item.fileName}</td>
-                  <td className="py-4 text-sm text-gray-600">{item.uploadDate}</td>
-                  <td className="py-4">
+                <tr key={item.id} className="border-b border-gray-200 transition-colors hover:bg-gray-50">
+                  <td className="px-4 py-4 text-sm font-medium text-[#333333]">{item.name}</td>
+                  <td className="px-4 py-4 text-sm text-gray-600">{item.description}</td>
+                  <td className="px-4 py-4 text-sm text-gray-600">{item.fileName}</td>
+                  <td className="px-4 py-4 text-sm text-gray-600">{item.uploadDate}</td>
+                  <td className="px-4 py-4">
                     <div className="flex justify-center gap-2">
                       <button
                         onClick={() => onPreview(item)}
-                        className="rounded-md p-2 text-blue-600 transition-colors hover:bg-blue-50"
+                        className="rounded-md p-2 text-[#00ADEF] transition-colors hover:bg-[#00ADEF]/10"
                         title="Preview"
                       >
                         <Eye size={18} />
                       </button>
                       <button
                         onClick={() => onEdit(item)}
-                        className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-orange-50"
+                        className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-[#F58220]/10"
                         title="Edit"
                       >
                         <Edit2 size={18} />

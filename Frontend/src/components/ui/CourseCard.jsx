@@ -1,12 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Clock, CheckCircle } from 'lucide-react';
+import Card from './Card';
+import Button from './Button';
 
 const CourseCard = ({ course, progress }) => {
   const navigate = useNavigate();
   const isCompleted = progress?.percentage === 100;
 
   return (
-    <div className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md">
+    <Card 
+      padding="none" 
+      shadow="md" 
+      hover={true}
+      className="group overflow-hidden"
+    >
       {/* Thumbnail or Placeholder */}
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#FDB913] to-[#F58220]">
         {course.thumbnail_url ? (
@@ -24,12 +31,12 @@ const CourseCard = ({ course, progress }) => {
         {/* Status Badge */}
         <div className="absolute right-3 top-3">
           {isCompleted ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#78BE20] px-3 py-1 text-xs font-semibold text-white shadow-md">
               <CheckCircle size={14} />
               Completed
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#00ADEF] px-3 py-1 text-xs font-semibold text-white shadow-md">
               <Clock size={14} />
               In Progress
             </span>
@@ -61,10 +68,10 @@ const CourseCard = ({ course, progress }) => {
             <div className="mb-1 flex items-center justify-between text-sm">
               <span className="font-medium text-gray-700">Progress</span>
               <span className="text-gray-600">
-                {progress.completed}/{progress.total} modules
+                {progress.completed}/{progress.total} modules • {progress.percentage}%
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
               <div 
                 className="h-full rounded-full bg-gradient-to-r from-[#FDB913] to-[#F58220] transition-all duration-300"
                 style={{ width: `${progress.percentage}%` }}
@@ -74,14 +81,16 @@ const CourseCard = ({ course, progress }) => {
         )}
 
         {/* View Course Button */}
-        <button
+        <Button
           onClick={() => navigate(`/employee/course/${course.id}`)}
-          className="w-full rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg"
+          variant="primary"
+          size="md"
+          fullWidth={true}
         >
           View Course
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 };
 

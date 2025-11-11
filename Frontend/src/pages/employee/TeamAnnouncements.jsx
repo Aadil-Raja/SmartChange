@@ -24,7 +24,7 @@ const TeamAnnouncements = () => {
   const { teamId } = useParams();
   const navigate = useNavigate();
   const { teams } = useTeams();
-  
+
   const {
     announcements,
     loading,
@@ -51,82 +51,89 @@ const TeamAnnouncements = () => {
 
   if (loading && announcements.length === 0) {
     return (
-      <div className="min-h-screen bg-white from-white-50 via-white to-white-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-600 font-medium">Loading announcements...</p>
+          <p className="mt-4 text-gray-600">Loading announcements...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
-      {/* Hero Header Section */}
-      <div className="bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white py-10 px-4 shadow-lg">
-        <div className="container mx-auto max-w-6xl px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="container mx-auto max-w-6xl px-4 py-4">
           <Button
             variant="ghost"
             onClick={() => navigate("/employee/myteams")}
-            className="mb-6 text-white hover:bg-white/20 border-white/30"
+            className="text-gray-600 hover:!text-black hover:!bg-transparent !bg-transparent !border-none"
           >
             <ArrowLeft size={20} />
             <span className="ml-2">Back to My Teams</span>
           </Button>
 
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
-                  <Megaphone size={32} className="text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl lg:text-4xl font-bold">
-                    {currentTeam?.team_name || "Team"} Updates
-                  </h1>
-                  <p className="text-white/90 mt-1 flex items-center gap-2">
-                    {isManager ? (
-                      <>
-                        <Sparkles size={16} />
-                        <span>Share important updates with your team</span>
-                      </>
-                    ) : (
-                      <>
-                        <TrendingUp size={16} />
-                        <span>Stay in the loop with team news</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
+        </div>
+      </div>
 
-              {/* Stats Bar */}
-              <div className="flex items-center gap-6 mt-6">
-                <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                  <MessageSquare size={18} />
-                  <span className="font-semibold">{announcements.length}</span>
-                  <span className="text-white/80 text-sm">
-                    {announcements.length === 1 ? "Post" : "Posts"}
-                  </span>
-                </div>
-                {isManager && (
-                  <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                    <User size={18} />
-                    <span className="text-white/80 text-sm">Manager</span>
-                  </div>
-                )}
-              </div>
+      {/* Hero Header Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#F58220] via-[#F58220] to-[#F58220] border-b border-orange-300">
+        {/* Subtle background blur/light overlay */}
+        <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+
+        <div className="relative container mx-auto max-w-6xl px-4 py-20">
+          <div className="text-center max-w-3xl mx-auto text-white">
+            {/* Icon */}
+            <div className="inline-flex p-4 bg-white/20 border border-white/30 rounded-2xl mb-5 shadow-md backdrop-blur-sm">
+              <Megaphone size={48} className="text-white drop-shadow-md" />
             </div>
 
-            {isManager && (
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                className="bg-white text-[#FDB913] hover:bg-white/90 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all px-6 py-3 border-2 border-white/20"
-              >
-                <Plus size={20} />
-                <span className="ml-2 font-semibold">New Announcement</span>
-              </Button>
-            )}
+            {/* Title */}
+            <h1 className="text-4xl font-bold mb-3 drop-shadow-md">
+              {currentTeam?.team_name || "Team"} Announcements
+            </h1>
+
+            {/* Subtitle */}
+            <p className="text-orange-50 text-lg mb-8">
+              {isManager ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Sparkles size={18} className="text-white" />
+                  Share important updates with your team
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <TrendingUp size={18} className="text-white" />
+                  Stay informed with the latest team news
+                </span>
+              )}
+            </p>
+
+            {/* Stats + Action */}
+            <div className="flex items-center justify-center gap-5 flex-wrap">
+              {/* Stats Card */}
+              <div className="flex items-center gap-2 bg-white/20 border border-white/30 rounded-lg px-5 py-3 shadow-sm backdrop-blur-sm">
+                <MessageSquare size={18} className="text-white" />
+                <span className="font-semibold text-white text-lg">
+                  {announcements.length}
+                </span>
+                <span className="text-orange-100 text-sm">
+                  {announcements.length === 1 ? "Post" : "Posts"}
+                </span>
+              </div>
+
+              {/* Button */}
+              {isManager && (
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  variant="primary"
+                  className="bg-white text-[#F58220] hover:bg-orange-50 shadow-lg font-semibold px-5 py-2 rounded-lg transition-all duration-200"
+                >
+                  <Plus size={18} />
+                  <span className="ml-2">New Announcement</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -153,25 +160,25 @@ const TeamAnnouncements = () => {
 
         {/* Announcements List */}
         {announcements.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
             <div className="max-w-md mx-auto">
-              <div className="mb-6 inline-flex p-6 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-full">
-                <Megaphone size={64} className="text-[#FDB913]" />
+              <div className="mb-6 inline-flex p-6 bg-gray-50 rounded-full">
+                <Megaphone size={64} className="text-gray-300" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              <h3 className="text-2xl font-bold text-[#333333] mb-3">
                 No announcements yet
               </h3>
-              <p className="text-gray-600 mb-8 text-lg">
-                {isManager 
-                  ? "Start the conversation! Create your first announcement to keep your team informed and engaged." 
+              <p className="text-gray-600 mb-8">
+                {isManager
+                  ? "Create your first announcement to keep your team informed and engaged."
                   : "Your team manager will share important updates and news here. Check back soon!"}
               </p>
               {isManager && (
-                <Button 
+                <Button
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-[#FDB913] to-[#F58220] hover:from-[#E5A50F] hover:to-[#E0741C] text-white px-8 py-3 text-lg shadow-lg"
+                  variant="primary"
                 >
-                  <Plus size={24} />
+                  <Plus size={18} />
                   <span className="ml-2">Create First Announcement</span>
                 </Button>
               )}

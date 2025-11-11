@@ -33,25 +33,31 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-white px-4 py-8">
-      <Card className="w-full max-w-md p-8 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-xl">
-            <span className="text-3xl font-bold text-white">KE</span>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+      <Card className="w-full max-w-md p-8 shadow-md border-0 bg-white">
+        <div className="mb-8 flex justify-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
+            <span className="text-2xl font-bold text-white">KE</span>
           </div>
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Create your account</h1>
+          <h1 className="mb-2 text-3xl font-bold text-[#333333]">
+            Create your account
+          </h1>
+          <p className="text-sm text-gray-600 font-medium">
+            Join KE Smart Change
+          </p>
         </div>
 
         {message && (
-          <div className="mb-4 rounded-lg bg-red-100 p-3 text-center text-sm text-red-800">
+          <div className={`mb-4 rounded-lg p-3 text-center text-sm ${message.includes('successful') || message.includes('Verification') ? 'bg-[rgba(120,190,32,0.1)] text-[#6AAD1C] border border-[rgba(120,190,32,0.3)]' : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
             {message}
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           <Input
             label="Full Name"
             type="text"
@@ -95,7 +101,7 @@ export default function Signup() {
 
         <div className="mt-6 text-center">
           <span className="text-sm text-gray-600">Already have an account? </span>
-          <a href="/login" className="text-sm font-semibold text-[#F58220] transition-colors hover:text-[#FDB913] hover:underline">
+          <a href="/login" className="text-sm font-semibold text-[#F58220] transition-colors hover:text-[#E0741C] hover:underline">
             Login
           </a>
         </div>

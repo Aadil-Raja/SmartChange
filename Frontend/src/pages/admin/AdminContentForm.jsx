@@ -144,16 +144,16 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-[#333333]">
             {editingContent ? "Edit Content" : "Add New Content"}
           </h2>
           <button
-            type="button"  // ADD THIS
-            onClick={handleClose}  // CHANGE THIS
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            type="button"
+            onClick={handleClose}
+            className="text-gray-400 hover:text-[#F58220] transition-colors"
             disabled={submitting}
           >
             <X size={24} />
@@ -269,15 +269,16 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
           )}
 
           {/* Quick Actions */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-md p-4">
             <p className="text-sm text-gray-600 mb-3">Need to add new content?</p>
             <div className="flex gap-2">
               {formData.type === "video" && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() => window.open('/admin/training/library', '_blank')}
+                  fullWidth={false}
                 >
                   Upload New Video
                 </Button>
@@ -285,9 +286,10 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
               {formData.type === "link" && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() => window.open('/admin/training/library', '_blank')}
+                  fullWidth={false}
                 >
                   Create New Link
                 </Button>
@@ -295,9 +297,10 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
               {formData.type === "document" && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   size="sm"
                   onClick={() => window.open('/admin')}
+                  fullWidth={false}
                 >
                   Upload New Document
                 </Button>
@@ -306,19 +309,21 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
             <Button
               type="button"
-              variant="outline"
-              onClick={handleClose}  // CHANGE THIS
+              variant="secondary"
+              onClick={handleClose}
               disabled={submitting}
+              fullWidth={false}
             >
               Cancel
             </Button>
             <Button
               type="submit"
+              variant="primary"
               disabled={submitting}
-              className="flex items-center gap-2"
+              fullWidth={false}
             >
               {submitting ? (
                 <>

@@ -179,7 +179,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar
         isOpen={sidebarOpen}
         isCollapsed={sidebarCollapsed}
@@ -194,7 +194,7 @@ const AdminDashboard = () => {
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
               <Menu size={24} />
             </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Dashboard</h1>
+            <h1 className="text-xl font-bold text-[#333333]">Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
@@ -225,61 +225,145 @@ const AdminDashboard = () => {
               </Card>
             )}
 
-            {/* Stats Card */}
-            <Card className="p-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 font-medium">Total Documents</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">{documents.length}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 font-medium">Stored</p>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {documents.filter(d => d.status === 'STORED').length}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 font-medium">Processing</p>
-                  <p className="text-3xl font-bold text-[#F58220]">
-                    {documents.filter(d => d.status === 'PROCESSING' || d.status === 'QUEUED').length}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 font-medium">Processed</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {documents.filter(d => d.status === 'PROCESSED').length}
-                  </p>
-                </div>
-              </div>
-            </Card>
+            {/* Welcome Section with Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Upload Card - Takes 2 columns */}
+              <Card className="lg:col-span-2 overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-md">
+                      <Upload size={28} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-[#333333]">Document Management</h2>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Upload and process PDF documents for AI training
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Upload Section */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Upload Documents</h2>
-                  <p className="text-sm text-gray-600 font-medium">Upload and manage your documents</p>
+                  {/* Requirements Section */}
+                  <div className="mb-4 p-4 bg-white-50 border border-blue-200 rounded-lg">
+                    <h3 className="text-sm font-semibold text-[#333333] mb-3">Upload Requirements</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex items-start gap-2">
+                        <FileText size={18} className="text-[#00ADEF] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-[#333333]">File Format</p>
+                          <p className="text-xs text-gray-600">PDF documents only</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <AlertCircle size={18} className="text-[#F58220] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-[#333333]">File Size</p>
+                          <p className="text-xs text-gray-600">Maximum 100MB per file</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle size={18} className="text-[#78BE20] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-[#333333]">Processing</p>
+                          <p className="text-xs text-gray-600">Automatic AI extraction</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Clock size={18} className="text-[#F58220] mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-[#333333]">Duration</p>
+                          <p className="text-xs text-gray-600">Typically 2-5 minutes</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Upload Button */}
+                  <Button
+                    onClick={() => setShowUploadModal(true)}
+                    variant="primary"
+                    className="w-full flex items-center justify-center gap-2 py-3 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Upload size={20} />
+                    Upload New Document
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => setShowUploadModal(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Upload size={18} />
-                  Upload Document
-                </Button>
-              </div>
-            </Card>
+              </Card>
+
+              {/* Stats Card - Takes 1 column */}
+              <Card className="border border-gray-200">
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-[#333333] mb-4">Document Statistics</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-[#333333]"></div>
+                        <span className="text-sm text-gray-600">Total</span>
+                      </div>
+                      <span className="text-xl font-bold text-[#333333]">{documents.length}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-[#00ADEF]"></div>
+                        <span className="text-sm text-gray-600">Ready</span>
+                      </div>
+                      <span className="text-xl font-bold text-[#00ADEF]">
+                        {documents.filter(d => d.status === 'STORED').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-[#F58220]"></div>
+                        <span className="text-sm text-gray-600">Processing</span>
+                      </div>
+                      <span className="text-xl font-bold text-[#F58220]">
+                        {documents.filter(d => d.status === 'PROCESSING' || d.status === 'QUEUED').length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-[#78BE20]"></div>
+                        <span className="text-sm text-gray-600">Completed</span>
+                      </div>
+                      <span className="text-xl font-bold text-[#78BE20]">
+                        {documents.filter(d => d.status === 'PROCESSED').length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
 
             {/* Documents List */}
-            <Card className="p-6">
-              <h2 className="mb-6 text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Documents</h2>
+            <Card className="p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#333333]">Recent Documents</h2>
+                  <p className="text-sm text-gray-600 mt-1">Manage and process your uploaded files</p>
+                </div>
+                {documents.length > 0 && (
+                  <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
+                    {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
+                  </span>
+                )}
+              </div>
 
               {loading ? (
                 <div className="py-12 text-center text-gray-500">Loading documents...</div>
               ) : documents.length === 0 ? (
-                <div className="py-12 text-center">
-                  <FileText size={64} className="mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500">No documents yet. Upload your first document to get started.</p>
+                <div className="py-16 text-center">
+                  <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
+                    <FileText size={64} className="text-gray-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#333333] mb-2">No documents yet</h3>
+                  <p className="text-gray-600 mb-6">Upload your first document to get started with AI processing</p>
+                  <Button
+                    onClick={() => setShowUploadModal(true)}
+                    variant="primary"
+                    className="inline-flex items-center gap-2"
+                  >
+                    <Upload size={18} />
+                    Upload First Document
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -314,14 +398,16 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2">
                           {/* Queue Button - Only for STORED documents */}
                           {doc.status === 'STORED' && (
-                            <button
+                            <Button
                               onClick={() => handleQueueDocument(doc.id)}
                               disabled={isProcessing}
-                              className="flex items-center gap-2 rounded-md bg-gradient-to-r from-[#FDB913] to-[#F58220] px-3 py-2 text-sm font-medium text-white transition-all hover:from-[#F58220] hover:to-[#FDB913] disabled:opacity-50"
+                              variant="primary"
+                              size="sm"
+                              className="flex items-center gap-2"
                             >
                               <Play size={16} />
                               {isProcessing ? 'Queuing...' : 'Process'}
-                            </button>
+                            </Button>
                           )}
 
                           {/* Status Badge for In-Progress */}
@@ -417,6 +503,7 @@ const AdminDashboard = () => {
           <div className="flex gap-3">
             <Button
               onClick={handleUpload}
+              variant="primary"
               className="flex-1"
               disabled={!uploadingFile || uploading}
             >
@@ -481,6 +568,7 @@ const AdminDashboard = () => {
             <div className="mt-6 flex gap-3">
               <Button
                 onClick={() => handleDownload(selectedDoc.id, selectedDoc.original_filename)}
+                variant="primary"
                 className="flex-1 flex items-center justify-center gap-2"
               >
                 <Download size={16} />
