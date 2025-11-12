@@ -25,10 +25,13 @@ def item_to_dict(i: ContentItem) -> dict:
 
     if content_type == "document":
         access_url = i.document.cloudinary_url if i.document else None
+        thumbnail_url=i.document.cloudinary_thumbnail_url if i.document else None
     elif content_type == "video":
         access_url = i.video.cloudinary_url if i.video else None
+        thumbnail_url=i.video.cloudinary_thumbnail_url if i.video else None
     elif content_type == "link":
         access_url = i.external_link.url if i.external_link else None
+        thumbnail_url=None
     else:
         access_url = None
 
@@ -42,7 +45,7 @@ def item_to_dict(i: ContentItem) -> dict:
         "video_id": i.video_id,
         "external_link_id": i.external_link_id,
         "created_at": i.created_at,
-
+        "thumbnail_url": thumbnail_url,
         # 🔽 only new field
         "access_url": access_url,
     }
