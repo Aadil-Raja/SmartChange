@@ -1,7 +1,7 @@
 // pages/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import { Menu, Home, Users, Settings, FileText, Upload, Trash2, Download, Play, CheckCircle, AlertCircle, Clock } from 'lucide-react';
-import Sidebar from '../../components/ui/Sidebar';
+import { useState, useEffect } from 'react';
+import { FileText, Upload, Download, Play, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
@@ -22,8 +22,7 @@ const AdminDashboard = () => {
     clearError
   } = useAdmin();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState('');
@@ -50,12 +49,7 @@ const AdminDashboard = () => {
     return () => clearInterval(pollInterval);
   }, [jobStatuses, checkJobStatus]);
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: FileText, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
+
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
@@ -127,14 +121,7 @@ const AdminDashboard = () => {
   };
 
 
-  const handleDelete = async (documentId) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
-      const result = await deleteDoc(documentId);
-      if (!result.success) {
-        // alert(result.message || 'Failed to delete document');
-      }
-    }
-  };
+
 
   const handleDownload = async (documentId, filename) => {
     const result = await downloadDoc(documentId, filename);
@@ -179,30 +166,22 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        navItems={navItems}
-        currentPath="/admin"
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar 
+        collapsed={navCollapsed} 
+        onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-bold text-[#333333]">Dashboard</h1>
+      
+      <div className="flex-1 overflow-auto">
+        {/* Page Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold text-[#333333]">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Manage documents and monitor system activity</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
+        </div>
+        
+        <div className="p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Error Alert */}
             {error && (
@@ -454,7 +433,7 @@ const AdminDashboard = () => {
               )}
             </Card>
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Upload Modal */}

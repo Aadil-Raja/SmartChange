@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { Plus, BookOpen, Calendar, Menu, Home, Users, Settings, FileText, Search, Filter, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
+import { Plus, BookOpen, Calendar, FileText, Search, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
-import Sidebar from "../../components/ui/Sidebar";
+import AdminSidebar from "../../components/ui/AdminSidebar";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const AdminTrainingList = () => {
@@ -23,18 +23,10 @@ const AdminTrainingList = () => {
     deleteExistingCourse,
     clearMessages 
   } = useAdminTraining();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'active', 'inactive'
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: FileText, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
 
   useEffect(() => {
     fetchCourses();
@@ -79,50 +71,27 @@ const AdminTrainingList = () => {
 
   if (loading && courses.length === 0) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <Sidebar
-          isOpen={sidebarOpen}
-          isCollapsed={sidebarCollapsed}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          navItems={navItems}
-          currentPath="/admin/training"
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <AdminSidebar 
+          collapsed={navCollapsed} 
+          onToggle={() => setNavCollapsed(!navCollapsed)} 
         />
-        <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-          <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner size="large" />
-          </div>
+        <div className="flex-1 flex items-center justify-center">
+          <LoadingSpinner size="large" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        navItems={navItems}
-        currentPath="/admin/training"
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar 
+        collapsed={navCollapsed} 
+        onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-bold text-[#333333]">Training Management</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
+      
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -394,7 +363,7 @@ const AdminTrainingList = () => {
         />
       )}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

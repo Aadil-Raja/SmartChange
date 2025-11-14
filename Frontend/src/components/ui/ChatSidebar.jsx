@@ -16,7 +16,7 @@ import IconButton from "./IconButton";
 import ChatCard from "./ChatCard";
 import LoadingSpinner from "./LoadingSpinner";
 
-const ChatSidebar = ({ onNewChat }) => {
+const ChatSidebar = ({ onNewChat, minimal = false }) => {
   const {
     chatHeads,
     activeChatId,
@@ -76,19 +76,35 @@ const ChatSidebar = ({ onNewChat }) => {
   };
 
   return (
-    <div className="w-80 sm:w-80 bg-white border-r border-gray-200 flex flex-col shadow-lg h-full">
+    <div className={`${minimal ? 'w-full' : 'w-80 sm:w-80'} bg-white ${minimal ? '' : 'border-r border-gray-200'} flex flex-col ${minimal ? '' : 'shadow-lg'} h-full`}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-[#FDB913] to-[#F58220]">
-        <PrimaryButton
-          onClick={handleNewChat}
-          variant="secondary"
-          size="lg"
-          className="w-full shadow-md font-semibold"
-        >
-          <Plus size={20} />
-          <span className="ml-2">New Chat</span>
-        </PrimaryButton>
-      </div>
+      {!minimal && (
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-[#F58220] to-[#E0741C]">
+          <PrimaryButton
+            onClick={handleNewChat}
+            variant="secondary"
+            size="lg"
+            className="w-full shadow-md font-semibold bg-white text-[#F58220] hover:bg-gray-50 border-0"
+          >
+            <Plus size={20} />
+            <span className="ml-2">New Chat</span>
+          </PrimaryButton>
+        </div>
+      )}
+      
+      {minimal && (
+        <div className="p-4 border-b border-gray-200">
+          <PrimaryButton
+            onClick={handleNewChat}
+            variant="primary"
+            size="md"
+            className="w-full"
+          >
+            <Plus size={18} />
+            <span className="ml-2">New Chat</span>
+          </PrimaryButton>
+        </div>
+      )}
 
       {/* Chat List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -98,8 +114,8 @@ const ChatSidebar = ({ onNewChat }) => {
           </div>
         ) : chatHeads.length === 0 ? (
           <div className="text-center py-8 px-4">
-            <div className="p-4 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-xl mb-4">
-              <MessageSquare size={48} className="mx-auto text-[#FDB913] mb-3" />
+            <div className="p-4 bg-gradient-to-br from-[#F58220]/10 to-[#E0741C]/10 rounded-xl mb-4">
+              <MessageSquare size={48} className="mx-auto text-[#F58220] mb-3" />
             </div>
             <p className="text-gray-600 text-sm font-medium mb-2">
               No conversations yet
@@ -118,7 +134,7 @@ const ChatSidebar = ({ onNewChat }) => {
               hover={!editingChatId}
               className={`group relative cursor-pointer transition-all ${
                 activeChatId === chat.id
-                  ? "border-2 border-[#FDB913] shadow-md bg-gradient-to-r from-[#FDB913]/5 to-[#F58220]/5"
+                  ? "border-2 border-[#F58220] shadow-md bg-gradient-to-r from-[#F58220]/5 to-[#E0741C]/5"
                   : "hover:border-gray-300"
               }`}
             >
@@ -128,7 +144,7 @@ const ChatSidebar = ({ onNewChat }) => {
                     type="text"
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
-                    className="flex-1 px-3 py-2 text-sm border-2 border-[#FDB913]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FDB913]/20 focus:border-[#FDB913]"
+                    className="flex-1 px-3 py-2 text-sm border-2 border-[#F58220]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSaveEdit(chat.id);
@@ -158,15 +174,15 @@ const ChatSidebar = ({ onNewChat }) => {
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className={`p-1.5 rounded-lg ${
                         activeChatId === chat.id 
-                          ? "bg-[#FDB913]/20" 
+                          ? "bg-[#F58220]/20" 
                           : "bg-gray-100"
                       }`}>
                         <FileText size={14} className={
-                          activeChatId === chat.id ? "text-[#FDB913]" : "text-gray-600"
+                          activeChatId === chat.id ? "text-[#F58220]" : "text-gray-600"
                         } />
                       </div>
                       <h3 className={`text-sm font-semibold truncate ${
-                        activeChatId === chat.id ? "text-[#FDB913]" : "text-gray-900"
+                        activeChatId === chat.id ? "text-[#F58220]" : "text-gray-900"
                       }`}>
                         {chat.title || "New Chat"}
                       </h3>
@@ -179,7 +195,7 @@ const ChatSidebar = ({ onNewChat }) => {
                         }}
                         variant="ghost"
                         size="sm"
-                        className="text-gray-500 hover:text-[#FDB913]"
+                        className="text-gray-500 hover:text-[#F58220]"
                       >
                         <Edit2 size={14} />
                       </IconButton>

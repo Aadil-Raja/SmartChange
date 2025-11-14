@@ -1,0 +1,90 @@
+// src/components/ui/AdminSidebar.jsx
+import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Home, Users, Settings, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+
+const AdminSidebar = ({ collapsed = true, onToggle }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const navItems = [
+    { icon: Home, label: 'Dashboard', path: '/admin' },
+    { icon: Users, label: 'Employees', path: '/admin/employees' },
+    { icon: Users, label: 'Teams', path: '/admin/teams' },
+    { icon: Settings, label: 'Training', path: '/admin/training' },
+  ];
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      localStorage.removeItem('adminToken');
+      navigate('/admin/login');
+    }
+  };
+
+  return (
+    <div className={`
+      ${collapsed ? 'w-16' : 'w-60'} 
+      transition-all duration-300 ease-in-out
+      bg-white border-r border-gray-200 shadow-sm flex flex-col h-full
+    `}>
+      {/* Navigation Header */}
+      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+        {!collapsed && (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">K</span>
+            </div>
+            <div>
+              <h2 className="font-bold text-[#333333] text-sm">K-Electric</h2>
+              <p className="text-xs text-gray-600">Admin Portal</p>
+            </div>
+          </div>
+        )}
+        {onToggle && (
+          <button
+            onClick={onToggle}
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        )}
+      </div>
+      
+      {/* Navigation Items */}
+      <nav className="flex-1 p-2 space-y-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                isActive
+                  ? 'bg-gradient-to-r from-[#F58220]/10 to-[#E0741C]/10 text-[#F58220]'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-[#F58220]'
+              }`}
+              title={collapsed ? item.label : undefined}
+            >
+              <item.icon size={18} className="flex-shrink-0" />
+              {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Logout Button */}
+      <div className="p-2 border-t border-gray-200">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all text-red-600 hover:bg-red-50 hover:text-red-700"
+          title={collapsed ? 'Logout' : undefined}
+        >
+          <LogOut size={18} className="flex-shrink-0" />
+          {!collapsed && <span className="font-medium text-sm">Logout</span>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default AdminSidebar;

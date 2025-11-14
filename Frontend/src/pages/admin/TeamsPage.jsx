@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Menu, Home, Users, Settings, Plus, UserPlus, X, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import Sidebar from '../../components/ui/Sidebar';
+import { useEffect, useState } from 'react';
+import { Plus, UserPlus, X, Edit2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const TeamsPage = () => {
   const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole } = useAdmin();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -17,7 +16,7 @@ const TeamsPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [expandedTeams, setExpandedTeams] = useState(new Set());
-    const [editingRole, setEditingRole] = useState(null);
+  const [editingRole, setEditingRole] = useState(null);
 
   useEffect(() => {
     loadTeams();
@@ -25,15 +24,10 @@ const TeamsPage = () => {
     loadTeamRoles();
   }, []);
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: Users, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
+
 
   // Group employees by ID to get unique list
-  const groupedEmployees = React.useMemo(() => {
+  const groupedEmployees = (() => {
     const grouped = {};
     employees.forEach(emp => {
       if (!grouped[emp.id]) {
@@ -54,10 +48,10 @@ const TeamsPage = () => {
       }
     });
     return Object.values(grouped);
-  }, [employees]);
+  })();
 
   // Get employees available for the selected team (not already in that specific team)
-  const availableEmployeesForTeam = React.useMemo(() => {
+  const availableEmployeesForTeam = (() => {
     if (!selectedTeam) return groupedEmployees;
     
     // Get team member user IDs from employees data for this team
@@ -66,7 +60,7 @@ const TeamsPage = () => {
       .map(emp => emp.id);
     
     return groupedEmployees.filter(emp => !teamMemberIds.includes(emp.id));
-  }, [groupedEmployees, selectedTeam, employees]);
+  })();
 
   // Get team members with their details
   const getTeamMembers = (teamId) => {
@@ -171,30 +165,22 @@ const TeamsPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar 
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        navItems={navItems}
-        currentPath="/admin/teams"
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar 
+        collapsed={navCollapsed} 
+        onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-bold text-[#333333]">Team Management</h1>
+      
+      <div className="flex-1 overflow-auto">
+        {/* Page Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold text-[#333333]">Team Management</h1>
+            <p className="text-gray-600 mt-1">Create and manage teams and their members</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
+        </div>
+        
+        <div className="p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -419,7 +405,7 @@ const TeamsPage = () => {
               )}
             </Card>
           </div>
-        </main>
+        </div>
       </div>
 
       {/* Create Team Modal */}

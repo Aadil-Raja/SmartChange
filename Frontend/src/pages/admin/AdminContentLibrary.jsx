@@ -12,17 +12,12 @@ import {
   Edit,
   Trash2,
   Search,
-  Menu,
-  Home,
-  Users,
-  Settings,
   Play
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
-import Sidebar from "../../components/ui/Sidebar";
 import Modal from "../../components/ui/Modal";
 import Input2 from "../../components/ui/Input2";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
@@ -46,8 +41,7 @@ const AdminContentLibrary = () => {
     clearMessages,
   } = useAdminTraining();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const [activeTab, setActiveTab] = useState('videos'); // 'videos', 'links', 'documents'
   const [searchTerm, setSearchTerm] = useState('');
   const [showVideoUpload, setShowVideoUpload] = useState(false);
@@ -86,12 +80,7 @@ const AdminContentLibrary = () => {
   const [submitting, setSubmitting] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: FileText, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
+
 
   useEffect(() => {
     console.log('AdminContentLibrary: Component mounted');
@@ -207,38 +196,23 @@ const AdminContentLibrary = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        navItems={navItems}
-        currentPath="/admin/training"
-      />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        {/* Top Navigation Bar */}
-        <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-          <div className="flex h-16 items-center justify-between px-6">
-            <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-                <Menu size={24} />
-              </button>
-              <button
-                onClick={() => navigate("/admin/training")}
-                className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
-              >
-                <ArrowLeft size={20} />
-                <span className="font-medium hidden sm:inline">Back to Training</span>
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex h-16 items-center justify-between px-6">
+          <button
+            onClick={() => navigate("/admin/training")}
+            className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
+          >
+            <ArrowLeft size={20} />
+            <span className="font-medium">Back to Training</span>
+          </button>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* Page Header Section */}
         <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-200">
@@ -718,7 +692,6 @@ const AdminContentLibrary = () => {
             )}
           </div>
         </main>
-      </div>
 
       {/* Video Upload Modal */}
       <Modal

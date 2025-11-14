@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Menu, Home, Users, Settings, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react';
-import Sidebar from '../../components/ui/Sidebar';
+import { useEffect, useState } from 'react';
+import { Users, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const EmployeeList = () => {
-  const { teams,employees, teamRoles, loading, loadEmployees,loadTeams, loadTeamRoles, updateTeamMemberRole, deleteEmployee } = useAdmin();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateTeamMemberRole } = useAdmin();
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterTeam, setFilterTeam] = useState('');
@@ -19,15 +18,10 @@ const EmployeeList = () => {
     loadTeamRoles();
   }, []);
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: Users, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
+
 
   // Group employees by user ID to consolidate multiple team entries
-  const groupedEmployees = React.useMemo(() => {
+  const groupedEmployees = (() => {
     const grouped = {};
 
     employees.forEach(emp => {
@@ -54,7 +48,7 @@ const EmployeeList = () => {
     });
 
     return Object.values(grouped);
-  }, [employees]);
+  })();
 
   const filteredEmployees = groupedEmployees.filter(emp => {
     const matchesSearch =
@@ -100,14 +94,7 @@ const EmployeeList = () => {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this employee? This will remove them from all teams.')) {
-      const result = await deleteEmployee(userId);
-      if (!result.success) {
-        alert(result.message || 'Failed to delete employee');
-      }
-    }
-  };
+
 
   const toggleExpanded = (employeeId) => {
     const newExpanded = new Set(expandedEmployees);
@@ -120,30 +107,22 @@ const EmployeeList = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        navItems={navItems}
-        currentPath="/admin/employees"
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar 
+        collapsed={navCollapsed} 
+        onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-bold text-[#333333]">Employee Management</h1>
+      
+      <div className="flex-1 overflow-auto">
+        {/* Page Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-4">
+          <div className="max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold text-[#333333]">Employee Management</h1>
+            <p className="text-gray-600 mt-1">Manage employee roles and team assignments</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
+        </div>
+        
+        <div className="p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Page Header with Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -404,7 +383,7 @@ const EmployeeList = () => {
               )}
             </Card>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

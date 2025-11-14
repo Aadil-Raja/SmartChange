@@ -149,22 +149,24 @@ export const ChatbotProvider = ({ children }) => {
 
     // Optimistically add user message
     const tempUserMessage = {
-      id: Date.now(),
+      id: `temp-${Date.now()}`,
       role: "user",
       message: messageText,
       created_at: new Date().toISOString(),
       active_doc_id: selectedDocumentId,
     };
 
-     
     console.log("Temp user message:", tempUserMessage);
     const currentChatId = chatHeadId || activeChatId;
-    if (currentChatId) {
-      setMessages((prev) => ({
-        ...prev,
-        [currentChatId]: [...(prev[currentChatId] || []), tempUserMessage],
-      }));
-    }
+    
+    // For new chats, we'll use a temporary ID until we get the real one
+    const tempChatId = currentChatId || `temp-chat-${Date.now()}`;
+    
+    setMessages((prev) => ({
+      ...prev,
+      [tempChatId]: [...(prev[tempChatId] || []), tempUserMessage],
+    }));
+    
     console.log("Messages after adding temp message:", messages);
     try {
       console.log("Calling sendChatMessage API");
@@ -193,17 +195,35 @@ export const ChatbotProvider = ({ children }) => {
 
         // Add assistant message
         const assistantMessage = {
-          id: Date.now() + 1,
+          id: `assistant-${Date.now()}`,
           role: "assistant",
           message: assistantResponse,
           created_at: new Date().toISOString(),
           active_doc_id: selectedDocumentId,
         };
 
-        setMessages((prev) => ({
-          ...prev,
-          [newChatId]: [...(prev[newChatId] || []), assistantMessage],
-        }));
+        // Handle message updates properly
+        setMessages((prev) => {
+          const updatedMessages = { ...prev };
+          
+          // If this was a new chat, move messages from temp ID to real ID
+          if (!chatHeadId && newChatId) {
+            const tempMessages = updatedMessages[tempChatId] || [];
+            // Remove temp user message and add both user and assistant messages
+            const userMessage = tempMessages.find(msg => msg.role === "user");
+            updatedMessages[newChatId] = userMessage ? [userMessage, assistantMessage] : [assistantMessage];
+            // Clean up temp chat
+            if (tempChatId !== newChatId) {
+              delete updatedMessages[tempChatId];
+            }
+          } else {
+            // Existing chat - just add assistant message
+            const chatId = newChatId || currentChatId;
+            updatedMessages[chatId] = [...(updatedMessages[chatId] || []), assistantMessage];
+          }
+          
+          return updatedMessages;
+        });
 
         // Refresh chat heads to show new chat or updated timestamp
         await fetchChatHeads();
@@ -217,14 +237,12 @@ export const ChatbotProvider = ({ children }) => {
       setError(errorMsg);
       
       // Remove optimistic message on error
-      if (currentChatId) {
-        setMessages((prev) => ({
-          ...prev,
-          [currentChatId]: (prev[currentChatId] || []).filter(
-            (msg) => msg.id !== tempUserMessage.id
-          ),
-        }));
-      }
+      setMessages((prev) => ({
+        ...prev,
+        [tempChatId]: (prev[tempChatId] || []).filter(
+          (msg) => msg.id !== tempUserMessage.id
+        ),
+      }));
       
       return { success: false, message: errorMsg };
     } finally {
