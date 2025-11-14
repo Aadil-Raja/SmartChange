@@ -87,6 +87,188 @@ def detect_toc_patterns(text: str) -> bool:
     return False
 
 
+# ============================================================================
+# WATERMARK DETECTION FUNCTIONS
+# ============================================================================
+
+def normalize_text_for_comparison(text: str) -> str:
+    """
+    Normalize text for frequency comparison.
+    Removes variations that don't affect meaning.
+    
+    Args:
+        text: Raw text
+        
+    Returns:
+        Normalized text (lowercase, no extra spaces/punctuation)
+    """
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text)
+    # Remove punctuation
+    text = re.sub(r'[^\w\s]', '', text)
+    # Lowercase and strip
+    text = text.lower().strip()
+    return text
+
+
+def get_position_zone(bbox: tuple, page_height: float) -> str:
+    """
+    Determine vertical position zone on page.
+    
+    Args:
+        bbox: (x0, y0, x1, y1) bounding box
+        page_height: Total page height
+        
+    Returns:
+        "top", "middle", or "bottom"
+    """
+    if page_height == 0:
+        return "middle"
+    
+    y_position = bbox[1]  # y0
+    
+    if y_position < page_height * 0.15:
+        return "top"
+    elif y_position > page_height * 0.85:
+        return "bottom"
+    else:
+        return "middle"
+
+
+def collect_text_frequencies(loader_result) -> Tuple[Dict, int]:
+    """
+    Scan all pages and count text occurrences.
+    
+    Args:
+        loader_result: LoaderResultFitz
+        
+    Returns:
+        (frequency_map, total_pages)
+        frequency_map: {(text, font_size, position): [page_numbers]}
+    """
+    frequency_map = {}
+    total_pages = loader_result.total_pages
+    
+    for page in loader_result.pages:
+        page_num = page.page_num
+        page_height = page.height
+        
+        for block in page.blocks:
+            if block.block_type != 0:  # Skip non-text blocks
+                continue
+            
+            for span in block.spans:
+                # Normalize text
+                text = normalize_text_for_comparison(span.text)
+                
+                if not text or len(text) < 3:
+                    continue
+                
+                # Get metadata
+                font_size = round(span.font_size, 1)
+                position = get_position_zone(span.bbox, page_height)
+                
+                # Create key
+                key = (text, font_size, position)
+                
+                # Add to frequency map
+                if key not in frequency_map:
+                    frequency_map[key] = []
+                
+                # Avoid duplicates on same page
+                if page_num not in frequency_map[key]:
+                    frequency_map[key].append(page_num)
+    
+    return frequency_map, total_pages
+
+
+def calculate_adaptive_threshold(total_pages: int) -> float:
+    """
+    Calculate watermark threshold based on document length.
+    
+    Args:
+        total_pages: Number of pages in document
+        
+    Returns:
+        Threshold ratio (0.0 to 1.0)
+    """
+    if total_pages <= 5:
+        # Short documents: be conservative
+        return 0.8
+    elif total_pages <= 20:
+        # Medium documents: balanced
+        return 0.7
+    else:
+        # Long documents: can be more aggressive
+        return 0.5
+
+
+def detect_watermarks_in_document(loader_result) -> set:
+    """
+    Main watermark detection function.
+    Identifies text that appears on many pages (likely watermarks/headers/footers).
+    
+    Args:
+        loader_result: LoaderResultFitz
+        
+    Returns:
+        Set of (normalized_text, font_size, position) tuples
+    """
+    frequency_map, total_pages = collect_text_frequencies(loader_result)
+    threshold = calculate_adaptive_threshold(total_pages)
+    
+    watermarks = set()
+    
+    for key, page_list in frequency_map.items():
+        text, font_size, position = key
+        
+        # Calculate frequency ratio
+        frequency_ratio = len(page_list) / total_pages
+        
+        # Check if exceeds threshold
+        if frequency_ratio >= threshold:
+            watermarks.add(key)
+            
+            logger.info(
+                f"Detected watermark: '{text[:50]}...' "
+                f"({font_size}pt, {position}) "
+                f"on {len(page_list)}/{total_pages} pages "
+                f"({frequency_ratio:.1%})"
+            )
+    
+    return watermarks
+
+
+def is_watermark(
+    text: str,
+    font_size: float,
+    bbox: tuple,
+    page,
+    watermarks: set
+) -> bool:
+    """
+    Check if specific text is a detected watermark.
+    
+    Args:
+        text: Text to check
+        font_size: Font size of text
+        bbox: Bounding box
+        page: Page object (for height)
+        watermarks: Set of detected watermarks
+        
+    Returns:
+        True if watermark, False if legitimate content
+    """
+    # Normalize
+    normalized_text = normalize_text_for_comparison(text)
+    font_size_rounded = round(font_size, 1)
+    position = get_position_zone(bbox, page.height)
+    
+    # Check against watermark set
+    key = (normalized_text, font_size_rounded, position)
+    return key in watermarks
+
+
 def is_likely_heading(text: str) -> bool:
     """
     Check if text looks like a heading based on content patterns.
@@ -303,6 +485,7 @@ def detect_heading_threshold(loader_result) -> Tuple[float, Dict[int, float]]:
 def extract_structured_content(loader_result) -> List[Dict[str, Any]]:
     """
     Extract structured content with heading detection based on font size.
+    Filters out watermarks, headers, and footers completely from all content.
     
     Args:
         loader_result: LoaderResultFitz from loader_fitz.py
@@ -317,7 +500,12 @@ def extract_structured_content(loader_result) -> List[Dict[str, Any]]:
     for level, size in heading_levels.items():
         size_to_level[size] = level
     
+    # Detect watermarks before processing
+    watermarks = detect_watermarks_in_document(loader_result)
+    logger.info(f"Detected {len(watermarks)} watermark patterns")
+    
     content_elements = []
+    skipped_watermarks = 0
     
     for page in loader_result.pages:
         for block in page.blocks:
@@ -331,6 +519,17 @@ def extract_structured_content(loader_result) -> List[Dict[str, Any]]:
             for span in block.spans:
                 if not span.text.strip():
                     continue
+                
+                # FIRST: Check if this individual span is a watermark
+                if is_watermark(
+                    span.text,
+                    span.font_size,
+                    span.bbox,
+                    page,
+                    watermarks
+                ):
+                    skipped_watermarks += 1
+                    continue  # Skip this span entirely
                 
                 # Start new group if font size changes significantly
                 if current_size is None or abs(span.font_size - current_size) > 0.5:
@@ -364,6 +563,7 @@ def extract_structured_content(loader_result) -> List[Dict[str, Any]]:
                     content_elements.append(element)
     
     logger.info(f"Extracted {len(content_elements)} content elements")
+    logger.info(f"Filtered {skipped_watermarks} watermark occurrences")
     return content_elements
 
 
@@ -560,7 +760,8 @@ def preprocess_fitz(loader_result) -> PreprocessingResultFitz:
         "avg_font_size": loader_result.metadata.get("avg_font_size", 12.0),
         "font_sizes": loader_result.metadata.get("font_sizes", []),
         "has_toc": has_toc,
-        "detection_method": "font_based"
+        "detection_method": "font_based",
+        "watermark_filtering": True
     }
     
     logger.info(f"Preprocessing complete: {len(segments)} segments "
@@ -617,7 +818,8 @@ def preprocess_fitz_pattern(loader_result) -> PreprocessingResultFitz:
         "paragraph_count": paragraph_count,
         "has_toc": has_toc,
         "total_pages": loader_result.total_pages,
-        "detection_method": "pattern_based"
+        "detection_method": "pattern_based",
+        "watermark_filtering": False  # Pattern-based doesn't use watermark filtering
     }
     
     logger.info(f"Pattern-based preprocessing complete: {len(all_segments)} segments "
