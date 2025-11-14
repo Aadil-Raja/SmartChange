@@ -44,19 +44,30 @@ api.interceptors.response.use(
 
       const currentPath = window.location.pathname;
 
-      // Redirect admin → /admin/login, employee → /login
-      if (currentPath.startsWith("/admin")) {
-        localStorage.removeItem("adminToken");
-        window.location.href = "/admin/login";
-      } else {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
+      // Only redirect if NOT on login/signup pages
+      const isAuthPage = currentPath === '/login' || 
+                         currentPath === '/signup' || 
+                         currentPath === '/admin/login' ||
+                         currentPath === '/verify-code' ||
+                         currentPath === '/forgot-password' ||
+                         currentPath === '/reset-password';
+
+      if (!isAuthPage) {
+        // Redirect admin → /admin/login, employee → /login
+        if (currentPath.startsWith("/admin")) {
+          localStorage.removeItem("adminToken");
+          window.location.href = "/admin/login";
+        } else {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        }
       }
     }
 
+    // Don't redirect on 422 validation errors - let the form handle it
     if (error.response?.status === 422) {
       console.error("❌ 422 Validation Error:", error.response.data);
-      window.location.href = "/login";
+      // Just log the error, don't redirect
     }
 
     return Promise.reject(error);

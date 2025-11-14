@@ -5,9 +5,7 @@ import {
     updateContentProgress,
     getCourseProgress,
     getCourseItemsProgress,
-    getProcessedDocuments,
-    getVideos,
-    getExternalLinks
+    getProcessedDocuments
 } from "../services/courseApi";
 
 export const CourseContext = createContext(null);
@@ -18,8 +16,6 @@ export const CourseProvider = ({ children }) => {
     const [completedItems, setCompletedItems] = useState(new Set());
     const [courseItemsProgress, setCourseItemsProgress] = useState({});
     const [processedDocuments, setProcessedDocuments] = useState([]);
-    const [videos, setVideos] = useState([]);
-    const [externalLinks, setExternalLinks] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [progressLoading, setProgressLoading] = useState(false);
@@ -252,54 +248,6 @@ export const CourseProvider = ({ children }) => {
         }
     };
 
-    // Fetch all videos (using admin training API)
-    const fetchVideos = async () => {
-        try {
-            const res = await getVideos();
-            if (res?.success) {
-                console.log('CourseContext: Videos fetched:', res.data);
-                setVideos(res.data || []);
-                return { success: true, data: res.data };
-            } else {
-                throw new Error(res.message || 'Failed to fetch videos');
-            }
-        } catch (err) {
-            console.error('CourseContext: Failed to fetch videos:', err);
-            const errorMsg = err.response?.data?.message || err.message;
-            setError(errorMsg);
-            return { success: false, message: errorMsg };
-        }
-    };
-
-    // Fetch all external links (using admin training API)
-    const fetchExternalLinks = async () => {
-        try {
-            const res = await getExternalLinks();
-            if (res?.success) {
-                console.log('CourseContext: External links fetched:', res.data);
-                setExternalLinks(res.data || []);
-                return { success: true, data: res.data };
-            } else {
-                throw new Error(res.message || 'Failed to fetch external links');
-            }
-        } catch (err) {
-            console.error('CourseContext: Failed to fetch external links:', err);
-            const errorMsg = err.response?.data?.message || err.message;
-            setError(errorMsg);
-            return { success: false, message: errorMsg };
-        }
-    };
-
-    // Get video by ID
-    const getVideoById = (videoId) => {
-        return videos.find(video => video.id === videoId) || null;
-    };
-
-    // Get external link by ID
-    const getExternalLinkById = (linkId) => {
-        return externalLinks.find(link => link.id === linkId) || null;
-    };
-
     // Check if all items in a course are completed
     const isCourseCompleted = (courseItems) => {
         if (!courseItems || courseItems.length === 0) return false;
@@ -337,8 +285,6 @@ export const CourseProvider = ({ children }) => {
                 completedItems,
                 courseItemsProgress,
                 processedDocuments,
-                videos,
-                externalLinks,
                 loading,
                 progressLoading,
                 error,
@@ -355,12 +301,6 @@ export const CourseProvider = ({ children }) => {
 
                 // Document functions
                 fetchProcessedDocuments,
-
-                // Video & Link functions
-                fetchVideos,
-                fetchExternalLinks,
-                getVideoById,
-                getExternalLinkById,
 
                 // Utility functions
                 isCourseCompleted,

@@ -44,30 +44,5 @@ export const getProcessedDocuments = async () => {
   return response.data;
 };
 
-// ===== VIDEO & EXTERNAL LINK APIs (using admin endpoints) =====
-
-// Get all videos from admin training (accessible to employees for viewing)
-export const getVideos = async () => {
-  console.log('courseApi: getVideos called');
-  try {
-    const response = await api.get('/admin-training/videos');
-    console.log('courseApi: getVideos response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('courseApi: getVideos error:', error);
-    throw error;
-  }
-};
-
-// Get all external links from admin training (accessible to employees for viewing)
-export const getExternalLinks = async () => {
-  console.log('courseApi: getExternalLinks called');
-  try {
-    const response = await api.get('/admin-training/links');
-    console.log('courseApi: getExternalLinks response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('courseApi: getExternalLinks error:', error);
-    throw error;
-  }
-};
+// Note: Videos and external links are now included directly in the course items
+// with thumbnail_url and access_url, so separate API calls are no longer needed

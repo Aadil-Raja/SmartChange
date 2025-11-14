@@ -33,6 +33,17 @@ const Login = () => {
     e.preventDefault();
     setMessage('');
 
+    // Client-side validation
+    if (!email || !email.includes('@')) {
+      setMessage('Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      setMessage('Please enter your password');
+      return;
+    }
+
     try {
       const result = await login(email, password);
 
@@ -40,8 +51,10 @@ const Login = () => {
 
       // --- CASE 1: Full success (verified user) ---
       if (result.success) {
-        setMessage('Login successful!');
-        setTimeout(() => (window.location.href = '/employee/myteams'), 1500);
+        setMessage('Login successful! Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/employee/myteams';
+        }, 1000);
         return;
       }
 
@@ -86,8 +99,10 @@ const Login = () => {
 
       if (response.success) {
         setStep('verified');
-        setMessage('Login successful!');
-        setTimeout(() => window.location.href = '/employee/myteams', 1500);
+        setMessage('Login successful! Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/employee/myteams';
+        }, 1000);
       } else {
         setMessage(response.message || 'Google login failed');
       }
@@ -110,8 +125,10 @@ const Login = () => {
 
     if (result.success) {
       setStep('verified');
-      setMessage('Login successful!');
-      setTimeout(() => window.location.href = '/employee/myteams', 1500);
+      setMessage('Login successful! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/employee/myteams';
+      }, 1000);
     } else {
       setMessage(result.message || 'Invalid code');
     }
@@ -144,7 +161,7 @@ const Login = () => {
 
         {step === 'password' && (
           <>
-            <div className="space-y-6">
+            <form onSubmit={handlePasswordLogin} className="space-y-6">
               <Input
                 label="Email"
                 type="email"
@@ -163,7 +180,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-              <Button onClick={handlePasswordLogin} disabled={loading}>
+              <Button type="submit" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
               <div className="text-center">
@@ -172,7 +189,7 @@ const Login = () => {
                   Signup
                 </a>
               </div>
-            </div>
+            </form>
 
             {/* Google Sign-in */}
             <div className="mt-6">

@@ -12,15 +12,9 @@ const CourseContent = () => {
   const navigate = useNavigate();
   const {
     selectedCourse,
-    videos,
-    externalLinks,
     loading,
     error,
     fetchCourseDetails,
-    fetchVideos,
-    fetchExternalLinks,
-    getVideoById,
-    getExternalLinkById,
     completedItems,
     courseItemsProgress,
     getItemProgress,
@@ -30,9 +24,6 @@ const CourseContent = () => {
   useEffect(() => {
     if (id) {
       fetchCourseDetails(parseInt(id));
-      // Also fetch videos and external links for content resolution
-      fetchVideos();
-      fetchExternalLinks();
     }
   }, [id]);
 
@@ -70,47 +61,6 @@ const CourseContent = () => {
   }
 
   if (!selectedCourse) return null;
-
-  // Function to enhance course items with actual URLs
-  const enhanceItemWithUrl = (item) => {
-    let enhancedItem = { ...item };
-
-    console.log('CourseContent: Enhancing item:', item);
-    console.log('CourseContent: Available videos:', videos.length);
-    console.log('CourseContent: Available links:', externalLinks.length);
-
-    switch (item.type) {
-      case 'video':
-        if (item.video_id) {
-          const video = getVideoById(item.video_id);
-          console.log('CourseContent: Found video for ID', item.video_id, ':', video);
-          if (video) {
-            enhancedItem.url = video.secure_url || video.cloudinary_url;
-            enhancedItem.thumbnail_url = video.thumbnail_url;
-            enhancedItem.duration_sec = video.duration_sec;
-          }
-        }
-        break;
-      case 'link':
-        if (item.external_link_id) {
-          const link = getExternalLinkById(item.external_link_id);
-          console.log('CourseContent: Found link for ID', item.external_link_id, ':', link);
-          if (link) {
-            enhancedItem.url = link.url;
-          }
-        }
-        break;
-      case 'document':
-        // Document URLs should already be available from the course API
-        // No additional enhancement needed
-        break;
-      default:
-        break;
-    }
-
-    console.log('CourseContent: Enhanced item:', enhancedItem);
-    return enhancedItem;
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -262,7 +212,6 @@ const CourseContent = () => {
             <div className="grid grid-cols-1 gap-6">
               {selectedCourse.items && selectedCourse.items.length > 0 ? (
                 selectedCourse.items.map((item, index) => {
-                  const enhancedItem = enhanceItemWithUrl(item);
                   const itemProgress = getItemProgress(selectedCourse.id, item.id);
                   const isCompleted = isItemCompleted(item.id);
                   const progressPercent = itemProgress?.progress || 0;
@@ -299,7 +248,7 @@ const CourseContent = () => {
 
                         {/* Content Preview */}
                         <div className="mb-4">
-                          <CourseContentPreview item={enhancedItem} />
+                          <CourseContentPreview item={item} />
                         </div>
 
                         {/* Progress Bar for Videos */}

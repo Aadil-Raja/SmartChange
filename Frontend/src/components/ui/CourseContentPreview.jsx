@@ -1,7 +1,9 @@
 import { FileText, Video, ExternalLink, AlertCircle, Play } from 'lucide-react';
 
 const CourseContentPreview = ({ item }) => {
-  const { type, url, title, description, thumbnail_url, duration_sec } = item;
+  const { type, access_url, title, description, thumbnail_url, duration_sec } = item;
+  // Use access_url from the new API response
+  const url = access_url;
 
   // Render based on content type
   const renderContent = () => {
@@ -70,20 +72,45 @@ const CourseContentPreview = ({ item }) => {
 
       case 'document':
         return (
-          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8">
-            <div className="text-center">
-              <FileText size={48} className="mx-auto mb-4 text-[#F58220]" />
-              <h4 className="mb-2 font-semibold text-gray-900">{title}</h4>
+          <div className="rounded-lg overflow-hidden border border-gray-200 bg-white">
+            {thumbnail_url ? (
+              <div className="relative group">
+                <div className="aspect-video w-full overflow-hidden bg-gray-100">
+                  <img
+                    src={thumbnail_url}
+                    alt={title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-[#F58220] hover:bg-gray-50 transition-all shadow-lg"
+                  >
+                    <ExternalLink size={16} />
+                    Open Document
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="aspect-video w-full bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
+                <FileText size={64} className="text-[#F58220]/30" />
+              </div>
+            )}
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <h4 className="font-semibold text-gray-900 mb-1">{title}</h4>
               {description && (
-                <p className="mb-4 text-sm text-gray-600">{description}</p>
+                <p className="text-sm text-gray-600 mb-3">{description}</p>
               )}
               <a
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2 font-medium text-white transition-all hover:shadow-lg"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#F58220] hover:text-[#E0741C] transition-colors"
               >
-                <ExternalLink size={16} />
+                <ExternalLink size={14} />
                 Open Document
               </a>
             </div>

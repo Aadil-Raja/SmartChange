@@ -18,6 +18,22 @@ export default function Signup() {
     e.preventDefault();
     setMessage('');
 
+    // Client-side validation
+    if (!fullName || fullName.trim().length < 2) {
+      setMessage('Please enter your full name');
+      return;
+    }
+
+    if (!email || !email.includes('@')) {
+      setMessage('Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      setMessage('Please enter a password');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setMessage('Passwords do not match!');
       return;
@@ -57,7 +73,7 @@ export default function Signup() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Full Name"
             type="text"
@@ -94,10 +110,10 @@ export default function Signup() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
-          <Button onClick={handleSubmit} disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Sign Up'}
           </Button>
-        </div>
+        </form>
 
         <div className="mt-6 text-center">
           <span className="text-sm text-gray-600">Already have an account? </span>

@@ -14,11 +14,27 @@ export default function AdminLogin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage('');
+
+    // Client-side validation
+    if (!email || !email.includes('@')) {
+      setMessage('Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      setMessage('Please enter your password');
+      return;
+    }
+
     const res = await login(email, password);
     if (res.success) {
-      setMessage('Login successful!');
-      setTimeout(() => (window.location.href = '/admin'), 1500);
-      return;
+      setMessage('Login successful! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 1000);
+    } else {
+      setMessage(res.message || error || 'Invalid email or password');
     }
   };
 
