@@ -106,14 +106,15 @@ const AdminTrainingForm = () => {
           variant="ghost"
           onClick={() => navigate("/admin/training")}
           className="mb-4 flex items-center gap-2"
+          fullWidth={false}
         >
           <ArrowLeft size={20} />
           Back
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-[#333333]">
           {isEditMode ? "Edit Course" : "Create New Course"}
         </h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-gray-600 mt-2">
           {isEditMode
             ? "Update course information"
             : "Fill in the details to create a new training course"}
@@ -173,13 +174,19 @@ const AdminTrainingForm = () => {
           <div className="flex justify-end gap-3 pt-4">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={() => navigate("/admin/training")}
               disabled={submitting}
+              fullWidth={false}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting} className="flex items-center gap-2">
+            <Button 
+              type="submit" 
+              variant="primary"
+              disabled={submitting} 
+              fullWidth={false}
+            >
               {submitting ? (
                 <>
                   <LoadingSpinner size="small" />

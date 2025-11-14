@@ -49,26 +49,25 @@ const Modal = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200"
       onClick={handleOverlayClick}
     >
-      <Card 
-        variant="glass"
-        className={`w-full ${sizes[size]} shadow-2xl animate-in zoom-in duration-200 ${className}`}
-        padding="none"
+      <div 
+        className={`w-full ${sizes[size]} bg-white rounded-xl shadow-xl animate-in zoom-in duration-200 ${className}`}
       >
         {/* Header */}
         {(title || showCloseButton) && (
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             {title && (
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">
+              <h2 className="text-xl font-bold text-[#333333]">
                 {title}
               </h2>
             )}
             {showCloseButton && (
               <button 
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-400 hover:text-[#F58220] hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Close modal"
               >
                 <X size={20} />
               </button>
@@ -80,7 +79,7 @@ const Modal = ({
         <div className="p-6">
           {children}
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

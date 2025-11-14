@@ -12,9 +12,9 @@ const IconButton = ({
   ...props 
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white hover:from-[#E5A50F] hover:to-[#E0741C] shadow-lg hover:shadow-xl',
-    secondary: 'bg-white text-[#FDB913] border-2 border-[#FDB913] hover:bg-[#FDB913] hover:text-white shadow-md hover:shadow-lg',
-    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-[#FDB913]',
+    primary: 'bg-[#F58220] text-white hover:bg-[#E0741C] shadow-md hover:shadow-lg',
+    secondary: 'bg-white text-[#F58220] border-2 border-[#F58220] hover:bg-[#F58220] hover:text-white shadow-md hover:shadow-lg',
+    ghost: 'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-[#F58220]',
     danger: 'bg-transparent text-red-500 hover:bg-red-50 hover:text-red-600'
   };
 
@@ -33,7 +33,7 @@ const IconButton = ({
       className={`
         inline-flex items-center justify-center
         rounded-lg font-medium transition-all duration-200 
-        focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-offset-2 
+        focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 focus:ring-offset-2 
         disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none
         ${variants[variant]} 
         ${sizes[size]} 

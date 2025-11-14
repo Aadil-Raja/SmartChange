@@ -17,7 +17,7 @@ const TextArea2 = ({
       {label && (
         <label
           htmlFor={name}
-          className="block text-sm font-medium text-gray-700 mb-1"
+          className="block text-sm font-semibold text-[#333333] mb-2"
         >
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
@@ -32,7 +32,7 @@ const TextArea2 = ({
         required={required}
         disabled={disabled}
         rows={rows}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed resize-y"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] disabled:bg-gray-100 disabled:cursor-not-allowed resize-y transition-all duration-200"
         {...props}
       />
       {helpText && (

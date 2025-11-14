@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
 import {
   MessageSquare,
-  Calendar,
   User,
   Send,
   ChevronDown,
@@ -12,8 +11,9 @@ import {
   Sparkles,
 } from "lucide-react";
 import Button from "../ui/Button";
-import TextArea from "../ui/TextArea";
+import Textarea from "../ui/Textarea";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import Card from "../ui/Card";
 
 const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) => {
   const { addNewComment } = useAnnouncements();
@@ -57,19 +57,19 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+    <Card variant="default" padding="none" shadow="md" hover className="overflow-hidden">
       {/* Announcement Header */}
       <div className="p-6 lg:p-8">
         {/* Title & Toggle */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
+            <h2 className="text-2xl font-bold text-[#333333] mb-3 leading-tight">
               {announcement.title}
             </h2>
             
             {/* Meta Info */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
                 <User size={16} />
                 <span className="font-medium">{announcement.author?.name || "Manager"}</span>
               </div>
@@ -77,7 +77,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
                 <Clock size={16} className="text-gray-400" />
                 <span>{formatRelativeTime(announcement.created_at)}</span>
               </div>
-              <div className="flex items-center gap-2 bg-yellow-50 text-yellow-700 px-3 py-1.5 rounded-full">
+              <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
                 <MessageSquare size={16} />
                 <span className="font-medium">
                   {commentCount} {commentCount === 1 ? "comment" : "comments"}
@@ -88,12 +88,12 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex-shrink-0 p-3 hover:bg-gray-100 rounded-xl transition-colors group"
+            className="flex-shrink-0 p-3 hover:bg-gray-100 rounded-md transition-colors group"
           >
             {isExpanded ? (
-              <ChevronUp size={24} className="text-gray-400 group-hover:text-yellow-600" />
+              <ChevronUp size={24} className="text-gray-400 group-hover:text-[#F58220]" />
             ) : (
-              <ChevronDown size={24} className="text-gray-400 group-hover:text-yellow-600" />
+              <ChevronDown size={24} className="text-gray-400 group-hover:text-[#F58220]" />
             )}
           </button>
         </div>
@@ -106,10 +106,10 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
         </div>
 
         {/* Quick Action Bar */}
-        <div className="mt-6 pt-4 border-t border-gray-100">
+        <div className="mt-6 pt-4 border-t border-gray-200">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 text-yellow-600 hover:text-yellow-700 font-medium transition-colors group"
+            className="flex items-center gap-2 text-[#F58220] hover:text-[#E0741C] font-medium transition-colors group"
           >
             <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
             <span>
@@ -121,16 +121,16 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
 
       {/* Comments Section (Expandable) */}
       {isExpanded && (
-        <div className="bg-gradient-to-b from-gray-50 to-white border-t border-gray-100">
+        <div className="bg-gray-50 border-t border-gray-200">
           <div className="p-6 lg:p-8">
             <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <MessageSquare size={20} className="text-yellow-600" />
+              <div className="p-2 bg-[rgba(245,130,32,0.1)] rounded-md">
+                <MessageSquare size={20} className="text-[#F58220]" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-[#333333]">
                 {isManager ? "Team Discussion" : "Comments"}
               </h3>
-              <span className="ml-auto bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-sm font-semibold">
+              <span className="ml-auto bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-semibold">
                 {commentCount}
               </span>
             </div>
@@ -139,20 +139,23 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
             {announcement.comments && announcement.comments.length > 0 ? (
               <div className="space-y-4 mb-6">
                 {announcement.comments.map((comment, index) => (
-                  <div
+                  <Card
                     key={comment.id}
-                    className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow animate-in slide-in-from-left duration-300"
+                    variant="default"
+                    padding="md"
+                    shadow="sm"
+                    className="animate-in slide-in-from-left duration-300"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-yellow-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-full flex items-center justify-center text-white font-bold">
                         {(comment.user?.name || "U")[0].toUpperCase()}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="font-semibold text-gray-900">
+                          <span className="font-semibold text-[#333333]">
                             {comment.user?.name || "Team Member"}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -165,7 +168,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             ) : (
@@ -180,46 +183,44 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
             )}
 
             {/* Add Comment Form */}
-            <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:border-yellow-300 transition-colors">
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles size={18} className="text-yellow-600" />
-                  <span className="font-semibold text-gray-900">Add your comment</span>
-                </div>
-                <TextArea
-                  placeholder="Share your thoughts or ask a question..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  rows={3}
-                  disabled={submittingComment}
-                  className="mb-3 border-gray-200 focus:border-yellow-400 focus:ring-yellow-400"
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleAddComment}
-                                type="button"
-            variant="outline"
-            className="px-6"
-                  >
-                    {submittingComment ? (
-                      <>
-                        <LoadingSpinner size="small" />
-                        <span className="ml-2">Posting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send size={18} />
-                        <span className="ml-2 font-semibold">Post Comment</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
+            <Card variant="default" padding="md" shadow="sm" className="hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles size={18} className="text-[#F58220]" />
+                <span className="font-semibold text-[#333333]">Add your comment</span>
               </div>
-            </div>
+              <Textarea
+                placeholder="Share your thoughts or ask a question..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={3}
+                disabled={submittingComment}
+                className="mb-3"
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleAddComment}
+                  type="button"
+                  variant="primary"
+                  disabled={submittingComment || !commentText.trim()}
+                >
+                  {submittingComment ? (
+                    <>
+                      <LoadingSpinner size="small" />
+                      <span className="ml-2">Posting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      <span className="ml-2">Post Comment</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

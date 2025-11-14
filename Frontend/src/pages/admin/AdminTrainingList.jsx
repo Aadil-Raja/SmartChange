@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { Plus, BookOpen, Calendar, Menu, Home, Users, Settings, FileText, Search, Filter, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
+import { Plus, BookOpen, Calendar, FileText, Search, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
-import Sidebar from "../../components/ui/Sidebar";
+import AdminSidebar from "../../components/ui/AdminSidebar";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
 const AdminTrainingList = () => {
@@ -23,18 +23,10 @@ const AdminTrainingList = () => {
     deleteExistingCourse,
     clearMessages 
   } = useAdminTraining();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'active', 'inactive'
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-
-  const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
-    { icon: FileText, label: 'Employees', path: '/admin/employees' },
-    { icon: Users, label: 'Teams', path: '/admin/teams' },
-    { icon: Settings, label: 'Training', path: '/admin/training' },
-  ];
 
   useEffect(() => {
     fetchCourses();
@@ -79,65 +71,42 @@ const AdminTrainingList = () => {
 
   if (loading && courses.length === 0) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
-        <Sidebar
-          isOpen={sidebarOpen}
-          isCollapsed={sidebarCollapsed}
-          onToggle={() => setSidebarOpen(!sidebarOpen)}
-          onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          navItems={navItems}
-          currentPath="/admin/training"
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <AdminSidebar 
+          collapsed={navCollapsed} 
+          onToggle={() => setNavCollapsed(!navCollapsed)} 
         />
-        <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-          <div className="flex items-center justify-center min-h-screen">
-            <LoadingSpinner size="large" />
-          </div>
+        <div className="flex-1 flex items-center justify-center">
+          <LoadingSpinner size="large" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-white">
-      <Sidebar
-        isOpen={sidebarOpen}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        navItems={navItems}
-        currentPath="/admin/training"
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar 
+        collapsed={navCollapsed} 
+        onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
-
-      <div className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-gray-200 bg-white px-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[#333333] lg:hidden">
-              <Menu size={24} />
-            </button>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Training Management</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </header>
-
-        <main className="p-4 sm:p-6">
+      
+      <div className="flex-1 overflow-auto">
+        <div className="p-6">
           <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Training Courses</h1>
-          <p className="text-gray-600 mt-1 font-medium">Manage all training courses and content</p>
+          <h1 className="text-3xl font-bold text-[#333333]">Training Courses</h1>
+          <p className="text-gray-600 mt-1">Manage all training courses and content</p>
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
             <span>Total: {courses.length}</span>
-            <span className="text-green-600">Active: {courses.filter(c => c.is_active).length}</span>
+            <span className="text-[#78BE20]">Active: {courses.filter(c => c.is_active).length}</span>
             <span className="text-gray-500">Inactive: {courses.filter(c => !c.is_active).length}</span>
           </div>
         </div>
         <div className="flex gap-3">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={() => navigate("/admin/training/library")}
             className="flex items-center gap-2"
           >
@@ -145,6 +114,7 @@ const AdminTrainingList = () => {
             Content Library
           </Button>
           <Button
+            variant="primary"
             onClick={() => navigate("/admin/training/create")}
             className="flex items-center gap-2"
           >
@@ -177,28 +147,28 @@ const AdminTrainingList = () => {
               placeholder="Search courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FDB913] focus:border-[#FDB913]"
+              className="w-full pl-10 px-3 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] transition-colors"
             />
           </div>
           
           {/* Status Filter */}
           <div className="flex gap-2">
             <Button
-              variant={filter === 'all' ? 'primary' : 'outline'}
+              variant={filter === 'all' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setFilter('all')}
             >
               All
             </Button>
             <Button
-              variant={filter === 'active' ? 'primary' : 'outline'}
+              variant={filter === 'active' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setFilter('active')}
             >
               Active
             </Button>
             <Button
-              variant={filter === 'inactive' ? 'primary' : 'outline'}
+              variant={filter === 'inactive' ? 'primary' : 'secondary'}
               size="sm"
               onClick={() => setFilter('inactive')}
             >
@@ -232,7 +202,7 @@ const AdminTrainingList = () => {
           {filteredCourses.map((course) => (
             <Card
               key={course.id}
-              className="hover:shadow-lg transition-shadow group relative"
+              className="hover:shadow-lg transition-all group relative"
             >
               {/* Course Actions Dropdown */}
               <div className="absolute top-4 right-4 z-10">
@@ -247,7 +217,7 @@ const AdminTrainingList = () => {
                   </Button>
                   
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all">
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 py-1 min-w-[160px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -263,7 +233,7 @@ const AdminTrainingList = () => {
                         e.stopPropagation();
                         navigate(`/admin/training/edit/${course.id}`);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-[#F58220] hover:bg-orange-50 flex items-center gap-2"
                     >
                       <Edit size={16} />
                       Edit Course
@@ -304,7 +274,7 @@ const AdminTrainingList = () => {
 
               {/* Thumbnail */}
               <div 
-                className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg overflow-hidden mb-4 cursor-pointer"
+                className="aspect-video bg-gray-50 rounded-t-xl overflow-hidden mb-4 cursor-pointer border-b border-gray-200"
                 onClick={() => navigate(`/admin/training/course/${course.id}`)}
               >
                 {course.thumbnail_url ? (
@@ -315,7 +285,7 @@ const AdminTrainingList = () => {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <BookOpen size={48} className="text-indigo-300" />
+                    <BookOpen size={48} className="text-gray-300" />
                   </div>
                 )}
               </div>
@@ -325,7 +295,7 @@ const AdminTrainingList = () => {
                 className="px-4 pb-4 cursor-pointer"
                 onClick={() => navigate(`/admin/training/course/${course.id}`)}
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-semibold text-[#333333] mb-2 line-clamp-2 group-hover:text-[#F58220] transition-colors">
                   {course.title}
                 </h3>
                 
@@ -341,7 +311,7 @@ const AdminTrainingList = () => {
                     <span>{formatDate(course.created_at)}</span>
                   </div>
                   {course.department && (
-                    <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
+                    <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md border border-gray-300">
                       {course.department}
                     </span>
                   )}
@@ -350,10 +320,10 @@ const AdminTrainingList = () => {
                 {/* Status Badge */}
                 <div className="flex items-center justify-between">
                   <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${
                       course.is_active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        ? "bg-[#78BE20]/10 text-[#6AAD1C] border border-[#78BE20]/30"
+                        : "bg-gray-100 text-gray-700 border border-gray-300"
                     }`}
                   >
                     {course.is_active ? "Active" : "Inactive"}
@@ -368,7 +338,7 @@ const AdminTrainingList = () => {
                         e.stopPropagation();
                         navigate(`/admin/training/edit/${course.id}`);
                       }}
-                      className="text-gray-500 hover:text-indigo-600"
+                      className="text-gray-500 hover:text-[#F58220]"
                     >
                       <Edit size={14} />
                     </Button>
@@ -393,7 +363,7 @@ const AdminTrainingList = () => {
         />
       )}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

@@ -46,7 +46,7 @@ const DocumentSelector = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden animate-in zoom-in duration-200">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white p-6">
+        <div className="bg-gradient-to-r from-[#F58220] to-[#E0741C] text-white p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg">
@@ -96,8 +96,8 @@ const DocumentSelector = ({ onClose }) => {
             </div>
           ) : filteredDocuments.length === 0 ? (
             <div className="text-center py-12">
-              <div className="p-4 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-xl mb-4 inline-block">
-                <FileText size={64} className="text-[#FDB913]" />
+              <div className="p-4 bg-gradient-to-br from-[#F58220]/10 to-[#E0741C]/10 rounded-xl mb-4 inline-block">
+                <FileText size={64} className="text-[#F58220]" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 {searchQuery ? "No documents found" : "No processed documents"}
@@ -134,7 +134,7 @@ const DocumentSelector = ({ onClose }) => {
                     hover={true}
                     className={`group relative cursor-pointer transition-all ${
                       isSelected
-                        ? "border-2 border-[#FDB913] shadow-lg"
+                        ? "border-2 border-[#F58220] shadow-lg"
                         : "border-2 border-gray-200 hover:border-gray-300"
                     }`}
                   >
@@ -143,7 +143,7 @@ const DocumentSelector = ({ onClose }) => {
                       <div
                         className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center shadow-md ${
                           isSelected
-                            ? "bg-gradient-to-br from-[#FDB913] to-[#F58220]"
+                            ? "bg-gradient-to-br from-[#F58220] to-[#E0741C]"
                             : "bg-gray-100 group-hover:bg-gray-200"
                         }`}
                       >
@@ -157,7 +157,7 @@ const DocumentSelector = ({ onClose }) => {
                       <div className="flex-1 min-w-0">
                         <h3
                           className={`font-semibold mb-2 truncate ${
-                            isSelected ? "text-[#FDB913]" : "text-gray-900"
+                            isSelected ? "text-[#F58220]" : "text-gray-900"
                           }`}
                         >
                           {doc.title}
@@ -174,7 +174,7 @@ const DocumentSelector = ({ onClose }) => {
                       <div
                         className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
                           isSelected
-                            ? "bg-[#FDB913] border-[#FDB913]"
+                            ? "bg-[#F58220] border-[#F58220]"
                             : "border-gray-300 group-hover:border-gray-400"
                         }`}
                       >
@@ -189,7 +189,7 @@ const DocumentSelector = ({ onClose }) => {
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-6 bg-gradient-to-r from-gray-50 to-yellow-50/30 border-t">
+        <div className="flex justify-end gap-3 p-6 bg-gradient-to-r from-gray-50 to-orange-50/30 border-t">
           <PrimaryButton 
             variant="outline" 
             onClick={onClose} 

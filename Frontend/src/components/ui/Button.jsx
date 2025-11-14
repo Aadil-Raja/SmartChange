@@ -1,5 +1,3 @@
-import React from 'react';
-
 const Button = ({ 
   children, 
   onClick, 
@@ -13,29 +11,26 @@ const Button = ({
   ...props 
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white hover:from-[#E5A50F] hover:to-[#E0741C] shadow-lg hover:shadow-xl',
-    secondary: 'bg-white text-[#FDB913] border-2 border-[#FDB913] hover:bg-[#FDB913] hover:text-white shadow-md hover:shadow-lg',
-    outline: 'bg-transparent text-[#FDB913] border-2 border-[#FDB913] hover:bg-[#FDB913] hover:text-white shadow-sm hover:shadow-md',
-    ghost: 'bg-transparent text-[#FDB913] hover:bg-[#FDB913]/10 hover:text-[#E5A50F]',
-    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-lg hover:shadow-xl',
-    success: 'bg-green-500 text-white hover:bg-green-600 shadow-lg hover:shadow-xl',
-    dark: 'bg-gray-800 text-white hover:bg-gray-900 shadow-lg hover:shadow-xl'
+    primary: 'bg-[#F58220] text-white hover:bg-[#E0741C] shadow-md hover:shadow-lg',
+    secondary: 'bg-white text-[#F58220] border-2 border-[#F58220] hover:bg-[#F58220] hover:text-white shadow-md hover:shadow-lg',
+    gradient: 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white hover:from-[#E5A50F] hover:to-[#E0741C] shadow-lg hover:shadow-xl',
+    ghost: 'bg-transparent text-[#F58220] hover:bg-[#F58220]/10',
+    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-lg',
+    success: 'bg-[#78BE20] text-white hover:bg-[#6AAD1C] shadow-md hover:shadow-lg',
+    dark: 'bg-gray-800 text-white hover:bg-gray-900 shadow-md hover:shadow-lg'
   };
 
   const sizes = {
-    xs: 'px-2.5 py-1.5 text-xs',
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3 text-base',
-    xl: 'px-8 py-4 text-lg'
+    sm: 'h-9 px-3 text-sm',
+    md: 'h-10 px-4 text-sm',
+    lg: 'h-11 px-6 text-base'
   };
 
   const baseClasses = `
     inline-flex items-center justify-center gap-2 
     rounded-lg font-semibold transition-all duration-200 
-    focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-offset-2 
+    focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 focus:ring-offset-2 
     disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none
-    transform hover:scale-[1.02] active:scale-[0.98]
     ${fullWidth ? 'w-full' : ''}
     ${variants[variant]} 
     ${sizes[size]} 

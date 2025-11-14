@@ -13,7 +13,7 @@ const Select2 = ({
 }) => {
   return (
     <div className="w-full">
-      <label htmlFor={name} className="mb-2 block text-sm font-medium text-[#333333]">
+      <label htmlFor={name} className="mb-2 block text-sm font-semibold text-[#333333]">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -24,7 +24,7 @@ const Select2 = ({
         onChange={onChange}
         required={required}
         disabled={disabled}
-        className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-[#333333] transition-colors focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20 disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-[#333333] transition-all duration-200 focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
         {options.map((option, index) => (
           <option key={index} value={option.value}>

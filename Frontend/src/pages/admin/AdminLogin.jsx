@@ -1,85 +1,95 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../hooks/useAdminAuth";
-
+import Card from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
+import Button from "../../components/ui/Button";
 
 export default function AdminLogin() {
   const { login, loading, error } = useAdminAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-    const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage('');
+
+    // Client-side validation
+    if (!email || !email.includes('@')) {
+      setMessage('Please enter a valid email address');
+      return;
+    }
+
+    if (!password) {
+      setMessage('Please enter your password');
+      return;
+    }
+
     const res = await login(email, password);
     if (res.success) {
-        setMessage('Login successful!');
-        setTimeout(() => (window.location.href = '/admin'), 1500);
-        return;
+      setMessage('Login successful! Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 1000);
+    } else {
+      setMessage(res.message || error || 'Invalid email or password');
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-white px-4 py-8">
-      <div className="w-full max-w-md rounded-xl bg-white/95 backdrop-blur-sm p-8 shadow-2xl border-0">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+      <Card className="w-full max-w-md p-8 shadow-md border-0 bg-white">
         <div className="mb-8 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-xl">
-            <span className="text-3xl font-bold text-white">KE</span>
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
+            <span className="text-2xl font-bold text-white">KE</span>
           </div>
         </div>
 
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold bg-gradient-to-r from-[#FDB913] to-[#F58220] bg-clip-text text-transparent">Admin Login</h1>
+          <h1 className="mb-2 text-3xl font-bold text-[#333333]">
+            Admin Portal
+          </h1>
           <p className="text-sm text-gray-600 font-medium">Sign in to continue</p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-100 p-3 text-center text-sm text-red-800">
-            {error}
+        {(error || message) && (
+          <div className={`mb-4 rounded-lg p-3 text-center text-sm ${
+            message.includes('successful') 
+              ? 'bg-[rgba(120,190,32,0.1)] text-[#6AAD1C] border border-[rgba(120,190,32,0.3)]' 
+              : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+            {message || error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220] focus:ring-opacity-20"
-            />
-          </div>
+          <Input
+            label="Email"
+            type="email"
+            id="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-          <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-sm transition-colors focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220] focus:ring-opacity-20"
-            />
-          </div>
+          <Input
+            label="Password"
+            type="password"
+            id="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
-          </button>
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

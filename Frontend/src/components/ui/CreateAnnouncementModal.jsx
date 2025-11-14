@@ -43,28 +43,27 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in duration-200">
-        {/* Header with Gradient */}
-        <div className="bg-gradient-to-r from-yellow-300 to-yellow-600 text-white p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                <Sparkles size={24} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">Create Announcement</h2>
-                <p className="text-white/80 text-sm mt-1">Share important updates with your team</p>
-              </div>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-lg">
+              <Sparkles size={24} className="text-white" />
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              disabled={submitting}
-            >
-              <X size={24} />
-            </button>
+            <div>
+              <h2 className="text-2xl font-bold text-[#333333]">Create Announcement</h2>
+              <p className="text-gray-600 text-sm mt-1">Share important updates with your team</p>
+            </div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-[#F58220] hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={submitting}
+            aria-label="Close modal"
+          >
+            <X size={24} />
+          </button>
         </div>
 
         {/* Error Alert */}
@@ -80,8 +79,8 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           {/* Title */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <Type size={18} className="text-yellow-600" />
+            <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
+              <Type size={18} className="text-[#F58220]" />
               Announcement Title
               <span className="text-red-500">*</span>
             </label>
@@ -99,8 +98,8 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
 
           {/* Body */}
           <div>
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-              <MessageSquare size={18} className="text-yellow-600" />
+            <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
+              <MessageSquare size={18} className="text-[#F58220]" />
               Message
               <span className="text-red-500">*</span>
             </label>
@@ -122,22 +121,22 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
 
           {/* Preview Box */}
           {formData.title && formData.body && (
-            <div className="bg-gradient-to-br from-yellow-50 to-purple-50 rounded-xl p-4 border-2 border-yellow-200">
-              <p className="text-xs font-semibold text-yellow-600 mb-2 flex items-center gap-1">
+            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+              <p className="text-xs font-semibold text-[#F58220] mb-2 flex items-center gap-1">
                 <Sparkles size={14} />
                 PREVIEW
               </p>
-              <h3 className="font-bold text-gray-900 mb-2">{formData.title}</h3>
+              <h3 className="font-bold text-[#333333] mb-2">{formData.title}</h3>
               <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-3">{formData.body}</p>
             </div>
           )}
         </form>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={onClose}
             disabled={submitting}
             className="px-6"
@@ -146,8 +145,8 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
           </Button>
           <Button
             onClick={handleSubmit}
-                       type="button"
-            variant="outline"
+            type="button"
+            variant="primary"
             disabled={submitting}
             className="px-6"
           >

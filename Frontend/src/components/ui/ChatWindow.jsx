@@ -8,7 +8,7 @@ import ChatCard from "./ChatCard";
 import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 
-const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
+const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false }) => {
   const {
     activeChatId,
     messages,
@@ -67,79 +67,75 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
 
   if (!selectedDocumentId) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-gradient-to-br from-yellow-50/50 to-orange-50/50">
-        <ChatCard variant="primary" padding="xl" className="text-center max-w-lg shadow-lg">
-          <div className="inline-flex p-6 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-full mb-6">
-            <Sparkles size={64} className="text-[#FDB913]" />
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center max-w-lg">
+          <div className="inline-flex p-8 bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-full mb-8">
+            <Sparkles size={64} className="text-[#F58220]/60" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Select a Document to Get Started
+          <h2 className="text-2xl font-semibold text-[#333333] mb-4">
+            Ready to assist you
           </h2>
-          <p className="text-gray-600 mb-6">
-            Choose a processed document to start an intelligent conversation and get insights from your content.
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            Select a document to start an intelligent conversation and get insights from your content.
           </p>
           <PrimaryButton
             onClick={onOpenDocumentSelector}
             size="lg"
-            className="mx-auto"
+            className="shadow-sm"
           >
             <FileText size={20} />
             <span>Choose Document</span>
           </PrimaryButton>
-        </ChatCard>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-yellow-50/30 to-white">
+    <div className="h-full flex flex-col bg-[#FFFDF7]">
       {/* Messages Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6" onClick={onCloseSidebar}>
+      <div className="flex-1 overflow-y-auto p-6 space-y-6" onClick={onCloseSidebar}>
         {currentMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <ChatCard variant="primary" padding="xl" className="text-center max-w-lg shadow-lg">
-              <div className="inline-flex p-6 bg-gradient-to-br from-[#FDB913]/10 to-[#F58220]/10 rounded-full mb-6">
-                <Bot size={64} className="text-[#FDB913]" />
+            <div className="text-center max-w-2xl">
+              <div className="inline-flex p-6 bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-full mb-8">
+                <Bot size={48} className="text-[#F58220]/60" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                Start a Conversation
+              <h2 className="text-xl font-semibold text-[#333333] mb-4">
+                How can I help you today?
               </h2>
-              <p className="text-gray-600 mb-6">
-                Ask me anything about your selected document. I'm here to help you understand and extract insights!
+              <p className="text-gray-600 mb-8">
+                Ask me anything about your document. I'm here to help you understand and extract insights.
               </p>
-              <div className="grid gap-3">
-                <ChatCard
+              <div className="grid gap-3 max-w-md mx-auto">
+                <button
                   onClick={() => setInputMessage("Summarize the key points from this document")}
-                  hover={true}
-                  padding="md"
-                  className="text-left border-2 border-[#FDB913]/20 hover:border-[#FDB913]/40 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#FDB913]/10 rounded-lg group-hover:bg-[#FDB913]/20 transition-colors">
-                      <Sparkles size={18} className="text-[#FDB913]" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#FDB913]">
-                      Summarize the key points
-                    </span>
-                  </div>
-                </ChatCard>
-                <ChatCard
-                  onClick={() => setInputMessage("What are the main topics covered?")}
-                  hover={true}
-                  padding="md"
-                  className="text-left border-2 border-[#F58220]/20 hover:border-[#F58220]/40 cursor-pointer group"
+                  className="p-4 text-left border border-gray-200 hover:border-[#F58220]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-[#F58220]/10 rounded-lg group-hover:bg-[#F58220]/20 transition-colors">
-                      <MessageCircle size={18} className="text-[#F58220]" />
+                      <Sparkles size={16} className="text-[#F58220]" />
                     </div>
                     <span className="text-sm font-medium text-gray-900 group-hover:text-[#F58220]">
+                      Summarize the key points
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setInputMessage("What are the main topics covered?")}
+                  className="p-4 text-left border border-gray-200 hover:border-[#00ADEF]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-[#00ADEF]/10 rounded-lg group-hover:bg-[#00ADEF]/20 transition-colors">
+                      <MessageCircle size={16} className="text-[#00ADEF]" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#00ADEF]">
                       What are the main topics?
                     </span>
                   </div>
-                </ChatCard>
+                </button>
               </div>
-            </ChatCard>
+            </div>
           </div>
         ) : (
           currentMessages.map((message, index) => (
@@ -150,44 +146,38 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
               } animate-in slide-in-from-bottom duration-300`}
             >
               <div
-                className={`flex gap-4 max-w-4xl ${
+                className={`flex gap-4 max-w-3xl ${
                   message.role === "user" ? "flex-row-reverse" : "flex-row"
                 }`}
               >
                 {/* Avatar */}
                 <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     message.role === "user"
-                      ? "bg-gradient-to-br from-[#FDB913] to-[#F58220]"
-                      : "bg-gradient-to-br from-gray-600 to-gray-700"
+                      ? "bg-gradient-to-br from-[#F58220] to-[#E0741C]"
+                      : "bg-gradient-to-br from-[#333333] to-[#555555]"
                   }`}
                 >
                   {message.role === "user" ? (
-                    <User size={20} className="text-white" />
+                    <User size={16} className="text-white" />
                   ) : (
-                    <Bot size={20} className="text-white" />
+                    <Bot size={16} className="text-white" />
                   )}
                 </div>
 
                 {/* Message Content */}
-                <ChatCard
-                  variant={message.role === "user" ? "primary" : "default"}
-                  padding="md"
-                  className={`flex-1 shadow-md ${
+                <div
+                  className={`flex-1 px-4 py-3 rounded-2xl ${
                     message.role === "user"
-                      ? "bg-gradient-to-br from-[#FDB913] to-[#F58220] text-white border-0"
-                      : "bg-white border border-gray-200"
+                      ? "bg-gradient-to-br from-[#F58220] to-[#E0741C] text-white"
+                      : "bg-white border border-gray-200 text-gray-800"
                   }`}
                 >
-                  <p
-                    className={`text-sm leading-relaxed whitespace-pre-wrap ${
-                      message.role === "user" ? "text-white" : "text-gray-800"
-                    }`}
-                  >
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
                     {message.message}
                   </p>
                   <span
-                    className={`text-xs mt-3 block ${
+                    className={`text-xs mt-2 block ${
                       message.role === "user" ? "text-white/80" : "text-gray-500"
                     }`}
                   >
@@ -196,7 +186,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
                       minute: "2-digit",
                     })}
                   </span>
-                </ChatCard>
+                </div>
               </div>
             </div>
           ))
@@ -205,21 +195,21 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
         {/* Loading indicator */}
         {sending && (
           <div className="flex justify-start animate-in slide-in-from-bottom duration-300">
-            <div className="flex gap-4 max-w-4xl">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-700 shadow-lg">
-                <Bot size={20} className="text-white" />
+            <div className="flex gap-4 max-w-3xl">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[#333333] to-[#555555]">
+                <Bot size={16} className="text-white" />
               </div>
-              <ChatCard padding="md" className="shadow-md">
+              <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl">
                 <div className="flex items-center gap-3">
                   <LoadingSpinner size="small" />
-                  <span className="text-sm text-gray-600 font-medium">AI is thinking...</span>
+                  <span className="text-sm text-gray-600">AI is thinking...</span>
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-[#FDB913] rounded-full animate-bounce"></div>
-                    <div className="w-1 h-1 bg-[#FDB913] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-1 h-1 bg-[#FDB913] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce"></div>
+                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                   </div>
                 </div>
-              </ChatCard>
+              </div>
             </div>
           </div>
         )}
@@ -228,9 +218,9 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
       </div>
 
       {/* Input Area - Fixed at Bottom */}
-      <div className="flex-shrink-0 border-t border-gray-200 bg-white p-4 sm:p-6 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex gap-3 sm:gap-4 items-end">
+      <div className="flex-shrink-0 p-6 bg-white/50 backdrop-blur-sm border-t border-gray-200/50">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex gap-3 items-end">
             <div className="flex-1">
               <ChatTextArea
                 ref={inputRef}
@@ -239,8 +229,8 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
                 onKeyDown={handleKeyDown}
                 placeholder="Ask me anything about your document..."
                 disabled={sending || !selectedDocumentId}
-                maxRows={3}
-                className="w-full"
+                maxRows={4}
+                className="w-full border border-gray-300 focus:border-[#F58220] focus:ring-2 focus:ring-[#F58220]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
               />
             </div>
             <IconButton
@@ -249,28 +239,20 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar }) => {
               variant="primary"
               size="lg"
               tooltip={sending ? "Sending..." : "Send message"}
-              className="shadow-lg hover:shadow-xl flex-shrink-0"
+              className="bg-gradient-to-r from-[#F58220] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
             >
               {sending ? (
                 <LoadingSpinner size="small" />
               ) : (
-                <Send size={18} className="sm:w-5 sm:h-5" />
+                <Send size={18} />
               )}
             </IconButton>
           </div>
-          <div className="flex items-center justify-between mt-3">
-            <p className="text-xs text-gray-500 hidden sm:block">
-              Press <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">Enter</kbd> to send • 
-              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs ml-1">Shift + Enter</kbd> for new line
+          <div className="flex items-center justify-center mt-3">
+            <p className="text-xs text-gray-500">
+              Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd> to send • 
+              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs ml-1">Shift + Enter</kbd> for new line
             </p>
-            <p className="text-xs text-gray-500 sm:hidden">
-              Tap send or press Enter
-            </p>
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="hidden sm:inline">AI Ready</span>
-              <span className="sm:hidden">Ready</span>
-            </div>
           </div>
         </div>
       </div>
