@@ -1,11 +1,12 @@
 // pages/AdminDashboard.jsx
 import { useState, useEffect } from 'react';
-import { FileText, Upload, Download, Play, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { FileText, Upload, Play, CheckCircle, AlertCircle, Clock, RefreshCw, Edit, Plus, X, ClipboardList, Search, Filter } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { useAdmin } from '../../hooks/useAdmin';
+import { getMainTopics, updateMainTopics, fetchProcessingJobs } from '../../services/adminApi';
 
 const AdminDashboard = () => {
   const {
@@ -28,8 +29,17 @@ const AdminDashboard = () => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showMainTopicsModal, setShowMainTopicsModal] = useState(false);
+  const [mainTopics, setMainTopics] = useState({});
+  const [loadingTopics, setLoadingTopics] = useState(false);
+  const [savingTopics, setSavingTopics] = useState(false);
   const [processingDocs, setProcessingDocs] = useState(new Set());
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [auditJobs, setAuditJobs] = useState([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditStats, setAuditStats] = useState({ queued: 0, processing: 0, completed: 0, failed: 0 });
+  const [auditSearchTerm, setAuditSearchTerm] = useState('');
+  const [auditStatusFilter, setAuditStatusFilter] = useState('all');
 
   useEffect(() => {
     loadDocuments();
@@ -123,10 +133,130 @@ const AdminDashboard = () => {
 
 
 
-  const handleDownload = async (documentId, filename) => {
-    const result = await downloadDoc(documentId, filename);
-    if (!result.success) {
-      // alert(result.message || 'Failed to download document');
+  const handleOpenMainTopics = async (doc) => {
+    setSelectedDoc(doc);
+    setLoadingTopics(true);
+    setShowMainTopicsModal(true);
+    
+    try {
+      const result = await getMainTopics(doc.id);
+      if (result.success) {
+        setMainTopics(result.data.topics || {});
+      } else {
+        setMainTopics({});
+      }
+    } catch (err) {
+      console.error('Failed to load main topics:', err);
+      setMainTopics({});
+    } finally {
+      setLoadingTopics(false);
+    }
+  };
+
+  const handleSaveMainTopics = async () => {
+    if (!selectedDoc) return;
+    
+    setSavingTopics(true);
+    try {
+      const result = await updateMainTopics(selectedDoc.id, mainTopics);
+      if (result.success) {
+        setShowMainTopicsModal(false);
+        setMainTopics({});
+        setSelectedDoc(null);
+        // Optionally reload documents to show updated data
+        loadDocuments();
+      }
+    } catch (err) {
+      console.error('Failed to save main topics:', err);
+    } finally {
+      setSavingTopics(false);
+    }
+  };
+
+  const handleAddTopic = () => {
+    const newKey = `Topic ${Object.keys(mainTopics).length + 1}`;
+    setMainTopics(prev => ({ ...prev, [newKey]: '' }));
+  };
+
+  const handleUpdateTopic = (oldKey, newKey, value) => {
+    setMainTopics(prev => {
+      const updated = { ...prev };
+      if (oldKey !== newKey && oldKey in updated) {
+        delete updated[oldKey];
+      }
+      updated[newKey] = value;
+      return updated;
+    });
+  };
+
+  // const handleRemoveTopic = (key) => {
+  //   setMainTopics(prev => {
+  //     const updated = { ...prev };
+  //     delete updated[key];
+  //     return updated;
+  //   });
+  // };
+
+  const handleReprocess = async (documentId) => {
+    await handleQueueDocument(documentId);
+  };
+
+  const handleOpenAuditLog = async () => {
+    setShowAuditLog(true);
+    setLoadingAudit(true);
+    
+    try {
+      const result = await fetchProcessingJobs();
+      if (result.success) {
+        setAuditJobs(result.data.jobs || []);
+        setAuditStats(result.data.stats || { queued: 0, processing: 0, completed: 0, failed: 0 });
+      }
+    } catch (err) {
+      console.error('Failed to load audit log:', err);
+      setAuditJobs([]);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const getFilteredAuditJobs = () => {
+    let filtered = auditJobs;
+
+    // Filter by status
+    if (auditStatusFilter !== 'all') {
+      filtered = filtered.filter(job => job.status.toLowerCase() === auditStatusFilter);
+    }
+
+    // Filter by search term
+    if (auditSearchTerm) {
+      filtered = filtered.filter(job => 
+        job.document_title?.toLowerCase().includes(auditSearchTerm.toLowerCase()) ||
+        job.job_id?.toLowerCase().includes(auditSearchTerm.toLowerCase())
+      );
+    }
+
+    return filtered;
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds || seconds === 0) return 'N/A';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
+
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'queued':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -246,13 +376,6 @@ const AdminDashboard = () => {
                           <p className="text-xs text-gray-600">Automatic AI extraction</p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-2">
-                        <Clock size={18} className="text-[#F58220] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-[#333333]">Duration</p>
-                          <p className="text-xs text-gray-600">Typically 2-5 minutes</p>
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -319,11 +442,22 @@ const AdminDashboard = () => {
                   <h2 className="text-2xl font-bold text-[#333333]">Recent Documents</h2>
                   <p className="text-sm text-gray-600 mt-1">Manage and process your uploaded files</p>
                 </div>
-                {documents.length > 0 && (
-                  <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                    {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
-                  </span>
-                )}
+                <div className="flex items-center gap-3">
+                  {documents.length > 0 && (
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap">
+                      {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
+                    </span>
+                  )}
+                  <Button
+                    onClick={handleOpenAuditLog}
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <ClipboardList size={16} />
+                    Audit Log
+                  </Button>
+                </div>
               </div>
 
               {loading ? (
@@ -396,35 +530,28 @@ const AdminDashboard = () => {
                             </div>
                           )}
 
-                          {/* Preview Button */}
-                          <button
-                            onClick={() => {
-                              setSelectedDoc(doc);
-                              setShowPreview(true);
-                            }}
-                            className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100"
-                            title="Preview"
-                          >
-                            <FileText size={18} />
-                          </button>
+                          {/* Reprocess Button - Only for FAILED documents */}
+                          {doc.status === 'FAILED' && (
+                            <Button
+                              onClick={() => handleReprocess(doc.id)}
+                              disabled={isProcessing}
+                              variant="danger"
+                              size="sm"
+                              className="flex items-center gap-2"
+                            >
+                              <RefreshCw size={16} />
+                              {isProcessing ? 'Reprocessing...' : 'Reprocess'}
+                            </Button>
+                          )}
 
-                          {/* Download Button */}
+                          {/* Update Main Topics Button - For all documents */}
                           <button
-                            onClick={() => handleDownload(doc.id, doc.original_filename)}
-                            className="rounded-md p-2 text-gray-600 transition-colors hover:bg-gray-100"
-                            title="Download"
+                            onClick={() => handleOpenMainTopics(doc)}
+                            className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-orange-50"
+                            title="Update Main Topics"
                           >
-                            <Download size={18} />
+                            <Edit size={18} />
                           </button>
-
-                          {/* Delete Button */}
-                          {/* <button
-                            onClick={() => handleDelete(doc.id)}
-                            className="rounded-md p-2 text-red-600 transition-colors hover:bg-red-50"
-                            title="Delete"
-                          >
-                            <Trash2 size={18} />
-                          </button> */}
                         </div>
                       </div>
                     );
@@ -502,67 +629,240 @@ const AdminDashboard = () => {
         </div>
       </Modal>
 
-      {/* Preview Modal */}
+      {/* Main Topics Modal */}
       <Modal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        title="Document Preview"
+        isOpen={showMainTopicsModal}
+        onClose={() => {
+          setShowMainTopicsModal(false);
+          setMainTopics({});
+          setSelectedDoc(null);
+        }}
+        title="Update Main Topics"
       >
         {selectedDoc && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Title</p>
-                <p className="text-base font-semibold text-[#333333]">{selectedDoc.title}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</p>
-                <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${getStatusBadge(selectedDoc.status).color}`}>
-                  {getStatusBadge(selectedDoc.status).label}
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Document</p>
+              <p className="text-sm font-semibold text-[#333333]">{selectedDoc.title}</p>
+            </div>
+
+            {loadingTopics ? (
+              <div className="py-8 text-center text-gray-500">Loading topics...</div>
+            ) : (
+              <>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {Object.entries(mainTopics).map(([key, value], index) => (
+                    <div key={index} className="p-3 bg-white border border-gray-200 rounded-lg">
+                      <div className="flex items-start gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={key}
+                          onChange={(e) => handleUpdateTopic(key, e.target.value, value)}
+                          placeholder="Topic name (e.g., AI)"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-semibold focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
+                        />
+                        {/* <button
+                          onClick={() => handleRemoveTopic(key)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Remove topic"
+                        >
+                          <X size={18} />
+                        </button> */}
+                      </div>
+                      <textarea
+                        value={value}
+                        onChange={(e) => handleUpdateTopic(key, key, e.target.value)}
+                        placeholder="Description (e.g., Artificial Intelligence fundamentals, neural networks)"
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
+                      />
+                    </div>
+                  ))}
                 </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">File Size</p>
-                <p className="text-sm text-gray-700">{formatFileSize(selectedDoc.size_bytes)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Uploaded</p>
-                <p className="text-sm text-gray-700">{formatDate(selectedDoc.created_at)}</p>
-              </div>
-            </div>
 
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">File Name</p>
-              <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
-                <FileText size={20} className="text-gray-400" />
-                <p className="break-all text-sm font-medium text-[#333333]">{selectedDoc.original_filename}</p>
-              </div>
-            </div>
+                <Button
+                  onClick={handleAddTopic}
+                  variant="ghost"
+                  className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-[#F58220]"
+                >
+                  <Plus size={18} />
+                  Add New Topic
+                </Button>
 
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Uploader</p>
-              <p className="text-sm text-gray-700">{selectedDoc.uploader_email}</p>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                onClick={() => handleDownload(selectedDoc.id, selectedDoc.original_filename)}
-                variant="primary"
-                className="flex-1 flex items-center justify-center gap-2"
-              >
-                <Download size={16} />
-                Download
-              </Button>
-              <Button
-                onClick={() => setShowPreview(false)}
-                variant="secondary"
-                className="flex-1"
-              >
-                Close
-              </Button>
-            </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={handleSaveMainTopics}
+                    variant="primary"
+                    className="flex-1"
+                    disabled={savingTopics}
+                  >
+                    {savingTopics ? 'Saving...' : 'Save Topics'}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowMainTopicsModal(false);
+                      setMainTopics({});
+                      setSelectedDoc(null);
+                    }}
+                    variant="secondary"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
+      </Modal>
+
+      {/* Audit Log Modal */}
+      <Modal
+        isOpen={showAuditLog}
+        onClose={() => {
+          setShowAuditLog(false);
+          setAuditSearchTerm('');
+          setAuditStatusFilter('all');
+        }}
+        title="Processing Audit Log"
+      >
+        <div className="space-y-4">
+          {/* Stats Summary */}
+          <div className="grid grid-cols-4 gap-3">
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+              <p className="text-2xl font-bold text-yellow-800">{auditStats.queued}</p>
+              <p className="text-xs text-yellow-600 font-medium">Queued</p>
+            </div>
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+              <p className="text-2xl font-bold text-blue-800">{auditStats.processing}</p>
+              <p className="text-xs text-blue-600 font-medium">Processing</p>
+            </div>
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
+              <p className="text-2xl font-bold text-green-800">{auditStats.completed}</p>
+              <p className="text-xs text-green-600 font-medium">Completed</p>
+            </div>
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+              <p className="text-2xl font-bold text-red-800">{auditStats.failed}</p>
+              <p className="text-xs text-red-600 font-medium">Failed</p>
+            </div>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by document title or job ID..."
+                value={auditSearchTerm}
+                onChange={(e) => setAuditSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
+              />
+            </div>
+            <div className="relative">
+              <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <select
+                value={auditStatusFilter}
+                onChange={(e) => setAuditStatusFilter(e.target.value)}
+                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] appearance-none bg-white"
+              >
+                <option value="all">All Status</option>
+                <option value="queued">Queued</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Jobs List */}
+          {loadingAudit ? (
+            <div className="py-12 text-center text-gray-500">Loading audit log...</div>
+          ) : getFilteredAuditJobs().length === 0 ? (
+            <div className="py-12 text-center">
+              <ClipboardList size={48} className="mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-600">No processing jobs found</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {getFilteredAuditJobs().map((job) => (
+                <div key={job.job_id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-[#333333] text-sm">{job.document_title}</h4>
+                      <p className="text-xs text-gray-500 mt-1">Job ID: {job.job_id}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
+                      {job.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
+                    <div>
+                      <p className="text-gray-500">Stage</p>
+                      <p className="font-medium text-[#333333]">{job.current_stage}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Progress</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-[#F58220] h-2 rounded-full transition-all"
+                            style={{ width: `${job.progress_percentage}%` }}
+                          />
+                        </div>
+                        <span className="font-medium text-[#333333]">{job.progress_percentage}%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Duration</p>
+                      <p className="font-medium text-[#333333]">{formatDuration(job.time_elapsed_seconds)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Chunks Created</p>
+                      <p className="font-medium text-[#333333]">{job.chunks_created || 0}</p>
+                    </div>
+                    {job.pages_processed > 0 && (
+                      <div>
+                        <p className="text-gray-500">Pages Processed</p>
+                        <p className="font-medium text-[#333333]">{job.pages_processed}</p>
+                      </div>
+                    )}
+                    {job.queued_at && (
+                      <div>
+                        <p className="text-gray-500">Queued At</p>
+                        <p className="font-medium text-[#333333]">{formatDate(job.queued_at)}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {job.error_message && (
+                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
+                      <p className="text-xs font-semibold text-red-800">Error:</p>
+                      <p className="text-xs text-red-700 mt-1">{job.error_message}</p>
+                      {job.error_stage && (
+                        <p className="text-xs text-red-600 mt-1">Failed at: {job.error_stage}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4 border-t border-gray-200">
+            <Button
+              onClick={() => {
+                setShowAuditLog(false);
+                setAuditSearchTerm('');
+                setAuditStatusFilter('all');
+              }}
+              variant="secondary"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
