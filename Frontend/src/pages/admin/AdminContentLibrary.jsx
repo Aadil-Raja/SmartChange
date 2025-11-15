@@ -543,7 +543,15 @@ const AdminContentLibrary = () => {
                 {activeTab === 'documents' && filterItems(documents, 'document').map((doc) => (
                   <Card key={doc.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
                     <div className="aspect-video bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center relative overflow-hidden">
-                      <FileText size={56} className="text-[#78BE20]/30" />
+                      {doc.cloudinary_thumbnail_url ? (
+                        <img
+                          src={doc.cloudinary_thumbnail_url}
+                          alt={doc.title || doc.filename}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <FileText size={56} className="text-[#78BE20]/30" />
+                      )}
                       <div className="absolute top-3 right-3">
                         <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
                           <FileText size={16} className="text-[#78BE20]" />
@@ -561,11 +569,15 @@ const AdminContentLibrary = () => {
                           <span>PDF Document</span>
                         </div>
                         <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          doc.processing_status === 'Processed' 
-                            ? 'bg-green-50 text-green-700' 
-                            : 'bg-yellow-50 text-yellow-700'
+                          doc.status === 'PROCESSED' 
+                            ? 'bg-green-50 text-green-700 border border-green-200' 
+                            : doc.status === 'FAILED'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : doc.status === 'PROCESSING' || doc.status === 'QUEUED'
+                            ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
                         }`}>
-                          {doc.processing_status || 'Processed'}
+                          {doc.status || 'STORED'}
                         </div>
                       </div>
                       

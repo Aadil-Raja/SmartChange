@@ -113,3 +113,22 @@ export const deleteDocument = async (documentId) => {
   const res = await api.delete(`/admin/documents/${documentId}`);
   return res.data;
 };
+
+// ============ MAIN TOPICS ============
+export const getMainTopics = async (documentId) => {
+  const res = await api.get(`/admin/documents/${documentId}/main-topics`);
+  return res.data;
+};
+
+export const updateMainTopics = async (documentId, mainTopics) => {
+  const res = await api.patch(`/admin/documents/${documentId}/main-topics`, {
+    main_topics: mainTopics
+  });
+  return res.data;
+};
+
+// ============ PROCESSING JOBS / AUDIT LOG ============
+export const fetchProcessingJobs = async () => {
+  const res = await api.get("/admin/processing-jobs");
+  return res.data;
+};
