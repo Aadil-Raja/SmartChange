@@ -222,6 +222,8 @@ const MyCourses = () => {
                                             
                                             const progress = course.progressData
                                                 ? Math.round(course.progressData.percent)
+                                                : course.progress !== undefined
+                                                ? Math.round(course.progress || 0)
                                                 : 0;
                                             
                                             if (statusFilter === 'completed') {
@@ -242,6 +244,12 @@ const MyCourses = () => {
                                                     completed: course.progressData.completed_items,
                                                     total: course.progressData.total_items,
                                                     percentage: Math.round(course.progressData.percent)
+                                                }
+                                                : course.progress !== undefined
+                                                ? {
+                                                    completed: course.completed_items || 0,
+                                                    total: course.total_items || 0,
+                                                    percentage: Math.round(course.progress || 0)
                                                 }
                                                 : null;
                                             return (
@@ -264,6 +272,8 @@ const MyCourses = () => {
                                     
                                     const progress = course.progressData
                                         ? Math.round(course.progressData.percent)
+                                        : course.progress !== undefined
+                                        ? Math.round(course.progress || 0)
                                         : 0;
                                     
                                     if (statusFilter === 'completed') {

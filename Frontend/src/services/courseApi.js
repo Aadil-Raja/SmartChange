@@ -8,6 +8,12 @@ export const getEmployeeCourses = async () => {
   return response.data;
 };
 
+// Get employee courses overview (includes starred, in_progress, completed)
+export const getEmployeeCoursesOverview = async () => {
+  const response = await api.get('/employee/me/courses/overview');
+  return response.data;
+};
+
 // Get single active course with its items/modules
 export const getCourseById = async (courseId) => {
   const response = await api.get(`/employee/courses/${courseId}`);

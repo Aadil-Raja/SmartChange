@@ -1,7 +1,7 @@
 // src/components/ui/EmployeeSidebar.jsx
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GraduationCap, Users, MessageSquare, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { GraduationCap, Users, MessageSquare, User, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 
 const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
     { icon: GraduationCap, label: 'My Courses', path: '/employee/mycourses' },
     { icon: Users, label: 'My Teams', path: '/employee/myteams' },
     { icon: MessageSquare, label: 'Chatbot', path: '/employee/chatbot' },
+    { icon: User, label: 'Profile', path: '/employee/profile' },
   ];
 
   const handleLogout = () => {
