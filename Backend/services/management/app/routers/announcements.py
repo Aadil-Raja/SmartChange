@@ -65,3 +65,34 @@ def add_comment_route(
         )
     except Exception as e:
         return make_response(False, "Could not add comment", status_code=500, error=str(e))
+    
+
+
+
+#List team members (manager only)
+@router.get("/{team_id}/members", status_code=status.HTTP_200_OK)
+def list_team_members_route(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    try:
+        return announcements_service.list_team_members(db, team_id=team_id, user_id=current_user.id)
+    except Exception as e:
+        return make_response(False, "Could not fetch team members", status_code=500, error=str(e))
+    
+
+
+@router.get("/{team_id}/members/{member_user_id}/progress", status_code=status.HTTP_200_OK)
+def get_member_progress_route(
+    team_id: int,
+    member_user_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    try:
+        return announcements_service.get_member_progress_overview(
+            db, team_id=team_id, manager_id=current_user.id, member_user_id=member_user_id
+        )
+    except Exception as e:
+        return make_response(False, "Could not fetch member progress", status_code=500, error=str(e))

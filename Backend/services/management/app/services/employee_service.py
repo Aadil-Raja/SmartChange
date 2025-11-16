@@ -12,13 +12,13 @@ def get_my_teams(db, user):
     data = []
 
     for team, role in rows:
-        members = [m.user_id for m in team.members]  # quick minimal member list
+    
         data.append({
             "team_id": team.id,
             "team_name": team.name,
             "join_code": team.join_code if role.value == "manager" else None,  # ✅ only managers see code
             "role_in_team": role.value,
-            "members": members
+        
         })
 
     return make_response(True, "Teams fetched successfully", data=data,status_code=200)
@@ -239,6 +239,7 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     - Starred courses
     - In Progress courses (not completed)
     - Completed courses
+    Plus overall statistics
     """
     # Get all active courses
     all_courses_data = courseContent_service.list_courses(db, active_only=True)
@@ -267,7 +268,7 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
             "total_items": progress_data["total_items"],
             "is_starred": course_id in starred_ids,
             "department": course.get("department"),
-                "thumbnail_url": course.get("thumbnail_url"),
+            "thumbnail_url": course.get("thumbnail_url"),
         }
         
         # Categorize
@@ -279,7 +280,37 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
         elif percent > 0:
             in_progress_courses.append(course_info)
     
+    # Calculate statistics
+    total_completed = len(completed_courses)
+    total_in_progress = len(in_progress_courses)
+    total_starred = len(starred_courses)
+    total_courses_started = total_completed + total_in_progress
+    
+    # Calculate overall progress percentage (across all courses with progress)
+    if total_courses_started > 0:
+        overall_progress = round(
+            sum(c["progress"] for c in (in_progress_courses + completed_courses)) / total_courses_started,
+            2
+        )
+    else:
+        overall_progress = 0.0
+    
+    # Calculate total items completed vs total items across all started courses
+    total_items_completed = sum(c["completed_items"] for c in (in_progress_courses + completed_courses))
+    total_items = sum(c["total_items"] for c in (in_progress_courses + completed_courses))
+    
+    stats = {
+        "total_courses_started": total_courses_started,
+        "total_in_progress": total_in_progress,
+        "total_completed": total_completed,
+        "total_starred": total_starred,
+        "overall_progress": overall_progress,
+        "total_items_completed": total_items_completed,
+        "total_items": total_items,
+    }
+    
     return {
+        "stats": stats,
         "starred": starred_courses,
         "in_progress": in_progress_courses,
         "completed": completed_courses,
