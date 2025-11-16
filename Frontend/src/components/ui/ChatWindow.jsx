@@ -67,7 +67,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
 
   if (!selectedDocumentId) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-lg">
           <div className="inline-flex p-8 bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-full mb-8">
             <Sparkles size={64} className="text-[#F58220]/60" />
@@ -92,9 +92,9 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#FFFDF7]">
+    <div className="h-full flex flex-col bg-[#FFFDF7] min-h-0">
       {/* Messages Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6" onClick={onCloseSidebar}>
+      <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 scroll-smooth" onClick={onCloseSidebar}>
         {currentMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-2xl">

@@ -96,9 +96,9 @@ const Chatbot = () => {
           )}
         </div>
 
-        {/* Centered Chat Area */}
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="w-full max-w-4xl h-full bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
+        {/* Chat Area - Fixed Height */}
+        <div className="flex-1 flex flex-col p-6 min-h-0">
+          <div className="w-full max-w-4xl mx-auto h-full bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden flex flex-col">
             <ChatWindow
               onOpenDocumentSelector={() => setShowDocumentSelector(true)}
               minimal={true}
