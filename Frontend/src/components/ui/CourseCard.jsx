@@ -1,11 +1,22 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, CheckCircle } from 'lucide-react';
+import { BookOpen, Clock, CheckCircle, Star } from 'lucide-react';
+import { useCourses } from '../../hooks/useCourses';
 import Card from './Card';
 import Button from './Button';
 
 const CourseCard = ({ course, progress }) => {
   const navigate = useNavigate();
+  const { toggleCourseStar } = useCourses();
+  const [isStarring, setIsStarring] = useState(false);
   const isCompleted = progress?.percentage === 100;
+
+  const handleStarToggle = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    setIsStarring(true);
+    await toggleCourseStar(course.id);
+    setIsStarring(false);
+  };
 
   return (
     <Card 
@@ -41,6 +52,25 @@ const CourseCard = ({ course, progress }) => {
               In Progress
             </span>
           )}
+        </div>
+
+        {/* Star Button */}
+        <div className="absolute left-3 top-3">
+          <button
+            onClick={handleStarToggle}
+            disabled={isStarring}
+            className={`p-2 rounded-full shadow-md transition-all duration-200 ${
+              course.is_starred
+                ? 'bg-yellow-400 text-white hover:bg-yellow-500'
+                : 'bg-white/90 text-gray-600 hover:bg-white hover:text-yellow-500'
+            } ${isStarring ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
+            title={course.is_starred ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <Star 
+              size={16} 
+              className={course.is_starred ? 'fill-current' : ''} 
+            />
+          </button>
         </div>
       </div>
 

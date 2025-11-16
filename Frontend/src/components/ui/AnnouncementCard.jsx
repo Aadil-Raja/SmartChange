@@ -150,13 +150,13 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
                       <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-full flex items-center justify-center text-white font-bold">
-                        {(comment.user?.name || "U")[0].toUpperCase()}
+                        {(comment.user_name || comment.user?.name || "U")[0].toUpperCase()}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="font-semibold text-[#333333]">
-                            {comment.user?.name || "Team Member"}
+                            {comment.user_name || comment.user?.name || "Team Member"}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <Clock size={12} />

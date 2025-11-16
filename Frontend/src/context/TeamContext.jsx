@@ -1,7 +1,7 @@
 // ============================================
 // FILE: src/context/TeamContext.jsx
 // ============================================
-import { createContext, useState, useEffect, use } from 'react';
+import { createContext, useState } from 'react';
 import * as teamapi from '../services/teamApi'; // Import the API functions directly
 
 export const TeamContext = createContext(null);
@@ -10,17 +10,6 @@ export const TeamProvider = ({ children }) => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // ✅ Fetch teams on mount
-  const [hasInitialized, setHasInitialized] = useState(false);
-  
-  useEffect(() => {
-    // Only load teams on employee routes and not already initialized
-    if (window.location.pathname.startsWith('/employee/myteams') && !hasInitialized) {
-      loadTeams();
-      setHasInitialized(true);
-    }
-  }, [hasInitialized]);
 
 
 
@@ -81,10 +70,10 @@ export const TeamProvider = ({ children }) => {
     teams,
     loading,
     error,
-    fetchTeams: loadTeams, // Expose loadTeams as fetchTeams
+    loadTeams,
+    fetchTeams: loadTeams, // Expose loadTeams as fetchTeams for backward compatibility
     joinTeam,
     regerenateTeamCode,
-
   };
 
   return <TeamContext.Provider value={value}>{children}</TeamContext.Provider>;

@@ -1,11 +1,13 @@
-import { createContext, useState, useEffect, useRef } from "react";
+import { createContext, useState, useRef } from "react";
 import {
     getEmployeeCourses,
     getCourseById,
     updateContentProgress,
     getCourseProgress,
     getCourseItemsProgress,
-    getProcessedDocuments
+    getProcessedDocuments,
+    starCourse,
+    unstarCourse
 } from "../services/courseApi";
 
 export const CourseContext = createContext(null);
@@ -20,17 +22,6 @@ export const CourseProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [progressLoading, setProgressLoading] = useState(false);
     const fetchingProgress = useRef(new Set());
-    // Load courses on mount if employee is logged in
-    const [hasInitialized, setHasInitialized] = useState(false);
-
-    useEffect(() => {
-        // Only fetch courses if employee token exists AND path starts with /employee AND not already initialized
-        if (window.location.pathname.startsWith('/employee/mycourses') && !hasInitialized) {
-            console.log('Fetching courses for employee');
-            fetchCourses();
-            setHasInitialized(true);
-        }
-    }, [hasInitialized]);
 
 
     // Fetch all courses
@@ -276,6 +267,37 @@ export const CourseProvider = ({ children }) => {
         return completedItems.has(itemId);
     };
 
+    // Star/Unstar course
+    const toggleCourseStar = async (courseId) => {
+        try {
+            const course = courses.find(c => c.id === courseId);
+            if (!course) return { success: false, message: 'Course not found' };
+
+            let result;
+            if (course.is_starred) {
+                result = await unstarCourse(courseId);
+            } else {
+                result = await starCourse(courseId);
+            }
+
+            if (result.success) {
+                // Update the course in the local state
+                setCourses(prevCourses =>
+                    prevCourses.map(c =>
+                        c.id === courseId
+                            ? { ...c, is_starred: !c.is_starred }
+                            : c
+                    )
+                );
+                return { success: true, starred: !course.is_starred };
+            }
+            return result;
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to update star status';
+            return { success: false, message: errorMsg };
+        }
+    };
+
     return (
         <CourseContext.Provider
             value={{
@@ -307,6 +329,7 @@ export const CourseProvider = ({ children }) => {
                 getCourseProgress: getLocalCourseProgress,  // Local calculation fallback
                 getItemProgress,
                 isItemCompleted,
+                toggleCourseStar,
             }}
         >
             {children}
