@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TeamCard from '../../components/ui/TeamCard';
 import JoinTeamModal from '../../components/ui/JoinTeamModal';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
@@ -7,10 +7,15 @@ import { Users, Plus } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
 
 const MyTeams = () => {
-    const { teams, loading, error, joinTeam, regerenateTeamCode } = useTeams();
+    const { teams, loading, error, joinTeam, regerenateTeamCode, loadTeams } = useTeams();
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [navCollapsed, setNavCollapsed] = useState(true);
+
+    // Load teams when component mounts
+    useEffect(() => {
+        loadTeams();
+    }, []);
 
     // YOUR ORIGINAL HANDLERS - DON'T TOUCH
     const handleJoinTeam = async (code) => {

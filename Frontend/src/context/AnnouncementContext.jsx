@@ -39,9 +39,12 @@ export const AnnouncementProvider = ({ children }) => {
           announcementsList.map(async (announcement) => {
             try {
               const detailsRes = await getAnnouncementDetails(teamId, announcement.id);
-              if (detailsRes?.success && detailsRes.data?.announcement) {
-                // Return the full announcement object with comments
-                return detailsRes.data.announcement;
+              if (detailsRes?.success && detailsRes.data) {
+                // Merge announcement with comments from the API response
+                return {
+                  ...detailsRes.data.announcement,
+                  comments: detailsRes.data.comments || []
+                };
               }
               // Fallback: return announcement without comments
               return { ...announcement, comments: [] };

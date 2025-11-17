@@ -277,13 +277,12 @@ const CourseContent = () => {
                         )}
 
                         {/* Mark as Done Button */}
-                        <Button
+                        <MarkAsDoneButton
                           itemId={item.id}
                           itemType={item.type}
                           isCompleted={isCompleted}
                           progress={progressPercent}
-                        >
-                          Mark As Done </Button>
+                        />
                       </div>
                     </Card>
                   );

@@ -8,6 +8,12 @@ export const getEmployeeCourses = async () => {
   return response.data;
 };
 
+// Get employee courses overview (includes starred, in_progress, completed)
+export const getEmployeeCoursesOverview = async () => {
+  const response = await api.get('/employee/me/courses/overview');
+  return response.data;
+};
+
 // Get single active course with its items/modules
 export const getCourseById = async (courseId) => {
   const response = await api.get(`/employee/courses/${courseId}`);
@@ -46,3 +52,17 @@ export const getProcessedDocuments = async () => {
 
 // Note: Videos and external links are now included directly in the course items
 // with thumbnail_url and access_url, so separate API calls are no longer needed
+
+// ===== COURSE STARRING APIs =====
+
+// Star a course (POST)
+export const starCourse = async (courseId) => {
+  const response = await api.post(`/employee/courses/${courseId}/star`);
+  return response.data;
+};
+
+// Unstar a course (DELETE)
+export const unstarCourse = async (courseId) => {
+  const response = await api.delete(`/employee/courses/${courseId}/star`);
+  return response.data;
+};

@@ -1,11 +1,14 @@
-import { createContext, useState, useEffect, useRef } from "react";
+import { createContext, useState, useRef } from "react";
 import {
+    getEmployeeCoursesOverview,
     getEmployeeCourses,
     getCourseById,
     updateContentProgress,
     getCourseProgress,
     getCourseItemsProgress,
-    getProcessedDocuments
+    getProcessedDocuments,
+    starCourse,
+    unstarCourse
 } from "../services/courseApi";
 
 export const CourseContext = createContext(null);
@@ -20,30 +23,59 @@ export const CourseProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [progressLoading, setProgressLoading] = useState(false);
     const fetchingProgress = useRef(new Set());
-    // Load courses on mount if employee is logged in
-    const [hasInitialized, setHasInitialized] = useState(false);
-
-    useEffect(() => {
-        // Only fetch courses if employee token exists AND path starts with /employee AND not already initialized
-        if (window.location.pathname.startsWith('/employee/mycourses') && !hasInitialized) {
-            console.log('Fetching courses for employee');
-            fetchCourses();
-            setHasInitialized(true);
-        }
-    }, [hasInitialized]);
 
 
-    // Fetch all courses
+    // Fetch all courses with enhanced data from overview API
     const fetchCourses = async () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await getEmployeeCourses();
-            if (res.success) {
-                setCourses(res.data.courses || []);
-                return { success: true, data: res.data.courses };
+            // Fetch both all courses and overview data in parallel
+            const [allCoursesRes, overviewRes] = await Promise.all([
+                getEmployeeCourses(),
+                getEmployeeCoursesOverview()
+            ]);
+
+            if (allCoursesRes.success) {
+                const allCourses = allCoursesRes.data.courses || [];
+                
+                // Create maps for quick lookup from overview data
+                const starredMap = new Map();
+                const progressMap = new Map();
+                
+                if (overviewRes.success) {
+                    // Map starred courses
+                    (overviewRes.data.starred || []).forEach(course => {
+                        starredMap.set(course.id, course);
+                    });
+                    
+                    // Map courses with progress data
+                    [...(overviewRes.data.in_progress || []), ...(overviewRes.data.completed || [])].forEach(course => {
+                        progressMap.set(course.id, course);
+                    });
+                }
+
+                // Enhance all courses with starred status and progress data
+                const enhancedCourses = allCourses.map(course => {
+                    const starredData = starredMap.get(course.id);
+                    const progressData = progressMap.get(course.id);
+                    
+                    return {
+                        ...course,
+                        is_starred: !!starredData,
+                        // Add progress data if available
+                        ...(progressData && {
+                            progress: progressData.progress,
+                            completed_items: progressData.completed_items,
+                            total_items: progressData.total_items
+                        })
+                    };
+                });
+
+                setCourses(enhancedCourses);
+                return { success: true, data: enhancedCourses };
             } else {
-                throw new Error(res.message || 'Failed to fetch courses');
+                throw new Error(allCoursesRes.message || 'Failed to fetch courses');
             }
         } catch (err) {
             const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch courses';
@@ -59,12 +91,17 @@ export const CourseProvider = ({ children }) => {
         setProgressLoading(true);
         setError(null);
         try {
-            // Prepare payload based on item type
-            const payload = itemType === 'video'
-                ? { progress: 100, completed: true }  // For videos, send progress 100
-                : { completed: true };                // For docs/links, just completed
+            console.log('Marking module as done:', { itemId, itemType });
+            
+            // Prepare payload - backend expects progress as float and completed as optional boolean
+            const payload = {
+                progress: 100.0,  // Always set to 100 when marking as done
+                completed: true   // Explicitly mark as completed
+            };
 
+            console.log('Sending payload:', payload);
             const res = await updateContentProgress(itemId, payload);
+            console.log('API response:', res);
 
             if (res.success) {
                 // Update local completed items state
@@ -276,6 +313,37 @@ export const CourseProvider = ({ children }) => {
         return completedItems.has(itemId);
     };
 
+    // Star/Unstar course
+    const toggleCourseStar = async (courseId) => {
+        try {
+            const course = courses.find(c => c.id === courseId);
+            if (!course) return { success: false, message: 'Course not found' };
+
+            let result;
+            if (course.is_starred) {
+                result = await unstarCourse(courseId);
+            } else {
+                result = await starCourse(courseId);
+            }
+
+            if (result.success) {
+                // Update the course in the local state
+                setCourses(prevCourses =>
+                    prevCourses.map(c =>
+                        c.id === courseId
+                            ? { ...c, is_starred: !c.is_starred }
+                            : c
+                    )
+                );
+                return { success: true, starred: !course.is_starred };
+            }
+            return result;
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to update star status';
+            return { success: false, message: errorMsg };
+        }
+    };
+
     return (
         <CourseContext.Provider
             value={{
@@ -307,6 +375,7 @@ export const CourseProvider = ({ children }) => {
                 getCourseProgress: getLocalCourseProgress,  // Local calculation fallback
                 getItemProgress,
                 isItemCompleted,
+                toggleCourseStar,
             }}
         >
             {children}

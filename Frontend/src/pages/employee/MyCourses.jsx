@@ -18,6 +18,11 @@ const MyCourses = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // all, in-progress, completed
 
+    // Load courses when component mounts
+    useEffect(() => {
+        fetchCourses();
+    }, []);
+
     // Fetch progress for courses when they are loaded
     useEffect(() => {
         const fetchProgressForCourses = async () => {
@@ -190,6 +195,16 @@ const MyCourses = () => {
                                         >
                                             Completed
                                         </button>
+                                        <button
+                                            onClick={() => setStatusFilter('starred')}
+                                            className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
+                                                statusFilter === 'starred'
+                                                    ? 'bg-[#F58220] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                            }`}
+                                        >
+                                            Starred
+                                        </button>
                                     </div>
                                 </div>
 
@@ -207,6 +222,8 @@ const MyCourses = () => {
                                             
                                             const progress = course.progressData
                                                 ? Math.round(course.progressData.percent)
+                                                : course.progress !== undefined
+                                                ? Math.round(course.progress || 0)
                                                 : 0;
                                             
                                             if (statusFilter === 'completed') {
@@ -214,6 +231,9 @@ const MyCourses = () => {
                                             }
                                             if (statusFilter === 'in-progress') {
                                                 return matchesSearch && progress < 100;
+                                            }
+                                            if (statusFilter === 'starred') {
+                                                return matchesSearch && course.is_starred;
                                             }
                                             
                                             return matchesSearch;
@@ -224,6 +244,12 @@ const MyCourses = () => {
                                                     completed: course.progressData.completed_items,
                                                     total: course.progressData.total_items,
                                                     percentage: Math.round(course.progressData.percent)
+                                                }
+                                                : course.progress !== undefined
+                                                ? {
+                                                    completed: course.completed_items || 0,
+                                                    total: course.total_items || 0,
+                                                    percentage: Math.round(course.progress || 0)
                                                 }
                                                 : null;
                                             return (
@@ -246,6 +272,8 @@ const MyCourses = () => {
                                     
                                     const progress = course.progressData
                                         ? Math.round(course.progressData.percent)
+                                        : course.progress !== undefined
+                                        ? Math.round(course.progress || 0)
                                         : 0;
                                     
                                     if (statusFilter === 'completed') {
@@ -253,6 +281,9 @@ const MyCourses = () => {
                                     }
                                     if (statusFilter === 'in-progress') {
                                         return matchesSearch && progress < 100;
+                                    }
+                                    if (statusFilter === 'starred') {
+                                        return matchesSearch && course.is_starred;
                                     }
                                     
                                     return matchesSearch;

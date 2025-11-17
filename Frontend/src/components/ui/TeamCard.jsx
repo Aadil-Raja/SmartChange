@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from './Card';
-import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ChevronRight } from 'lucide-react';
+import TeamMembersModal from './TeamMembersModal';
+import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ChevronRight, Eye } from 'lucide-react';
 
 const TeamCard = ({ team, onRegenerateCode, loading }) => {
     const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
+    const [showMembersModal, setShowMembersModal] = useState(false);
 
     const isManager = team.role_in_team === 'manager';
 
@@ -32,7 +34,13 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
         navigate(`/employee/team/${team.team_id}/announcements`);
     };
 
+    const handleViewMembers = (e) => {
+        e.stopPropagation();
+        setShowMembersModal(true);
+    };
+
     return (
+        <>
         <Card
             variant="default"
             padding="lg"
@@ -69,33 +77,45 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
                 <Megaphone size={20} className="text-gray-400 group-hover:text-[#F58220] transition-colors" />
             </div>
 
-            {/* Team Code Section - Only show for managers */}
+            {/* Manager Actions Section - Only show for managers */}
             {isManager && (
-                <div className="mb-4 rounded-md border border-gray-200 bg-gray-50 p-3">
-                    <p className="mb-2 text-xs font-semibold text-[#333333]">Team Join Code</p>
-                    <div className="flex items-center justify-between gap-2">
-                        <code className="rounded-md bg-white px-3 py-1.5 font-mono text-sm font-bold text-[#F58220] border border-gray-200">
-                            {team.join_code}
-                        </code>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={handleCopyCode}
-                                disabled={loading}
-                                className="rounded-md p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Copy code"
-                            >
-                                {copied ? <Check size={16} className="text-[#78BE20]" /> : <Copy size={16} />}
-                            </button>
-                            <button
-                                onClick={handleRegenerateCode}
-                                disabled={loading || regenerating}
-                                className="rounded-md p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Regenerate code"
-                            >
-                                <RefreshCw size={16} className={regenerating ? 'animate-spin' : ''} />
-                            </button>
+                <div className="mb-4 space-y-3">
+                    {/* Team Join Code */}
+                    <div className="rounded-md border border-gray-200 bg-gray-50 p-3">
+                        <p className="mb-2 text-xs font-semibold text-[#333333]">Team Join Code</p>
+                        <div className="flex items-center justify-between gap-2">
+                            <code className="rounded-md bg-white px-3 py-1.5 font-mono text-sm font-bold text-[#F58220] border border-gray-200">
+                                {team.join_code}
+                            </code>
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={handleCopyCode}
+                                    disabled={loading}
+                                    className="rounded-md p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Copy code"
+                                >
+                                    {copied ? <Check size={16} className="text-[#78BE20]" /> : <Copy size={16} />}
+                                </button>
+                                <button
+                                    onClick={handleRegenerateCode}
+                                    disabled={loading || regenerating}
+                                    className="rounded-md p-2 text-gray-600 transition-all hover:bg-white hover:text-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Regenerate code"
+                                >
+                                    <RefreshCw size={16} className={regenerating ? 'animate-spin' : ''} />
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    {/* View Members Button */}
+                    <button
+                        onClick={handleViewMembers}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-[#00ADEF] bg-[#00ADEF]/10 border border-[#00ADEF]/20 rounded-md hover:bg-[#00ADEF]/20 hover:border-[#00ADEF]/30 transition-all focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/50"
+                    >
+                        <Eye size={16} />
+                        View Team Members
+                    </button>
                 </div>
             )}
 
@@ -107,6 +127,16 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
                 </div>
             </div>
         </Card>
+
+        {/* Team Members Modal */}
+        {showMembersModal && (
+            <TeamMembersModal
+                isOpen={showMembersModal}
+                onClose={() => setShowMembersModal(false)}
+                team={team}
+            />
+        )}
+        </>
     );
 };
 
