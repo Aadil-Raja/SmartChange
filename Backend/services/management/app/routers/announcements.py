@@ -50,6 +50,38 @@ def get_announcement_route(
     except Exception as e:
         return make_response(False, "Could not fetch announcement", status_code=500, error=str(e))
 
+# Update announcement (author only)
+@router.patch("/{team_id}/announcements/{announcement_id}", status_code=status.HTTP_200_OK)
+def update_announcement_route(
+    team_id: int,
+    announcement_id: int,
+    payload: schemas.AnnouncementUpdateIn,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    try:
+        return announcements_service.update_announcement(
+            db, team_id=team_id, announcement_id=announcement_id, 
+            user_id=current_user.id, title=payload.title, body=payload.body
+        )
+    except Exception as e:
+        return make_response(False, "Could not update announcement", status_code=500, error=str(e))
+
+# Delete announcement (author only)
+@router.delete("/{team_id}/announcements/{announcement_id}", status_code=status.HTTP_200_OK)
+def delete_announcement_route(
+    team_id: int,
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    try:
+        return announcements_service.delete_announcement(
+            db, team_id=team_id, announcement_id=announcement_id, user_id=current_user.id
+        )
+    except Exception as e:
+        return make_response(False, "Could not delete announcement", status_code=500, error=str(e))
+
 # Add comment (team members only)
 @router.post("/{team_id}/announcements/{announcement_id}/comments", status_code=status.HTTP_201_CREATED)
 def add_comment_route(
@@ -65,11 +97,25 @@ def add_comment_route(
         )
     except Exception as e:
         return make_response(False, "Could not add comment", status_code=500, error=str(e))
-    
 
+# Delete comment (commentator only)
+@router.delete("/{team_id}/announcements/{announcement_id}/comments/{comment_id}", status_code=status.HTTP_200_OK)
+def delete_comment_route(
+    team_id: int,
+    announcement_id: int,
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    try:
+        return announcements_service.delete_comment(
+            db, team_id=team_id, announcement_id=announcement_id, 
+            comment_id=comment_id, user_id=current_user.id
+        )
+    except Exception as e:
+        return make_response(False, "Could not delete comment", status_code=500, error=str(e))
 
-
-#List team members (manager only)
+# List team members (manager only)
 @router.get("/{team_id}/members", status_code=status.HTTP_200_OK)
 def list_team_members_route(
     team_id: int,
@@ -80,9 +126,8 @@ def list_team_members_route(
         return announcements_service.list_team_members(db, team_id=team_id, user_id=current_user.id)
     except Exception as e:
         return make_response(False, "Could not fetch team members", status_code=500, error=str(e))
-    
 
-
+# Get member progress (manager only)
 @router.get("/{team_id}/members/{member_user_id}/progress", status_code=status.HTTP_200_OK)
 def get_member_progress_route(
     team_id: int,

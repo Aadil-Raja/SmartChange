@@ -43,3 +43,5 @@ google-generativeai
 
 cloudinary
 tiktoken
+
+PyMuPDF

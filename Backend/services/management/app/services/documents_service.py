@@ -280,9 +280,9 @@ def list_processing_jobs(db: Session):
         progress = stage_progress.get(audit.current_stage, 0)
         
         jobs.append({
-            "document_id": audit.document_id,
+          
             "document_title": document.title,
-            "job_id": audit.job_id,
+          
             "status": audit.status.value,
             "current_stage": audit.current_stage.value,
             "progress_percentage": progress,
