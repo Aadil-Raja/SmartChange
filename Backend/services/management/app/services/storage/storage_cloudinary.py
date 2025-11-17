@@ -208,3 +208,32 @@ def delete_with_thumbnail(public_id: str, resource_type: str):
         invalidate=True  # Clear CDN cache for all transformations (thumbnails)
     )
     return result
+
+
+
+def upload_image_bytes(file_bytes: bytes, public_id: str | None = None):
+    """
+    Upload image bytes (PNG/JPG) to Cloudinary.
+    Returns secure_url and public_id.
+    
+    Raises:
+        RuntimeError: If Cloudinary is not configured
+    """
+    if not _cloudinary_configured:
+        raise RuntimeError(
+            "Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, "
+            "CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file."
+        )
+    
+    result = cloudinary.uploader.upload(
+        io.BytesIO(file_bytes),
+        resource_type="image",  # Changed from "raw" to "image"
+        folder=settings.cloudinary_folder,
+        public_id=public_id,
+        overwrite=True,
+        unique_filename=True,
+    )
+    return {
+        "secure_url": result.get("secure_url"),
+        "public_id": result.get("public_id"),
+    }

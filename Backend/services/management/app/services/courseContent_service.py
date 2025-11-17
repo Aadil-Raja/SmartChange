@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from shared.schemas.training_admin import CourseCreateIn, CourseUpdateIn, ContentItemCreateIn, ContentItemUpdateIn
 from app.repositories import courseContent_repo as repo
-from app.services.storage.storage_cloudinary import upload_raw_bytes
+from app.services.storage.storage_cloudinary import upload_raw_bytes,upload_image_bytes
 from app.services.storage.storage_cloudinary import delete_file_by_public_id
 
 def _validate_content_payload(body: ContentItemCreateIn | ContentItemUpdateIn, type_str: str, creating=True):
@@ -85,7 +85,7 @@ def set_course_thumbnail(db: Session, *, course_id: int, file_bytes: bytes):
     if not course:
         raise ValueError("Course not found")
     
-    result = upload_raw_bytes(file_bytes)
+    result = upload_image_bytes(file_bytes)
     url = result.get("secure_url")
     public_id = result.get("public_id")
     if not url:

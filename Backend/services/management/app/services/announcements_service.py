@@ -155,19 +155,25 @@ def list_team_members(db: Session, *, team_id: int, user_id: int):
     
     members = announcements_repo.get_team_members(db, team_id=team_id)
     
-    serialized = [
-        {
-            "id": m.id,
-            "user_id": m.user_id,
-            "user_name": m.user.Name if m.user else None,
-            "user_email": m.user.email if m.user else None,
-            "role_in_team": m.role_in_team.value if m.role_in_team else None,
-            "joined_at": m.created_at,
-        }
-        for m in members
-    ]
+    serialized = []
+    for m in members:
+        # skip the record for the current user
+        if m.user_id == user_id:
+            continue
+
+        serialized.append(
+            {
+                "id": m.id,
+                "user_id": m.user_id,
+                "user_name": m.user.Name if m.user else None,
+                "user_email": m.user.email if m.user else None,
+                "role_in_team": m.role_in_team.value if m.role_in_team else None,
+                "joined_at": m.created_at,
+            }
+        )
     
     return make_response(True, "Team members fetched", data=serialized, status_code=200)
+
 
 def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, member_user_id: int):
     """

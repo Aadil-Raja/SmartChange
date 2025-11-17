@@ -83,7 +83,7 @@ def delete_video(db: Session, video_id: int):
     
     # Delete from Cloudinary
     try:
-        delete_with_thumbnail(video.cloudinary_public_id)
+        delete_with_thumbnail(video.cloudinary_public_id,"video")
     except Exception as e:
         # Log the error but continue with DB deletion
         print(f"Warning: Failed to delete video from Cloudinary: {e}")

@@ -18,9 +18,9 @@ class ContentItem(Base):
     description = Column(Text, nullable=True)
     type = Column(Enum(ContentType, name="content_type_t", create_type=True), nullable=False)
 
-    document_id = Column(Integer, ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
-    video_id = Column(Integer, ForeignKey("videos.id", ondelete="SET NULL"), nullable=True)
-    external_link_id = Column(Integer, ForeignKey("external_links.id", ondelete="SET NULL"), nullable=True)
+    document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=True)
+    video_id = Column(Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=True)
+    external_link_id = Column(Integer, ForeignKey("external_links.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     course = relationship("Course", back_populates="contents")

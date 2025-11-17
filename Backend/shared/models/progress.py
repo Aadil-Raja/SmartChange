@@ -38,5 +38,5 @@ class UserCourseStar(Base):
     )
 
     # relationships
-    user = relationship("User", backref="starred_courses")
-    course = relationship("Course", backref="starred_by_users")
+    user = relationship("User", lazy="joined")
+    course = relationship("Course", lazy="joined")
