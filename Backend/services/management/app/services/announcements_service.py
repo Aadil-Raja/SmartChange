@@ -1,10 +1,17 @@
 from sqlalchemy.orm import Session
 from app.utils.response_utils import make_response
 from app.repositories import announcements_repo
-from shared.models import TeamMember, TeamMemberRole, Announcement
+from shared.models import TeamMember, TeamMemberRole, Announcement, AttachmentType
 from app.repositories import progress_repo as prog_repo
 from app.repositories import courseContent_repo as content_repo
 from app.services import courseContent_service
+from app.services.storage.storage_cloudinary import (
+    upload_image_bytes, 
+    upload_video_bytes, 
+    upload_document_bytes,
+    delete_file_by_public_id,
+    delete_with_thumbnail
+)
 
 def _is_team_member(db: Session, *, team_id: int, user_id: int) -> bool:
     return db.query(TeamMember.id).filter_by(team_id=team_id, user_id=user_id).first() is not None
@@ -62,6 +69,19 @@ def get_announcement_with_comments(db: Session, *, team_id: int, announcement_id
         for c in a.comments
     ]
     
+    attachments = [
+        {
+            "id": att.id,
+            "attachment_type": att.attachment_type.value,
+            "url": att.cloudinary_url,
+            "thumbnail_url": att.cloudinary_thumbnail_url,
+            "filename": att.original_filename,
+            "size_bytes": att.size_bytes,
+            "created_at": att.created_at
+        }
+        for att in a.attachments
+    ]
+    
     a_serialized = {
         "id": a.id,
         "team_id": a.team_id,
@@ -76,6 +96,7 @@ def get_announcement_with_comments(db: Session, *, team_id: int, announcement_id
     data = {
         "announcement": a_serialized,
         "comments": comments,
+        "attachments": attachments,
     }
     return make_response(True, "Announcement fetched", data=data, status_code=200)
 
@@ -113,6 +134,19 @@ def delete_announcement(db: Session, *, team_id: int, announcement_id: int, user
     if a.author_id != user_id:
         return make_response(False, "Only the author can delete this announcement", status_code=403)
     
+    # Delete all attachments from Cloudinary before deleting announcement
+    try:
+        attachments = announcements_repo.list_announcement_attachments(db, announcement_id=announcement_id)
+        for attachment in attachments:
+            try:
+                resource_type = "video" if attachment.attachment_type == AttachmentType.VIDEO else "image"
+                delete_with_thumbnail(attachment.cloudinary_public_id, resource_type=resource_type)
+            except Exception as e:
+                print(f"Failed to delete attachment {attachment.id} from Cloudinary: {e}")
+    except Exception as e:
+        print(f"Failed to fetch attachments for deletion: {e}")
+    
+    # Delete announcement (cascade will delete attachments from DB)
     announcements_repo.delete_announcement(db, announcement_id=announcement_id)
     
     return make_response(True, "Announcement deleted", status_code=200)
@@ -280,3 +314,138 @@ def _calculate_course_progress(db: Session, *, user_id: int, course_id: int):
         "total_items": total_items,
         "percent": percent,
     }
+
+# Attachment functions
+def upload_announcement_attachment(
+    db: Session, 
+    *, 
+    team_id: int, 
+    announcement_id: int, 
+    user_id: int,
+    file_bytes: bytes,
+    filename: str,
+    attachment_type: str
+):
+    """Upload an attachment (image, video, or PDF) to an announcement"""
+    # Check team manager
+    if not _is_team_manager(db, team_id=team_id, user_id=user_id):
+        return make_response(False, "You must be a team manager", status_code=403, error="Not a manager of this team")
+    
+    # Check announcement exists and belongs to team
+    a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
+    if not a or a.team_id != team_id:
+        return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")
+    
+    # Only the author can add attachments
+    if a.author_id != user_id:
+        return make_response(False, "Only the announcement author can add attachments", status_code=403, error="User is not the author")
+    
+    try:
+        # Upload to Cloudinary based on type
+        if attachment_type == "image":
+            result = upload_image_bytes(file_bytes)
+            att_type = AttachmentType.IMAGE
+            thumbnail_url = None
+        elif attachment_type == "video":
+            result = upload_video_bytes(file_bytes=file_bytes, filename=filename)
+            att_type = AttachmentType.VIDEO
+            thumbnail_url = result.get("thumbnail_url")
+        elif attachment_type == "pdf":
+            result = upload_document_bytes(file_bytes=file_bytes, filename=filename, mime_type="application/pdf")
+            att_type = AttachmentType.PDF
+            thumbnail_url = result.get("thumbnail_url")
+        else:
+            return make_response(False, "Invalid file type", status_code=400, error="attachment_type must be image, video, or pdf")
+        
+        # Create attachment record
+        attachment = announcements_repo.create_attachment(
+            db,
+            announcement_id=announcement_id,
+            attachment_type=att_type,
+            cloudinary_url=result["secure_url"],
+            cloudinary_public_id=result["public_id"],
+            cloudinary_thumbnail_url=thumbnail_url,
+            original_filename=filename,
+            size_bytes=result.get("size_bytes")
+        )
+        
+        return make_response(True, "Attachment uploaded successfully", data={
+            "id": attachment.id,
+            "attachment_type": attachment.attachment_type.value,
+            "url": attachment.cloudinary_url,
+            "thumbnail_url": attachment.cloudinary_thumbnail_url,
+            "filename": attachment.original_filename,
+            "size_bytes": attachment.size_bytes,
+            "created_at": attachment.created_at
+        }, status_code=201)
+        
+    except Exception as e:
+        return make_response(False, "Failed to upload attachment", status_code=500, error=str(e))
+
+def delete_announcement_attachment(
+    db: Session,
+    *,
+    team_id: int,
+    announcement_id: int,
+    attachment_id: int,
+    user_id: int
+):
+    """Delete an attachment from an announcement"""
+    # Check team manager
+    if not _is_team_manager(db, team_id=team_id, user_id=user_id):
+        return make_response(False, "You must be a team manager", status_code=403, error="Not a manager of this team")
+    
+    # Check announcement exists and belongs to team
+    a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
+    if not a or a.team_id != team_id:
+        return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")
+    
+    # Only the author can delete attachments
+    if a.author_id != user_id:
+        return make_response(False, "Only the announcement author can delete attachments", status_code=403, error="User is not the author")
+    
+    # Get attachment
+    attachment = announcements_repo.get_attachment(db, attachment_id=attachment_id)
+    if not attachment or attachment.announcement_id != announcement_id:
+        return make_response(False, "Attachment not found", status_code=404, error="Attachment does not exist or does not belong to this announcement")
+    
+    try:
+        # Delete from Cloudinary
+        resource_type = "video" if attachment.attachment_type == AttachmentType.VIDEO else "image"
+        delete_with_thumbnail(attachment.cloudinary_public_id, resource_type=resource_type)
+        
+        # Delete from database
+        announcements_repo.delete_attachment(db, attachment_id=attachment_id)
+        
+        return make_response(True, "Attachment deleted successfully", status_code=200)
+        
+    except Exception as e:
+        return make_response(False, "Failed to delete attachment", status_code=500, error=str(e))
+
+def list_announcement_attachments(db: Session, *, team_id: int, announcement_id: int, user_id: int):
+    """List all attachments for an announcement"""
+    # Check team membership
+    if not _is_team_member(db, team_id=team_id, user_id=user_id):
+        return make_response(False, "You must be a team member", status_code=403, error="Not a member of this team")
+    
+    # Check announcement exists and belongs to team
+    a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
+    if not a or a.team_id != team_id:
+        return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")
+    
+    attachments = announcements_repo.list_announcement_attachments(db, announcement_id=announcement_id)
+    
+    serialized = [
+        {
+            "id": att.id,
+            "attachment_type": att.attachment_type.value,
+            "url": att.cloudinary_url,
+            "thumbnail_url": att.cloudinary_thumbnail_url,
+            "filename": att.original_filename,
+            "size_bytes": att.size_bytes,
+            "created_at": att.created_at
+        }
+        for att in attachments
+    ]
+    
+    return make_response(True, "Attachments fetched successfully", data=serialized, status_code=200)

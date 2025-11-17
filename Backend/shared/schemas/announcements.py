@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 class AnnouncementCreateIn(BaseModel):
     title: str = Field(min_length=1, max_length=200)
@@ -30,6 +31,18 @@ class CommentOut(BaseModel):
     class Config: 
         from_attributes = True
 
+class AttachmentOut(BaseModel):
+    id: int
+    attachment_type: str
+    url: str
+    thumbnail_url: Optional[str] = None
+    filename: Optional[str] = None
+    size_bytes: Optional[int] = None
+    created_at: str
+    class Config:
+        from_attributes = True
+
 class AnnouncementWithComments(BaseModel):
     announcement: AnnouncementOut
     comments: list[CommentOut]
+    attachments: list[AttachmentOut] = []

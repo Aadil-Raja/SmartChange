@@ -6,12 +6,13 @@ from .email_otp import EmailOTP
 from .team import Team, TeamMember,TeamMemberRole
 from .Document import Document,DocStatus, DocumentChunk
 from .announcement import Announcement, AnnouncementComment
+from .announcement_attachment import AnnouncementAttachment, AttachmentType
 from .course import Course
 from .course_content import ContentItem, ContentType
 from .Audit import DocumentProcessingAudit, ProcessingStatus, ProcessingStage
 from .Video import Video
 from .external_link import ExternalLink
 from .progress import UserProgress, UserCourseStar
-__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
+__all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","AnnouncementAttachment","AttachmentType","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
            "ExternalLink","UserProgress","UserCourseStar"]
 

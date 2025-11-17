@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from shared.models import Announcement, AnnouncementComment, TeamMember
+from shared.models import Announcement, AnnouncementComment, TeamMember, AnnouncementAttachment, AttachmentType
 
 
 def create_announcement(db: Session, *, team_id: int, author_id: int, title: str, body: str) -> Announcement:
@@ -56,3 +56,43 @@ def get_team_members(db: Session, *, team_id: int) -> list[TeamMember]:
         .order_by(TeamMember.role_in_team.desc(), TeamMember.created_at.asc())
         .all()
     )
+
+# Attachment functions
+def create_attachment(
+    db: Session, 
+    *, 
+    announcement_id: int, 
+    attachment_type: AttachmentType,
+    cloudinary_url: str,
+    cloudinary_public_id: str,
+    cloudinary_thumbnail_url: str | None = None,
+    original_filename: str | None = None,
+    size_bytes: int | None = None
+) -> AnnouncementAttachment:
+    attachment = AnnouncementAttachment(
+        announcement_id=announcement_id,
+        attachment_type=attachment_type,
+        cloudinary_url=cloudinary_url,
+        cloudinary_public_id=cloudinary_public_id,
+        cloudinary_thumbnail_url=cloudinary_thumbnail_url,
+        original_filename=original_filename,
+        size_bytes=size_bytes
+    )
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
+
+def get_attachment(db: Session, *, attachment_id: int) -> AnnouncementAttachment | None:
+    return db.query(AnnouncementAttachment).filter(AnnouncementAttachment.id == attachment_id).first()
+
+def list_announcement_attachments(db: Session, *, announcement_id: int) -> list[AnnouncementAttachment]:
+    return db.query(AnnouncementAttachment).filter(
+        AnnouncementAttachment.announcement_id == announcement_id
+    ).order_by(AnnouncementAttachment.id.asc()).all()
+
+def delete_attachment(db: Session, *, attachment_id: int) -> None:
+    attachment = db.query(AnnouncementAttachment).filter(AnnouncementAttachment.id == attachment_id).first()
+    if attachment:
+        db.delete(attachment)
+        db.commit()

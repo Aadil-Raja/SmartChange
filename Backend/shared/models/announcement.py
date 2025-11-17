@@ -21,6 +21,13 @@ class Announcement(Base):
         passive_deletes=True,
         order_by="AnnouncementComment.id.asc()",
     )
+    attachments = relationship(
+        "AnnouncementAttachment",
+        back_populates="announcement",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="AnnouncementAttachment.id.asc()",
+    )
 
     __table_args__ = (
         Index("ix_ann_team_created", "team_id", "created_at"),
