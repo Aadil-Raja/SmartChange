@@ -14,7 +14,7 @@ const TeamsPage = () => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [editingMemberId, setEditingMemberId] = useState(null); // Format: "teamId-userId"
   const [expandedTeams, setExpandedTeams] = useState(new Set());
   const [editingRole, setEditingRole] = useState(null);
 
@@ -341,7 +341,7 @@ const TeamsPage = () => {
 
                                   <div className="flex items-center gap-3">
                                     {/* Role Editor */}
-                                    {editingMemberId === member.id ? (
+                                    {editingMemberId === `${team.id}-${member.id}` ? (
                                       <select
                                         defaultValue={member.role_in_team}
                                         onChange={(e) => handleUpdateMemberRole(team.id, member.id, e.target.value)}
@@ -355,7 +355,7 @@ const TeamsPage = () => {
                                       </select>
                                     ) : (
                                       <button
-                                        onClick={() => setEditingMemberId(member.id)}
+                                        onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
                                         className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 border border-gray-300 transition-colors hover:bg-gray-200 hover:border-gray-400"
                                       >
                                         <span className="text-[#333333] font-semibold">{member.role_in_team}</span>

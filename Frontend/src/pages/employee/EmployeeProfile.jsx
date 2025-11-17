@@ -119,10 +119,7 @@ const EmployeeProfile = () => {
                   <h1 className="text-3xl font-bold mb-2">Employee Profile</h1>
                   <p className="text-orange-100 text-lg mb-1">Learning Journey Dashboard</p>
                   <div className="flex items-center gap-4 text-sm text-orange-100">
-                    <div className="flex items-center gap-1">
-                      <Calendar size={16} />
-                      <span>Member since 2024</span>
-                    </div>
+
                     <div className="flex items-center gap-1">
                       <TrendingUp size={16} />
                       <span>{stats.overall_progress || 0}% Overall Progress</span>
