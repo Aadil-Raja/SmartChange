@@ -33,7 +33,7 @@ def join_with_code(db: Session, *, user_id: int, code: str):
 
     existing = db.query(TeamMember).filter_by(team_id=team.id, user_id=user_id).first()
     if existing:
-        return make_response(True, "Already a member of this team", data={
+        return make_response(False, "Already a member of this team", data={
             "team_id": team.id, "team_name": team.name, "role_in_team": existing.role_in_team.value
         }, status_code=200)
 

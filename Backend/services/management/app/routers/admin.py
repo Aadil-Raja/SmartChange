@@ -72,6 +72,37 @@ def get_team_route(
         return make_response(False, "Could not load team details", status_code=500, error=str(e))
 
 
+@router.patch("/teams/{id}", status_code=status.HTTP_200_OK)
+def update_team_route(
+    id: int,
+    payload: schemas.TeamUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Update team name.
+    """
+    try:
+        return admin_service.update_team(db, id=id, name=payload.name)
+    except Exception as e:
+        return make_response(False, "Could not update team", status_code=500, error=str(e))
+
+
+@router.delete("/teams/{id}", status_code=status.HTTP_200_OK)
+def delete_team_route(
+    id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Delete a team and all its members.
+    """
+    try:
+        return admin_service.delete_team(db, id=id)
+    except Exception as e:
+        return make_response(False, "Could not delete team", status_code=500, error=str(e))
+
+
 @router.post("/teams/{id}/members", status_code=status.HTTP_201_CREATED)
 def add_member_route(
     id: int,

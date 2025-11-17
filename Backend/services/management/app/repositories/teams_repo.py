@@ -40,3 +40,20 @@ def get_teams_for_user(db: Session, user_id: int):
         .filter(TeamMember.user_id == user_id)
         .all()
     )
+
+def update_team(db: Session, id: int, name: str) -> Team | None:
+    team = db.query(Team).filter(Team.id == id).first()
+    if not team:
+        return None
+    team.name = name
+    db.commit()
+    db.refresh(team)
+    return team
+
+def delete_team(db: Session, id: int) -> bool:
+    team = db.query(Team).filter(Team.id == id).first()
+    if not team:
+        return False
+    db.delete(team)
+    db.commit()
+    return True

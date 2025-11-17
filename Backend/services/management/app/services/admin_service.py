@@ -269,3 +269,50 @@ def delete_user(db: Session, *, user_id: int):
     db.delete(user)
     db.commit()
     return make_response(True, "User deleted successfully", 200)
+
+
+def update_team(db: Session, *, id: int, name: str):
+    """
+    Update team name.
+    """
+    # Check if name is already taken by another team
+    existing = db.query(teams_repo.Team).filter(
+        teams_repo.Team.name == name,
+        teams_repo.Team.id != id
+    ).first()
+    if existing:
+        return make_response(False, "Team name already exists", status_code=409)
+
+    team = teams_repo.update_team(db, id, name)
+    if not team:
+        return make_response(False, "Team not found", status_code=404)
+
+    return make_response(
+        True,
+        "Team updated successfully",
+        data={
+            "id": team.id,
+            "name": team.name,
+            "created_at": team.created_at
+        },
+        status_code=200
+    )
+
+
+def delete_team(db: Session, *, id: int):
+    """
+    Delete a team and all its members.
+    """
+    team = teams_repo.get_team(db, id)
+    if not team:
+        return make_response(False, "Team not found", status_code=404)
+
+    success = teams_repo.delete_team(db, id)
+    if not success:
+        return make_response(False, "Failed to delete team", status_code=500)
+
+    return make_response(
+        True,
+        "Team deleted successfully",
+        status_code=200
+    )

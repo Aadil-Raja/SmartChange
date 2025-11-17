@@ -12,6 +12,7 @@ from .auth import (
 from .admin import (
     AdminLoginIn,
     TeamCreate,
+    TeamUpdate,
     TeamOut,
     RoleInTeam,
     TeamMemberAdd,
@@ -31,7 +32,7 @@ __all__ =[   "UserCreate", "UserOut",
     "FirebaseLoginIn",
 
     # admin
-    "AdminLoginIn", "TeamCreate", "TeamOut",
+    "AdminLoginIn", "TeamCreate", "TeamUpdate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
 
     "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementUpdateIn","AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments","ProgressUpdateIn"]
