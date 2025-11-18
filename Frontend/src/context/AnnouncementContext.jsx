@@ -5,6 +5,12 @@ import {
   getTeamAnnouncements,
   getAnnouncementDetails,
   addComment,
+  updateAnnouncement,
+  deleteAnnouncement,
+  deleteComment,
+  uploadAttachment,
+  getAttachments,
+  deleteAttachment,
 } from "../services/announcements";
 
 export const AnnouncementContext = createContext(null);
@@ -34,24 +40,25 @@ export const AnnouncementProvider = ({ children }) => {
       if (res?.success) {
         const announcementsList = res.data || [];
         
-        // Fetch details (including comments) for each announcement
+        // Fetch details (including comments and attachments) for each announcement
         const announcementsWithComments = await Promise.all(
           announcementsList.map(async (announcement) => {
             try {
               const detailsRes = await getAnnouncementDetails(teamId, announcement.id);
               if (detailsRes?.success && detailsRes.data) {
-                // Merge announcement with comments from the API response
+                // Merge announcement with comments and attachments from the API response
                 return {
                   ...detailsRes.data.announcement,
-                  comments: detailsRes.data.comments || []
+                  comments: detailsRes.data.comments || [],
+                  attachments: detailsRes.data.attachments || []
                 };
               }
-              // Fallback: return announcement without comments
-              return { ...announcement, comments: [] };
+              // Fallback: return announcement without comments/attachments
+              return { ...announcement, comments: [], attachments: [] };
             } catch (err) {
-              console.error(`Failed to fetch comments for announcement ${announcement.id}:`, err);
-              // Return announcement without comments on error
-              return { ...announcement, comments: [] };
+              console.error(`Failed to fetch details for announcement ${announcement.id}:`, err);
+              // Return announcement without comments/attachments on error
+              return { ...announcement, comments: [], attachments: [] };
             }
           })
         );
@@ -116,6 +123,54 @@ export const AnnouncementProvider = ({ children }) => {
     }
   };
 
+  // Update announcement (Author only)
+  const updateExistingAnnouncement = async (teamId, announcementId, updateData) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await updateAnnouncement(teamId, announcementId, updateData);
+      if (res?.success) {
+        setSuccess("Announcement updated successfully");
+        // Refresh announcements list
+        await fetchAnnouncements(teamId);
+        return { success: true, data: res.data };
+      } else {
+        throw new Error(res.message || "Failed to update announcement");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete announcement (Author only)
+  const deleteExistingAnnouncement = async (teamId, announcementId) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await deleteAnnouncement(teamId, announcementId);
+      if (res?.success) {
+        setSuccess("Announcement deleted successfully");
+        // Remove from local state
+        setAnnouncements((prev) => prev.filter((a) => a.id !== announcementId));
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to delete announcement");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ==================== COMMENTS ====================
 
   // Add comment to announcement
@@ -156,6 +211,94 @@ export const AnnouncementProvider = ({ children }) => {
     }
   };
 
+  // Delete comment (Commentator only)
+  const deleteExistingComment = async (teamId, announcementId, commentId) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await deleteComment(teamId, announcementId, commentId);
+      if (res?.success) {
+        setSuccess("Comment deleted successfully");
+        
+        // Update the specific announcement in the announcements list
+        setAnnouncements((prevAnnouncements) =>
+          prevAnnouncements.map((announcement) =>
+            announcement.id === announcementId
+              ? {
+                  ...announcement,
+                  comments: (announcement.comments || []).filter((c) => c.id !== commentId),
+                }
+              : announcement
+          )
+        );
+        
+        // Also remove from separate comments state
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to delete comment");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==================== ATTACHMENTS ====================
+
+  // Upload attachment to announcement
+  const uploadAnnouncementAttachment = async (teamId, announcementId, file, attachmentType) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await uploadAttachment(teamId, announcementId, file, attachmentType);
+      if (res?.success) {
+        setSuccess("Attachment uploaded successfully");
+        // Refresh announcements to get updated attachments
+        await fetchAnnouncements(teamId);
+        return { success: true, data: res.data };
+      } else {
+        throw new Error(res.message || "Failed to upload attachment");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete attachment from announcement
+  const deleteAnnouncementAttachment = async (teamId, announcementId, attachmentId) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await deleteAttachment(teamId, announcementId, attachmentId);
+      if (res?.success) {
+        setSuccess("Attachment deleted successfully");
+        // Refresh announcements to get updated attachments
+        await fetchAnnouncements(teamId);
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to delete attachment");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnnouncementContext.Provider
       value={{
@@ -169,8 +312,13 @@ export const AnnouncementProvider = ({ children }) => {
         // Functions
         fetchAnnouncements,
         createNewAnnouncement,
+        updateExistingAnnouncement,
+        deleteExistingAnnouncement,
         fetchAnnouncementDetails,
         addNewComment,
+        deleteExistingComment,
+        uploadAnnouncementAttachment,
+        deleteAnnouncementAttachment,
         clearMessages,
         setCurrentAnnouncement,
       }}

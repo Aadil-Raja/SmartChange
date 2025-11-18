@@ -36,6 +36,14 @@ export const TeamProvider = ({ children }) => {
     setError(null);
     try {
       const response = await teamapi.joinTeam(code);
+      
+      // Check if the backend response indicates failure
+      if (response.success === false) {
+        const errorMessage = response.message || 'Failed to join team';
+        setError(errorMessage);
+        return { success: false, message: errorMessage, data: response.data };
+      }
+      
       await loadTeams(); // Refresh teams after joining
       return { success: true, data: response.data, message: response.message };
     } catch (err) {
