@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form
+# services/core/app/routes/announcements_routes.py
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
 from app.deps.auth import get_current_user
@@ -23,29 +24,36 @@ def create_announcement_route(
     except Exception as e:
         return make_response(False, "Failed to create announcement", status_code=500, error=str(e))
 
-# List announcements (team members only)
+# List announcements (team members only) - WITH PAGINATION
 @router.get("/{team_id}/announcements", status_code=status.HTTP_200_OK)
 def list_announcements_route(
     team_id: int,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
     try:
-        return announcements_service.list_team_announcements(db, team_id=team_id, user_id=current_user.id)
+        return announcements_service.list_team_announcements(
+            db, team_id=team_id, user_id=current_user.id, limit=limit, offset=offset
+        )
     except Exception as e:
         return make_response(False, "Failed to fetch announcements", status_code=500, error=str(e))
 
-# Get single announcement (with comments)
+# Get single announcement (with comments) - WITH PAGINATION FOR COMMENTS
 @router.get("/{team_id}/announcements/{announcement_id}", status_code=status.HTTP_200_OK)
 def get_announcement_route(
     team_id: int,
     announcement_id: int,
+    comment_limit: int = Query(50, ge=1, le=200),
+    comment_offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
     try:
         return announcements_service.get_announcement_with_comments(
-            db, team_id=team_id, announcement_id=announcement_id, user_id=current_user.id
+            db, team_id=team_id, announcement_id=announcement_id, user_id=current_user.id,
+            comment_limit=comment_limit, comment_offset=comment_offset
         )
     except Exception as e:
         return make_response(False, "Failed to fetch announcement", status_code=500, error=str(e))

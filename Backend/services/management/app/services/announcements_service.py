@@ -1,3 +1,4 @@
+# services/core/app/services/announcements_service.py
 from sqlalchemy.orm import Session
 from app.utils.response_utils import make_response
 from app.repositories import announcements_repo
@@ -27,11 +28,12 @@ def create_announcement(db: Session, *, team_id: int, author_id: int, title: str
     a = announcements_repo.create_announcement(db, team_id=team_id, author_id=author_id, title=title, body=body)
     return make_response(True, "Announcement created", data=a, status_code=201)
 
-def list_team_announcements(db: Session, *, team_id: int, user_id: int):
+def list_team_announcements(db: Session, *, team_id: int, user_id: int, limit: int, offset: int):
+    """List announcements with pagination"""
     if not _is_team_member(db, team_id=team_id, user_id=user_id):
         return make_response(False, "Not a member of this team", status_code=403)
 
-    arr = announcements_repo.list_team_announcements(db, team_id=team_id)
+    rows, total = announcements_repo.list_team_announcements(db, team_id=team_id, limit=limit, offset=offset)
 
     serialized = [
         {
@@ -44,18 +46,35 @@ def list_team_announcements(db: Session, *, team_id: int, user_id: int):
             "can_edit": a.author_id == user_id,
             "can_delete": a.author_id == user_id,
         }
-        for a in arr
+        for a in rows
     ]
 
-    return make_response(True, "Announcements fetched", data=serialized, status_code=200)
+    return make_response(True, "Announcements fetched", data={
+        "total": total,
+        "items": serialized
+    }, status_code=200)
 
-def get_announcement_with_comments(db: Session, *, team_id: int, announcement_id: int, user_id: int):
+def get_announcement_with_comments(
+    db: Session, 
+    *, 
+    team_id: int, 
+    announcement_id: int, 
+    user_id: int,
+    comment_limit: int,
+    comment_offset: int
+):
+    """Get announcement with paginated comments"""
     if not _is_team_member(db, team_id=team_id, user_id=user_id):
         return make_response(False, "Not a member of this team", status_code=403)
     
     a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404)
+    
+    # Get paginated comments
+    comment_rows, comment_total = announcements_repo.get_announcement_comments(
+        db, announcement_id=announcement_id, limit=comment_limit, offset=comment_offset
+    )
     
     comments = [
         {
@@ -66,7 +85,7 @@ def get_announcement_with_comments(db: Session, *, team_id: int, announcement_id
             "user_name": c.user.Name if c.user else None,
             "can_delete": c.user_id == user_id,
         }
-        for c in a.comments
+        for c in comment_rows
     ]
     
     attachments = [
@@ -95,7 +114,10 @@ def get_announcement_with_comments(db: Session, *, team_id: int, announcement_id
     
     data = {
         "announcement": a_serialized,
-        "comments": comments,
+        "comments": {
+            "total": comment_total,
+            "items": comments
+        },
         "attachments": attachments,
     }
     return make_response(True, "Announcement fetched", data=data, status_code=200)
@@ -108,11 +130,9 @@ def update_announcement(db: Session, *, team_id: int, announcement_id: int, user
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404)
     
-    # Only the author can update the announcement
     if a.author_id != user_id:
         return make_response(False, "Only the author can update this announcement", status_code=403)
     
-    # At least one field must be provided
     if title is None and body is None:
         return make_response(False, "At least one field (title or body) must be provided", status_code=400)
     
@@ -130,11 +150,10 @@ def delete_announcement(db: Session, *, team_id: int, announcement_id: int, user
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404)
     
-    # Only the author can delete the announcement
     if a.author_id != user_id:
         return make_response(False, "Only the author can delete this announcement", status_code=403)
     
-    # Delete all attachments from Cloudinary before deleting announcement
+    # Delete all attachments from Cloudinary
     try:
         attachments = announcements_repo.list_announcement_attachments(db, announcement_id=announcement_id)
         for attachment in attachments:
@@ -146,7 +165,6 @@ def delete_announcement(db: Session, *, team_id: int, announcement_id: int, user
     except Exception as e:
         print(f"Failed to fetch attachments for deletion: {e}")
     
-    # Delete announcement (cascade will delete attachments from DB)
     announcements_repo.delete_announcement(db, announcement_id=announcement_id)
     
     return make_response(True, "Announcement deleted", status_code=200)
@@ -170,12 +188,10 @@ def delete_comment(db: Session, *, team_id: int, announcement_id: int, comment_i
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404)
     
-    # Get the comment
     comment = announcements_repo.get_comment(db, comment_id=comment_id)
     if not comment or comment.announcement_id != announcement_id:
         return make_response(False, "Comment not found", status_code=404)
     
-    # Only the commentator can delete their own comment
     if comment.user_id != user_id:
         return make_response(False, "Only the commentator can delete this comment", status_code=403)
     
@@ -191,7 +207,6 @@ def list_team_members(db: Session, *, team_id: int, user_id: int):
     
     serialized = []
     for m in members:
-        # skip the record for the current user
         if m.user_id == user_id:
             continue
 
@@ -208,12 +223,8 @@ def list_team_members(db: Session, *, team_id: int, user_id: int):
     
     return make_response(True, "Team members fetched", data=serialized, status_code=200)
 
-
 def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, member_user_id: int):
-    """
-    Get progress overview for a specific team member (manager only).
-    Returns in_progress and completed courses (excludes starred).
-    """
+    """Get progress overview for a specific team member (manager only)"""
     if not _is_team_manager(db, team_id=team_id, user_id=manager_id):
         return make_response(False, "Only team managers can view member progress", status_code=403)
     
@@ -327,21 +338,17 @@ def upload_announcement_attachment(
     attachment_type: str
 ):
     """Upload an attachment (image, video, or PDF) to an announcement"""
-    # Check team manager
     if not _is_team_manager(db, team_id=team_id, user_id=user_id):
         return make_response(False, "You must be a team manager", status_code=403, error="Not a manager of this team")
     
-    # Check announcement exists and belongs to team
     a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")
     
-    # Only the author can add attachments
     if a.author_id != user_id:
         return make_response(False, "Only the announcement author can add attachments", status_code=403, error="User is not the author")
     
     try:
-        # Upload to Cloudinary based on type
         if attachment_type == "image":
             result = upload_image_bytes(file_bytes)
             att_type = AttachmentType.IMAGE
@@ -357,7 +364,6 @@ def upload_announcement_attachment(
         else:
             return make_response(False, "Invalid file type", status_code=400, error="attachment_type must be image, video, or pdf")
         
-        # Create attachment record
         attachment = announcements_repo.create_attachment(
             db,
             announcement_id=announcement_id,
@@ -391,30 +397,24 @@ def delete_announcement_attachment(
     user_id: int
 ):
     """Delete an attachment from an announcement"""
-    # Check team manager
     if not _is_team_manager(db, team_id=team_id, user_id=user_id):
         return make_response(False, "You must be a team manager", status_code=403, error="Not a manager of this team")
     
-    # Check announcement exists and belongs to team
     a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")
     
-    # Only the author can delete attachments
     if a.author_id != user_id:
         return make_response(False, "Only the announcement author can delete attachments", status_code=403, error="User is not the author")
     
-    # Get attachment
     attachment = announcements_repo.get_attachment(db, attachment_id=attachment_id)
     if not attachment or attachment.announcement_id != announcement_id:
         return make_response(False, "Attachment not found", status_code=404, error="Attachment does not exist or does not belong to this announcement")
     
     try:
-        # Delete from Cloudinary
         resource_type = "video" if attachment.attachment_type == AttachmentType.VIDEO else "image"
         delete_with_thumbnail(attachment.cloudinary_public_id, resource_type=resource_type)
         
-        # Delete from database
         announcements_repo.delete_attachment(db, attachment_id=attachment_id)
         
         return make_response(True, "Attachment deleted successfully", status_code=200)
@@ -424,11 +424,9 @@ def delete_announcement_attachment(
 
 def list_announcement_attachments(db: Session, *, team_id: int, announcement_id: int, user_id: int):
     """List all attachments for an announcement"""
-    # Check team membership
     if not _is_team_member(db, team_id=team_id, user_id=user_id):
         return make_response(False, "You must be a team member", status_code=403, error="Not a member of this team")
     
-    # Check announcement exists and belongs to team
     a = announcements_repo.get_announcement(db, announcement_id=announcement_id)
     if not a or a.team_id != team_id:
         return make_response(False, "Announcement not found", status_code=404, error="Announcement does not exist or does not belong to this team")

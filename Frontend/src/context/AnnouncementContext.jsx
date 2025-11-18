@@ -38,7 +38,8 @@ export const AnnouncementProvider = ({ children }) => {
     try {
       const res = await getTeamAnnouncements(teamId);
       if (res?.success) {
-        const announcementsList = res.data || [];
+        // Handle paginated response - backend returns { total, items }
+        const announcementsList = res.data?.items || res.data || [];
         
         // Fetch details (including comments and attachments) for each announcement
         const announcementsWithComments = await Promise.all(
@@ -49,7 +50,7 @@ export const AnnouncementProvider = ({ children }) => {
                 // Merge announcement with comments and attachments from the API response
                 return {
                   ...detailsRes.data.announcement,
-                  comments: detailsRes.data.comments || [],
+                  comments: detailsRes.data.comments?.items || detailsRes.data.comments || [],
                   attachments: detailsRes.data.attachments || []
                 };
               }
@@ -109,7 +110,8 @@ export const AnnouncementProvider = ({ children }) => {
       const res = await getAnnouncementDetails(teamId, announcementId);
       if (res?.success) {
         setCurrentAnnouncement(res.data?.announcement || null);
-        setComments(res.data?.comments || []);
+        // Handle paginated comments - backend returns { total, items }
+        setComments(res.data?.comments?.items || res.data?.comments || []);
         return { success: true, data: res.data };
       } else {
         throw new Error(res.message || "Failed to fetch announcement details");
