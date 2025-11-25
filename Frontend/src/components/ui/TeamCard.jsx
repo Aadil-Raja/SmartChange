@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from './Card';
-import TeamMembersModal from './TeamMembersModal';
-import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ChevronRight, Eye } from 'lucide-react';
+import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ChevronRight } from 'lucide-react';
 
 const TeamCard = ({ team, onRegenerateCode, loading }) => {
     const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
     const [regenerating, setRegenerating] = useState(false);
-    const [showMembersModal, setShowMembersModal] = useState(false);
 
     const isManager = team.role_in_team === 'manager';
 
@@ -32,11 +30,6 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
 
     const handleCardClick = () => {
         navigate(`/employee/team/${team.team_id}/announcements`);
-    };
-
-    const handleViewMembers = (e) => {
-        e.stopPropagation();
-        setShowMembersModal(true);
     };
 
     return (
@@ -108,14 +101,6 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
                         </div>
                     </div>
 
-                    {/* View Members Button */}
-                    <button
-                        onClick={handleViewMembers}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-[#00ADEF] bg-[#00ADEF]/10 border border-[#00ADEF]/20 rounded-md hover:bg-[#00ADEF]/20 hover:border-[#00ADEF]/30 transition-all focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/50"
-                    >
-                        <Eye size={16} />
-                        View Team Members
-                    </button>
                 </div>
             )}
 
@@ -127,15 +112,6 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
                 </div>
             </div>
         </Card>
-
-        {/* Team Members Modal */}
-        {showMembersModal && (
-            <TeamMembersModal
-                isOpen={showMembersModal}
-                onClose={() => setShowMembersModal(false)}
-                team={team}
-            />
-        )}
         </>
     );
 };

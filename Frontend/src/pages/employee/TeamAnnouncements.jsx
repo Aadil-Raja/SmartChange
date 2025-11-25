@@ -6,24 +6,26 @@ import { useTeams } from "../../hooks/useTeams";
 import {
   Megaphone,
   Plus,
-  MessageSquare,
-  Calendar,
-  User,
-  Send,
   ArrowLeft,
-  Sparkles,
-  TrendingUp,
+  Users,
+  Copy,
+  Check,
+  Crown,
+  UserCheck,
+  Key,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 import CreateAnnouncementModal from "../../components/ui/CreateAnnouncementModal";
 import AnnouncementCard from "../../components/ui/AnnouncementCard";
+import TeamMembersModal from "../../components/ui/TeamMembersModal";
+import LoadMoreButton from "../../components/ui/LoadMoreButton";
 
 const TeamAnnouncements = () => {
   const { teamId } = useParams();
   const navigate = useNavigate();
-  const { teams } = useTeams();
+  const { teams, loadTeams } = useTeams();
 
   const {
     announcements,
@@ -31,18 +33,51 @@ const TeamAnnouncements = () => {
     error,
     success,
     fetchAnnouncements,
-    fetchAnnouncementDetails,
-    addNewComment,
+    loadMoreComments,
     clearMessages,
+    announcementsPagination,
   } = useAnnouncements();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [loadingMoreAnnouncements, setLoadingMoreAnnouncements] = useState(false);
+  const [loadingMoreComments, setLoadingMoreComments] = useState({});
 
   // Find current team and check if user is manager
   const currentTeam = teams.find(t => t.team_id === parseInt(teamId));
   const isManager = currentTeam?.role_in_team === "manager";
 
+  const handleCopyCode = async () => {
+    if (currentTeam?.join_code) {
+      try {
+        await navigator.clipboard.writeText(currentTeam.join_code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    }
+  };
+
+  const handleLoadMoreAnnouncements = async () => {
+    setLoadingMoreAnnouncements(true);
+    await fetchAnnouncements(teamId, true); // loadMore = true
+    setLoadingMoreAnnouncements(false);
+  };
+
+  const handleLoadMoreComments = async (announcementId) => {
+    setLoadingMoreComments(prev => ({ ...prev, [announcementId]: true }));
+    await loadMoreComments(teamId, announcementId);
+    setLoadingMoreComments(prev => ({ ...prev, [announcementId]: false }));
+  };
+
   useEffect(() => {
+    // Load teams data if not already loaded (for page refresh)
+    if (teams.length === 0) {
+      loadTeams();
+    }
+    
     if (teamId) {
       fetchAnnouncements(teamId);
     }
@@ -77,64 +112,98 @@ const TeamAnnouncements = () => {
         </div>
       </div>
 
-      {/* Hero Header Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#F58220] via-[#F58220] to-[#F58220] border-b border-orange-300">
-        {/* Subtle background blur/light overlay */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
-
-        <div className="relative container mx-auto max-w-6xl px-4 py-20">
-          <div className="text-center max-w-3xl mx-auto text-white">
-            {/* Icon */}
-            <div className="inline-flex p-4 bg-white/20 border border-white/30 rounded-2xl mb-5 shadow-md backdrop-blur-sm">
-              <Megaphone size={48} className="text-white drop-shadow-md" />
+      {/* Hero Header Section - Redesigned */}
+      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-200">
+        <div className="container mx-auto max-w-6xl px-4 py-8">
+          {/* Top Section - Team Info */}
+          <div className="flex items-start justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F58220] to-[#E0741C] shadow-lg">
+                <Megaphone size={32} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-[#333333] mb-1">
+                  {currentTeam?.team_name || "Team"}
+                </h1>
+                <div className="flex items-center gap-2">
+                  {isManager ? (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 rounded-full">
+                      <Crown size={14} className="text-amber-600" />
+                      <span className="text-xs font-medium text-amber-700">Manager</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-full">
+                      <UserCheck size={14} className="text-blue-600" />
+                      <span className="text-xs font-medium text-blue-700">Member</span>
+                    </div>
+                  )}
+                  <span className="text-sm text-gray-600">•</span>
+                  <span className="text-sm text-gray-600">{announcements.length} {announcements.length === 1 ? "announcement" : "announcements"}</span>
+                </div>
+              </div>
             </div>
 
-            {/* Title */}
-            <h1 className="text-4xl font-bold mb-3 drop-shadow-md">
-              {currentTeam?.team_name || "Team"} Announcements
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-orange-50 text-lg mb-8">
-              {isManager ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Sparkles size={18} className="text-white" />
-                  Share important updates with your team
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <TrendingUp size={18} className="text-white" />
-                  Stay informed with the latest team news
-                </span>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3">
+              {isManager && (
+                <Button
+                  onClick={() => setShowMembersModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="shadow-sm"
+                >
+                  <Users size={16} />
+                  <span>View Members</span>
+                </Button>
               )}
-            </p>
-
-            {/* Stats + Action */}
-            <div className="flex items-center justify-center gap-5 flex-wrap">
-              {/* Stats Card */}
-              <div className="flex items-center gap-2 bg-white/20 border border-white/30 rounded-lg px-5 py-3 shadow-sm backdrop-blur-sm">
-                <MessageSquare size={18} className="text-white" />
-                <span className="font-semibold text-white text-lg">
-                  {announcements.length}
-                </span>
-                <span className="text-orange-100 text-sm">
-                  {announcements.length === 1 ? "Post" : "Posts"}
-                </span>
-              </div>
-
-              {/* Button */}
               {isManager && (
                 <Button
                   onClick={() => setShowCreateModal(true)}
                   variant="primary"
-                  className="bg-orange text-[#FFFFFF] hover:bg-orange-500 shadow-lg font-semibold px-5 py-2 rounded-lg transition-all duration-200"
+                  size="sm"
+                  className="shadow-sm"
                 >
-                  <Plus size={18} />
-                  <span className="ml-2">New Announcement</span>
+                  <Plus size={16} />
+                  <span>New Post</span>
                 </Button>
               )}
             </div>
           </div>
+
+          {/* Bottom Section - Team Code (Manager Only) */}
+          {isManager && currentTeam?.join_code && (
+            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#F58220]/10 rounded-lg">
+                    <Key size={20} className="text-[#F58220]" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Team Join Code</p>
+                    <code className="text-lg font-bold text-[#F58220] font-mono">
+                      {currentTeam.join_code}
+                    </code>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  {copied ? (
+                    <>
+                      <Check size={16} className="text-green-600" />
+                      <span className="text-sm font-medium text-green-600">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={16} className="text-gray-600" />
+                      <span className="text-sm font-medium text-gray-700">Copy Code</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -197,9 +266,24 @@ const TeamAnnouncements = () => {
                   isManager={isManager}
                   teamId={teamId}
                   onCommentAdded={() => fetchAnnouncements(teamId)}
+                  onLoadMoreComments={() => handleLoadMoreComments(announcement.id)}
+                  loadingMoreComments={loadingMoreComments[announcement.id] || false}
                 />
               </div>
             ))}
+            
+            {/* Load More Announcements Button */}
+            {announcementsPagination.hasMore && (
+              <LoadMoreButton
+                onClick={handleLoadMoreAnnouncements}
+                loading={loadingMoreAnnouncements}
+                hasMore={announcementsPagination.hasMore}
+                text="Load More Announcements"
+                loadingText="Loading announcements..."
+                variant="outline"
+                className="mt-8"
+              />
+            )}
           </div>
         )}
       </div>
@@ -213,6 +297,15 @@ const TeamAnnouncements = () => {
             setShowCreateModal(false);
             fetchAnnouncements(teamId);
           }}
+        />
+      )}
+
+      {/* Team Members Modal */}
+      {isManager && showMembersModal && (
+        <TeamMembersModal
+          isOpen={showMembersModal}
+          onClose={() => setShowMembersModal(false)}
+          team={currentTeam}
         />
       )}
     </div>

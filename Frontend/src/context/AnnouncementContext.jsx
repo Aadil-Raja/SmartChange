@@ -22,6 +22,14 @@ export const AnnouncementProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  
+  // Pagination states
+  const [announcementsPagination, setAnnouncementsPagination] = useState({
+    offset: 0,
+    limit: 10,
+    total: 0,
+    hasMore: false
+  });
 
   // Clear messages
   const clearMessages = () => {
@@ -31,40 +39,56 @@ export const AnnouncementProvider = ({ children }) => {
 
   // ==================== ANNOUNCEMENTS ====================
 
-  // Fetch all announcements for a team WITH COMMENTS
-  const fetchAnnouncements = async (teamId) => {
+  // Fetch all announcements for a team WITH COMMENTS and pagination
+  const fetchAnnouncements = async (teamId, loadMore = false) => {
     setLoading(true);
     setError(null);
+    
+    const currentOffset = loadMore ? announcementsPagination.offset + announcementsPagination.limit : 0;
+    
     try {
-      const res = await getTeamAnnouncements(teamId);
+      const res = await getTeamAnnouncements(teamId, currentOffset, announcementsPagination.limit);
       if (res?.success) {
-        // Handle paginated response - backend returns { total, items }
-        const announcementsList = res.data?.items || res.data || [];
+        const announcementsList = res.data?.items || [];
+        const total = res.data?.total || 0;
         
         // Fetch details (including comments and attachments) for each announcement
         const announcementsWithComments = await Promise.all(
           announcementsList.map(async (announcement) => {
             try {
-              const detailsRes = await getAnnouncementDetails(teamId, announcement.id);
+              const detailsRes = await getAnnouncementDetails(teamId, announcement.id, 0, 5); // Load first 5 comments
               if (detailsRes?.success && detailsRes.data) {
-                // Merge announcement with comments and attachments from the API response
                 return {
                   ...detailsRes.data.announcement,
-                  comments: detailsRes.data.comments?.items || detailsRes.data.comments || [],
+                  comments: detailsRes.data.comments?.items || [],
+                  commentsTotal: detailsRes.data.comments?.total || 0,
                   attachments: detailsRes.data.attachments || []
                 };
               }
-              // Fallback: return announcement without comments/attachments
-              return { ...announcement, comments: [], attachments: [] };
+              return { ...announcement, comments: [], commentsTotal: 0, attachments: [] };
             } catch (err) {
               console.error(`Failed to fetch details for announcement ${announcement.id}:`, err);
-              // Return announcement without comments/attachments on error
-              return { ...announcement, comments: [], attachments: [] };
+              return { ...announcement, comments: [], commentsTotal: 0, attachments: [] };
             }
           })
         );
         
-        setAnnouncements(announcementsWithComments);
+        if (loadMore) {
+          setAnnouncements(prev => [...prev, ...announcementsWithComments]);
+        } else {
+          setAnnouncements(announcementsWithComments);
+        }
+        
+        const newOffset = currentOffset;
+        const hasMore = (newOffset + announcementsPagination.limit) < total;
+        
+        setAnnouncementsPagination({
+          offset: newOffset,
+          limit: announcementsPagination.limit,
+          total: total,
+          hasMore: hasMore
+        });
+        
         return { success: true, data: announcementsWithComments };
       } else {
         throw new Error(res.message || "Failed to fetch announcements");
@@ -75,6 +99,42 @@ export const AnnouncementProvider = ({ children }) => {
       return { success: false, message: errorMsg };
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load more comments for a specific announcement
+  const loadMoreComments = async (teamId, announcementId) => {
+    try {
+      // Find the announcement to get current comments count
+      const announcement = announcements.find(a => a.id === announcementId);
+      if (!announcement) return { success: false, message: 'Announcement not found' };
+      
+      const currentCommentsCount = announcement.comments?.length || 0;
+      
+      const detailsRes = await getAnnouncementDetails(teamId, announcementId, currentCommentsCount, 20);
+      if (detailsRes?.success && detailsRes.data) {
+        const newComments = detailsRes.data.comments?.items || [];
+        const commentsTotal = detailsRes.data.comments?.total || 0;
+        
+        // Update the specific announcement with new comments
+        setAnnouncements(prevAnnouncements =>
+          prevAnnouncements.map(a =>
+            a.id === announcementId
+              ? {
+                  ...a,
+                  comments: [...(a.comments || []), ...newComments],
+                  commentsTotal: commentsTotal
+                }
+              : a
+          )
+        );
+        
+        const hasMore = (currentCommentsCount + newComments.length) < commentsTotal;
+        return { success: true, hasMore };
+      }
+    } catch (err) {
+      console.error('Error loading more comments:', err);
+      return { success: false, message: err.message };
     }
   };
 
@@ -313,6 +373,7 @@ export const AnnouncementProvider = ({ children }) => {
         success,
         // Functions
         fetchAnnouncements,
+        loadMoreComments,
         createNewAnnouncement,
         updateExistingAnnouncement,
         deleteExistingAnnouncement,
@@ -323,6 +384,8 @@ export const AnnouncementProvider = ({ children }) => {
         deleteAnnouncementAttachment,
         clearMessages,
         setCurrentAnnouncement,
+        // Pagination
+        announcementsPagination,
       }}
     >
       {children}

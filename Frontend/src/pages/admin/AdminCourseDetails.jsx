@@ -197,8 +197,18 @@ const AdminCourseDetails = () => {
               disabled={uploadingThumbnail}
             />
 
-            {/* Status Badge */}
-            <div className="absolute top-4 right-4">
+            {/* Status Badge & Edit Button */}
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <button
+                onClick={() => navigate(`/admin/training/edit/${id}`)}
+                className="group flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-gray-200 rounded-lg shadow-lg hover:border-[#F58220] hover:bg-[#F58220] transition-all duration-300"
+                title="Edit Course"
+              >
+                <Edit size={18} className="text-gray-700 group-hover:text-white transition-colors" />
+                <span className="text-sm font-semibold text-gray-700 group-hover:text-white transition-colors">
+                  Edit
+                </span>
+              </button>
               <span
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
                   currentCourse.is_active
@@ -226,18 +236,10 @@ const AdminCourseDetails = () => {
                 </div>
               )}
               {currentCourse.description && (
-                <p className="text-gray-700 mb-6 leading-relaxed text-base max-w-3xl mx-auto">
+                <p className="text-gray-700 leading-relaxed text-base max-w-3xl mx-auto">
                   {currentCourse.description}
                 </p>
               )}
-              <Button
-                variant="secondary"
-                onClick={() => navigate(`/admin/training/edit/${id}`)}
-                className="inline-flex items-center gap-2"
-              >
-                <Edit size={18} />
-                <span>Edit Course</span>
-              </Button>
             </div>
 
             {/* Stats Row */}

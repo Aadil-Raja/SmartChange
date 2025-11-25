@@ -9,15 +9,22 @@ export const createAnnouncement = async (teamId, announcementData) => {
   return response.data;
 };
 
-// List all announcements for a team
-export const getTeamAnnouncements = async (teamId) => {
-  const response = await api.get(`/teams/${teamId}/announcements`);
+// List all announcements for a team with pagination
+export const getTeamAnnouncements = async (teamId, offset = 0, limit = 10) => {
+  const response = await api.get(`/teams/${teamId}/announcements`, {
+    params: { offset, limit }
+  });
   return response.data;
 };
 
-// Get single announcement with comments
-export const getAnnouncementDetails = async (teamId, announcementId) => {
-  const response = await api.get(`/teams/${teamId}/announcements/${announcementId}`);
+// Get single announcement with comments and pagination
+export const getAnnouncementDetails = async (teamId, announcementId, commentOffset = 0, commentLimit = 20) => {
+  const response = await api.get(`/teams/${teamId}/announcements/${announcementId}`, {
+    params: { 
+      comment_offset: commentOffset, 
+      comment_limit: commentLimit 
+    }
+  });
   return response.data;
 };
 

@@ -88,7 +88,9 @@ const AdminDashboard = () => {
 
     setUploading(true);
     try {
-      const result = await uploadDoc(uploadingFile, uploadTitle || undefined);
+      // Pass the title if it's not empty, otherwise pass null to use the filename
+      const titleToUse = uploadTitle.trim() ? uploadTitle.trim() : null;
+      const result = await uploadDoc(uploadingFile, titleToUse);
       if (result.success) {
         setShowUploadModal(false);
         setUploadingFile(null);
@@ -189,13 +191,13 @@ const AdminDashboard = () => {
     });
   };
 
-  // const handleRemoveTopic = (key) => {
-  //   setMainTopics(prev => {
-  //     const updated = { ...prev };
-  //     delete updated[key];
-  //     return updated;
-  //   });
-  // };
+  const handleRemoveTopic = (key) => {
+    setMainTopics(prev => {
+      const updated = { ...prev };
+      delete updated[key];
+      return updated;
+    });
+  };
 
   const handleReprocess = async (documentId) => {
     await handleQueueDocument(documentId);
@@ -572,6 +574,7 @@ const AdminDashboard = () => {
           setUploadTitle('');
         }}
         title="Upload Document"
+        closeOnOverlayClick={false}
       >
         <div className="space-y-4">
           <div>
@@ -638,6 +641,7 @@ const AdminDashboard = () => {
           setSelectedDoc(null);
         }}
         title="Update Main Topics"
+        closeOnOverlayClick={false}
       >
         {selectedDoc && (
           <div className="space-y-4">
@@ -661,13 +665,13 @@ const AdminDashboard = () => {
                           placeholder="Topic name (e.g., AI)"
                           className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-semibold focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
                         />
-                        {/* <button
+                        <button
                           onClick={() => handleRemoveTopic(key)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
                           title="Remove topic"
                         >
                           <X size={18} />
-                        </button> */}
+                        </button>
                       </div>
                       <textarea
                         value={value}
@@ -725,6 +729,7 @@ const AdminDashboard = () => {
           setAuditStatusFilter('all');
         }}
         title="Processing Audit Log"
+        closeOnOverlayClick={false}
       >
         <div className="space-y-4">
           {/* Stats Summary */}

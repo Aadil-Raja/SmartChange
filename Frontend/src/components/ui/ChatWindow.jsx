@@ -24,6 +24,9 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   const inputRef = useRef(null);
 
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
+  
+  // Check if we're in read-only mode (viewing history without a document)
+  const isReadOnlyMode = activeChatId && !selectedDocumentId;
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -65,7 +68,8 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
     }
   };
 
-  if (!selectedDocumentId) {
+  // Show welcome screen only if no document AND no active chat
+  if (!selectedDocumentId && !activeChatId) {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-lg">
@@ -93,6 +97,20 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
 
   return (
     <div className="h-full flex flex-col bg-[#FFFDF7] min-h-0">
+      {/* Read-Only Mode Banner */}
+      {isReadOnlyMode && currentMessages.length > 0 && (
+        <div className="flex-shrink-0 px-6 pt-4">
+          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-1.5 bg-blue-100 rounded-lg">
+              <MessageCircle size={16} className="text-blue-600" />
+            </div>
+            <p className="text-sm text-blue-800 font-medium">
+              You're viewing a previous conversation. Select a document to continue chatting.
+            </p>
+          </div>
+        </div>
+      )}
+      
       {/* Messages Area - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 scroll-smooth" onClick={onCloseSidebar}>
         {currentMessages.length === 0 ? (
@@ -220,40 +238,71 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
       {/* Input Area - Fixed at Bottom */}
       <div className="flex-shrink-0 p-6 bg-white/50 backdrop-blur-sm border-t border-gray-200/50">
         <div className="max-w-3xl mx-auto">
-          <div className="flex gap-3 items-end">
-            <div className="flex-1">
-              <ChatTextArea
-                ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask me anything about your document..."
-                disabled={sending || !selectedDocumentId}
-                maxRows={4}
-                className="w-full border border-gray-300 focus:border-[#F58220] focus:ring-2 focus:ring-[#F58220]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
-              />
+          {isReadOnlyMode ? (
+            /* Read-Only Mode Message */
+            <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <FileText size={20} className="text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-900">
+                    Viewing Chat History
+                  </p>
+                  <p className="text-xs text-amber-700">
+                    Select a document to continue this conversation
+                  </p>
+                </div>
+              </div>
+              <PrimaryButton
+                onClick={onOpenDocumentSelector}
+                variant="primary"
+                size="sm"
+                className="shadow-sm whitespace-nowrap"
+              >
+                <FileText size={16} />
+                <span>Select Document</span>
+              </PrimaryButton>
             </div>
-            <IconButton
-              onClick={handleSend}
-              disabled={!inputMessage.trim() || sending || !selectedDocumentId}
-              variant="primary"
-              size="lg"
-              tooltip={sending ? "Sending..." : "Send message"}
-              className="bg-gradient-to-r from-[#F58220] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
-            >
-              {sending ? (
-                <LoadingSpinner size="small" />
-              ) : (
-                <Send size={18} />
-              )}
-            </IconButton>
-          </div>
-          <div className="flex items-center justify-center mt-3">
-            <p className="text-xs text-gray-500">
-              Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd> to send • 
-              <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs ml-1">Shift + Enter</kbd> for new line
-            </p>
-          </div>
+          ) : (
+            /* Normal Input Mode */
+            <>
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <ChatTextArea
+                    ref={inputRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask me anything about your document..."
+                    disabled={sending || !selectedDocumentId}
+                    maxRows={4}
+                    className="w-full border border-gray-300 focus:border-[#F58220] focus:ring-2 focus:ring-[#F58220]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
+                  />
+                </div>
+                <IconButton
+                  onClick={handleSend}
+                  disabled={!inputMessage.trim() || sending || !selectedDocumentId}
+                  variant="primary"
+                  size="lg"
+                  tooltip={sending ? "Sending..." : "Send message"}
+                  className="bg-gradient-to-r from-[#F58220] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
+                >
+                  {sending ? (
+                    <LoadingSpinner size="small" />
+                  ) : (
+                    <Send size={18} />
+                  )}
+                </IconButton>
+              </div>
+              <div className="flex items-center justify-center mt-3">
+                <p className="text-xs text-gray-500">
+                  Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd> to send • 
+                  <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs ml-1">Shift + Enter</kbd> for new line
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

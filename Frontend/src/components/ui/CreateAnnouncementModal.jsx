@@ -17,20 +17,44 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear validation error when user starts typing
+    if (validationError) setValidationError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Frontend validation
+    const trimmedTitle = formData.title.trim();
+    const trimmedBody = formData.body.trim();
+
+    if (!trimmedTitle && !trimmedBody) {
+      setValidationError('Please enter both a title and message before publishing');
+      return;
+    }
+    
+    if (!trimmedTitle) {
+      setValidationError('Please enter a title for your announcement');
+      return;
+    }
+
+    if (!trimmedBody) {
+      setValidationError('Please enter a message for your announcement');
+      return;
+    }
+
     setSubmitting(true);
+    setValidationError('');
     clearMessages();
 
     const result = await createNewAnnouncement(teamId, {
-      title: formData.title.trim(),
-      body: formData.body.trim(),
+      title: trimmedTitle,
+      body: trimmedBody,
     });
 
     setSubmitting(false);
@@ -66,12 +90,19 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
           </button>
         </div>
 
-        {/* Error Alert */}
-        {error && (
+        {/* Error Alerts */}
+        {(error || validationError) && (
           <div className="p-6 pb-0">
-            <Alert variant="error" onClose={clearMessages}>
-              {error}
-            </Alert>
+            {validationError && (
+              <Alert variant="error" onClose={() => setValidationError('')}>
+                {validationError}
+              </Alert>
+            )}
+            {error && (
+              <Alert variant="error" onClose={clearMessages}>
+                {error}
+              </Alert>
+            )}
           </div>
         )}
 
@@ -147,7 +178,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
             onClick={handleSubmit}
             type="button"
             variant="primary"
-            disabled={submitting}
+            disabled={submitting || !formData.title.trim() || !formData.body.trim()}
             className="px-6"
           >
             {submitting ? (

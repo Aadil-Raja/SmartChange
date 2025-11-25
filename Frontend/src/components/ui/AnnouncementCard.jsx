@@ -23,8 +23,9 @@ import Button from "../ui/Button";
 import Textarea from "../ui/Textarea";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import Card from "../ui/Card";
+import LoadMoreButton from "../ui/LoadMoreButton";
 
-const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) => {
+const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onLoadMoreComments, loadingMoreComments = false }) => {
   const { 
     addNewComment, 
     deleteExistingComment, 
@@ -489,6 +490,20 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded }) =
                     </div>
                   </Card>
                 ))}
+                
+                {/* Load More Comments Button */}
+                {announcement.commentsTotal > announcement.comments.length && onLoadMoreComments && (
+                  <LoadMoreButton
+                    onClick={onLoadMoreComments}
+                    loading={loadingMoreComments}
+                    hasMore={announcement.commentsTotal > announcement.comments.length}
+                    text="Load More Comments"
+                    loadingText="Loading comments..."
+                    noMoreText="All comments loaded"
+                    variant="secondary"
+                    className="mt-2"
+                  />
+                )}
               </div>
             ) : (
               <div className="text-center py-8 mb-6">

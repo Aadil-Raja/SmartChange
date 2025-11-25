@@ -221,20 +221,31 @@ const TeamsPage = () => {
               </Card>
             </div>
 
-            {/* Create Team Section */}
-            <Card className="p-8 border border-gray-200 text-center">
-              <div className="inline-flex p-3 bg-gray-100 rounded-full mb-4">
-                <Plus size={32} className="text-[#333333]" />
+            {/* Create Team Section - Compact and Interactive */}
+            <div 
+              onClick={() => setShowCreateModal(true)}
+              className="group relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-white to-gray-50 p-6 cursor-pointer transition-all duration-300 hover:border-[#F58220] hover:shadow-lg hover:scale-[1.02]"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#F58220] to-[#E0741C] shadow-md group-hover:shadow-lg transition-all">
+                    <Plus size={24} className="text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
+                      Create New Team
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Click to add a new team and organize your employees
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[#F58220] opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-sm font-medium">Get Started</span>
+                  <ChevronDown size={20} className="transform group-hover:translate-x-1 transition-transform" />
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-[#333333] mb-2">Create New Team</h2>
-              <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
-                Add a new team to organize your employees and manage their roles effectively
-              </p>
-              <Button onClick={() => setShowCreateModal(true)} variant="primary" size="md" className="inline-flex">
-                <Plus size={18} />
-                Create Team
-              </Button>
-            </Card>
+            </div>
 
             {/* Teams List */}
             <Card className="p-6 border border-gray-200">
@@ -275,18 +286,34 @@ const TeamsPage = () => {
                     const memberCount = teamMembers.length;
 
                     return (
-                      <div key={team.id} className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+                      <div key={team.id} className="group rounded-xl border-2 border-gray-200 bg-white shadow-sm overflow-hidden hover:border-[#F58220]/30 hover:shadow-md transition-all">
                         {/* Team Header - Clickable Row */}
                         <div 
-                          className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => memberCount > 0 && toggleTeamExpanded(team.id)}
+                          className="flex items-center justify-between p-5 hover:bg-gradient-to-r hover:from-[#F58220]/5 hover:to-transparent transition-all cursor-pointer"
+                          onClick={() => toggleTeamExpanded(team.id)}
                         >
                           <div className="flex items-center gap-4 flex-1">
-                            <div>
-                              <h3 className="text-lg font-bold text-[#333333]">{team.name}</h3>
-                              <p className="text-sm text-gray-600">
-                                {memberCount} {memberCount === 1 ? 'member' : 'members'}
-                              </p>
+                            {/* Team Icon */}
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#00ADEF] to-[#0090C5] shadow-sm group-hover:shadow-md transition-all">
+                              <Users size={24} className="text-white" />
+                            </div>
+                            
+                            <div className="flex-1">
+                              <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
+                                {team.name}
+                              </h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                                  <Users size={12} />
+                                  {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                                </span>
+                                {memberCount === 0 && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium animate-pulse">
+                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                    Empty Team
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -297,56 +324,56 @@ const TeamsPage = () => {
                                 setSelectedTeam(team);
                                 setShowAddMemberModal(true);
                               }}
-                              variant="primary"
+                              variant="secondary"
                               size="sm"
+                              className="shadow-sm"
                             >
                               <UserPlus size={16} />
                               Add Member
                             </Button>
-                            
-                            {memberCount > 0 && (
-                              <button
-                                className="p-2 hover:bg-gray-200 rounded transition-colors"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleTeamExpanded(team.id);
-                                }}
-                              >
-                                {isExpanded ? <ChevronUp size={18} className="text-gray-600" /> : <ChevronDown size={18} className="text-gray-600" />}
-                              </button>
-                            )}
                           </div>
                         </div>
 
-                        {/* Team Members */}
+                        {/* Team Members - Enhanced UI */}
                         {isExpanded && memberCount > 0 && (
-                          <div className="border-t border-gray-200 bg-gray-50 p-5">
-                            <h4 className="text-sm font-semibold text-[#333333] mb-3">Team Members</h4>
-                            <div className="space-y-2">
+                          <div className="border-t-2 border-[#F58220]/20 bg-gradient-to-b from-gray-50 to-white p-5">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-sm font-bold text-[#333333] uppercase tracking-wide flex items-center gap-2">
+                                <Users size={16} className="text-[#F58220]" />
+                                Team Members
+                              </h4>
+                              <span className="px-2 py-1 bg-[#F58220]/10 text-[#F58220] rounded-full text-xs font-semibold">
+                                {memberCount} Total
+                              </span>
+                            </div>
+                            <div className="space-y-3">
                               {teamMembers.map((member) => (
                                 <div 
                                   key={`${team.id}-${member.user_id}-${member.team_member_id}`}
-                                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-sm transition-all"
+                                  className="group/member flex items-center justify-between rounded-xl border-2 border-gray-200 bg-white p-4 hover:border-[#00ADEF]/30 hover:shadow-md transition-all"
                                 >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-3">
-                                      <div>
-                                        <p className="font-semibold text-[#333333]">
-                                          {member.name || member.email}
-                                        </p>
-                                        <p className="text-xs text-gray-600">{member.email}</p>
-                                      </div>
+                                  <div className="flex items-center gap-3 flex-1">
+                                    {/* Avatar */}
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#F58220] to-[#E0741C] text-white font-bold shadow-sm">
+                                      {(member.name || member.email).charAt(0).toUpperCase()}
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold text-[#333333] truncate">
+                                        {member.name || member.email}
+                                      </p>
+                                      <p className="text-xs text-gray-600 truncate">{member.email}</p>
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
                                     {/* Role Editor */}
                                     {editingMemberId === `${team.id}-${member.id}` ? (
                                       <select
                                         defaultValue={member.role_in_team}
                                         onChange={(e) => handleUpdateMemberRole(team.id, member.id, e.target.value)}
                                         onBlur={() => setEditingMemberId(null)}
-                                        className="rounded-lg border border-[#00ADEF] px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/20"
+                                        className="rounded-lg border-2 border-[#00ADEF] px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/20 shadow-sm"
                                         autoFocus
                                       >
                                         {teamRoles.map(role => (
@@ -356,17 +383,17 @@ const TeamsPage = () => {
                                     ) : (
                                       <button
                                         onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
-                                        className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium bg-gray-100 border border-gray-300 transition-colors hover:bg-gray-200 hover:border-gray-400"
+                                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-gradient-to-r from-gray-100 to-gray-50 border-2 border-gray-200 transition-all hover:from-[#00ADEF]/10 hover:to-[#00ADEF]/5 hover:border-[#00ADEF]/30 shadow-sm"
                                       >
                                         <span className="text-[#333333] font-semibold">{member.role_in_team}</span>
-                                        <Edit2 size={14} className="text-gray-500" />
+                                        <Edit2 size={14} className="text-gray-500 group-hover/member:text-[#00ADEF] transition-colors" />
                                       </button>
                                     )}
 
                                     {/* Remove Button */}
                                     <button
                                       onClick={() => handleRemoveMember(team.id, member.user_id)}
-                                      className="rounded-lg p-2 text-red-600 transition-colors hover:bg-red-50 border border-transparent hover:border-red-200"
+                                      className="rounded-lg p-2 text-red-600 transition-all hover:bg-red-50 border-2 border-transparent hover:border-red-200 shadow-sm"
                                       title="Remove from team"
                                     >
                                       <X size={18} />
@@ -375,27 +402,6 @@ const TeamsPage = () => {
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Empty State for Team with No Members */}
-                        {memberCount === 0 && (
-                          <div className="border-t border-gray-200 bg-gray-50 p-8 text-center">
-                            <div className="inline-flex p-4 bg-white rounded-full mb-3">
-                              <UserPlus size={48} className="text-gray-300" />
-                            </div>
-                            <p className="text-sm text-gray-600 mb-4">No members in this team yet</p>
-                            <Button
-                              onClick={() => {
-                                setSelectedTeam(team);
-                                setShowAddMemberModal(true);
-                              }}
-                              variant="secondary"
-                              size="sm"
-                            >
-                              <UserPlus size={16} />
-                              Add First Member
-                            </Button>
                           </div>
                         )}
                       </div>

@@ -20,6 +20,7 @@ const CourseCard = ({ course, progress }) => {
 
   return (
     <Card 
+     onClick={() => navigate(`/employee/course/${course.id}`)}
       padding="none" 
       shadow="md" 
       hover={true}
@@ -29,6 +30,7 @@ const CourseCard = ({ course, progress }) => {
       <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#FDB913] to-[#F58220]">
         {course.thumbnail_url ? (
           <img 
+         
             src={course.thumbnail_url} 
             alt={course.title}
             className="h-full w-full object-cover"
@@ -111,14 +113,14 @@ const CourseCard = ({ course, progress }) => {
         )}
 
         {/* View Course Button */}
-        <Button
+        {/* <Button
           onClick={() => navigate(`/employee/course/${course.id}`)}
           variant="primary"
           size="md"
           fullWidth={true}
         >
           View Course
-        </Button>
+        </Button> */}
       </div>
     </Card>
   );

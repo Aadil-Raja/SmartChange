@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourses } from '../../hooks/useCourses';
 import CourseContentPreview from '../../components/ui/CourseContentPreview';
@@ -20,6 +20,25 @@ const CourseContent = () => {
     getItemProgress,
     isItemCompleted
   } = useCourses();
+
+  // Create refs for each content item
+  const contentRefs = useRef({});
+  const [activeItemId, setActiveItemId] = useState(null);
+
+  // Function to scroll to a specific item
+  const scrollToItem = (itemId) => {
+    const element = contentRefs.current[itemId];
+    if (element) {
+      const yOffset = -100; // Offset for sticky header
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      
+      window.scrollTo({ top: y, behavior: 'smooth' });
+      setActiveItemId(itemId);
+      
+      // Reset active state after animation
+      setTimeout(() => setActiveItemId(null), 2000);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -166,26 +185,31 @@ const CourseContent = () => {
                       return (
                         <div
                           key={item.id}
-                          className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => scrollToItem(item.id)}
+                          className={`p-4 transition-all cursor-pointer group border-l-4 ${
+                            activeItemId === item.id 
+                              ? 'bg-gradient-to-r from-[#F58220]/20 to-transparent border-[#F58220]' 
+                              : 'border-transparent hover:bg-gradient-to-r hover:from-[#F58220]/10 hover:to-transparent hover:border-[#F58220]'
+                          }`}
                         >
                           <div className="flex items-start gap-3">
                             <div className="flex-shrink-0">
                               {isCompleted ? (
-                                <div className="h-6 w-6 rounded-full bg-[#78BE20] flex items-center justify-center">
+                                <div className="h-6 w-6 rounded-full bg-[#78BE20] flex items-center justify-center shadow-sm">
                                   <CheckCircle size={16} className="text-white" />
                                 </div>
                               ) : (
-                                <div className="h-6 w-6 rounded-full border-2 border-[#F58220] flex items-center justify-center text-xs font-semibold text-[#F58220]">
+                                <div className="h-6 w-6 rounded-full border-2 border-[#F58220] flex items-center justify-center text-xs font-semibold text-[#F58220] group-hover:bg-[#F58220] group-hover:text-white transition-all">
                                   {index + 1}
                                 </div>
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold text-[#333333] line-clamp-2">
+                              <p className="text-sm font-semibold text-[#333333] line-clamp-2 group-hover:text-[#F58220] transition-colors">
                                 {item.title}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-gray-500 uppercase">{item.type}</span>
+                                <span className="text-xs text-gray-500 uppercase group-hover:text-[#F58220] transition-colors">{item.type}</span>
                                 {progressPercent > 0 && progressPercent < 100 && (
                                   <span className="text-xs text-[#F58220] font-medium">
                                     {Math.round(progressPercent)}%
@@ -217,7 +241,16 @@ const CourseContent = () => {
                   const progressPercent = itemProgress?.progress || 0;
 
                   return (
-                    <Card key={item.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
+                    <div
+                      key={item.id}
+                      ref={(el) => (contentRefs.current[item.id] = el)}
+                      className={`transition-all duration-500 ${
+                        activeItemId === item.id ? 'ring-4 ring-[#F58220]/30 rounded-xl' : ''
+                      }`}
+                    >
+                    <Card 
+                      className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all"
+                    >
                       {/* Card Header with Status */}
                       <div className="p-4 bg-gray-50 border-b border-gray-200">
                         <div className="flex items-center justify-between">
@@ -285,6 +318,7 @@ const CourseContent = () => {
                         />
                       </div>
                     </Card>
+                    </div>
                   );
                 })
               ) : (
