@@ -43,6 +43,7 @@ def list_team_announcements(db: Session, *, team_id: int, user_id: int, limit: i
             "created_at": a.created_at,
             "team_id": a.team_id,
             "author_name": a.author.Name if a.author else None,
+            "author_profile_picture": a.author.profile_picture_url if a.author else None,
             "can_edit": a.author_id == user_id,
             "can_delete": a.author_id == user_id,
         }
@@ -83,6 +84,7 @@ def get_announcement_with_comments(
             "body": c.body,
             "created_at": c.created_at,
             "user_name": c.user.Name if c.user else None,
+            "user_profile_picture": c.user.profile_picture_url if c.user else None,
             "can_delete": c.user_id == user_id,
         }
         for c in comment_rows
@@ -105,6 +107,7 @@ def get_announcement_with_comments(
         "id": a.id,
         "team_id": a.team_id,
         "author_name": a.author.Name if a.author else None,
+        "author_profile_picture": a.author.profile_picture_url if a.author else None,
         "title": a.title,
         "body": a.body,
         "created_at": a.created_at,
@@ -216,6 +219,7 @@ def list_team_members(db: Session, *, team_id: int, user_id: int):
                 "user_id": m.user_id,
                 "user_name": m.user.Name if m.user else None,
                 "user_email": m.user.email if m.user else None,
+                "user_profile_picture": m.user.profile_picture_url if m.user else None,
                 "role_in_team": m.role_in_team.value if m.role_in_team else None,
                 "joined_at": m.created_at,
             }
@@ -270,6 +274,7 @@ def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, 
         "user_id": member.user_id,
         "user_name": member.user.Name if member.user else None,
         "user_email": member.user.email if member.user else None,
+        "user_profile_picture": member.user.profile_picture_url if member.user else None,
         "role_in_team": member.role_in_team.value if member.role_in_team else None,
     }
     

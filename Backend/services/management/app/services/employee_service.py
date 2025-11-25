@@ -2,11 +2,12 @@ from app.repositories import teams_repo
 from app.utils.response_utils import make_response
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List
-from shared.models import Team, TeamMember, TeamMemberRole
+from shared.models import Team, TeamMember, TeamMemberRole, User
 from app.repositories import progress_repo as prog_repo
 from app.repositories import courseContent_repo as content_repo
 from app.repositories import course_stars_repo
 from app.services import courseContent_service
+from app.services.storage.storage_cloudinary import upload_image_bytes, delete_file_by_public_id
 def get_my_teams(db, user):
     rows = teams_repo.get_teams_for_user(db, user.id)
     data = []
@@ -239,8 +240,12 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     - Starred courses
     - In Progress courses (not completed)
     - Completed courses
-    Plus overall statistics
+    Plus overall statistics and user information
     """
+    # Get user information
+    user = db.query(User).filter(User.id == user_id).first()
+    user_name = user.Name if user else None
+    
     # Get all active courses
     all_courses_data = courseContent_service.list_courses(db, active_only=True)
     all_courses = all_courses_data.get("courses", [])
@@ -310,8 +315,89 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     }
     
     return {
+        "user_name": user_name,
+        "profile_picture_url": user.profile_picture_url if user else None,
         "stats": stats,
         "starred": starred_courses,
         "in_progress": in_progress_courses,
         "completed": completed_courses,
     }
+
+def upload_profile_picture(db: Session, *, user_id: int, file_bytes: bytes) -> Dict[str, Any]:
+    """
+    Upload or update user's profile picture to Cloudinary.
+    If user already has a profile picture, delete the old one first.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return make_response(False, "User not found", status_code=404)
+    
+    try:
+        # Delete old profile picture if exists
+        if user.profile_picture_public_id:
+            try:
+                delete_file_by_public_id(user.profile_picture_public_id)
+            except Exception as e:
+                print(f"Failed to delete old profile picture: {e}")
+        
+        # Upload new profile picture
+        result = upload_image_bytes(file_bytes)
+        
+        # Update user record
+        user.profile_picture_url = result["secure_url"]
+        user.profile_picture_public_id = result["public_id"]
+        db.commit()
+        db.refresh(user)
+        
+        return make_response(True, "Profile picture uploaded successfully", data={
+            "profile_picture_url": user.profile_picture_url
+        }, status_code=200)
+        
+    except Exception as e:
+        db.rollback()
+        return make_response(False, "Failed to upload profile picture", status_code=500, error=str(e))
+
+
+def remove_profile_picture(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Remove user's profile picture from Cloudinary and database.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return make_response(False, "User not found", status_code=404)
+    
+    if not user.profile_picture_public_id:
+        return make_response(False, "No profile picture to remove", status_code=404)
+    
+    try:
+        # Delete from Cloudinary
+        delete_file_by_public_id(user.profile_picture_public_id)
+        
+        # Update user record
+        user.profile_picture_url = None
+        user.profile_picture_public_id = None
+        db.commit()
+        
+        return make_response(True, "Profile picture removed successfully", status_code=200)
+        
+    except Exception as e:
+        db.rollback()
+        return make_response(False, "Failed to remove profile picture", status_code=500, error=str(e))
+
+
+def get_user_profile(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Get user profile information including profile picture.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return make_response(False, "User not found", status_code=404)
+    
+    return make_response(True, "User profile fetched successfully", data={
+        "id": user.id,
+        "name": user.Name,
+        "email": user.email,
+        "profile_picture_url": user.profile_picture_url,
+        "role": user.role.value if user.role else None,
+        "created_at": user.created_at
+    }, status_code=200)

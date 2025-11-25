@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.deps.db import get_db
 from app.deps.auth import get_current_user
@@ -325,3 +325,62 @@ def get_my_courses_overview_route(
         return make_response(True, "OK", data=data)
     except Exception as e:
         return make_response(False, "Could not fetch courses overview", status_code=500, error=str(e))
+
+
+# ---------------------------
+# Profile Picture Management
+# ---------------------------
+@router.post("/me/profile-picture", status_code=status.HTTP_200_OK)
+async def upload_profile_picture_route(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Upload or update the current user's profile picture.
+    Accepts image files (JPG, PNG, etc.).
+    If a profile picture already exists, it will be replaced.
+    """
+    try:
+        # Read file bytes
+        file_bytes = await file.read()
+        if not file_bytes:
+            return make_response(False, "Empty file", status_code=400)
+        
+        # Validate file type (basic check)
+        if not file.content_type or not file.content_type.startswith("image/"):
+            return make_response(False, "File must be an image", status_code=400)
+        
+        return employee_service.upload_profile_picture(
+            db, user_id=user.id, file_bytes=file_bytes
+        )
+    except Exception as e:
+        return make_response(False, "Could not upload profile picture", status_code=500, error=str(e))
+
+
+@router.delete("/me/profile-picture", status_code=status.HTTP_200_OK)
+def remove_profile_picture_route(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Remove the current user's profile picture.
+    """
+    try:
+        return employee_service.remove_profile_picture(db, user_id=user.id)
+    except Exception as e:
+        return make_response(False, "Could not remove profile picture", status_code=500, error=str(e))
+
+
+@router.get("/me/profile", status_code=status.HTTP_200_OK)
+def get_my_profile_route(
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Get the current user's profile information including profile picture.
+    """
+    try:
+        return employee_service.get_user_profile(db, user_id=user.id)
+    except Exception as e:
+        return make_response(False, "Could not fetch profile", status_code=500, error=str(e))

@@ -214,7 +214,7 @@ def update_team_member_role(db: Session, *, team_id: int, user_id: int, new_role
 
 def list_employees(db: Session):
     """
-    List all non-admin users with their team info.
+    List all non-admin users with their team info and profile pictures.
     """
     rows = employees_repo.list_non_admin_users(db)
 
@@ -223,11 +223,12 @@ def list_employees(db: Session):
         employees.append({
             "id": user.id,
             "email": user.email,
-            "name": getattr(user, "name", None),
+            "name": getattr(user, "Name", None),
             "role": user.role.value,
             "team_id": team_id,
             "team_name": team_name,
             "team_role": team_role.value if team_role else None,
+            "profile_picture_url": getattr(user, "profile_picture_url", None),
             "created_at": user.created_at,
         })
 

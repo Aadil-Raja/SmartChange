@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status, Form
 from sqlalchemy.orm import Session
 import sys, traceback
 from app.deps.db import get_db
@@ -218,10 +218,11 @@ def delete_user_route(
 @router.post("/documents/upload", status_code=status.HTTP_201_CREATED)
 async def upload_document(
     f: UploadFile = File(...),
+    title: str = Form(None),
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ):
-    print("[upload_document] Received upload request", file=sys.stderr)
+    print(f"[upload_document] Received upload request with title: {title}", file=sys.stderr)
     try:
         if not f.filename.lower().endswith(".pdf"):
             return make_response(False, "Only PDF files are allowed", status_code=400)
@@ -238,7 +239,7 @@ async def upload_document(
             file_bytes=data,
             filename=f.filename,
             mime=f.content_type,
-            title=None,
+            title=title,  # Use title from frontend, falls back to filename if None
             fail_if_cloudinary_fails=False,
         )
 
