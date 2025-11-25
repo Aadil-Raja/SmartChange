@@ -25,7 +25,7 @@ import LoadingSpinner from "../ui/LoadingSpinner";
 import Card from "../ui/Card";
 import LoadMoreButton from "../ui/LoadMoreButton";
 
-const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onLoadMoreComments, loadingMoreComments = false }) => {
+const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments, loadingMoreComments = false }) => {
   const { 
     addNewComment, 
     deleteExistingComment, 
@@ -33,6 +33,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
     deleteExistingAnnouncement,
     uploadAnnouncementAttachment,
     deleteAnnouncementAttachment,
+    loadAnnouncementDetails,
   } = useAnnouncements();
   
   const [isExpanded, setIsExpanded] = useState(false);
@@ -43,11 +44,24 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
   const [editBody, setEditBody] = useState(announcement.body);
   const [showAttachmentUpload, setShowAttachmentUpload] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const commentCount = announcement.comments?.length || 0;
+  const commentsTotal = announcement.commentsTotal || 0;
   const attachments = announcement.attachments || [];
   const canEdit = announcement.can_edit;
   const canDelete = announcement.can_delete;
+
+  // Handle expand/collapse with lazy loading
+  const handleToggleExpand = async () => {
+    if (!isExpanded && !announcement.detailsLoaded) {
+      // Load details when expanding for the first time
+      setLoadingDetails(true);
+      await loadAnnouncementDetails(teamId, announcement.id);
+      setLoadingDetails(false);
+    }
+    setIsExpanded(!isExpanded);
+  };
 
   const formatRelativeTime = (dateString) => {
     const date = new Date(dateString);
@@ -85,7 +99,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
 
     if (result.success) {
       setCommentText("");
-      onCommentAdded();
+      // State is already updated by addNewComment in context
     }
   };
 
@@ -93,9 +107,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
     if (!window.confirm("Are you sure you want to delete this comment?")) return;
     
     const result = await deleteExistingComment(teamId, announcement.id, commentId);
-    if (result.success) {
-      onCommentAdded();
-    }
+    // State is already updated by deleteExistingComment in context
   };
 
   const handleUpdateAnnouncement = async () => {
@@ -111,7 +123,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
 
     if (result.success) {
       setIsEditing(false);
-      onCommentAdded();
+      // State is already updated by updateExistingAnnouncement in context
     }
   };
 
@@ -153,7 +165,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
 
     if (result.success) {
       setShowAttachmentUpload(false);
-      onCommentAdded();
+      // State is already updated by uploadAnnouncementAttachment in context
     }
   };
 
@@ -161,9 +173,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
     if (!window.confirm("Are you sure you want to delete this attachment?")) return;
     
     const result = await deleteAnnouncementAttachment(teamId, announcement.id, attachmentId);
-    if (result.success) {
-      onCommentAdded();
-    }
+    // State is already updated by deleteAnnouncementAttachment in context
   };
 
   const getAttachmentIcon = (type) => {
@@ -240,20 +250,20 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
                     <Clock size={16} className="text-gray-400" />
                     <span>{formatRelativeTime(announcement.created_at)}</span>
                   </div>
-                  <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
-                    <MessageSquare size={16} />
-                    <span className="font-medium">
+                  {/* <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
+                    <MessageSquare size={16} /> */}
+                    {/* <span className="font-medium">
                       {commentCount} {commentCount === 1 ? "comment" : "comments"}
-                    </span>
-                  </div>
-                  {attachments.length > 0 && (
+                    </span> */}
+                  {/* </div> */}
+                  {/* {attachments.length > 0 && (
                     <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
-                      <Paperclip size={16} />
-                      <span className="font-medium">
+                      <Paperclip size={16} /> */}
+                      {/* <span className="font-medium">
                         {attachments.length} {attachments.length === 1 ? "attachment" : "attachments"}
-                      </span>
-                    </div>
-                  )}
+                      </span> */}
+                    {/* </div> */}
+                  {/* )} */}
                 </div>
               </div>
 
@@ -277,10 +287,13 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
                   </button>
                 )}
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="p-3 hover:bg-gray-100 rounded-md transition-colors group"
+                  onClick={handleToggleExpand}
+                  disabled={loadingDetails}
+                  className="p-3 hover:bg-gray-100 rounded-md transition-colors group disabled:opacity-50"
                 >
-                  {isExpanded ? (
+                  {loadingDetails ? (
+                    <LoadingSpinner size="small" />
+                  ) : isExpanded ? (
                     <ChevronUp size={24} className="text-gray-400 group-hover:text-[#F58220]" />
                   ) : (
                     <ChevronDown size={24} className="text-gray-400 group-hover:text-[#F58220]" />
@@ -368,13 +381,23 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onCommentAdded, onL
             {/* Quick Action Bar */}
             <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-2 text-[#F58220] hover:text-[#E0741C] font-medium transition-colors group"
+                onClick={handleToggleExpand}
+                disabled={loadingDetails}
+                className="flex items-center gap-2 text-[#F58220] hover:text-[#E0741C] font-medium transition-colors group disabled:opacity-50"
               >
-                <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
-                <span>
-                  {isExpanded ? "Hide" : "View"} {commentCount} {commentCount === 1 ? "comment" : "comments"}
-                </span>
+                {loadingDetails ? (
+                  <>
+                    <LoadingSpinner size="small" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
+                    <span>
+                      {isExpanded ? "Hide" : "View"}  {"comments and attachments"}
+                    </span>
+                  </>
+                )}
               </button>
 
               {canEdit && (

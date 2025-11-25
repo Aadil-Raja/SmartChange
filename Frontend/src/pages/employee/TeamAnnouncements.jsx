@@ -33,6 +33,7 @@ const TeamAnnouncements = () => {
     error,
     success,
     fetchAnnouncements,
+    loadAnnouncementDetails,
     loadMoreComments,
     clearMessages,
     announcementsPagination,
@@ -265,7 +266,6 @@ const TeamAnnouncements = () => {
                   announcement={announcement}
                   isManager={isManager}
                   teamId={teamId}
-                  onCommentAdded={() => fetchAnnouncements(teamId)}
                   onLoadMoreComments={() => handleLoadMoreComments(announcement.id)}
                   loadingMoreComments={loadingMoreComments[announcement.id] || false}
                 />
