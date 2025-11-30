@@ -106,7 +106,7 @@ def run_document_pipeline(
         current_stage = ProcessingStage.LOADING
         audit_repo.update_stage(db, document_id=document_id, current_stage=current_stage)
         logger.info("Step 1: Loading document...")
-        loader_result = extract_text(doc.storage_key, doc.mime_type)
+        loader_result = extract_text(doc.storage_key, doc.mime_type, document_id=document_id, db_session=db)
         logger.info(f"Loaded {loader_result.total_pages} pages")
         
         # Step 2: Preprocess

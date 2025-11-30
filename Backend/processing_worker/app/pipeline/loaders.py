@@ -425,18 +425,122 @@ def load_document_fitz(file_path: str, mime_type: Optional[str] = None) -> Loade
         raise ValueError(f"Unsupported MIME type: {mime_type}")
 
 
-def extract_text_fitz(storage_key: str, mime_type: str) -> LoaderResultFitz:
+def extract_text_fitz(storage_key: str, mime_type: str, document_id: int = None, db_session = None) -> LoaderResultFitz:
     """
-    Main entry point for text extraction (task integration).
+    Main entry point for text extraction with Cloudinary fallback.
     
     Args:
         storage_key: File path (local storage key)
         mime_type: Document MIME type
+        document_id: Document ID for Cloudinary fallback (optional)
+        db_session: Database session for Cloudinary fallback (optional)
         
     Returns:
         LoaderResultFitz with all extracted content
     """
-    return load_document_fitz(storage_key, mime_type)
+    import os
+    import shutil
+    from pathlib import Path
+    
+    # Check if local file exists
+    if os.path.exists(storage_key):
+        logger.info(f"✓ Using local file: {storage_key}")
+        return load_document_fitz(storage_key, mime_type)
+    
+    # Local file doesn't exist, try Cloudinary fallback
+    logger.warning(f"⚠ Local file not found: {storage_key}")
+    
+    if document_id and db_session:
+        logger.info(f"🔄 Attempting Cloudinary fallback for document {document_id}")
+        
+        temp_dir = None
+        try:
+            # Get document from database to get Cloudinary URL
+            from shared.repos import documents_repo
+            doc = documents_repo.get_by_id(db_session, document_id)
+            
+            if not doc or not doc.cloudinary_url:
+                raise ValueError(f"No Cloudinary URL found for document {document_id}")
+            
+            logger.info(f"🔗 Found Cloudinary URL: {doc.cloudinary_url}")
+            
+            # Create temporary directory in current folder
+            temp_dir = f"temp_doc_{document_id}"
+            os.makedirs(temp_dir, exist_ok=True)
+            logger.info(f"📁 Created temporary directory: {temp_dir}")
+            
+            # Download file from Cloudinary to temp directory
+            temp_file_path = _download_from_cloudinary(doc.cloudinary_url, temp_dir, mime_type, document_id)
+            
+            # Process the downloaded file
+            logger.info(f"📄 Processing downloaded file: {temp_file_path}")
+            result = load_document_fitz(temp_file_path, mime_type)
+            
+            logger.info(f"✅ Cloudinary fallback successful for document {document_id}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Cloudinary fallback failed: {e}")
+            raise ValueError(f"File not found locally and Cloudinary fallback failed: {e}")
+        
+        finally:
+            # Clean up temporary directory and all its contents
+            if temp_dir and os.path.exists(temp_dir):
+                try:
+                    shutil.rmtree(temp_dir)
+                    logger.info(f"🧹 Cleaned up temporary directory: {temp_dir}")
+                except Exception as cleanup_error:
+                    logger.warning(f"⚠ Failed to cleanup temp directory: {cleanup_error}")
+    
+    # No fallback options available
+    raise FileNotFoundError(f"File not found: {storage_key} (no Cloudinary fallback available)")
+
+
+def _download_from_cloudinary(cloudinary_url: str, temp_dir: str, mime_type: str, document_id: int) -> str:
+    """
+    Download file from Cloudinary URL to a temporary directory.
+    
+    Args:
+        cloudinary_url: Cloudinary URL to download from
+        temp_dir: Temporary directory to save file in
+        mime_type: MIME type for file extension
+        document_id: Document ID for filename
+        
+    Returns:
+        Path to downloaded file in temp directory
+    """
+    import os
+    import requests
+    import mimetypes
+    from pathlib import Path
+    
+    logger.info(f"⬇️ Downloading from Cloudinary: {cloudinary_url}")
+    
+    try:
+        # Make request to download file
+        response = requests.get(cloudinary_url, timeout=60)
+        response.raise_for_status()
+        
+        # Determine file extension from MIME type
+        extension = mimetypes.guess_extension(mime_type) or '.pdf'
+        
+        # Create file path in temp directory
+        filename = f"document_{document_id}{extension}"
+        temp_file_path = os.path.join(temp_dir, filename)
+        
+        # Write file to temp directory
+        with open(temp_file_path, 'wb') as temp_file:
+            temp_file.write(response.content)
+        
+        logger.info(f"✅ Downloaded {len(response.content)} bytes to: {temp_file_path}")
+        return temp_file_path
+        
+    except requests.RequestException as e:
+        logger.error(f"Failed to download from Cloudinary: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error during Cloudinary download: {e}")
+        raise
 
 
 # Alias for compatibility with old interface
