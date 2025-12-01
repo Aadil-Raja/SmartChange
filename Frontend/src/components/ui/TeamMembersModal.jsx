@@ -128,11 +128,19 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
                   >
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold text-lg">
-                          {member.user_name?.charAt(0)?.toUpperCase() || 
-                           member.user_email?.charAt(0)?.toUpperCase() || 'U'}
-                        </span>
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
+                        {member.user_profile_picture ? (
+                          <img
+                            src={member.user_profile_picture}
+                            alt={member.user_name || "User"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-white font-semibold text-lg">
+                            {member.user_name?.charAt(0)?.toUpperCase() || 
+                             member.user_email?.charAt(0)?.toUpperCase() || 'U'}
+                          </span>
+                        )}
                       </div>
                     </div>
 

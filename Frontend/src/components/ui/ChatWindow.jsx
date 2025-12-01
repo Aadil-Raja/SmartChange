@@ -7,6 +7,7 @@ import IconButton from "./IconButton";
 import ChatCard from "./ChatCard";
 import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
+import MarkdownMessage from "./MarkdownMessage";
 
 const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false }) => {
   const {
@@ -191,9 +192,10 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                       : "bg-white border border-gray-200 text-gray-800"
                   }`}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.message}
-                  </p>
+                  <MarkdownMessage 
+                    content={message.message} 
+                    isUser={message.role === "user"}
+                  />
                   <span
                     className={`text-xs mt-2 block ${
                       message.role === "user" ? "text-white/80" : "text-gray-500"

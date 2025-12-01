@@ -242,8 +242,18 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                 
                 {/* Meta Info */}
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
-                    <User size={16} />
+                  <div className="flex items-center gap-3 bg-gray-100 text-gray-700 px-3 py-2 rounded-md">
+                    {announcement.author_profile_picture ? (
+                      <img
+                        src={announcement.author_profile_picture}
+                        alt={announcement.author_name || "Author"}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-300"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] flex items-center justify-center">
+                        <User size={18} className="text-white" />
+                      </div>
+                    )}
                     <span className="font-medium">{announcement.author_name || "Manager"}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -481,8 +491,16 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-full flex items-center justify-center text-white font-bold">
-                        {(comment.user_name || "U")[0].toUpperCase()}
+                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
+                        {comment.user_profile_picture ? (
+                          <img
+                            src={comment.user_profile_picture}
+                            alt={comment.user_name || "User"}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{(comment.user_name || "U")[0].toUpperCase()}</span>
+                        )}
                       </div>
 
                       <div className="flex-1 min-w-0">

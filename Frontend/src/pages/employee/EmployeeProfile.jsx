@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { User, BookOpen, Star, Clock, CheckCircle, TrendingUp, Award, Calendar } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, BookOpen, Star, Clock, CheckCircle, TrendingUp, Award, Calendar, Camera, Trash2, Upload } from 'lucide-react';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
 import Card from '../../components/ui/Card';
 import CourseCard from '../../components/ui/CourseCard';
-import { getEmployeeCoursesOverview } from '../../services/courseApi';
+import { getEmployeeCoursesOverview, uploadProfilePicture, removeProfilePicture } from '../../services/courseApi';
 
 const EmployeeProfile = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
@@ -11,10 +11,25 @@ const EmployeeProfile = () => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [showPictureMenu, setShowPictureMenu] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchProfileData();
   }, []);
+
+  // Close picture menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showPictureMenu && !event.target.closest('.profile-picture-container')) {
+        setShowPictureMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPictureMenu]);
 
   const fetchProfileData = async () => {
     setLoading(true);
@@ -44,6 +59,71 @@ const EmployeeProfile = () => {
         return profileData.completed || [];
       default:
         return [];
+    }
+  };
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingPicture(true);
+    setShowPictureMenu(false);
+    
+    try {
+      const res = await uploadProfilePicture(file);
+      if (res.success) {
+        // Update profile data with new picture URL
+        setProfileData(prev => ({
+          ...prev,
+          profile_picture_url: res.data.profile_picture_url
+        }));
+      } else {
+        alert(res.message || 'Failed to upload profile picture');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPicture(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemovePicture = async () => {
+    if (!window.confirm('Are you sure you want to remove your profile picture?')) return;
+
+    setUploadingPicture(true);
+    setShowPictureMenu(false);
+    
+    try {
+      const res = await removeProfilePicture();
+      if (res.success) {
+        // Remove picture URL from profile data
+        setProfileData(prev => ({
+          ...prev,
+          profile_picture_url: null
+        }));
+      } else {
+        alert(res.message || 'Failed to remove profile picture');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to remove profile picture');
+    } finally {
+      setUploadingPicture(false);
     }
   };
 
@@ -106,20 +186,76 @@ const EmployeeProfile = () => {
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               {/* Avatar + Info */}
               <div className="flex items-center gap-6">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30 shadow-lg">
-                    <User size={48} className="text-white" />
+                <div className="relative group profile-picture-container">
+                  {/* Profile Picture */}
+                  <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30 shadow-lg overflow-hidden">
+                    {profileData?.profile_picture_url ? (
+                      <img
+                        src={profileData.profile_picture_url}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User size={48} className="text-white" />
+                    )}
                   </div>
+
+                  {/* Upload/Remove Button Overlay */}
+                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <button
+                      onClick={() => setShowPictureMenu(!showPictureMenu)}
+                      disabled={uploadingPicture}
+                      className="text-white hover:scale-110 transition-transform"
+                    >
+                      {uploadingPicture ? (
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                      ) : (
+                        <Camera size={32} />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Picture Menu */}
+                  {showPictureMenu && !uploadingPicture && (
+                    <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[200px]">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                      >
+                        <Upload size={16} />
+                        <span>{profileData?.profile_picture_url ? 'Change Picture' : 'Upload Picture'}</span>
+                      </button>
+                      {profileData?.profile_picture_url && (
+                        <button
+                          onClick={handleRemovePicture}
+                          className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2 text-red-600"
+                        >
+                          <Trash2 size={16} />
+                          <span>Remove Picture</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Hidden File Input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  {/* Achievement Badge */}
                   <div className="absolute -bottom-2 -right-2 bg-[#78BE20] rounded-full p-2 border-4 border-white shadow-lg">
                     <Award size={16} className="text-white" />
                   </div>
                 </div>
                 
                 <div className="text-white">
-                  <h1 className="text-3xl font-bold mb-2">Employee Profile</h1>
+                  <h1 className="text-3xl font-bold mb-2">{profileData?.user_name || 'Employee Profile'}</h1>
                   <p className="text-orange-100 text-lg mb-1">Learning Journey Dashboard</p>
                   <div className="flex items-center gap-4 text-sm text-orange-100">
-
                     <div className="flex items-center gap-1">
                       <TrendingUp size={16} />
                       <span>{stats.overall_progress || 0}% Overall Progress</span>

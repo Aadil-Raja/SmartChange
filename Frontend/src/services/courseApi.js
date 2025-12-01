@@ -66,3 +66,30 @@ export const unstarCourse = async (courseId) => {
   const response = await api.delete(`/employee/courses/${courseId}/star`);
   return response.data;
 };
+
+// ===== PROFILE PICTURE APIs =====
+
+// Upload or update profile picture
+export const uploadProfilePicture = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post('/employee/me/profile-picture', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// Remove profile picture
+export const removeProfilePicture = async () => {
+  const response = await api.delete('/employee/me/profile-picture');
+  return response.data;
+};
+
+// Get user profile (includes profile picture URL)
+export const getUserProfile = async () => {
+  const response = await api.get('/employee/me/profile');
+  return response.data;
+};

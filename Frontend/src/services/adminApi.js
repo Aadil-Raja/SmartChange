@@ -37,6 +37,11 @@ export const updateTeamMemberRole = async (teamId, userId, newRole) => {
   return res.data;
 };
 
+export const deleteTeam = async (teamId) => {
+  const res = await api.delete(`/admin/teams/${teamId}`);
+  return res.data;
+};
+
 // Employees
 export const fetchEmployees = async () => {
   const res = await api.get("/admin/employees");

@@ -165,6 +165,26 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const deleteTeam = async (teamId) => {
+    try {
+      setLoading(true);
+      const data = await adminApi.deleteTeam(teamId);
+      if (data.success) {
+        await loadTeams();
+        await loadEmployees();
+        return { success: true };
+      }
+      return { success: false, message: data.message };
+    } catch (err) {
+      return { 
+        success: false, 
+        message: err.response?.data?.message || 'Failed to delete team' 
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const deleteEmployee = async (userId) => {
     try {
       setLoading(true);
@@ -383,6 +403,7 @@ const clearError = useCallback(() => {
     addMemberToTeam,
     removeMemberFromTeam,
     updateTeamMemberRole,
+    deleteTeam,
 
     // Team role functions
     loadTeamRoles,

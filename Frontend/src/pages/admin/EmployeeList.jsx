@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, Search, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
+import { Users, Search, ChevronDown, ChevronUp, Trash2, User } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -34,6 +34,7 @@ const EmployeeList = () => {
           name: emp.name,
           role: emp.role,
           created_at: emp.created_at,
+          profile_picture_url: emp.profile_picture_url,
           teams: []
         };
       }
@@ -292,7 +293,7 @@ const EmployeeList = () => {
                 <div className="overflow-hidden rounded-lg border border-gray-200">
                   {/* Table Header */}
                   <div className="grid grid-cols-12 gap-4 bg-gray-50 px-6 py-3 border-b border-gray-200">
-                    <div className="col-span-5 text-xs font-semibold text-gray-600 uppercase">Email</div>
+                    <div className="col-span-5 text-xs font-semibold text-gray-600 uppercase">Employee</div>
                     <div className="col-span-2 text-xs font-semibold text-gray-600 uppercase">Teams</div>
                     <div className="col-span-1 text-xs font-semibold text-gray-600 uppercase text-center">Details</div>
                     {/* <div className="col-span-4 text-xs font-semibold text-gray-600 uppercase text-center">Actions</div> */}
@@ -308,8 +309,26 @@ const EmployeeList = () => {
                         <div 
                           className="grid grid-cols-12 gap-4 px-6 py-4 bg-white hover:bg-gray-50 transition-colors"
                         >
-                          <div className="col-span-5 flex items-center cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
-                            <span className="text-sm text-gray-600">{employee.email}</span>
+                          <div className="col-span-5 flex items-center gap-3 cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
+                            {/* Profile Picture */}
+                            <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
+                              {employee.profile_picture_url ? (
+                                <img
+                                  src={employee.profile_picture_url}
+                                  alt={employee.name || employee.email}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <User size={20} className="text-white" />
+                              )}
+                            </div>
+                            {/* Employee Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-[#333333] truncate">
+                                {employee.name || employee.email}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{employee.email}</p>
+                            </div>
                           </div>
                           <div className="col-span-2 flex items-center cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
                             {employee.teams.length === 0 ? (

@@ -67,11 +67,19 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#F58220]/5 to-[#E0741C]/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">
-                {member?.user_name?.charAt(0)?.toUpperCase() || 
-                 member?.user_email?.charAt(0)?.toUpperCase() || 'U'}
-              </span>
+            <div className="w-10 h-10 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
+              {progressData?.member?.user_profile_picture || member?.user_profile_picture ? (
+                <img
+                  src={progressData?.member?.user_profile_picture || member?.user_profile_picture}
+                  alt={member?.user_name || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-semibold text-lg">
+                  {member?.user_name?.charAt(0)?.toUpperCase() || 
+                   member?.user_email?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              )}
             </div>
             <div>
               <h2 className="text-lg font-bold text-[#333333]">Member Progress</h2>

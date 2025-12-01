@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Plus, UserPlus, X, Edit2, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { Plus, UserPlus, X, Edit2, ChevronDown, ChevronUp, Users, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const TeamsPage = () => {
-  const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole } = useAdmin();
+  const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -17,6 +18,7 @@ const TeamsPage = () => {
   const [editingMemberId, setEditingMemberId] = useState(null); // Format: "teamId-userId"
   const [expandedTeams, setExpandedTeams] = useState(new Set());
   const [editingRole, setEditingRole] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     loadTeams();
@@ -120,6 +122,20 @@ const TeamsPage = () => {
       if (!result.success) {
         alert(result.message || 'Failed to remove member');
       }
+    }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!deleteConfirm) return;
+
+    const result = await deleteTeam(deleteConfirm.id);
+    if (result.success) {
+      setDeleteConfirm(null);
+      // Reload teams list
+      loadTeams();
+      loadEmployees();
+    } else {
+      alert(result.message || 'Failed to delete team');
     }
   };
 
@@ -331,6 +347,16 @@ const TeamsPage = () => {
                               <UserPlus size={16} />
                               Add Member
                             </Button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirm(team);
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Delete team"
+                            >
+                              <Trash2 size={18} />
+                            </button>
                           </div>
                         </div>
 
@@ -509,6 +535,19 @@ const TeamsPage = () => {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Delete Team Confirmation Dialog */}
+      {deleteConfirm && (
+        <ConfirmDialog
+          title="Delete Team"
+          message={`Are you sure you want to delete "${deleteConfirm.name}"? This will remove all team members and cannot be undone.`}
+          confirmText="Delete Team"
+          cancelText="Cancel"
+          onConfirm={handleDeleteTeam}
+          onCancel={() => setDeleteConfirm(null)}
+          variant="danger"
+        />
       )}
     </div>
   );
