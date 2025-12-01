@@ -34,10 +34,10 @@ pgvector
 
 
 # LangChain and AI dependencies
-langchain
-langchain-core
-langchain-google-genai
-google-generativeai
+langchain==0.1.20
+langchain-core==0.1.52
+langchain-google-genai==1.0.3
+google-generativeai==0.5.4
 
 
 
