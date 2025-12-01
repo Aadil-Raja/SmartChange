@@ -183,6 +183,3 @@ def reprocess_document(document_id: int) -> dict:
         
     finally:
         db.close()
-
-
-process_document(4)
