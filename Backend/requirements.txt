@@ -13,7 +13,7 @@ alembic
 PyJWT
 bcrypt==4.0.1
 passlib[bcrypt]==1.7.4
-fastapi-mail
+fastapi-mail==1.4.1
 firebase-admin
 python-multipart
 redis
