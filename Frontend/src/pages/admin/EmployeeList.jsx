@@ -1,19 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Users, Search, ChevronDown, ChevronUp, Trash2, User } from 'lucide-react';
+import { Users, Search, ChevronDown, ChevronUp, User } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const EmployeeList = () => {
-  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateTeamMemberRole, deleteEmployee } = useAdmin();
+  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateTeamMemberRole } = useAdmin();
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterTeam, setFilterTeam] = useState('');
   const [editingRole, setEditingRole] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     loadEmployees();
@@ -107,17 +105,6 @@ const EmployeeList = () => {
       newExpanded.add(employeeId);
     }
     setExpandedEmployees(newExpanded);
-  };
-
-  const handleDeleteUser = async () => {
-    if (!deleteConfirm) return;
-
-    const result = await deleteEmployee(deleteConfirm.id);
-    if (result.success) {
-      setDeleteConfirm(null);
-      // Reload employees list
-      loadEmployees();
-    }
   };
 
   return (
@@ -292,11 +279,10 @@ const EmployeeList = () => {
               ) : (
                 <div className="overflow-hidden rounded-lg border border-gray-200">
                   {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-4 bg-gray-50 px-6 py-3 border-b border-gray-200">
+                  <div className="grid grid-cols-8 gap-4 bg-gray-50 px-6 py-3 border-b border-gray-200">
                     <div className="col-span-5 text-xs font-semibold text-gray-600 uppercase">Employee</div>
                     <div className="col-span-2 text-xs font-semibold text-gray-600 uppercase">Teams</div>
                     <div className="col-span-1 text-xs font-semibold text-gray-600 uppercase text-center">Details</div>
-                    {/* <div className="col-span-4 text-xs font-semibold text-gray-600 uppercase text-center">Actions</div> */}
                   </div>
 
                   {/* Table Body */}
@@ -307,9 +293,10 @@ const EmployeeList = () => {
                       <div key={employee.id} className="border-b border-gray-200 last:border-b-0">
                         {/* Employee Row */}
                         <div 
-                          className="grid grid-cols-12 gap-4 px-6 py-4 bg-white hover:bg-gray-50 transition-colors"
+                          className="grid grid-cols-8 gap-4 px-6 py-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => toggleExpanded(employee.id)}
                         >
-                          <div className="col-span-5 flex items-center gap-3 cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
+                          <div className="col-span-5 flex items-center gap-3">
                             {/* Profile Picture */}
                             <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
                               {employee.profile_picture_url ? (
@@ -330,7 +317,7 @@ const EmployeeList = () => {
                               <p className="text-xs text-gray-500 truncate">{employee.email}</p>
                             </div>
                           </div>
-                          <div className="col-span-2 flex items-center cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
+                          <div className="col-span-2 flex items-center">
                             {employee.teams.length === 0 ? (
                               <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                                 No Teams
@@ -341,25 +328,13 @@ const EmployeeList = () => {
                               </span>
                             )}
                           </div>
-                          <div className="col-span-1 flex items-center justify-center cursor-pointer" onClick={() => toggleExpanded(employee.id)}>
+                          <div className="col-span-1 flex items-center justify-center">
                             <button className="p-1 hover:bg-gray-200 rounded transition-colors">
                               {isExpanded ? (
                                 <ChevronUp size={18} className="text-gray-600" />
                               ) : (
                                 <ChevronDown size={18} className="text-gray-600" />
                               )}
-                            </button>
-                          </div>
-                          <div className="col-span-4 flex items-center justify-center">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirm(employee);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                              title="Delete user"
-                            >
-                              <Trash2 size={18} />
                             </button>
                           </div>
                         </div>
@@ -421,19 +396,6 @@ const EmployeeList = () => {
           </div>
         </div>
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      {deleteConfirm && (
-        <ConfirmDialog
-          title="Delete User"
-          message={`Are you sure you want to delete "${deleteConfirm.email}"? This action cannot be undone and will remove the user from all teams.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={handleDeleteUser}
-          onCancel={() => setDeleteConfirm(null)}
-          variant="danger"
-        />
-      )}
     </div>
   );
 };
