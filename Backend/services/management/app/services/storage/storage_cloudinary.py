@@ -187,17 +187,18 @@ def delete_document_from_cloudinary(public_id: str, resource_type: str = "raw"):
 def delete_with_thumbnail(public_id: str, resource_type: str):
     """
     Delete a file from Cloudinary. Thumbnail is automatically invalidated.
-    Works for both videos and PDFs.
+    Works for videos, PDFs, and images.
     
     For videos: resource_type="video"
-    For PDFs: resource_type="raw"
+    For PDFs: resource_type="image" (PDFs are uploaded as image type for thumbnail support)
+    For images: resource_type="image"
     
     Note: Thumbnails are transformation URLs, not separate files.
     Deleting the source file with invalidate=True clears CDN cache.
     
     Args:
         public_id: The Cloudinary public ID
-        resource_type: Resource type ("video" for videos, "raw" for PDFs)
+        resource_type: Resource type ("video" for videos, "image" for PDFs and images)
     
     Returns:
         Cloudinary API response

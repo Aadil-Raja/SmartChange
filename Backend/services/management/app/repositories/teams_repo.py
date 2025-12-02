@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from  shared.models import  Team, TeamMember, TeamMemberRole
+from shared.models import Team, TeamMember, TeamMemberRole, Announcement, AnnouncementAttachment, AttachmentType
 import random
 def _generate_unique_code(db: Session) -> str:
     """Generate a unique 6-digit team join code."""
@@ -51,9 +51,30 @@ def update_team(db: Session, id: int, name: str) -> Team | None:
     return team
 
 def delete_team(db: Session, id: int) -> bool:
+    from app.services.storage.storage_cloudinary import delete_with_thumbnail
+    
     team = db.query(Team).filter(Team.id == id).first()
     if not team:
         return False
+    
+    # Delete all Cloudinary attachments for announcements in this team
+    try:
+        announcements = db.query(Announcement).filter(Announcement.team_id == id).all()
+        for announcement in announcements:
+            attachments = db.query(AnnouncementAttachment).filter(
+                AnnouncementAttachment.announcement_id == announcement.id
+            ).all()
+            
+            for attachment in attachments:
+                try:
+                    resource_type = "video" if attachment.attachment_type == AttachmentType.VIDEO else "image"
+                    delete_with_thumbnail(attachment.cloudinary_public_id, resource_type=resource_type)
+                except Exception as e:
+                    print(f"Warning: Failed to delete attachment {attachment.id} from Cloudinary: {e}")
+    except Exception as e:
+        print(f"Warning: Failed to cleanup Cloudinary attachments for team {id}: {e}")
+    
+    # Delete team (cascade will handle DB records)
     db.delete(team)
     db.commit()
     return True

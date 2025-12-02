@@ -99,6 +99,16 @@ def run_document_pipeline(
                 error="Document not found"
             )
         
+        # Validate document has a valid storage key or cloudinary URL
+        if not doc.storage_key and not doc.cloudinary_url:
+            logger.error(f"Document {document_id} has no storage_key or cloudinary_url - skipping")
+            docs_repo.update_status(db, document_id, DocStatus.FAILED)
+            return PipelineResult(
+                success=False,
+                document_id=document_id,
+                error="Document has no valid file reference"
+            )
+        
         docs_repo.update_status(db, document_id, DocStatus.PROCESSING)
         logger.info(f"Document {document_id} marked as PROCESSING")
         
