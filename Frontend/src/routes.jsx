@@ -17,6 +17,8 @@ import AdminTrainingForm from './pages/admin/AdminTrainingForm';
 import AdminCourseDetails from './pages/admin/AdminCourseDetails';
 import AdminContentForm from "./pages/admin/AdminContentForm.jsx";
 import AdminContentLibrary from "./pages/admin/AdminContentLibrary.jsx";
+import AdminQuizManagement from "./pages/admin/AdminQuizManagement.jsx";
+import AdminQuizDetail from "./pages/admin/AdminQuizDetail.jsx";
 import TeamAnnouncements from './pages/employee/TeamAnnouncements';
 import Chatbot from './pages/employee/Chatbot';
 import EmployeeProfile from './pages/employee/EmployeeProfile';
@@ -115,6 +117,22 @@ function AppRoutes() {
           element={
             <AdminProtectedRoute>
               <AdminContentLibrary />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/quiz"
+          element={
+            <AdminProtectedRoute>
+              <AdminQuizManagement />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/quiz/:quizId"
+          element={
+            <AdminProtectedRoute>
+              <AdminQuizDetail />
             </AdminProtectedRoute>
           }
         />

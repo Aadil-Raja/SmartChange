@@ -7,4 +7,5 @@ from . import admin
 from . import employee
 from . import announcements
 from . import admin_training
-__all__ = [ "health","auth", "admin", "employee","announcements","admin_training"]
+from . import quiz
+__all__ = [ "health","auth", "admin", "employee","announcements","admin_training","quiz"]

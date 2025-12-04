@@ -9,10 +9,10 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from shared.models.Document import Document, DocStatus
-from shared.models.Audit import ProcessingStatus, ProcessingStage
+from shared.models import Document, DocStatus, Quiz, QuizStatus, DocumentProcessingAudit, ProcessingStatus, ProcessingStage
 from shared.repos import audit_repo
 from pipeline.run_document import process_document_task
+from pipeline.quiz_generation import generate_quiz_task
 from core.config import get_settings
 
 # Setup logging
@@ -61,6 +61,12 @@ def process_document(document_id: int) -> dict:
         
         logger.info(f"Processing: {doc.title} ({doc.mime_type})")
         logger.info(f"Storage: {doc.storage_key}")
+        
+        # Delete any existing chunks to prevent duplicates
+        from repos import chunks_repo
+        existing_chunks = chunks_repo.delete_by_document(db, document_id)
+        if existing_chunks > 0:
+            logger.info(f"Deleted {existing_chunks} existing chunks before reprocessing")
         
         # Update audit - worker started processing
         audit_repo.update_stage(
@@ -180,6 +186,90 @@ def reprocess_document(document_id: int) -> dict:
         
         # Run pipeline again
         return process_document(document_id)
+        
+    finally:
+        db.close()
+
+
+
+def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
+    """
+    Generate quiz questions from document chunks using Gemini LLM.
+    
+    Pipeline steps:
+    1. Fetch document chunks from database
+    2. Combine chunks into context
+    3. Call Gemini to generate MCQ questions
+    4. Parse and save questions to database
+    5. Update quiz status to DRAFT
+    
+    Args:
+        quiz_id: ID of quiz to populate
+        document_id: ID of document to generate from
+        num_questions: Number of questions to generate
+        
+    Returns:
+        Dict with generation results for RQ job.result
+    """
+    logger.info(f"=" * 60)
+    logger.info(f"Starting generate_quiz task for quiz_id: {quiz_id}")
+    logger.info(f"Document ID: {document_id}, Questions: {num_questions}")
+    logger.info(f"=" * 60)
+    
+    db = _SessionLocal()
+    
+    try:
+        # Verify quiz exists
+        quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+        if not quiz:
+            logger.error(f"Quiz {quiz_id} not found")
+            return {"success": False, "error": "quiz_not_found"}
+        
+        logger.info(f"Generating quiz: {quiz.title}")
+        
+        # Run the quiz generation pipeline
+        result = generate_quiz_task(
+            quiz_id=quiz_id,
+            document_id=document_id,
+            num_questions=num_questions,
+            db_session=db,
+            google_api_key=settings.google_api_key
+        )
+        
+        # Update quiz status based on result
+        if result["success"]:
+            logger.info(f"✓ Quiz generation completed successfully")
+            logger.info(f"  - Questions created: {result['questions_created']}")
+            logger.info(f"  - Metadata: {result['metadata']}")
+        else:
+            logger.error(f"✗ Quiz generation failed: {result['error']}")
+            
+            # Mark quiz as DRAFT (failed generation)
+            from shared.repos import quiz_repo
+            try:
+                quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
+            except Exception as update_error:
+                logger.error(f"Failed to update quiz status: {update_error}")
+        
+        logger.info(f"=" * 60)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in generate_quiz task: {e}", exc_info=True)
+        
+        # Try to mark quiz as DRAFT (failed)
+        try:
+            from shared.repos import quiz_repo
+            quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
+        except Exception:
+            pass
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "quiz_id": quiz_id,
+            "questions_created": 0
+        }
         
     finally:
         db.close()

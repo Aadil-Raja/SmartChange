@@ -3,8 +3,10 @@
 
 from . import audit_repo
 from . import documents_repo
+from . import quiz_repo
 
 __all__ = [
     "audit_repo",
     "documents_repo",
+    "quiz_repo",
 ]

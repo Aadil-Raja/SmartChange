@@ -13,6 +13,10 @@ from .Audit import DocumentProcessingAudit, ProcessingStatus, ProcessingStage
 from .Video import Video
 from .external_link import ExternalLink
 from .progress import UserProgress, UserCourseStar
+from .quiz import Quiz, QuizStatus
+from .quiz_question import QuizQuestion
+from .quiz_option import QuizOption
+
 __all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","AnnouncementAttachment","AttachmentType","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
-           "ExternalLink","UserProgress","UserCourseStar"]
+           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption"]
 

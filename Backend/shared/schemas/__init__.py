@@ -22,7 +22,21 @@ from .admin import (
 )
 from .employee import JoinCodeIn
 from .announcements import AnnouncementCreateIn, AnnouncementOut, CommentCreateIn, CommentOut, AnnouncementWithComments,AnnouncementUpdateIn, AttachmentOut
-from .progress import ProgressUpdateIn  
+from .progress import ProgressUpdateIn
+from .quiz import (
+    QuizGenerateRequest,
+    QuizCreateManual,
+    QuizUpdateRequest,
+    QuizResponse,
+    QuizDetailResponse,
+    QuizListResponse,
+    QuizGenerateResponse,
+    QuizQuestionCreate,
+    QuizQuestionUpdate,
+    QuizQuestionResponse,
+    QuizOptionCreate,
+    QuizOptionResponse
+)  
     # user
 __all__ =[   "UserCreate", "UserOut",
 
@@ -35,4 +49,10 @@ __all__ =[   "UserCreate", "UserOut",
     "AdminLoginIn", "TeamCreate", "TeamUpdate", "TeamOut",
     "RoleInTeam", "TeamMemberAdd", "TeamMemberBrief", "TeamWithMembers",
 
-    "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementUpdateIn","AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments","AttachmentOut","ProgressUpdateIn"]
+    "TeamMemberRoleUpdate","JoinCodeIn","AnnouncementCreateIn", "AnnouncementUpdateIn","AnnouncementOut", "CommentCreateIn", "CommentOut", "AnnouncementWithComments","AttachmentOut","ProgressUpdateIn",
+    
+    # quiz
+    "QuizGenerateRequest", "QuizCreateManual", "QuizUpdateRequest", "QuizResponse",
+    "QuizDetailResponse", "QuizListResponse", "QuizGenerateResponse",
+    "QuizQuestionCreate", "QuizQuestionUpdate", "QuizQuestionResponse",
+    "QuizOptionCreate", "QuizOptionResponse"]

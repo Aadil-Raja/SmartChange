@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { Plus, BookOpen, Calendar, FileText, Search, MoreVertical, Edit, Trash2, Power, PowerOff } from "lucide-react";
+import { Plus, BookOpen, Calendar, FileText, Search, MoreVertical, Edit, Trash2, Power, PowerOff, ClipboardList } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -105,6 +105,14 @@ const AdminTrainingList = () => {
           </div>
         </div>
         <div className="flex gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => navigate("/admin/quiz")}
+            className="flex items-center gap-2"
+          >
+            <ClipboardList size={20} />
+            Manage Quizzes
+          </Button>
           <Button
             variant="secondary"
             onClick={() => navigate("/admin/training/library")}
