@@ -10,6 +10,7 @@ from .announcement_attachment import AnnouncementAttachment, AttachmentType
 from .course import Course
 from .course_content import ContentItem, ContentType
 from .Audit import DocumentProcessingAudit, ProcessingStatus, ProcessingStage
+from .quiz_audit import QuizGenerationAudit, QuizGenerationStatus, QuizGenerationStage
 from .Video import Video
 from .external_link import ExternalLink
 from .progress import UserProgress, UserCourseStar
@@ -18,5 +19,5 @@ from .quiz_question import QuizQuestion
 from .quiz_option import QuizOption
 
 __all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","AnnouncementAttachment","AttachmentType","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
-           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption"]
+           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption","QuizGenerationAudit","QuizGenerationStatus","QuizGenerationStage"]
 

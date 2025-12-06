@@ -9,7 +9,7 @@ export const generateQuiz = async (documentId, quizData) => {
   
   try {
     const response = await api.post(
-      `/api/quizzes/generate?document_id=${documentId}`,
+      `/admin-quizzes/generate?document_id=${documentId}`,
       quizData
     );
     console.log('quizApi: Generate quiz response:', response.data);
@@ -26,7 +26,7 @@ export const getQuiz = async (quizId) => {
   console.log('quizApi: getQuiz called with:', quizId);
   
   try {
-    const response = await api.get(`/api/quizzes/${quizId}`);
+    const response = await api.get(`/admin-quizzes/${quizId}`);
     console.log('quizApi: getQuiz response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
@@ -41,7 +41,7 @@ export const getQuizzesByDocument = async (documentId) => {
   console.log('quizApi: getQuizzesByDocument called with:', documentId);
   
   try {
-    const response = await api.get(`/api/quizzes/document/${documentId}`);
+    const response = await api.get(`/admin-quizzes/document/${documentId}`);
     console.log('quizApi: getQuizzesByDocument response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
@@ -56,7 +56,7 @@ export const updateQuiz = async (quizId, quizData) => {
   console.log('quizApi: updateQuiz called with:', { quizId, quizData });
   
   try {
-    const response = await api.put(`/api/quizzes/${quizId}`, quizData);
+    const response = await api.put(`/admin-quizzes/${quizId}`, quizData);
     console.log('quizApi: updateQuiz response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
@@ -71,7 +71,7 @@ export const publishQuiz = async (quizId) => {
   console.log('quizApi: publishQuiz called with:', quizId);
   
   try {
-    const response = await api.post(`/api/quizzes/${quizId}/publish`);
+    const response = await api.post(`/admin-quizzes/${quizId}/publish`);
     console.log('quizApi: publishQuiz response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
@@ -86,7 +86,7 @@ export const deleteQuiz = async (quizId) => {
   console.log('quizApi: deleteQuiz called with:', quizId);
   
   try {
-    const response = await api.delete(`/api/quizzes/${quizId}`);
+    const response = await api.delete(`/admin-quizzes/${quizId}`);
     console.log('quizApi: deleteQuiz response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
@@ -104,7 +104,7 @@ export const addQuestion = async (quizId, questionData) => {
   
   try {
     const response = await api.post(
-      `/api/quizzes/${quizId}/questions`,
+      `/admin-quizzes/${quizId}/questions`,
       questionData
     );
     console.log('quizApi: addQuestion response:', response.data);
@@ -122,7 +122,7 @@ export const updateQuestion = async (questionId, questionData) => {
   
   try {
     const response = await api.put(
-      `/api/quizzes/questions/${questionId}`,
+      `/admin-quizzes/questions/${questionId}`,
       questionData
     );
     console.log('quizApi: updateQuestion response:', response.data);
@@ -139,12 +139,29 @@ export const deleteQuestion = async (questionId) => {
   console.log('quizApi: deleteQuestion called with:', questionId);
   
   try {
-    const response = await api.delete(`/api/quizzes/questions/${questionId}`);
+    const response = await api.delete(`/admin-quizzes/questions/${questionId}`);
     console.log('quizApi: deleteQuestion response:', response.data);
     // Extract data from the response wrapper
     return response.data.data || response.data;
   } catch (error) {
     console.error('quizApi: deleteQuestion error:', error);
+    throw error;
+  }
+};
+
+// ==================== STATISTICS ====================
+
+// Get quiz statistics (total, published, per-document counts)
+export const getQuizStats = async () => {
+  console.log('quizApi: getQuizStats called');
+  
+  try {
+    const response = await api.get('/admin-quizzes/stats');
+    console.log('quizApi: getQuizStats response:', response.data);
+    // Extract data from the response wrapper
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: getQuizStats error:', error);
     throw error;
   }
 };
@@ -173,5 +190,39 @@ export const getQuizCount = async (documentId) => {
   } catch (error) {
     console.error('quizApi: getQuizCount error:', error);
     return 0;
+  }
+};
+
+
+// ==================== AUDIT ====================
+
+// Get audit record for a quiz
+export const getQuizAudit = async (quizId) => {
+  console.log('quizApi: getQuizAudit called with:', quizId);
+  
+  try {
+    const response = await api.get(`/admin-quizzes/${quizId}/audit`);
+    console.log('quizApi: getQuizAudit response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: getQuizAudit error:', error);
+    throw error;
+  }
+};
+
+// List all quiz generation audits
+export const listQuizAudits = async (limit = 50, status = null) => {
+  console.log('quizApi: listQuizAudits called with:', { limit, status });
+  
+  try {
+    const params = { limit };
+    if (status) params.status = status;
+    
+    const response = await api.get('/admin-quizzes/audits/list', { params });
+    console.log('quizApi: listQuizAudits response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: listQuizAudits error:', error);
+    throw error;
   }
 };

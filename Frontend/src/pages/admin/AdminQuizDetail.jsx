@@ -24,6 +24,7 @@ const AdminQuizDetail = () => {
   const { quizId } = useParams();
 
   const [quiz, setQuiz] = useState(null);
+  const [audit, setAudit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -31,6 +32,9 @@ const AdminQuizDetail = () => {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Check if quiz is currently being generated
+  const isGenerating = quiz?.status === 'GENERATING' || audit?.status === 'GENERATING';
 
   // Question form
   const [questionForm, setQuestionForm] = useState({
@@ -47,7 +51,33 @@ const AdminQuizDetail = () => {
 
   useEffect(() => {
     loadQuiz();
+    loadAudit();
   }, [quizId]);
+
+  // Poll for audit updates while generating (only audit, not full quiz)
+  useEffect(() => {
+    // Only start polling if quiz is generating
+    const shouldPoll = quiz?.status === 'GENERATING' || audit?.status === 'GENERATING';
+    
+    if (!shouldPoll) return;
+
+    const interval = setInterval(async () => {
+      // Only fetch audit (lighter than full quiz)
+      try {
+        const auditResponse = await quizApi.getQuizAudit(quizId);
+        setAudit(auditResponse);
+        
+        // If generation completed, reload full quiz once
+        if (auditResponse.status === 'COMPLETED' || auditResponse.status === 'FAILED') {
+          loadQuiz();
+        }
+      } catch (err) {
+        console.log('Error polling audit:', err);
+      }
+    }, 5000); // Poll every 5 seconds (less frequent)
+
+    return () => clearInterval(interval);
+  }, [quiz?.status, audit?.status]); // Only depend on status values, not full objects
 
   const loadQuiz = async () => {
     setLoading(true);
@@ -58,6 +88,16 @@ const AdminQuizDetail = () => {
       setError(err.response?.data?.detail || 'Failed to load quiz');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAudit = async () => {
+    try {
+      const response = await quizApi.getQuizAudit(quizId);
+      setAudit(response);
+    } catch (err) {
+      console.log('No audit record found or error loading audit:', err);
+      // Don't show error to user, audit might not exist yet
     }
   };
 
@@ -198,12 +238,13 @@ const AdminQuizDetail = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleAddQuestion}
+                disabled={isGenerating}
                 className="bg-[#78BE20] hover:bg-[#6BA51D]"
               >
                 <Plus size={16} />
-                <span>Add Question</span>
+                <span>{isGenerating ? 'Generating...' : 'Add Question'}</span>
               </Button>
-              {quiz.status === 'DRAFT' && quiz.total_questions > 0 && (
+              {quiz.status === 'DRAFT' && quiz.total_questions > 0 && !isGenerating && (
                 <Button
                   onClick={handlePublishQuiz}
                   className="bg-[#F58220] hover:bg-[#E07010]"
@@ -228,16 +269,85 @@ const AdminQuizDetail = () => {
           </Alert>
         )}
 
+        {/* Generating Banner */}
+        {isGenerating && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+            <LoadingSpinner size="sm" />
+            <div>
+              <p className="text-sm font-medium text-blue-900">Quiz is being generated</p>
+              <p className="text-xs text-blue-700">
+                Questions are being created. Editing is disabled until generation completes.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Generation Audit */}
+        {audit && (
+          <Card className="p-6 mb-6">
+            <h3 className="text-lg font-semibold text-[#333333] mb-4">Generation Details</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-gray-500">Status</p>
+                <p className={`text-sm font-medium ${
+                  audit.status === 'COMPLETED' ? 'text-green-600' :
+                  audit.status === 'FAILED' ? 'text-red-600' :
+                  audit.status === 'GENERATING' ? 'text-blue-600' :
+                  'text-gray-600'
+                }`}>
+                  {audit.status}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Stage</p>
+                <p className="text-sm font-medium text-gray-700">{audit.current_stage}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Chunks Used</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {audit.chunks_selected}/{audit.total_chunks}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Tokens</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {audit.total_tokens?.toLocaleString() || 'N/A'}
+                </p>
+              </div>
+              {audit.duration_seconds && (
+                <div>
+                  <p className="text-xs text-gray-500">Duration</p>
+                  <p className="text-sm font-medium text-gray-700">
+                    {audit.duration_seconds.toFixed(1)}s
+                  </p>
+                </div>
+              )}
+              {audit.error_message && (
+                <div className="col-span-2 md:col-span-4">
+                  <p className="text-xs text-gray-500">Error</p>
+                  <p className="text-sm font-medium text-red-600">{audit.error_message}</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* Questions List */}
         <div className="space-y-4">
           {quiz.questions.length === 0 ? (
             <Card className="p-12 text-center">
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No questions yet</h3>
-              <p className="text-gray-500 mb-4">Add questions to this quiz</p>
-              <Button onClick={handleAddQuestion} className="bg-[#78BE20] hover:bg-[#6BA51D]">
-                <Plus size={16} />
-                <span>Add First Question</span>
-              </Button>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                {isGenerating ? 'Generating questions...' : 'No questions yet'}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {isGenerating ? 'Please wait while questions are being generated' : 'Add questions to this quiz'}
+              </p>
+              {!isGenerating && (
+                <Button onClick={handleAddQuestion} className="bg-[#78BE20] hover:bg-[#6BA51D]">
+                  <Plus size={16} />
+                  <span>Add First Question</span>
+                </Button>
+              )}
             </Card>
           ) : (
             quiz.questions.map((question, index) => (
@@ -287,6 +397,7 @@ const AdminQuizDetail = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEditQuestion(question)}
+                      disabled={isGenerating}
                     >
                       <Edit size={16} />
                     </Button>
@@ -294,6 +405,7 @@ const AdminQuizDetail = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => setDeleteConfirm(question.id)}
+                      disabled={isGenerating}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 size={16} />

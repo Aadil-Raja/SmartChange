@@ -30,6 +30,7 @@ const AdminQuizManagement = () => {
 
   const [documents, setDocuments] = useState([]);
   const [quizzes, setQuizzes] = useState({});
+  const [quizStats, setQuizStats] = useState(null);
   const [expandedDocs, setExpandedDocs] = useState(new Set());
   const [loadingQuizzes, setLoadingQuizzes] = useState({});
   const [loading, setLoading] = useState(false);
@@ -50,8 +51,18 @@ const AdminQuizManagement = () => {
 
   useEffect(() => {
     loadDocuments();
+    loadQuizStats();
     return () => clearMessages();
   }, []);
+
+  const loadQuizStats = async () => {
+    try {
+      const stats = await quizApi.getQuizStats();
+      setQuizStats(stats);
+    } catch (err) {
+      console.error('Failed to load quiz stats:', err);
+    }
+  };
 
   const loadDocuments = async () => {
     setLoading(true);
@@ -129,9 +140,10 @@ const AdminQuizManagement = () => {
       setSuccess(`Quiz generation started! Quiz ID: ${response.quiz_id}`);
       setShowGenerateModal(false);
       
-      // Reload quizzes for this document after a delay (force reload)
+      // Reload quizzes for this document and stats after a delay (force reload)
       setTimeout(() => {
         loadQuizzesForDocument(selectedDocument.id, true);
+        loadQuizStats();
       }, 2000);
     } catch (err) {
       console.error('Generate quiz error:', err);
@@ -147,6 +159,7 @@ const AdminQuizManagement = () => {
       await quizApi.deleteQuiz(quizId);
       setSuccess('Quiz deleted successfully');
       loadQuizzesForDocument(documentId, true);
+      loadQuizStats();
       setDeleteConfirm(null);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete quiz');
@@ -158,6 +171,7 @@ const AdminQuizManagement = () => {
       await quizApi.publishQuiz(quizId);
       setSuccess('Quiz published successfully');
       loadQuizzesForDocument(documentId, true);
+      loadQuizStats();
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to publish quiz');
     }
@@ -244,7 +258,7 @@ const AdminQuizManagement = () => {
               <CheckCircle size={20} className="text-[#F58220]" />
               <div>
                 <p className="text-2xl font-bold text-[#333333]">
-                  {Object.values(quizzes).flat().length}
+                  {quizStats?.total_quizzes || 0}
                 </p>
                 <p className="text-xs text-gray-600">Total Quizzes</p>
               </div>
@@ -255,7 +269,7 @@ const AdminQuizManagement = () => {
               <Clock size={20} className="text-blue-500" />
               <div>
                 <p className="text-2xl font-bold text-[#333333]">
-                  {Object.values(quizzes).flat().filter(q => q.status === 'PUBLISHED').length}
+                  {quizStats?.published_count || 0}
                 </p>
                 <p className="text-xs text-gray-600">Published Quizzes</p>
               </div>
@@ -305,11 +319,15 @@ const AdminQuizManagement = () => {
                     </button>
                     <div className="flex-1">
                       <h3 className="text-base font-semibold text-[#333333]">{doc.title}</h3>
-                      {quizzes[doc.id] && quizzes[doc.id].length > 0 && (
-                        <p className="text-xs text-[#78BE20] mt-0.5">
-                          {quizzes[doc.id].length} {quizzes[doc.id].length === 1 ? 'quiz' : 'quizzes'}
-                        </p>
-                      )}
+                      {(() => {
+                        const docStats = quizStats?.by_document?.find(d => d.document_id === doc.id);
+                        const count = docStats?.total || 0;
+                        return count > 0 && (
+                          <p className="text-xs text-[#78BE20] mt-0.5">
+                            {count} {count === 1 ? 'quiz' : 'quizzes'}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                   <Button
@@ -348,12 +366,13 @@ const AdminQuizManagement = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
+                            className="border-[#78BE20] text-[#78BE20] hover:bg-[#78BE20] hover:text-white"
                           >
                             <Eye size={16} />
-                            <span>View</span>
+                            <span>View Details</span>
                           </Button>
                           {quiz.status === 'DRAFT' && (
                             <Button

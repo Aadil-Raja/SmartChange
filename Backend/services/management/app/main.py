@@ -55,7 +55,7 @@ app.include_router(routers.admin.router, prefix="/admin", tags=["admin"])
 app.include_router(routers.employee.router, prefix="/employee", tags=["employee "])
 app.include_router(routers.announcements.router, prefix="/teams", tags=["announcements"])
 app.include_router(routers.admin_training.router, prefix="/admin-training", tags=["Admin - Training"])
-app.include_router(routers.quiz.router, prefix="/api", tags=["quizzes"])
+app.include_router(routers.quiz.router, prefix="/admin-quizzes", tags=["quizzes"])
 @app.get("/")
 def root():
     return {"message": "SmartChange API running"}

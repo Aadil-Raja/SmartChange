@@ -9,8 +9,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Detect which side we're calling (admin or employee)
-    const isAdminRequest = config.url.startsWith("/admin") || 
-                          config.url.startsWith("/api/quizzes");
+    const isAdminRequest = config.url.startsWith("/admin");
 
     // Choose token accordingly
     const token = isAdminRequest

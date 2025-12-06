@@ -57,6 +57,11 @@ def get_quizzes_by_document(
     return query.order_by(Quiz.created_at.desc()).all()
 
 
+def get_all_quizzes_by_user(db: Session, user_id: int) -> List[Quiz]:
+    """Get all quizzes created by a user"""
+    return db.query(Quiz).filter(Quiz.created_by == user_id).order_by(Quiz.created_at.desc()).all()
+
+
 def update_quiz(
     db: Session,
     quiz_id: int,

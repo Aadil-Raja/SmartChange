@@ -198,7 +198,7 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
     
     Pipeline steps:
     1. Fetch document chunks from database
-    2. Combine chunks into context
+    2. Smart chunk selection
     3. Call Gemini to generate MCQ questions
     4. Parse and save questions to database
     5. Update quiz status to DRAFT
@@ -217,8 +217,16 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
     logger.info(f"=" * 60)
     
     db = _SessionLocal()
+    job_id = None
     
     try:
+        # Get current RQ job ID
+        from rq import get_current_job
+        current_job = get_current_job()
+        if current_job:
+            job_id = current_job.id
+            logger.info(f"RQ Job ID: {job_id}")
+        
         # Verify quiz exists
         quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
         if not quiz:
@@ -227,22 +235,48 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
         
         logger.info(f"Generating quiz: {quiz.title}")
         
+        # Create audit record
+        from shared.repos import quiz_audit_repo
+        from shared.models import QuizGenerationStatus
+        
+        if job_id:
+            audit = quiz_audit_repo.create_audit(
+                db,
+                quiz_id=quiz_id,
+                document_id=document_id,
+                job_id=job_id,
+                num_questions_requested=num_questions
+            )
+            logger.info(f"Created audit record: {audit.id}")
+            
+            # Update status to GENERATING
+            quiz_audit_repo.update_status(db, job_id, QuizGenerationStatus.GENERATING)
+        
         # Run the quiz generation pipeline
         result = generate_quiz_task(
             quiz_id=quiz_id,
             document_id=document_id,
             num_questions=num_questions,
             db_session=db,
-            google_api_key=settings.google_api_key
+            google_api_key=settings.google_api_key,
+            job_id=job_id
         )
         
-        # Update quiz status based on result
+        # Update quiz status and audit based on result
         if result["success"]:
             logger.info(f"✓ Quiz generation completed successfully")
             logger.info(f"  - Questions created: {result['questions_created']}")
             logger.info(f"  - Metadata: {result['metadata']}")
+            
+            # Update audit to COMPLETED
+            if job_id:
+                quiz_audit_repo.update_status(db, job_id, QuizGenerationStatus.COMPLETED)
         else:
             logger.error(f"✗ Quiz generation failed: {result['error']}")
+            
+            # Update audit with error
+            if job_id:
+                quiz_audit_repo.update_error(db, job_id, result['error'], result.get('metadata', {}).get('error_stage'))
             
             # Mark quiz as DRAFT (failed generation)
             from shared.repos import quiz_repo
