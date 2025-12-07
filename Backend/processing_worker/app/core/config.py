@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     
     # Google AI
     google_api_key: str
+    quiz_google_api_key: str | None = None  # Optional separate key for quiz generation
     embedding_model: str = "models/text-embedding-004"
     embedding_dimension: int = 768
     

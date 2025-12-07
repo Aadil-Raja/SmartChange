@@ -253,12 +253,16 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
             quiz_audit_repo.update_status(db, job_id, QuizGenerationStatus.GENERATING)
         
         # Run the quiz generation pipeline
+        # Use quiz-specific API key if available, otherwise fall back to main key
+        quiz_api_key = settings.quiz_google_api_key or settings.google_api_key
+        logger.info(f"Using {'dedicated quiz' if settings.quiz_google_api_key else 'shared'} API key")
+        
         result = generate_quiz_task(
             quiz_id=quiz_id,
             document_id=document_id,
             num_questions=num_questions,
             db_session=db,
-            google_api_key=settings.google_api_key,
+            google_api_key=quiz_api_key,
             job_id=job_id
         )
         

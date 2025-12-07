@@ -8,7 +8,9 @@ import json
 settings = get_settings()
 
 # Configure Gemini once (module import time)
-genai.configure(api_key=settings.google_api_key)
+# Use RAG-specific API key if available, otherwise fall back to main key
+rag_api_key = settings.rag_google_api_key or settings.google_api_key
+genai.configure(api_key=rag_api_key)
 
 def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5) -> Dict[str, Any]:
     print("\n" + "="*80, file=sys.stderr)

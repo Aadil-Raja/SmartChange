@@ -7,7 +7,9 @@ import google.generativeai as genai
 from app.core.config import get_settings
 
 settings = get_settings()
-genai.configure(api_key=settings.google_api_key)
+# Use Summary-specific API key if available, otherwise fall back to RAG key, then main key
+summary_api_key = settings.summary_google_api_key or settings.rag_google_api_key or settings.google_api_key
+genai.configure(api_key=summary_api_key)
 
 class DocSummaryToolArgs(BaseModel):
     """Arguments for document summary generation"""
