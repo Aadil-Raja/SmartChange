@@ -351,3 +351,33 @@ async def get_all_main_topics(
         print(f"Error fetching main topics: {e}", file=sys.stderr)
         traceback.print_exc()
         return make_response(False, "Could not fetch main topics", status_code=500, error=str(e))
+
+
+@router.post("/documents/{document_id}/generate-main-topics", status_code=status.HTTP_200_OK)
+async def generate_document_main_topics_ai(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    🤖 AI-Generate main topics for a document.
+    
+    This endpoint:
+    1. Checks document is PROCESSED
+    2. Analyzes document chunks
+    3. Groups by section titles
+    4. Uses AI to generate topic names and descriptions
+    5. Saves to database
+    
+    Args:
+        document_id: ID of the document (must be PROCESSED status)
+        
+    Returns:
+        Generated main topics with metadata
+    """
+    try:
+        return documents_service.generate_main_topics_ai(db, document_id=document_id)
+    except Exception as e:
+        print(f"Error generating main topics for document {document_id}: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, "Could not generate main topics", status_code=500, error=str(e))

@@ -377,3 +377,239 @@ def list_main_topics(db: Session, *, document_id: int):
         print(f"[list_main_topics] ERROR fetching topics: {e}", file=sys.stderr)
         traceback.print_exc()
         return make_response(False, f"Failed to retrieve topics: {str(e)}", status_code=500)
+
+
+# 🆕 NEW FUNCTION: AI-Generated Main Topics
+def generate_main_topics_ai(db: Session, *, document_id: int):
+    """
+    Generate main topics for a document using AI.
+    
+    Process:
+    1. Check document status (must be PROCESSED)
+    2. Query all chunks for the document
+    3. Group chunks by section_title (first 3 per section)
+    4. Extract first line from each chunk
+    5. Call Gemini to generate topics JSON
+    6. Save to database
+    
+    Args:
+        db: SQLAlchemy session
+        document_id: Document ID
+        
+    Returns:
+        Response with generated topics
+    """
+    import google.generativeai as genai
+    import json
+    import re
+    from shared.models import DocumentChunk
+    
+    print(f"[generate_main_topics_ai] Starting for document_id={document_id}", file=sys.stderr)
+    
+    try:
+        # Step 1: Check document exists and is PROCESSED
+        doc = documents_repo.get_by_id(db, document_id)
+        if not doc:
+            return make_response(False, "Document not found", status_code=404)
+        
+        if doc.status != DocStatus.PROCESSED:
+            return make_response(
+                False, 
+                f"Document must be PROCESSED to generate topics. Current status: {doc.status.value}",
+                status_code=400
+            )
+        
+        print(f"[generate_main_topics_ai] Document '{doc.title}' is PROCESSED", file=sys.stderr)
+        
+        # Step 2: Query all chunks ordered by chunk_index
+        chunks = db.query(DocumentChunk).filter(
+            DocumentChunk.document_id == document_id
+        ).order_by(DocumentChunk.chunk_index).all()
+        
+        if not chunks:
+            return make_response(
+                False,
+                "No chunks found for this document. Document may not have been processed correctly.",
+                status_code=400
+            )
+        
+        print(f"[generate_main_topics_ai] Found {len(chunks)} chunks", file=sys.stderr)
+        
+        # Step 3: Group chunks by section_title (first 3 per section)
+        section_map = {}  # {section_title: [first_lines]}
+        
+        for chunk in chunks:
+            section_title = chunk.section_title
+            
+            # If no section_title, extract first line as section name
+            if not section_title:
+                section_title = _extract_first_line(chunk.text)
+                if not section_title:
+                    section_title = "General Content"
+            
+            # Initialize list for this section
+            if section_title not in section_map:
+                section_map[section_title] = []
+            
+            # Only keep first 3 chunks per section
+            if len(section_map[section_title]) < 3:
+                first_line = _extract_first_line(chunk.text)
+                if first_line:
+                    section_map[section_title].append(first_line)
+        
+        print(f"[generate_main_topics_ai] Grouped into {len(section_map)} sections", file=sys.stderr)
+        
+        # Step 4: Build context for LLM
+        section_summaries = {}
+        for section, lines in section_map.items():
+            # Join lines with comma
+            section_summaries[section] = ", ".join(lines)
+        
+        # Step 5: Call Gemini to generate topics
+        if not settings.google_api_key:
+            return make_response(
+                False,
+                "Google API key not configured",
+                status_code=500
+            )
+        
+        genai.configure(api_key=settings.google_api_key)
+        model = genai.GenerativeModel(settings.llm_model)
+        
+        # Build prompt
+        sections_text = "\n\n".join([
+            f"Section: {section}\nContent: {summary}"
+            for section, summary in section_summaries.items()
+        ])
+        
+        prompt = f"""Based on the following document sections and their content, generate a JSON object with main topics.
+
+Document: {doc.title}
+
+Sections and Content:
+{sections_text}
+
+Generate a JSON object where:
+- Keys are topic names (concise, 2-5 words, use the section names as guidance)
+- Values are descriptions that PRESERVE IMPORTANT KEYWORDS from the content
+
+CRITICAL RULES FOR DESCRIPTIONS:
+1. Include as many specific keywords, terms, and concepts from the content as possible
+2. Use comma-separated lists of key terms (this helps with semantic search)
+3. Preserve technical terms, acronyms, and domain-specific vocabulary exactly as they appear
+4. Keep descriptions informative but keyword-rich (1-2 sentences)
+5. Prioritize nouns, technical terms, and action verbs from the original content
+
+Example format:
+{{
+  "User Authentication": "Authentication principles, password-based authentication, token-based authentication, JWT tokens, OAuth 2.0, biometric systems, session management, multi-factor authentication",
+  "Access Control": "Access control principles, DAC implementation, UNIX file security, RBAC models, ABAC models, role-based access, attribute-based access, authorization patterns, permission management"
+}}
+
+Return ONLY valid JSON, no markdown formatting or extra text.
+
+Generate the topics JSON now:"""
+        
+        print(f"[generate_main_topics_ai] Calling Gemini ({settings.llm_model})...", file=sys.stderr)
+        
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        print(f"[generate_main_topics_ai] Received response: {len(response_text)} chars", file=sys.stderr)
+        
+        # Clean up response (remove markdown if present)
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
+        # Step 6: Parse JSON
+        try:
+            main_topics = json.loads(response_text)
+            
+            if not isinstance(main_topics, dict):
+                raise ValueError("Response is not a dictionary")
+            
+            print(f"[generate_main_topics_ai] Parsed {len(main_topics)} topics", file=sys.stderr)
+            
+        except json.JSONDecodeError as e:
+            print(f"[generate_main_topics_ai] JSON parse error: {e}", file=sys.stderr)
+            print(f"[generate_main_topics_ai] Response: {response_text[:500]}", file=sys.stderr)
+            
+            # Fallback: use section titles as topics
+            main_topics = {
+                section: f"Content related to {section}"
+                for section in section_summaries.keys()
+            }
+            print(f"[generate_main_topics_ai] Using fallback topics", file=sys.stderr)
+        
+        # Step 7: Save to database
+        updated_doc = documents_repo.update_main_topics(
+            db,
+            document_id=document_id,
+            main_topics=main_topics
+        )
+        
+        if not updated_doc:
+            return make_response(False, "Failed to save topics to database", status_code=500)
+        
+        print(f"[generate_main_topics_ai] ✓ Topics saved successfully", file=sys.stderr)
+        
+        return make_response(
+            True,
+            "Main topics generated successfully",
+            data={
+                "document_id": document_id,
+                "main_topics": main_topics,
+                "chunks_analyzed": len(chunks),
+                "sections_found": len(section_map)
+            },
+            status_code=200
+        )
+        
+    except Exception as e:
+        print(f"[generate_main_topics_ai] ERROR: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(
+            False,
+            f"Failed to generate topics: {str(e)}",
+            status_code=500,
+            error=str(e)
+        )
+
+
+def _extract_first_line(text: str) -> str:
+    """
+    Extract first line from text.
+    Up to first period (.) or max 100-120 characters.
+    
+    Args:
+        text: Input text
+        
+    Returns:
+        First line (cleaned)
+    """
+    if not text:
+        return ""
+    
+    # Clean text
+    text = text.strip()
+    
+    # Find first period
+    period_idx = text.find('.')
+    
+    if period_idx > 0:
+        # Use text up to period
+        first_line = text[:period_idx + 1]
+    else:
+        # No period found, use first 120 chars
+        first_line = text[:120]
+    
+    # Ensure we don't exceed 120 chars
+    if len(first_line) > 120:
+        first_line = first_line[:120].strip() + "..."
+    
+    return first_line.strip()

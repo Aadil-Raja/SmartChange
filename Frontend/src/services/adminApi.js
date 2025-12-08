@@ -132,6 +132,11 @@ export const updateMainTopics = async (documentId, mainTopics) => {
   return res.data;
 };
 
+export const generateMainTopicsAI = async (documentId) => {
+  const res = await api.post(`/admin/documents/${documentId}/generate-main-topics`);
+  return res.data;
+};
+
 // ============ PROCESSING JOBS / AUDIT LOG ============
 export const fetchProcessingJobs = async () => {
   const res = await api.get("/admin/processing-jobs");

@@ -6,7 +6,7 @@ import Card from '../../components/ui/Card';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import { useAdmin } from '../../hooks/useAdmin';
-import { getMainTopics, updateMainTopics, fetchProcessingJobs } from '../../services/adminApi';
+import { getMainTopics, updateMainTopics, generateMainTopicsAI, fetchProcessingJobs } from '../../services/adminApi';
 
 const AdminDashboard = () => {
   const {
@@ -33,6 +33,7 @@ const AdminDashboard = () => {
   const [mainTopics, setMainTopics] = useState({});
   const [loadingTopics, setLoadingTopics] = useState(false);
   const [savingTopics, setSavingTopics] = useState(false);
+  const [generatingTopics, setGeneratingTopics] = useState(false);
   const [processingDocs, setProcessingDocs] = useState(new Set());
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditJobs, setAuditJobs] = useState([]);
@@ -197,6 +198,27 @@ const AdminDashboard = () => {
       delete updated[key];
       return updated;
     });
+  };
+
+  const handleGenerateMainTopics = async () => {
+    if (!selectedDoc) return;
+    
+    setGeneratingTopics(true);
+    try {
+      const result = await generateMainTopicsAI(selectedDoc.id);
+      if (result.success) {
+        // Update the topics with AI-generated ones
+        setMainTopics(result.data.main_topics || {});
+        alert(`✅ Generated ${Object.keys(result.data.main_topics || {}).length} topics from ${result.data.chunks_analyzed} chunks!`);
+      } else {
+        alert(`❌ Failed to generate topics: ${result.message}`);
+      }
+    } catch (err) {
+      console.error('Failed to generate main topics:', err);
+      alert(`❌ Error: ${err.response?.data?.message || err.message}`);
+    } finally {
+      setGeneratingTopics(false);
+    }
   };
 
   const handleReprocess = async (documentId) => {
@@ -684,14 +706,40 @@ const AdminDashboard = () => {
                   ))}
                 </div>
 
-                <Button
-                  onClick={handleAddTopic}
-                  variant="ghost"
-                  className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-[#F58220]"
-                >
-                  <Plus size={18} />
-                  Add New Topic
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleAddTopic}
+                    variant="ghost"
+                    className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-[#F58220]"
+                  >
+                    <Plus size={18} />
+                    Add New Topic
+                  </Button>
+
+                  {/* 🤖 AI Generate Button - Only for PROCESSED documents */}
+                  {selectedDoc?.status === 'PROCESSED' && (
+                    <Button
+                      onClick={handleGenerateMainTopics}
+                      variant="secondary"
+                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
+                      disabled={generatingTopics}
+                    >
+                      {generatingTopics ? (
+                        <>
+                          <RefreshCw size={18} className="animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5h-1v1.27c.6.34 1 .99 1 1.73a2 2 0 0 1-4 0c0-.74.4-1.39 1-1.73V9h-1a5 5 0 0 0-5 5H3a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                          </svg>
+                          🤖 Generate with AI
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
 
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
                   <Button

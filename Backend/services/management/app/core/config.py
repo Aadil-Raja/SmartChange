@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     cloudinary_api_key: str | None = None
     cloudinary_api_secret: str | None = None
     cloudinary_folder: str | None = None
+    
+    # Google AI for topic generation
+    google_api_key: str | None = None
+    llm_model: str = "gemini-2.5-flash"
 
 @lru_cache()
 def get_settings() -> Settings:
