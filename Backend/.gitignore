@@ -70,9 +70,14 @@ pnpm-lock.yaml
 Thumbs.db
 
 
+# Secrets and credentials
+secrets/
+**/secrets/
 secrets/*.json
+**/secrets/*.json
 *.pem
 *.p12
+*firebase-service-account.json
 
 data/
 
