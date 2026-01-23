@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
-from shared.models.quiz import QuizStatus
+from shared.models.course_quiz import QuizStatus
 from shared.models.course_quiz_question import QuestionType
 
 
@@ -39,16 +39,8 @@ class CourseQuizQuestionCreate(CourseQuizQuestionBase):
     options: Optional[List[CourseQuizOptionCreate]] = Field(None, min_length=2, max_length=4)
 
 
-class CourseQuizQuestionCustomize(BaseModel):
-    """Schema for converting referenced question to course-specific"""
-    question_text: str
-    correct_answer_index: int = Field(ge=0, le=3)
-    explanation: Optional[str] = None
-    options: List[CourseQuizOptionCreate] = Field(min_length=2, max_length=4)
-
-
 class CourseQuizQuestionUpdate(BaseModel):
-    """Schema for updating course-specific questions"""
+    """Schema for updating any course quiz question - auto-converts REFERENCED to COURSE_SPECIFIC"""
     question_text: Optional[str] = None
     correct_answer_index: Optional[int] = Field(None, ge=0, le=3)
     explanation: Optional[str] = None

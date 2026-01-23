@@ -44,7 +44,6 @@ from .course_quiz import (
     CourseQuizDetailResponse,
     CourseQuizListResponse,
     CourseQuizQuestionCreate,
-    CourseQuizQuestionCustomize,
     CourseQuizQuestionUpdate,
     CourseQuizQuestionResponse,
     CourseQuizOptionCreate,
@@ -75,6 +74,6 @@ __all__ =[   "UserCreate", "UserOut",
     # course quiz
     "CourseQuizCreateRequest", "CourseQuizUpdateRequest", "CourseQuizResponse",
     "CourseQuizDetailResponse", "CourseQuizListResponse", "CourseQuizQuestionCreate",
-    "CourseQuizQuestionCustomize", "CourseQuizQuestionUpdate", "CourseQuizQuestionResponse",
+    "CourseQuizQuestionUpdate", "CourseQuizQuestionResponse",
     "CourseQuizOptionCreate", "CourseQuizOptionResponse", "AvailableQuestionResponse",
     "AvailableQuestionsListResponse"]

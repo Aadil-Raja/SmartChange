@@ -3,8 +3,10 @@ from sqlalchemy import and_
 from typing import List, Optional
 from shared.models import (
     CourseQuiz, CourseQuizQuestion, CourseQuestionDetail, CourseQuestionOption, 
-    QuizStatus, QuestionType, Quiz, QuizQuestion
+    Quiz, QuizQuestion
 )
+from shared.models.course_quiz import QuizStatus
+from shared.models.course_quiz_question import QuestionType
 
 
 # ============ Course Quiz CRUD ============

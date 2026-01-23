@@ -141,30 +141,6 @@ def add_question(
         return make_response(False, "Failed to add question", status_code=500, error=str(e))
 
 
-@router.put("/questions/{question_id}/customize", status_code=status.HTTP_200_OK)
-def customize_question(
-    question_id: int,
-    payload: schemas.CourseQuizQuestionCustomize,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Convert referenced question to course-specific"""
-    try:
-        options = [{"option_text": opt.option_text, "option_order": opt.option_order} for opt in payload.options]
-        
-        return course_quiz_service.customize_question(
-            db,
-            question_id=question_id,
-            user_id=current_user.id,
-            question_text=payload.question_text,
-            correct_answer_index=payload.correct_answer_index,
-            options=options,
-            explanation=payload.explanation
-        )
-    except Exception as e:
-        return make_response(False, "Failed to customize question", status_code=500, error=str(e))
-
-
 @router.put("/questions/{question_id}", status_code=status.HTTP_200_OK)
 def update_question(
     question_id: int,
@@ -172,7 +148,7 @@ def update_question(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update a course-specific question"""
+    """Update any course quiz question - auto-converts REFERENCED to COURSE_SPECIFIC when edited"""
     try:
         options = None
         if payload.options:

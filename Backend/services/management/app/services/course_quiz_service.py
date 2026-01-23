@@ -2,23 +2,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from app.utils.response_utils import make_response
 from shared.repos import course_quiz_repo
-from shared.models import CourseQuiz, QuizStatus, Course, TeamMember, TeamMemberRole, QuestionType
-
-
-def _is_team_manager(db: Session, *, team_id: int, user_id: int) -> bool:
-    """Check if user is a manager of the team"""
-    tm = db.query(TeamMember.role_in_team).filter_by(team_id=team_id, user_id=user_id).first()
-    return bool(tm and tm[0] == TeamMemberRole.manager)
-
-
-def _can_access_course(db: Session, *, course_id: int, user_id: int) -> bool:
-    """Check if user can access the course"""
-    course = db.query(Course).filter(Course.id == course_id).first()
-    if not course:
-        return False
-    # For now, just check if user created it
-    # TODO: Add team-based access control if needed
-    return course.created_by == user_id
+from shared.models import CourseQuiz, Course
+from shared.models.course_quiz import QuizStatus
+from shared.models.course_quiz_question import QuestionType
 
 
 def create_course_quiz(
@@ -35,10 +21,6 @@ def create_course_quiz(
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         return make_response(False, "Course not found", status_code=404, error="Course does not exist")
-    
-    # Check if user can access course
-    if not _can_access_course(db, course_id=course_id, user_id=user_id):
-        return make_response(False, "Access denied", status_code=403, error="User cannot access this course")
     
     # Create course quiz
     quiz = course_quiz_repo.create_course_quiz(
@@ -72,10 +54,6 @@ def get_course_quiz(db: Session, *, quiz_id: int, user_id: int):
     quiz = course_quiz_repo.get_course_quiz_with_questions(db, quiz_id)
     if not quiz:
         return make_response(False, "Course quiz not found", status_code=404, error="Course quiz does not exist")
-    
-    # Check access
-    if not _can_access_course(db, course_id=quiz.course_id, user_id=user_id):
-        return make_response(False, "Access denied", status_code=403, error="User cannot access this course quiz")
     
     # Serialize quiz with questions and options
     quiz_data = {
@@ -147,9 +125,6 @@ def get_course_quiz(db: Session, *, quiz_id: int, user_id: int):
 
 def list_course_quizzes(db: Session, *, course_id: int, user_id: int):
     """List all quizzes for a course"""
-    if not _can_access_course(db, course_id=course_id, user_id=user_id):
-        return make_response(False, "Access denied", status_code=403, error="User cannot access this course")
-    
     quizzes = course_quiz_repo.get_course_quizzes_by_course(db, course_id)
     
     # Serialize quizzes
@@ -366,63 +341,6 @@ def add_course_specific_question(
     return make_response(True, "Course-specific question added", data=question_data, status_code=201)
 
 
-def customize_question(
-    db: Session,
-    *,
-    question_id: int,
-    user_id: int,
-    question_text: str,
-    correct_answer_index: int,
-    options: List[dict],
-    explanation: Optional[str] = None
-):
-    """Convert referenced question to course-specific"""
-    question = course_quiz_repo.get_course_quiz_question_by_id(db, question_id)
-    if not question:
-        return make_response(False, "Question not found", status_code=404, error="Question does not exist")
-    
-    quiz = course_quiz_repo.get_course_quiz_by_id(db, question.course_quiz_id)
-    if quiz.created_by != user_id:
-        return make_response(False, "Only quiz creator can customize questions", status_code=403, error="User is not the quiz creator")
-    
-    if question.question_type != QuestionType.REFERENCED:
-        return make_response(False, "Only referenced questions can be customized", status_code=400, error="Question is not referenced")
-    
-    updated_question = course_quiz_repo.convert_to_course_specific(
-        db,
-        question_id=question_id,
-        question_text=question_text,
-        correct_answer_index=correct_answer_index,
-        options=options,
-        explanation=explanation
-    )
-    
-    # Serialize the updated question
-    detail = updated_question.course_question_detail
-    question_data = {
-        "id": updated_question.id,
-        "course_quiz_id": updated_question.course_quiz_id,
-        "question_type": updated_question.question_type.value,
-        "question_order": updated_question.question_order,
-        "question_text": detail.question_text,
-        "correct_answer_index": detail.correct_answer_index,
-        "explanation": detail.explanation,
-        "course_question_detail_id": updated_question.course_question_detail_id,
-        "created_at": updated_question.created_at,
-        "updated_at": updated_question.updated_at,
-        "options": [
-            {
-                "id": opt.id,
-                "option_text": opt.option_text,
-                "option_order": opt.option_order
-            }
-            for opt in detail.options
-        ]
-    }
-    
-    return make_response(True, "Question customized", data=question_data)
-
-
 def update_course_question(
     db: Session,
     *,
@@ -433,7 +351,7 @@ def update_course_question(
     explanation: Optional[str] = None,
     options: Optional[List[dict]] = None
 ):
-    """Update a course-specific question"""
+    """Update any course quiz question - auto-converts REFERENCED to COURSE_SPECIFIC when edited"""
     question = course_quiz_repo.get_course_quiz_question_by_id(db, question_id)
     if not question:
         return make_response(False, "Question not found", status_code=404, error="Question does not exist")
@@ -442,17 +360,27 @@ def update_course_question(
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can edit questions", status_code=403, error="User is not the quiz creator")
     
-    if question.question_type != QuestionType.COURSE_SPECIFIC:
-        return make_response(False, "Only course-specific questions can be updated", status_code=400, error="Question is not course-specific")
-    
-    updated_question = course_quiz_repo.update_course_specific_question(
-        db,
-        question_id=question_id,
-        question_text=question_text,
-        correct_answer_index=correct_answer_index,
-        explanation=explanation,
-        options=options
-    )
+    # Auto-convert REFERENCED to COURSE_SPECIFIC when edited
+    if question.question_type == QuestionType.REFERENCED:
+        # Convert to course-specific with new data
+        updated_question = course_quiz_repo.convert_to_course_specific(
+            db,
+            question_id=question_id,
+            question_text=question_text,
+            correct_answer_index=correct_answer_index,
+            options=options or [],
+            explanation=explanation
+        )
+    else:
+        # Update existing course-specific question
+        updated_question = course_quiz_repo.update_course_specific_question(
+            db,
+            question_id=question_id,
+            question_text=question_text,
+            correct_answer_index=correct_answer_index,
+            explanation=explanation,
+            options=options
+        )
     
     # Serialize the updated question
     detail = updated_question.course_question_detail
@@ -496,9 +424,6 @@ def delete_course_question(db: Session, *, question_id: int, user_id: int):
 
 def get_available_questions(db: Session, *, course_id: int, user_id: int):
     """Get available document questions for a course"""
-    if not _can_access_course(db, course_id=course_id, user_id=user_id):
-        return make_response(False, "Access denied", status_code=403, error="User cannot access this course")
-    
     questions = course_quiz_repo.get_available_document_questions(db, course_id)
     
     # Serialize questions
