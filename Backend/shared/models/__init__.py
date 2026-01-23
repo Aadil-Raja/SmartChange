@@ -17,7 +17,11 @@ from .progress import UserProgress, UserCourseStar
 from .quiz import Quiz, QuizStatus
 from .quiz_question import QuizQuestion
 from .quiz_option import QuizOption
+from .course_quiz import CourseQuiz
+from .course_quiz_question import CourseQuizQuestion, QuestionType
+from .course_question_detail import CourseQuestionDetail
+from .course_question_option import CourseQuestionOption
 
 __all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","AnnouncementAttachment","AttachmentType","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
-           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption","QuizGenerationAudit","QuizGenerationStatus","QuizGenerationStage"]
+           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption","QuizGenerationAudit","QuizGenerationStatus","QuizGenerationStage","CourseQuiz","CourseQuizQuestion","QuestionType","CourseQuestionDetail","CourseQuestionOption"]
 
