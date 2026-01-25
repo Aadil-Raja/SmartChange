@@ -229,9 +229,9 @@ def get_course_quiz_question_by_id(db: Session, question_id: int) -> Optional[Co
 def convert_to_course_specific(
     db: Session,
     question_id: int,
-    question_text: str,
-    correct_answer_index: int,
-    options: List[dict],
+    question_text: Optional[str] = None,
+    correct_answer_index: Optional[int] = None,
+    options: Optional[List[dict]] = None,
     explanation: Optional[str] = None
 ) -> Optional[CourseQuizQuestion]:
     """Convert a referenced question to course-specific"""
@@ -239,17 +239,39 @@ def convert_to_course_specific(
     if not question or question.question_type != QuestionType.REFERENCED:
         return None
     
-    # Create question detail
+    # Get original data from the referenced document question
+    doc_question = question.source_document_question
+    if not doc_question:
+        return None
+    
+    # Merge provided updates with original data
+    final_question_text = question_text if question_text is not None else doc_question.question_text
+    final_correct_answer = correct_answer_index if correct_answer_index is not None else doc_question.correct_answer_index
+    final_explanation = explanation if explanation is not None else doc_question.explanation
+    
+    # Handle options - use provided options or convert from document question options
+    if options is not None:
+        final_options = options
+    else:
+        final_options = [
+            {
+                "option_text": opt.option_text,
+                "option_order": opt.option_order
+            }
+            for opt in doc_question.options
+        ]
+    
+    # Create question detail with merged data
     detail = CourseQuestionDetail(
-        question_text=question_text,
-        correct_answer_index=correct_answer_index,
-        explanation=explanation
+        question_text=final_question_text,
+        correct_answer_index=final_correct_answer,
+        explanation=final_explanation
     )
     db.add(detail)
     db.flush()
     
     # Create options
-    for opt in options:
+    for opt in final_options:
         option = CourseQuestionOption(
             question_detail_id=detail.id,
             option_text=opt["option_text"],

@@ -423,7 +423,7 @@ def update_course_question(
             question_id=question_id,
             question_text=question_text,
             correct_answer_index=correct_answer_index,
-            options=options or [],
+            options=options,
             explanation=explanation
         )
     else:
