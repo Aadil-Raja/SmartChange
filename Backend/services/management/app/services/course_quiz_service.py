@@ -13,7 +13,8 @@ def create_course_quiz(
     course_id: int,
     user_id: int,
     title: str,
-    description: Optional[str] = None
+    description: Optional[str] = None,
+    prerequisite_content_ids: Optional[List[int]] = None
 ):
     """Create a new course quiz"""
     
@@ -22,6 +23,28 @@ def create_course_quiz(
     if not course:
         return make_response(False, "Course not found", status_code=404, error="Course does not exist")
     
+    # Validate prerequisite content IDs belong to this course
+    if prerequisite_content_ids:
+        from shared.models import ContentItem
+        valid_content_ids = (
+            db.query(ContentItem.id)
+            .filter(
+                ContentItem.course_id == course_id,
+                ContentItem.id.in_(prerequisite_content_ids)
+            )
+            .all()
+        )
+        valid_ids = [item[0] for item in valid_content_ids]
+        
+        if len(valid_ids) != len(prerequisite_content_ids):
+            invalid_ids = set(prerequisite_content_ids) - set(valid_ids)
+            return make_response(
+                False, 
+                "Invalid prerequisite content IDs", 
+                status_code=400, 
+                error=f"Content items {list(invalid_ids)} do not exist in this course"
+            )
+    
     # Create course quiz with course_id
     quiz = course_quiz_repo.create_course_quiz(
         db,
@@ -29,6 +52,7 @@ def create_course_quiz(
         title=title,
         created_by=user_id,
         description=description,
+        prerequisite_content_ids=prerequisite_content_ids,
         status=QuizStatus.DRAFT
     )
     
@@ -39,6 +63,7 @@ def create_course_quiz(
         "title": quiz.title,
         "description": quiz.description,
         "total_questions": quiz.total_questions,
+        "prerequisite_content_ids": quiz.prerequisite_content_ids,
         "status": quiz.status.value if hasattr(quiz.status, 'value') else quiz.status,
         "created_by": quiz.created_by,
         "created_at": quiz.created_at,
@@ -152,7 +177,8 @@ def update_course_quiz(
     quiz_id: int,
     user_id: int,
     title: Optional[str] = None,
-    description: Optional[str] = None
+    description: Optional[str] = None,
+    prerequisite_content_ids: Optional[List[int]] = None
 ):
     """Update course quiz metadata"""
     quiz = course_quiz_repo.get_course_quiz_by_id(db, quiz_id)
@@ -163,7 +189,35 @@ def update_course_quiz(
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can edit", status_code=403, error="User is not the quiz creator")
     
-    updated_quiz = course_quiz_repo.update_course_quiz(db, quiz_id, title=title, description=description)
+    # Validate prerequisite content IDs if provided
+    if prerequisite_content_ids is not None:
+        from shared.models import ContentItem
+        valid_content_ids = (
+            db.query(ContentItem.id)
+            .filter(
+                ContentItem.course_id == quiz.course_id,
+                ContentItem.id.in_(prerequisite_content_ids)
+            )
+            .all()
+        )
+        valid_ids = [item[0] for item in valid_content_ids]
+        
+        if len(valid_ids) != len(prerequisite_content_ids):
+            invalid_ids = set(prerequisite_content_ids) - set(valid_ids)
+            return make_response(
+                False, 
+                "Invalid prerequisite content IDs", 
+                status_code=400, 
+                error=f"Content items {list(invalid_ids)} do not exist in this course"
+            )
+    
+    updated_quiz = course_quiz_repo.update_course_quiz(
+        db, 
+        quiz_id, 
+        title=title, 
+        description=description,
+        prerequisite_content_ids=prerequisite_content_ids
+    )
     
     # Serialize the updated quiz
     quiz_data = {
@@ -172,6 +226,7 @@ def update_course_quiz(
         "title": updated_quiz.title,
         "description": updated_quiz.description,
         "total_questions": updated_quiz.total_questions,
+        "prerequisite_content_ids": updated_quiz.prerequisite_content_ids,
         "status": updated_quiz.status.value if hasattr(updated_quiz.status, 'value') else updated_quiz.status,
         "created_by": updated_quiz.created_by,
         "created_at": updated_quiz.created_at,

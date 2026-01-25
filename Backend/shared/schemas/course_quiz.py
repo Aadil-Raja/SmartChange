@@ -80,11 +80,13 @@ class CourseQuizQuestionResponse(BaseModel):
 class CourseQuizCreateRequest(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
+    prerequisite_content_ids: List[int] = Field(default=[], description="Content item IDs that must be completed before quiz unlocks")
 
 
 class CourseQuizUpdateRequest(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = None
+    prerequisite_content_ids: Optional[List[int]] = Field(None, description="Content item IDs that must be completed before quiz unlocks")
 
 
 class CourseQuizResponse(BaseModel):
@@ -93,11 +95,16 @@ class CourseQuizResponse(BaseModel):
     title: str
     description: Optional[str]
     total_questions: int
+    prerequisite_content_ids: List[int]
     status: QuizStatus
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime]
     published_at: Optional[datetime]
+    
+    # Runtime fields (not stored in DB)
+    is_unlocked: Optional[bool] = Field(None, description="Whether quiz is unlocked for current user")
+    missing_prerequisites: Optional[List[int]] = Field(None, description="Content item IDs still needed to unlock")
 
     class Config:
         from_attributes = True

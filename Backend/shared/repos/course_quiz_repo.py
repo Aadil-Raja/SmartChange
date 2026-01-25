@@ -17,6 +17,7 @@ def create_course_quiz(
     title: str,
     created_by: int,
     description: Optional[str] = None,
+    prerequisite_content_ids: Optional[List[int]] = None,
     status: QuizStatus = QuizStatus.DRAFT
 ) -> CourseQuiz:
     """Create a new course quiz"""
@@ -24,6 +25,7 @@ def create_course_quiz(
         course_id=course_id,
         title=title,
         description=description,
+        prerequisite_content_ids=prerequisite_content_ids or [],
         created_by=created_by,
         status=status,
         total_questions=0
@@ -86,6 +88,7 @@ def update_course_quiz(
     quiz_id: int,
     title: Optional[str] = None,
     description: Optional[str] = None,
+    prerequisite_content_ids: Optional[List[int]] = None,
     status: Optional[QuizStatus] = None
 ) -> Optional[CourseQuiz]:
     """Update course quiz metadata"""
@@ -97,6 +100,8 @@ def update_course_quiz(
         quiz.title = title
     if description is not None:
         quiz.description = description
+    if prerequisite_content_ids is not None:
+        quiz.prerequisite_content_ids = prerequisite_content_ids
     if status is not None:
         quiz.status = status
     
@@ -352,3 +357,73 @@ def get_available_document_questions(db: Session, course_id: int) -> List[QuizQu
         .options(joinedload(QuizQuestion.options))
         .all()
     )
+
+
+def check_quiz_unlock_status(db: Session, user_id: int, quiz: CourseQuiz) -> dict:
+    """Check if quiz is unlocked for user and return status info"""
+    if not quiz.prerequisite_content_ids:
+        # No prerequisites - always unlocked
+        return {
+            "is_unlocked": True,
+            "missing_prerequisites": []
+        }
+    
+    # Get user's completed content items for this course
+    from shared.models import ContentItem
+    from shared.models.progress import UserProgress
+    
+    completed_content_ids = (
+        db.query(ContentItem.id)
+        .join(UserProgress, ContentItem.id == UserProgress.content_id)
+        .filter(
+            ContentItem.course_id == quiz.course_id,
+            UserProgress.user_id == user_id,
+            UserProgress.completed_at.isnot(None)  # Has completion timestamp
+        )
+        .all()
+    )
+    
+    completed_ids = [item[0] for item in completed_content_ids]
+    missing_prerequisites = [
+        req_id for req_id in quiz.prerequisite_content_ids 
+        if req_id not in completed_ids
+    ]
+    
+    return {
+        "is_unlocked": len(missing_prerequisites) == 0,
+        "missing_prerequisites": missing_prerequisites
+    }
+
+
+def get_course_quizzes_with_unlock_status(
+    db: Session, 
+    course_id: int, 
+    user_id: int,
+    status: Optional[QuizStatus] = None
+) -> List[dict]:
+    """Get course quizzes with unlock status for specific user"""
+    quizzes = get_course_quizzes_by_course(db, course_id, status)
+    
+    quiz_list = []
+    for quiz in quizzes:
+        unlock_status = check_quiz_unlock_status(db, user_id, quiz)
+        
+        quiz_data = {
+            "id": quiz.id,
+            "course_id": quiz.course_id,
+            "title": quiz.title,
+            "description": quiz.description,
+            "total_questions": quiz.total_questions,
+            "prerequisite_content_ids": quiz.prerequisite_content_ids,
+            "status": quiz.status.value if hasattr(quiz.status, 'value') else quiz.status,
+            "created_by": quiz.created_by,
+            "created_at": quiz.created_at,
+            "updated_at": quiz.updated_at,
+            "published_at": quiz.published_at,
+            "is_unlocked": unlock_status["is_unlocked"],
+            "missing_prerequisites": unlock_status["missing_prerequisites"]
+        }
+        
+        quiz_list.append(quiz_data)
+    
+    return quiz_list

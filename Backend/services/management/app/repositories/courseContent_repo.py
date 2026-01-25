@@ -258,16 +258,42 @@ def list_courses_by_ids(db: Session, *, course_ids: List[int]) -> List[Dict[str,
     ]
 
 
-def list_quizzes_for_course(db: Session, *, course_id: int, published_only: bool = False):
-    """Get all quizzes for a course with optional published-only filtering"""
+def list_quizzes_for_course(db: Session, *, course_id: int, user_id: Optional[int] = None, published_only: bool = False):
+    """Get all quizzes for a course with optional published-only filtering and unlock status"""
     from shared.models.course_quiz import CourseQuiz, QuizStatus
+    from shared.repos.course_quiz_repo import get_course_quizzes_with_unlock_status
     
-    query = db.query(CourseQuiz).filter(CourseQuiz.course_id == course_id)
-    
-    if published_only:
-        query = query.filter(CourseQuiz.status == QuizStatus.PUBLISHED)
-    
-    return query.order_by(CourseQuiz.created_at.asc()).all()
+    if user_id and published_only:
+        # For employees - get published quizzes with unlock status
+        return get_course_quizzes_with_unlock_status(db, course_id, user_id, QuizStatus.PUBLISHED)
+    else:
+        # For admins - get all quizzes without unlock status
+        query = db.query(CourseQuiz).filter(CourseQuiz.course_id == course_id)
+        
+        if published_only:
+            query = query.filter(CourseQuiz.status == QuizStatus.PUBLISHED)
+        
+        quizzes = query.order_by(CourseQuiz.created_at.asc()).all()
+        
+        # Convert to dict format for consistency
+        quiz_list = []
+        for quiz in quizzes:
+            quiz_data = {
+                "id": quiz.id,
+                "course_id": quiz.course_id,
+                "title": quiz.title,
+                "description": quiz.description,
+                "total_questions": quiz.total_questions,
+                "prerequisite_content_ids": quiz.prerequisite_content_ids,
+                "status": quiz.status.value if hasattr(quiz.status, 'value') else quiz.status,
+                "created_by": quiz.created_by,
+                "created_at": quiz.created_at,
+                "updated_at": quiz.updated_at,
+                "published_at": quiz.published_at
+            }
+            quiz_list.append(quiz_data)
+        
+        return quiz_list
 
 
 def reorder_content_items(db: Session, *, course_id: int, item_orders: List[dict]) -> bool:

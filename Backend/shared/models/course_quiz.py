@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Index, func
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Index, func, JSON
 from sqlalchemy.orm import relationship
 import enum
 from .user import Base
@@ -19,6 +19,7 @@ class CourseQuiz(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     total_questions = Column(Integer, nullable=False, default=0)
+    prerequisite_content_ids = Column(JSON, nullable=False, default=list)
     
     status = Column(
         Enum(QuizStatus, name="course_quiz_status", create_type=True),

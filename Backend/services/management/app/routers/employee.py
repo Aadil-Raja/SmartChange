@@ -137,7 +137,7 @@ def get_course_route(
     """
     try:
         # Employee sees only published quizzes
-        data = svc.get_course_with_items(db, course_id=course_id, published_only=True, user_role="employee")  # { "course": {...}, "items": [...], "quizzes": [...] }
+        data = svc.get_course_with_items(db, course_id=course_id, published_only=True, user_role="employee", user_id=user.id)
         course = data.get("course")
         if not course or not course.get("is_active"):
             return make_response(False, "Course not found", status_code=404)

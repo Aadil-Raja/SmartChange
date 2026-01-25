@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from shared.schemas.training_admin import CourseCreateIn, CourseUpdateIn, ContentItemCreateIn, ContentItemUpdateIn
 from app.repositories import courseContent_repo as repo
 from app.services.storage.storage_cloudinary import upload_raw_bytes,upload_image_bytes
@@ -69,7 +69,7 @@ def list_courses(db: Session, active_only: bool = False):
     rows = repo.list_courses(db, active_only=active_only)
     return {"courses": [repo.course_to_dict(c) for c in rows]}
 
-def get_course_with_items(db: Session, *, course_id: int, published_only: bool = False, user_role: str = "admin"):
+def get_course_with_items(db: Session, *, course_id: int, published_only: bool = False, user_role: str = "admin", user_id: Optional[int] = None):
     """
     Get course with content items and quizzes.
     
@@ -77,6 +77,7 @@ def get_course_with_items(db: Session, *, course_id: int, published_only: bool =
         course_id: ID of the course
         published_only: If True, only return published quizzes (for employees)
         user_role: "admin" or "employee" - determines quiz filtering
+        user_id: User ID for unlock status checking (required for employees)
     """
     course = repo.get_course(db, course_id=course_id)
     if not course:
@@ -85,13 +86,16 @@ def get_course_with_items(db: Session, *, course_id: int, published_only: bool =
     # Get content items (documents, videos, links)
     items = repo.list_items_for_course(db, course_id=course_id, published_only=published_only)
     
-    # Get quizzes for this course
-    quizzes = repo.list_quizzes_for_course(db, course_id=course_id, published_only=(user_role == "employee"))
+    # Get quizzes for this course with unlock status
+    if user_role == "employee" and user_id:
+        quizzes = repo.list_quizzes_for_course(db, course_id=course_id, user_id=user_id, published_only=True)
+    else:
+        quizzes = repo.list_quizzes_for_course(db, course_id=course_id, published_only=False)
     
     return {
         "course": repo.course_to_dict(course),
         "items": [repo.item_to_dict(i) for i in items],
-        "quizzes": [repo.quiz_to_dict(q) for q in quizzes],
+        "quizzes": quizzes,  # Already in dict format
     }
 
 

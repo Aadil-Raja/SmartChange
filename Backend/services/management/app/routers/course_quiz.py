@@ -78,7 +78,8 @@ def update_course_quiz(
             quiz_id=course_quiz_id,
             user_id=current_user.id,
             title=payload.title,
-            description=payload.description
+            description=payload.description,
+            prerequisite_content_ids=payload.prerequisite_content_ids
         )
     except Exception as e:
         return make_response(False, "Failed to update course quiz", status_code=500, error=str(e))
