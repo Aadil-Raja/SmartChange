@@ -57,6 +57,7 @@ def item_to_dict(i: ContentItem) -> dict:
         "title": i.title,
         "description": i.description,
         "type": content_type,
+        "order_index": i.order_index,
         "document_id": i.document_id,
         "video_id": i.video_id,
         "external_link_id": i.external_link_id,
@@ -159,8 +160,8 @@ def list_items_for_course(db: Session, *, course_id: int, published_only: bool =
         .filter(ContentItem.course_id == course_id)
     )
     
-    # No quiz filtering needed since quizzes are now directly linked to courses
-    return query.order_by(ContentItem.created_at.asc()).all()
+    # Order by order_index for proper sequencing
+    return query.order_by(ContentItem.order_index.asc()).all()
 def add_content_item(
     db: Session,
     *,
@@ -171,6 +172,7 @@ def add_content_item(
     document_id: Optional[int],
     video_id: Optional[int],
     external_link_id: Optional[int],
+    order_index: Optional[int] = None,
 ) -> ContentItem:
     # Validate enum value
     try:
@@ -178,11 +180,17 @@ def add_content_item(
     except ValueError:
         raise ValueError(f"Invalid content type: {type_str}. Must be one of: document, video, link")
     
+    # If no order_index provided, add to end
+    if order_index is None:
+        max_order = db.query(ContentItem).filter(ContentItem.course_id == course_id).count()
+        order_index = max_order
+    
     item = ContentItem(
         course_id=course_id,
         title=title,
         description=description,
         type=content_type,
+        order_index=order_index,
         document_id=document_id,
         video_id=video_id,
         external_link_id=external_link_id,
@@ -260,3 +268,52 @@ def list_quizzes_for_course(db: Session, *, course_id: int, published_only: bool
         query = query.filter(CourseQuiz.status == QuizStatus.PUBLISHED)
     
     return query.order_by(CourseQuiz.created_at.asc()).all()
+
+
+def reorder_content_items(db: Session, *, course_id: int, item_orders: List[dict]) -> bool:
+    """
+    Reorder content items for a course.
+    
+    Args:
+        course_id: ID of the course
+        item_orders: List of {"id": item_id, "order_index": new_order} dicts
+    
+    Returns:
+        bool: True if successful
+    """
+    try:
+        for item_order in item_orders:
+            item_id = item_order["id"]
+            new_order = item_order["order_index"]
+            
+            item = db.query(ContentItem).filter(
+                ContentItem.id == item_id,
+                ContentItem.course_id == course_id
+            ).first()
+            
+            if item:
+                item.order_index = new_order
+        
+        db.commit()
+        return True
+    except Exception:
+        db.rollback()
+        return False
+
+
+def get_next_content_order_index(db: Session, *, course_id: int) -> int:
+    """Get the next available order index for a course"""
+    max_order = db.query(ContentItem).filter(ContentItem.course_id == course_id).count()
+    return max_order
+
+
+def get_content_items_by_ids(db: Session, *, item_ids: List[int], course_id: int) -> List[ContentItem]:
+    """Get content items by IDs, ensuring they belong to the specified course"""
+    return (
+        db.query(ContentItem)
+        .filter(
+            ContentItem.id.in_(item_ids),
+            ContentItem.course_id == course_id
+        )
+        .all()
+    )

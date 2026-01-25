@@ -11,7 +11,7 @@ from app.services import video_service as vsvc
 from app.utils.response_utils import make_response
 from shared.schemas.training_admin import (
     CourseCreateIn, CourseUpdateIn,
-    ContentItemCreateIn, ContentItemUpdateIn, LinkCreate,VideoCreate, LinkUpdate
+    ContentItemCreateIn, ContentItemUpdateIn, ContentItemReorderIn, LinkCreate,VideoCreate, LinkUpdate
 )
 from app.services import courseContent_service as svc
 
@@ -176,6 +176,39 @@ def delete_content_item(content_id: int, db: Session = Depends(get_db), _admin=D
         return make_response(False, "Content not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
     except Exception as e:
         return make_response(False, "Failed to delete content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+
+@router.patch("/courses/{course_id}/content/reorder", status_code=status.HTTP_200_OK)
+def reorder_content_items(
+    course_id: int, 
+    body: ContentItemReorderIn, 
+    db: Session = Depends(get_db), 
+    _admin=Depends(get_current_admin)
+):
+    """
+    Reorder content items within a course.
+    
+    Body should contain:
+    {
+        "items": [
+            {"id": 1, "order_index": 0},
+            {"id": 3, "order_index": 1}, 
+            {"id": 2, "order_index": 2}
+        ]
+    }
+    """
+    try:
+        return make_response(
+            True, 
+            "Content items reordered", 
+            data=svc.reorder_content_items(db, course_id=course_id, item_orders=body.items)
+        )
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            return make_response(False, "Course or content items not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        return make_response(False, "Invalid reorder data", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to reorder content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
     
 
 @router.post("/links", status_code=status.HTTP_201_CREATED)

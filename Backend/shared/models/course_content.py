@@ -17,6 +17,7 @@ class ContentItem(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     type = Column(Enum(ContentType, name="content_type_t", create_type=True), nullable=False)
+    order_index = Column(Integer, nullable=False, default=0)
 
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=True)
     video_id = Column(Integer, ForeignKey("videos.id", ondelete="CASCADE"), nullable=True)
@@ -28,8 +29,6 @@ class ContentItem(Base):
     video = relationship("Video", lazy="joined")
     external_link = relationship("ExternalLink", lazy="joined")
     __table_args__ = (
-        # Removed order_index references
+        Index("ix_content_course_order", "course_id", "order_index"),
         Index("ix_content_course_created", "course_id", "created_at"),
-        # Or use id instead of created_at:
-        # Index("ix_content_course_id", "course_id", "id"),
     )

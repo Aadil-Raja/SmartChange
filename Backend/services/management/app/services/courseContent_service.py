@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from typing import List
 from shared.schemas.training_admin import CourseCreateIn, CourseUpdateIn, ContentItemCreateIn, ContentItemUpdateIn
 from app.repositories import courseContent_repo as repo
 from app.services.storage.storage_cloudinary import upload_raw_bytes,upload_image_bytes
@@ -166,6 +167,7 @@ def add_content_item(db: Session, *, course_id: int, body: ContentItemCreateIn):
         title=body.title,
         description=body.description,
         type_str=body.type,
+        order_index=body.order_index,
         document_id=body.document_id if body.type == "document" else None,
         video_id=body.video_id if body.type == "video" else None,
         external_link_id=body.external_link_id if body.type == "link" else None,
@@ -230,3 +232,24 @@ def delete_content_item(db: Session, *, content_id: int):
     if not ok:
         raise ValueError("Content item not found")
     return {"deleted": True}
+
+
+def reorder_content_items(db: Session, *, course_id: int, item_orders: List[dict]):
+    """Reorder content items for a course"""
+    # Verify course exists
+    course = repo.get_course(db, course_id=course_id)
+    if not course:
+        raise ValueError("Course not found")
+    
+    # Validate that all items belong to the course
+    item_ids = [item["id"] for item in item_orders]
+    existing_items = repo.get_content_items_by_ids(db, item_ids=item_ids, course_id=course_id)
+    
+    if len(existing_items) != len(item_ids):
+        raise ValueError("Some content items not found or don't belong to this course")
+    
+    success = repo.reorder_content_items(db, course_id=course_id, item_orders=item_orders)
+    if not success:
+        raise ValueError("Failed to reorder content items")
+    
+    return {"reordered": True}

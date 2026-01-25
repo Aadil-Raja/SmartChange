@@ -22,6 +22,7 @@ class ContentItemCreateIn(BaseModel):
     title: str = Field(..., min_length=1)
     description: Optional[str] = None
     type: ContentType
+    order_index: Optional[int] = Field(None, ge=0, description="Position in course sequence (0-based)")
   
     document_id: Optional[int] = None
     video_id: Optional[int] = None
@@ -31,10 +32,24 @@ class ContentItemUpdateIn(BaseModel):
     title: Optional[str] = Field(None, min_length=1)
     description: Optional[str] = None
     type: Optional[ContentType] = None  # Allow type updates
+    order_index: Optional[int] = Field(None, ge=0, description="Position in course sequence (0-based)")
     
     document_id: Optional[int] = None
     video_id: Optional[int] = None
     external_link_id: Optional[int] = None
+
+
+class ContentItemReorderIn(BaseModel):
+    """Schema for reordering content items"""
+    items: List[Dict[str, int]] = Field(
+        ..., 
+        description="List of {id: item_id, order_index: new_position} objects",
+        example=[
+            {"id": 1, "order_index": 0},
+            {"id": 3, "order_index": 1}, 
+            {"id": 2, "order_index": 2}
+        ]
+    )
 
 
 class LinkCreate(BaseModel):
