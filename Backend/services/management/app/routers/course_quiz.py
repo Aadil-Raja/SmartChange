@@ -8,13 +8,15 @@ from app.services import course_quiz_service
 from app.utils.response_utils import make_response
 from shared.models import User
 import shared.schemas as schemas
+from shared.schemas.course_quiz import QuestionTypeEnum
 
 router = APIRouter()
 
 
 # ============ Core Course Quiz Management ============
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/{course_id}/quizzes", status_code=status.HTTP_201_CREATED)
 def create_course_quiz(
+    course_id: int,
     payload: schemas.CourseQuizCreateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -23,7 +25,7 @@ def create_course_quiz(
     try:
         return course_quiz_service.create_course_quiz(
             db,
-            course_id=payload.course_id,
+            course_id=course_id,
             user_id=current_user.id,
             title=payload.title,
             description=payload.description
@@ -118,14 +120,14 @@ def add_question(
 ):
     """Add a question to course quiz (referenced or custom)"""
     try:
-        if payload.question_type == "REFERENCED":
+        if payload.question_type == QuestionTypeEnum.REFERENCED:
             return course_quiz_service.add_referenced_question(
                 db,
                 quiz_id=course_quiz_id,
                 user_id=current_user.id,
                 source_document_question_id=payload.source_document_question_id
             )
-        else:  # COURSE_SPECIFIC
+        elif payload.question_type == QuestionTypeEnum.COURSE_SPECIFIC:
             options = [{"option_text": opt.option_text, "option_order": opt.option_order} for opt in payload.options]
             
             return course_quiz_service.add_course_specific_question(
@@ -137,6 +139,9 @@ def add_question(
                 options=options,
                 explanation=payload.explanation
             )
+        else:
+            return make_response(False, "Invalid question_type", status_code=400, 
+                               error="question_type must be REFERENCED or COURSE_SPECIFIC")
     except Exception as e:
         return make_response(False, "Failed to add question", status_code=500, error=str(e))
 

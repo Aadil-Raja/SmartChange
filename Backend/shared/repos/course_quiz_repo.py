@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from typing import List, Optional
+from datetime import datetime
 from shared.models import (
     CourseQuiz, CourseQuizQuestion, CourseQuestionDetail, CourseQuestionOption, 
     Quiz, QuizQuestion
@@ -60,16 +61,24 @@ def get_course_quizzes_by_course(
     course_id: int,
     status: Optional[QuizStatus] = None
 ) -> List[CourseQuiz]:
-    """Get all quizzes for a course"""
+    """Get all quizzes for a course through direct relationship"""
     query = db.query(CourseQuiz).filter(CourseQuiz.course_id == course_id)
+    
     if status:
         query = query.filter(CourseQuiz.status == status)
+    
     return query.order_by(CourseQuiz.created_at.desc()).all()
 
 
 def get_all_course_quizzes_by_user(db: Session, user_id: int) -> List[CourseQuiz]:
     """Get all course quizzes created by a user"""
     return db.query(CourseQuiz).filter(CourseQuiz.created_by == user_id).order_by(CourseQuiz.created_at.desc()).all()
+
+
+def get_course_id_for_quiz(db: Session, quiz_id: int) -> Optional[int]:
+    """Get the course_id for a quiz through direct relationship"""
+    result = db.query(CourseQuiz.course_id).filter(CourseQuiz.id == quiz_id).first()
+    return result[0] if result else None
 
 
 def update_course_quiz(
@@ -99,6 +108,20 @@ def update_course_quiz(
 def update_course_quiz_status(db: Session, quiz_id: int, status: QuizStatus) -> Optional[CourseQuiz]:
     """Update course quiz status"""
     return update_course_quiz(db, quiz_id, status=status)
+
+
+def publish_course_quiz(db: Session, quiz_id: int) -> Optional[CourseQuiz]:
+    """Publish course quiz - sets status to PUBLISHED and sets published_at timestamp"""
+    quiz = get_course_quiz_by_id(db, quiz_id)
+    if not quiz:
+        return None
+    
+    quiz.status = QuizStatus.PUBLISHED
+    quiz.published_at = datetime.now()
+    
+    db.commit()
+    db.refresh(quiz)
+    return quiz
 
 
 def delete_course_quiz(db: Session, quiz_id: int) -> bool:

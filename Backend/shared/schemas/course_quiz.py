@@ -1,8 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 from shared.models.course_quiz import QuizStatus
 from shared.models.course_quiz_question import QuestionType
+
+
+class QuestionTypeEnum(str, Enum):
+    REFERENCED = "REFERENCED"
+    COURSE_SPECIFIC = "COURSE_SPECIFIC"
 
 
 # ============ Course Quiz Option Schemas ============
@@ -24,7 +30,7 @@ class CourseQuizOptionResponse(CourseQuizOptionBase):
 
 # ============ Course Quiz Question Schemas ============
 class CourseQuizQuestionBase(BaseModel):
-    question_type: str = Field(description="REFERENCED or COURSE_SPECIFIC")
+    question_type: QuestionTypeEnum = Field(description="REFERENCED or COURSE_SPECIFIC")
     question_order: Optional[int] = Field(None, ge=0)
 
 
@@ -72,7 +78,6 @@ class CourseQuizQuestionResponse(BaseModel):
 
 # ============ Course Quiz Schemas ============
 class CourseQuizCreateRequest(BaseModel):
-    course_id: int
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
 

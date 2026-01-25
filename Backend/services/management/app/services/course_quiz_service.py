@@ -22,7 +22,7 @@ def create_course_quiz(
     if not course:
         return make_response(False, "Course not found", status_code=404, error="Course does not exist")
     
-    # Create course quiz
+    # Create course quiz with course_id
     quiz = course_quiz_repo.create_course_quiz(
         db,
         course_id=course_id,
@@ -194,7 +194,7 @@ def publish_course_quiz(db: Session, *, quiz_id: int, user_id: int):
     if quiz.total_questions == 0:
         return make_response(False, "Cannot publish quiz with no questions", status_code=400, error="Quiz has no questions")
     
-    updated_quiz = course_quiz_repo.update_course_quiz_status(db, quiz_id, QuizStatus.PUBLISHED)
+    updated_quiz = course_quiz_repo.publish_course_quiz(db, quiz_id)
     
     # Serialize the updated quiz
     quiz_data = {

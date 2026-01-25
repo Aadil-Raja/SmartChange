@@ -17,3 +17,4 @@ class Course(Base):
 
     # Relationships
     contents = relationship("ContentItem", back_populates="course", cascade="all, delete-orphan")
+    quizzes = relationship("CourseQuiz", back_populates="course", cascade="all, delete-orphan")

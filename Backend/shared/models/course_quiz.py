@@ -15,12 +15,7 @@ class CourseQuiz(Base):
     __tablename__ = "course_quizzes"
 
     id = Column(Integer, primary_key=True, index=True)
-    course_id = Column(
-        Integer,
-        ForeignKey("courses.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True
-    )
+    course_id = Column(Integer, ForeignKey("courses.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     total_questions = Column(Integer, nullable=False, default=0)
@@ -37,7 +32,7 @@ class CourseQuiz(Base):
     published_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
-    course = relationship("Course", lazy="joined")
+    course = relationship("Course", back_populates="quizzes")
     creator = relationship("User", lazy="joined")
     questions = relationship(
         "CourseQuizQuestion",
@@ -48,5 +43,6 @@ class CourseQuiz(Base):
     )
 
     __table_args__ = (
-        Index("ix_course_quiz_course_status", "course_id", "status"),
+        Index("ix_course_quiz_status", "status"),
+        Index("ix_course_quiz_course", "course_id"),
     )

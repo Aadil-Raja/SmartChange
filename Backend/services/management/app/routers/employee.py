@@ -123,20 +123,28 @@ def get_course_route(
     user=Depends(get_current_user),
 ):
     """
-    Get a single active course and its items.
-    Items include a single 'url' field:
-      - document  -> document.cloudinary_url (via documents_repo)
-      - video     -> storage_url
-      - link      -> external_url
+    Get a single active course with its content items and quizzes.
+    
+    Response includes:
+    - course: Course details
+    - items: Content items (documents, videos, links) with access URLs
+    - quizzes: Published quizzes only (for employees)
+    
+    Content item URLs:
+      - document  -> document.cloudinary_url
+      - video     -> video.cloudinary_url  
+      - link      -> external_link.url
     """
     try:
-        data = svc.get_course_with_items(db, course_id=course_id)  # { "course": {...}, "items": [...] }
+        # Employee sees only published quizzes
+        data = svc.get_course_with_items(db, course_id=course_id, published_only=True, user_role="employee")  # { "course": {...}, "items": [...], "quizzes": [...] }
         course = data.get("course")
         if not course or not course.get("is_active"):
             return make_response(False, "Course not found", status_code=404)
 
         items = data.get("items", [])
-        return make_response(True, "OK", data={"course": course, "items": items})
+        quizzes = data.get("quizzes", [])
+        return make_response(True, "OK", data={"course": course, "items": items, "quizzes": quizzes})
     except Exception as e:
         return make_response(False, "Could not fetch course details", status_code=500, error=str(e))
 

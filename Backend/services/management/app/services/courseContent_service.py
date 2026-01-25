@@ -68,14 +68,29 @@ def list_courses(db: Session, active_only: bool = False):
     rows = repo.list_courses(db, active_only=active_only)
     return {"courses": [repo.course_to_dict(c) for c in rows]}
 
-def get_course_with_items(db: Session, *, course_id: int):
+def get_course_with_items(db: Session, *, course_id: int, published_only: bool = False, user_role: str = "admin"):
+    """
+    Get course with content items and quizzes.
+    
+    Args:
+        course_id: ID of the course
+        published_only: If True, only return published quizzes (for employees)
+        user_role: "admin" or "employee" - determines quiz filtering
+    """
     course = repo.get_course(db, course_id=course_id)
     if not course:
         raise ValueError("Course not found")
-    items = repo.list_items_for_course(db, course_id=course_id)
+    
+    # Get content items (documents, videos, links)
+    items = repo.list_items_for_course(db, course_id=course_id, published_only=published_only)
+    
+    # Get quizzes for this course
+    quizzes = repo.list_quizzes_for_course(db, course_id=course_id, published_only=(user_role == "employee"))
+    
     return {
         "course": repo.course_to_dict(course),
         "items": [repo.item_to_dict(i) for i in items],
+        "quizzes": [repo.quiz_to_dict(q) for q in quizzes],
     }
 
 

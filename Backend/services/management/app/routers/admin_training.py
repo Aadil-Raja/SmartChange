@@ -65,7 +65,8 @@ async def set_course_thumbnail(course_id: int, file: UploadFile = File(...), db:
 @router.get("/courses/{course_id}", status_code=status.HTTP_200_OK)
 def get_course_detail(course_id: int, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
     try:
-        return make_response(True, "OK", data=svc.get_course_with_items(db, course_id=course_id))
+        # Admin sees all content including unpublished quizzes
+        return make_response(True, "OK", data=svc.get_course_with_items(db, course_id=course_id, published_only=False, user_role="admin"))
     except ValueError as e:
         return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
     except Exception as e:

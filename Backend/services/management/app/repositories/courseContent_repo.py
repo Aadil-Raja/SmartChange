@@ -20,6 +20,21 @@ def course_to_dict(c: Course) -> dict:
         "created_at": c.created_at,
     }
 
+def quiz_to_dict(q) -> dict:
+    """Convert CourseQuiz to dictionary"""
+    return {
+        "id": q.id,
+        "course_id": q.course_id,
+        "title": q.title,
+        "description": q.description,
+        "total_questions": q.total_questions,
+        "status": q.status.value if hasattr(q.status, 'value') else str(q.status),
+        "created_by": q.created_by,
+        "created_at": q.created_at,
+        "updated_at": q.updated_at,
+        "published_at": q.published_at,
+    }
+
 def item_to_dict(i: ContentItem) -> dict:
     content_type = i.type.value if hasattr(i.type, "value") else str(i.type)
 
@@ -34,6 +49,7 @@ def item_to_dict(i: ContentItem) -> dict:
         thumbnail_url=None
     else:
         access_url = None
+        thumbnail_url = None
 
     return {
         "id": i.id,
@@ -46,9 +62,9 @@ def item_to_dict(i: ContentItem) -> dict:
         "external_link_id": i.external_link_id,
         "created_at": i.created_at,
         "thumbnail_url": thumbnail_url,
-        # 🔽 only new field
         "access_url": access_url,
     }
+
 # ---- courses ----
 def create_course(db: Session, *, title: str, description: Optional[str], department: Optional[str], created_by: int) -> Course:
     course = Course(
@@ -132,8 +148,8 @@ def delete_course_thumbnail(db: Session, course_id: int) -> bool:
 
 
 # ---- content items ----
-def list_items_for_course(db: Session, *, course_id: int) -> List[ContentItem]:
-    return (
+def list_items_for_course(db: Session, *, course_id: int, published_only: bool = False) -> List[ContentItem]:
+    query = (
         db.query(ContentItem)
         .options(
             joinedload(ContentItem.document),
@@ -141,9 +157,10 @@ def list_items_for_course(db: Session, *, course_id: int) -> List[ContentItem]:
             joinedload(ContentItem.external_link),
         )
         .filter(ContentItem.course_id == course_id)
-        .order_by(ContentItem.created_at.asc())
-        .all()
     )
+    
+    # No quiz filtering needed since quizzes are now directly linked to courses
+    return query.order_by(ContentItem.created_at.asc()).all()
 def add_content_item(
     db: Session,
     *,
@@ -231,3 +248,15 @@ def list_courses_by_ids(db: Session, *, course_ids: List[int]) -> List[Dict[str,
         }
         for c in courses
     ]
+
+
+def list_quizzes_for_course(db: Session, *, course_id: int, published_only: bool = False):
+    """Get all quizzes for a course with optional published-only filtering"""
+    from shared.models.course_quiz import CourseQuiz, QuizStatus
+    
+    query = db.query(CourseQuiz).filter(CourseQuiz.course_id == course_id)
+    
+    if published_only:
+        query = query.filter(CourseQuiz.status == QuizStatus.PUBLISHED)
+    
+    return query.order_by(CourseQuiz.created_at.asc()).all()
