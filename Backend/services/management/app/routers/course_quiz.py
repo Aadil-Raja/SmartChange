@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.deps.db import get_db
-from app.deps.auth import get_current_user
+from app.deps.auth import get_current_user, get_current_admin
 from app.services import course_quiz_service
 from app.utils.response_utils import make_response
 from shared.models import User
 import shared.schemas as schemas
 from shared.schemas.course_quiz import QuestionTypeEnum
+from shared.schemas.quiz_configuration import QuizConfigurationUpdate
+from shared.repos import quiz_configuration_repo
 
 router = APIRouter()
 
@@ -202,3 +204,81 @@ def get_available_questions(
         )
     except Exception as e:
         return make_response(False, "Failed to fetch available questions", status_code=500, error=str(e))
+
+
+# ============ Quiz Configuration Management (Admin Only) ============
+@router.get("/{quiz_id}/configuration", status_code=status.HTTP_200_OK)
+def get_quiz_configuration(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """
+    Get quiz configuration settings.
+    Returns current configuration or defaults if none exists.
+    """
+    try:
+        config = quiz_configuration_repo.get_quiz_config(db, quiz_id)
+        return make_response(True, "Quiz configuration retrieved", data=config)
+    except Exception as e:
+        return make_response(False, "Could not get quiz configuration", status_code=500, error=str(e))
+
+
+@router.put("/{quiz_id}/configuration", status_code=status.HTTP_200_OK)
+def update_quiz_configuration(
+    quiz_id: int,
+    payload: QuizConfigurationUpdate,
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """
+    Update quiz configuration settings.
+    Creates new configuration if none exists.
+    """
+    try:
+        config = quiz_configuration_repo.create_or_update_quiz_config(
+            db,
+            quiz_id=quiz_id,
+            max_attempts=payload.max_attempts,
+            passing_score=payload.passing_score,
+            cooldown_minutes=payload.cooldown_minutes,
+            created_by=admin.id
+        )
+        
+        return make_response(
+            True, 
+            "Quiz configuration updated", 
+            data={
+                "max_attempts": config.max_attempts,
+                "passing_score": float(config.passing_score),
+                "cooldown_minutes": config.cooldown_minutes
+            }
+        )
+    except ValueError as e:
+        return make_response(False, str(e), status_code=400, error=str(e))
+    except Exception as e:
+        return make_response(False, "Could not update quiz configuration", status_code=500, error=str(e))
+
+
+@router.delete("/{quiz_id}/configuration", status_code=status.HTTP_200_OK)
+def reset_quiz_configuration(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    admin = Depends(get_current_admin)
+):
+    """
+    Reset quiz configuration to defaults.
+    Deletes custom configuration if it exists.
+    """
+    try:
+        deleted = quiz_configuration_repo.delete_quiz_config(db, quiz_id)
+        if deleted:
+            message = "Quiz configuration reset to defaults"
+        else:
+            message = "Quiz was already using default configuration"
+        
+        # Return current defaults
+        defaults = quiz_configuration_repo.DEFAULT_QUIZ_CONFIG
+        return make_response(True, message, data=defaults)
+    except Exception as e:
+        return make_response(False, "Could not reset quiz configuration", status_code=500, error=str(e))

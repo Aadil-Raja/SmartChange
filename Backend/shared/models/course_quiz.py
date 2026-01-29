@@ -42,6 +42,7 @@ class CourseQuiz(Base):
         passive_deletes=True,
         order_by="CourseQuizQuestion.question_order.asc()"
     )
+    configuration = relationship("QuizConfiguration", back_populates="quiz", uselist=False)
 
     __table_args__ = (
         Index("ix_course_quiz_status", "status"),

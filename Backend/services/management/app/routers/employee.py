@@ -9,6 +9,8 @@ from typing import Optional, Dict, Any, List
 from shared.repos import documents_repo
 from app.services import courseContent_service as svc
 from shared.schemas.progress import ProgressUpdateIn
+from shared.schemas.employee_quiz import QuizAttemptSubmission
+from app.services import employee_quiz_service
 
 router = APIRouter()
 
@@ -392,3 +394,82 @@ def get_my_profile_route(
         return employee_service.get_user_profile(db, user_id=user.id)
     except Exception as e:
         return make_response(False, "Could not fetch profile", status_code=500, error=str(e))
+
+
+# ============ QUIZ TAKING ENDPOINTS ============
+
+@router.get("/quizzes/{quiz_id}", status_code=status.HTTP_200_OK)
+def get_quiz_for_taking(
+    quiz_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    """
+    Get quiz for employee to take.
+    
+    Returns quiz questions WITHOUT correct answers or explanations.
+    Only works if quiz status is "can_take":
+    - Quiz is published
+    - Quiz is unlocked (prerequisites met)
+    - User has remaining attempts
+    - Not in cooldown period
+    - Not already completed (unless retakes allowed)
+    
+    Returns 403 Forbidden for other statuses:
+    - "locked": Prerequisites not met or unpublished
+    - "completed": Already passed the quiz
+    - "in_cooldown": Must wait before next attempt
+    - "max_attempts_reached": Used all attempts
+    """
+    try:
+        return employee_quiz_service.get_quiz_for_taking(db, quiz_id=quiz_id, user_id=user.id)
+    except Exception as e:
+        return make_response(False, "Could not load quiz", status_code=500, error=str(e))
+
+
+@router.get("/quizzes/{quiz_id}/attempts/{attempt_id}", status_code=status.HTTP_200_OK)
+def get_quiz_attempt_results(
+    quiz_id: int,
+    attempt_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    """
+    Get detailed results for a specific quiz attempt.
+    
+    Allows users to review their previous attempts.
+    """
+    try:
+        return employee_quiz_service.get_attempt_results(
+            db, 
+            quiz_id=quiz_id, 
+            attempt_id=attempt_id, 
+            user_id=user.id
+        )
+    except Exception as e:
+        return make_response(False, "Could not load attempt results", status_code=500, error=str(e))
+
+
+@router.post("/quizzes/{quiz_id}/attempt", status_code=status.HTTP_201_CREATED)
+def submit_quiz_attempt(
+    quiz_id: int,
+    payload: QuizAttemptSubmission,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    """
+    Submit quiz attempt and get results.
+    
+    Body: {"answers": {"question_id": selected_option_index}}
+    
+    Returns detailed results with correct answers and explanations.
+    """
+    try:
+        return employee_quiz_service.submit_quiz_attempt(
+            db, 
+            quiz_id=quiz_id, 
+            user_id=user.id, 
+            answers=payload.answers
+        )
+    except Exception as e:
+        return make_response(False, "Could not submit quiz", status_code=500, error=str(e))

@@ -14,6 +14,8 @@ from .quiz_audit import QuizGenerationAudit, QuizGenerationStatus, QuizGeneratio
 from .Video import Video
 from .external_link import ExternalLink
 from .progress import UserProgress, UserCourseStar
+from .quiz_attempt import QuizAttempt
+from .quiz_configuration import QuizConfiguration
 from .quiz import Quiz, QuizStatus
 from .quiz_question import QuizQuestion
 from .quiz_option import QuizOption
@@ -23,5 +25,5 @@ from .course_question_detail import CourseQuestionDetail
 from .course_question_option import CourseQuestionOption
 
 __all__ = ["User", "EmailOTP", "Base", "Team", "TeamMember","TeamMemberRole", "UserRole","Document","DocStatus","Announcement", "AnnouncementComment","AnnouncementAttachment","AttachmentType","DocumentChunk","Course","ContentItem","ContentType","DocumentProcessingAudit","ProcessingStatus","ProcessingStage","Video",
-           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption","QuizGenerationAudit","QuizGenerationStatus","QuizGenerationStage","CourseQuiz","CourseQuizQuestion","QuestionType","CourseQuestionDetail","CourseQuestionOption"]
+           "ExternalLink","UserProgress","UserCourseStar","Quiz","QuizStatus","QuizQuestion","QuizOption","QuizGenerationAudit","QuizGenerationStatus","QuizGenerationStage","CourseQuiz","CourseQuizQuestion","QuestionType","CourseQuestionDetail","CourseQuestionOption","QuizAttempt","QuizConfiguration"]
 

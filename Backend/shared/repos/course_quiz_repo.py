@@ -423,27 +423,30 @@ def get_course_quizzes_with_unlock_status(
     user_id: int,
     status: Optional[QuizStatus] = None
 ) -> List[dict]:
-    """Get course quizzes with unlock status for specific user"""
+    """Get course quizzes with smart status for specific user"""
+    from shared.services.quiz_status_service import calculate_quiz_status
+    from shared.repos.quiz_configuration_repo import get_quiz_configs_for_course
+    
     quizzes = get_course_quizzes_by_course(db, course_id, status)
+    
+    # Batch load configurations for performance
+    quiz_ids = [quiz.id for quiz in quizzes]
+    configs_map = get_quiz_configs_for_course(db, quiz_ids)
     
     quiz_list = []
     for quiz in quizzes:
-        unlock_status = check_quiz_unlock_status(db, user_id, quiz)
+        # Get smart status information
+        status_info = calculate_quiz_status(db, user_id, quiz)
         
         quiz_data = {
             "id": quiz.id,
-            "course_id": quiz.course_id,
             "title": quiz.title,
-            "description": quiz.description,
-            "total_questions": quiz.total_questions,
-            "prerequisite_content_ids": quiz.prerequisite_content_ids,
-            "status": quiz.status.value if hasattr(quiz.status, 'value') else quiz.status,
-            "created_by": quiz.created_by,
-            "created_at": quiz.created_at,
-            "updated_at": quiz.updated_at,
-            "published_at": quiz.published_at,
-            "is_unlocked": unlock_status["is_unlocked"],
-            "missing_prerequisites": unlock_status["missing_prerequisites"]
+            
+            # Smart status information (minimal for quiz cards)
+            "status": status_info["status"],
+            "attempts_remaining": status_info["attempts_remaining"],
+            "best_score": status_info["best_score"],
+            "next_attempt_at": status_info["next_attempt_at"]
         }
         
         quiz_list.append(quiz_data)
