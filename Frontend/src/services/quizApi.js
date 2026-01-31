@@ -96,6 +96,205 @@ export const deleteQuiz = async (quizId) => {
   }
 };
 
+// ==================== COURSE QUIZZES ====================
+
+// Create a new course quiz
+export const createCourseQuiz = async (courseId, quizData) => {
+  console.log('quizApi: createCourseQuiz called with:', { courseId, quizData });
+  
+  try {
+    const response = await api.post(
+      `/admin-course-quizzes/${courseId}/quizzes`,
+      quizData
+    );
+    console.log('quizApi: createCourseQuiz response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: createCourseQuiz error:', error);
+    throw error;
+  }
+};
+
+// Get course quiz by ID
+export const getCourseQuiz = async (courseQuizId) => {
+  console.log('quizApi: getCourseQuiz called with:', courseQuizId);
+  
+  try {
+    const response = await api.get(`/admin-course-quizzes/${courseQuizId}`);
+    console.log('quizApi: getCourseQuiz response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: getCourseQuiz error:', error);
+    throw error;
+  }
+};
+
+// List all quizzes for a course
+export const listCourseQuizzes = async (courseId) => {
+  console.log('quizApi: listCourseQuizzes called with:', courseId);
+  
+  try {
+    const response = await api.get(`/admin-course-quizzes/course/${courseId}`);
+    console.log('quizApi: listCourseQuizzes response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: listCourseQuizzes error:', error);
+    throw error;
+  }
+};
+
+// Update course quiz
+export const updateCourseQuiz = async (courseQuizId, quizData) => {
+  console.log('quizApi: updateCourseQuiz called with:', { courseQuizId, quizData });
+  
+  try {
+    const response = await api.put(
+      `/admin-course-quizzes/${courseQuizId}`,
+      quizData
+    );
+    console.log('quizApi: updateCourseQuiz response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: updateCourseQuiz error:', error);
+    throw error;
+  }
+};
+
+// Publish course quiz
+export const publishCourseQuiz = async (courseQuizId) => {
+  console.log('quizApi: publishCourseQuiz called with:', courseQuizId);
+  
+  try {
+    const response = await api.post(`/admin-course-quizzes/${courseQuizId}/publish`);
+    console.log('quizApi: publishCourseQuiz response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: publishCourseQuiz error:', error);
+    throw error;
+  }
+};
+
+// Delete course quiz
+export const deleteCourseQuiz = async (courseQuizId) => {
+  console.log('quizApi: deleteCourseQuiz called with:', courseQuizId);
+  
+  try {
+    const response = await api.delete(`/admin-course-quizzes/${courseQuizId}`);
+    console.log('quizApi: deleteCourseQuiz response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: deleteCourseQuiz error:', error);
+    throw error;
+  }
+};
+
+// ==================== COURSE QUIZ QUESTIONS ====================
+
+// Add question to course quiz
+export const addCourseQuizQuestion = async (courseQuizId, questionData) => {
+  console.log('quizApi: addCourseQuizQuestion called with:', { courseQuizId, questionData });
+  
+  try {
+    const response = await api.post(
+      `/admin-course-quizzes/${courseQuizId}/questions`,
+      questionData
+    );
+    console.log('quizApi: addCourseQuizQuestion response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: addCourseQuizQuestion error:', error);
+    throw error;
+  }
+};
+
+// Update course quiz question
+export const updateCourseQuizQuestion = async (questionId, questionData) => {
+  console.log('quizApi: updateCourseQuizQuestion called with:', { questionId, questionData });
+  
+  try {
+    const response = await api.put(
+      `/admin-course-quizzes/questions/${questionId}`,
+      questionData
+    );
+    console.log('quizApi: updateCourseQuizQuestion response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: updateCourseQuizQuestion error:', error);
+    throw error;
+  }
+};
+
+// Delete course quiz question
+export const deleteCourseQuizQuestion = async (questionId) => {
+  console.log('quizApi: deleteCourseQuizQuestion called with:', questionId);
+  
+  try {
+    const response = await api.delete(`/admin-course-quizzes/questions/${questionId}`);
+    console.log('quizApi: deleteCourseQuizQuestion response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: deleteCourseQuizQuestion error:', error);
+    throw error;
+  }
+};
+
+// ==================== COURSE QUIZ HELPER ENDPOINTS ====================
+
+// Get available document questions for a course
+export const getAvailableCourseQuestions = async (courseId) => {
+  console.log('quizApi: getAvailableCourseQuestions called with:', courseId);
+  
+  try {
+    const response = await api.get(`/admin-course-quizzes/course/${courseId}/available-questions`);
+    console.log('quizApi: getAvailableCourseQuestions response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: getAvailableCourseQuestions error:', error);
+    throw error;
+  }
+};
+
+// ==================== QUIZ CONFIGURATION (COURSE QUIZZES) ====================
+
+// Get quiz configuration
+export const getQuizConfiguration = async (quizId) => {
+  console.log('quizApi: getQuizConfiguration called with:', quizId);
+  try {
+    const response = await api.get(`/admin-course-quizzes/${quizId}/configuration`);
+    console.log('quizApi: getQuizConfiguration response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: getQuizConfiguration error:', error);
+    throw error;
+  }
+};
+
+// Update quiz configuration
+export const updateQuizConfiguration = async (quizId, configData) => {
+  console.log('quizApi: updateQuizConfiguration called with:', { quizId, configData });
+  try {
+    const response = await api.put(`/admin-course-quizzes/${quizId}/configuration`, configData);
+    console.log('quizApi: updateQuizConfiguration response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: updateQuizConfiguration error:', error);
+    throw error;
+  }
+};
+
+// Reset quiz configuration
+export const resetQuizConfiguration = async (quizId) => {
+  console.log('quizApi: resetQuizConfiguration called with:', quizId);
+  try {
+    const response = await api.delete(`/admin-course-quizzes/${quizId}/configuration`);
+    console.log('quizApi: resetQuizConfiguration response:', response.data);
+    return response.data.data || response.data;
+  } catch (error) {
+    console.error('quizApi: resetQuizConfiguration error:', error);
+    throw error;
+  }
+};
+
 // ==================== QUESTIONS ====================
 
 // Add question to quiz
