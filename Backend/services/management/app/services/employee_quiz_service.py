@@ -130,42 +130,6 @@ def validate_quiz_access(db: Session, quiz_id: int, user_id: int):
     return quiz
 
 
-def get_attempt_results(db: Session, *, quiz_id: int, attempt_id: int, user_id: int):
-    """Get detailed results for a specific quiz attempt"""
-    
-    # Get the attempt
-    attempt = quiz_attempt_repo.get_quiz_attempt_by_id(db, attempt_id)
-    if not attempt:
-        return make_response(False, "Attempt not found", status_code=404, error="Quiz attempt does not exist")
-    
-    # Verify ownership
-    if attempt.user_id != user_id or attempt.quiz_id != quiz_id:
-        return make_response(False, "Access denied", status_code=403, error="You can only view your own attempts")
-    
-    # Get quiz with questions for detailed results
-    quiz_with_questions = course_quiz_repo.get_course_quiz_with_questions(db, quiz_id)
-    if not quiz_with_questions:
-        return make_response(False, "Quiz not found", status_code=404, error="Quiz does not exist")
-    
-    # Reconstruct detailed results from stored answers
-    score_data = calculate_quiz_score(quiz_with_questions, attempt.answers)
-    
-    return make_response(
-        True,
-        "Attempt results retrieved",
-        data={
-            "attempt_id": attempt.id,
-            "quiz_title": quiz_with_questions.title,
-            "score": attempt.score,
-            "total_questions": attempt.total_questions,
-            "percentage": float(attempt.percentage),
-            "passed": attempt.passed,
-            "completed_at": attempt.completed_at,
-            "results": score_data["question_results"]
-        }
-    )
-
-
 def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dict[str, int]):
     """Submit quiz attempt and return results with explanations"""
     
@@ -204,13 +168,16 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
         passed=score_data["passed"]
     )
     
+    # Get updated quiz status after this attempt
+    updated_status_info = calculate_quiz_status(db, user_id, quiz)
+    
     # Check if user can retake after this attempt
-    attempts_after_this = len(quiz_attempt_repo.get_user_quiz_attempts(db, user_id, quiz_id)) + 1
+    attempts_after_this = len(quiz_attempt_repo.get_user_quiz_attempts(db, user_id, quiz_id))
     config = quiz_configuration_repo.get_quiz_config(db, quiz_id)
     can_retake = (score_data["percentage"] < config["passing_score"] and 
                   attempts_after_this < config["max_attempts"])
     
-    # Return streamlined results for learning
+    # Return streamlined results for learning with updated quiz status
     return make_response(
         True, 
         "Quiz submitted successfully", 
@@ -221,7 +188,15 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
             "percentage": score_data["percentage"],
             "passed": score_data["passed"],
             "can_retake": can_retake,
-            "results": score_data["question_results"]
+            "results": score_data["question_results"],
+            # Updated quiz status after this attempt
+            "quiz_status": {
+                "status": updated_status_info["status"],
+                "attempts_remaining": updated_status_info["attempts_remaining"],
+                "best_score": updated_status_info["best_score"],
+                "next_attempt_at": updated_status_info["next_attempt_at"],
+                "missing_prerequisites": updated_status_info["missing_prerequisites"]
+            }
         },
         status_code=201
     )
