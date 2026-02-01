@@ -93,3 +93,35 @@ export const getUserProfile = async () => {
   const response = await api.get('/employee/me/profile');
   return response.data;
 };
+
+// ===== QUIZ TAKING APIs =====
+
+// Get quiz for taking (only if status is "can_take")
+export const getQuizForTaking = async (quizId) => {
+  console.log('courseApi: getQuizForTaking called with:', quizId);
+  
+  try {
+    const response = await api.get(`/employee/quizzes/${quizId}`);
+    console.log('courseApi: getQuizForTaking response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('courseApi: getQuizForTaking error:', error);
+    throw error;
+  }
+};
+
+// Submit quiz attempt
+export const submitQuizAttempt = async (quizId, answers) => {
+  console.log('courseApi: submitQuizAttempt called with:', { quizId, answers });
+  
+  try {
+    const response = await api.post(`/employee/quizzes/${quizId}/attempt`, {
+      answers
+    });
+    console.log('courseApi: submitQuizAttempt response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('courseApi: submitQuizAttempt error:', error);
+    throw error;
+  }
+};

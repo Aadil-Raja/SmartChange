@@ -247,7 +247,8 @@ export const CourseProvider = ({ children }) => {
             if (res.success) {
                 const courseData = {
                     ...res.data.course,
-                    items: res.data.items || []
+                    items: res.data.items || [],
+                    quizzes: res.data.quizzes || []
                 };
 
                 setSelectedCourse(courseData);
