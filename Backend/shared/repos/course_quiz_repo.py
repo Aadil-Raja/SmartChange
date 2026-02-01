@@ -446,7 +446,8 @@ def get_course_quizzes_with_unlock_status(
             "status": status_info["status"],
             "attempts_remaining": status_info["attempts_remaining"],
             "best_score": status_info["best_score"],
-            "next_attempt_at": status_info["next_attempt_at"]
+            "next_attempt_at": status_info["next_attempt_at"],
+            "missing_prerequisites": status_info["missing_prerequisites"]
         }
         
         quiz_list.append(quiz_data)

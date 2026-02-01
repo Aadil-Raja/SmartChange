@@ -31,8 +31,8 @@ def make_doc_qa_tool(chunk_db, document_id: int):
             print(f"[TOOL] Sources: {sources}", file=sys.stderr)
             print(f"[TOOL] Follow-up questions: {follow_up_questions}", file=sys.stderr)
             
-            # Format response with follow-up questions
-            response = answer
+            # Return structured response that preserves follow-up questions
+            # Store folloswer
             if follow_up_questions:
                 response += "\n\n📌 You might also want to explore:\n"
                 for i, q in enumerate(follow_up_questions, 1):

@@ -37,6 +37,8 @@ Use doc_summary_tool when user asks for:
 
 Use doc_qa_tool for specific questions about document content.
 
+Preserve the follow up questions 
+
 If the tool returns no context, say you don't know. Keep responses concise.
 Always reflect the tool's result faithfully.
 """

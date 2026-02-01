@@ -427,29 +427,6 @@ def get_quiz_for_taking(
         return make_response(False, "Could not load quiz", status_code=500, error=str(e))
 
 
-@router.get("/quizzes/{quiz_id}/attempts/{attempt_id}", status_code=status.HTTP_200_OK)
-def get_quiz_attempt_results(
-    quiz_id: int,
-    attempt_id: int,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
-):
-    """
-    Get detailed results for a specific quiz attempt.
-    
-    Allows users to review their previous attempts.
-    """
-    try:
-        return employee_quiz_service.get_attempt_results(
-            db, 
-            quiz_id=quiz_id, 
-            attempt_id=attempt_id, 
-            user_id=user.id
-        )
-    except Exception as e:
-        return make_response(False, "Could not load attempt results", status_code=500, error=str(e))
-
-
 @router.post("/quizzes/{quiz_id}/attempt", status_code=status.HTTP_201_CREATED)
 def submit_quiz_attempt(
     quiz_id: int,
