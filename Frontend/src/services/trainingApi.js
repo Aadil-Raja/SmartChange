@@ -100,6 +100,23 @@ export const deleteContentItem = async (contentId) => {
   return response.data;
 };
 
+// Reorder content items
+export const reorderContentItems = async (courseId, items) => {
+  console.log('trainingApi: reorderContentItems called with:', { courseId, items });
+  
+  try {
+    const response = await api.patch(
+      `/admin-training/courses/${courseId}/content/reorder`,
+      { items }
+    );
+    console.log('trainingApi: reorderContentItems response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('trainingApi: reorderContentItems error:', error);
+    throw error;
+  }
+};
+
 // ==================== EXTERNAL LINKS ====================
 
 // Create external link

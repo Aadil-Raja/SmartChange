@@ -12,6 +12,7 @@ import {
   addContentItem,
   updateContentItem,
   deleteContentItem,
+  reorderContentItems,
   createExternalLink,
   getExternalLinks,
   getExternalLink,
@@ -29,6 +30,7 @@ export const AdminTrainingProvider = ({ children }) => {
   const [courses, setCourses] = useState([]);
   const [currentCourse, setCurrentCourse] = useState(null);
   const [contentItems, setContentItems] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
   const [externalLinks, setExternalLinks] = useState([]);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -96,6 +98,7 @@ export const AdminTrainingProvider = ({ children }) => {
       if (res?.success) {
         setCurrentCourse(res.data?.course || null);
         setContentItems(res.data?.items || []);
+        setQuizzes(res.data?.quizzes || []);
         return { success: true, data: res.data };
       } else {
         throw new Error(res.message || "Failed to fetch course details");
@@ -237,6 +240,30 @@ export const AdminTrainingProvider = ({ children }) => {
         return { success: true };
       } else {
         throw new Error(res.message || "Failed to delete content");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reorder content items
+  const reorderContent = async (courseId, items) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await reorderContentItems(courseId, items);
+      if (res?.success) {
+        setSuccess("Content reordered successfully");
+        // Refresh course details to get updated order
+        await fetchCourseDetails(courseId);
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to reorder content");
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message;
@@ -525,6 +552,7 @@ export const AdminTrainingProvider = ({ children }) => {
         courses,
         currentCourse,
         contentItems,
+        quizzes,
         externalLinks,
         videos,
         loading,
@@ -546,6 +574,7 @@ export const AdminTrainingProvider = ({ children }) => {
         addContent,
         updateContent,
         deleteContent,
+        reorderContent,
         
         // External Link functions
         fetchExternalLinks,
