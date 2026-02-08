@@ -3,9 +3,6 @@ from sqlalchemy.orm import Session
 from app.utils.response_utils import make_response
 from app.repositories import announcements_repo
 from shared.models import TeamMember, TeamMemberRole, Announcement, AttachmentType
-from app.repositories import progress_repo as prog_repo
-from app.repositories import courseContent_repo as content_repo
-from app.services import courseContent_service
 from app.services.storage.storage_cloudinary import (
     upload_image_bytes, 
     upload_video_bytes, 
@@ -13,6 +10,7 @@ from app.services.storage.storage_cloudinary import (
     delete_file_by_public_id,
     delete_with_thumbnail
 )
+from app.utils.course_progress import build_user_courses_overview
 
 def _is_team_member(db: Session, *, team_id: int, user_id: int) -> bool:
     return db.query(TeamMember.id).filter_by(team_id=team_id, user_id=user_id).first() is not None
@@ -239,37 +237,15 @@ def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, 
     if not member:
         return make_response(False, "Member not found", status_code=404)
     
-    all_courses_data = courseContent_service.list_courses(db, active_only=True)
-    all_courses = all_courses_data.get("courses", [])
+    # Build courses overview using shared utility (exclude courses with 0% progress)
+    overview = build_user_courses_overview(
+        db,
+        user_id=member_user_id,
+        include_zero_progress=False,
+        include_starred=False
+    )
     
-    in_progress_courses = []
-    completed_courses = []
-    
-    for course in all_courses:
-        course_id = course["id"]
-        
-        progress_data = _calculate_course_progress(db, user_id=member_user_id, course_id=course_id)
-        percent = progress_data["percent"]
-        
-        if percent == 0:
-            continue
-        
-        course_info = {
-            "id": course_id,
-            "title": course["title"],
-            "description": course.get("description"),
-            "progress": percent,
-            "completed_items": progress_data["completed_items"],
-            "total_items": progress_data["total_items"],
-            "department": course.get("department"),
-            "thumbnail_url": course.get("thumbnail_url"),
-        }
-        
-        if percent >= 100.0:
-            completed_courses.append(course_info)
-        else:
-            in_progress_courses.append(course_info)
-    
+    # Build member info
     member_info = {
         "user_id": member.user_id,
         "user_name": member.user.Name if member.user else None,
@@ -278,58 +254,12 @@ def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, 
         "role_in_team": member.role_in_team.value if member.role_in_team else None,
     }
     
-    total_completed = len(completed_courses)
-    total_in_progress = len(in_progress_courses)
-    total_courses_started = total_completed + total_in_progress
-    
-    if total_courses_started > 0:
-        overall_progress = round(
-            sum(c["progress"] for c in (in_progress_courses + completed_courses)) / total_courses_started,
-            2
-        )
-    else:
-        overall_progress = 0.0
-    
-    total_items_completed = sum(c["completed_items"] for c in (in_progress_courses + completed_courses))
-    total_items = sum(c["total_items"] for c in (in_progress_courses + completed_courses))
-    
-    stats = {
-        "total_courses_started": total_courses_started,
-        "total_in_progress": total_in_progress,
-        "total_completed": total_completed,
-        "overall_progress": overall_progress,
-        "total_items_completed": total_items_completed,
-        "total_items": total_items,
-    }
-    
     return make_response(True, "Member progress fetched", data={
         "member": member_info,
-        "stats": stats,
-        "in_progress": in_progress_courses,
-        "completed": completed_courses,
+        "stats": overview["stats"],
+        "in_progress": overview["in_progress"],
+        "completed": overview["completed"],
     }, status_code=200)
-
-def _calculate_course_progress(db: Session, *, user_id: int, course_id: int):
-    """Helper function to calculate course progress for a user"""
-    items = content_repo.list_items_for_course(db, course_id=course_id)
-    content_ids = [it.id for it in items]
-    total_items = len(content_ids)
-    
-    if total_items == 0:
-        return {"course_id": course_id, "completed_items": 0, "total_items": 0, "percent": 0.0}
-    
-    rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
-    
-    completed_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
-    completed_items = len(completed_ids)
-    percent = round((completed_items / total_items) * 100.0, 2)
-    
-    return {
-        "course_id": course_id,
-        "completed_items": completed_items,
-        "total_items": total_items,
-        "percent": percent,
-    }
 
 # Attachment functions
 def upload_announcement_attachment(

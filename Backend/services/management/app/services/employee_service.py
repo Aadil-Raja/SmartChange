@@ -8,6 +8,7 @@ from app.repositories import courseContent_repo as content_repo
 from app.repositories import course_stars_repo
 from app.services import courseContent_service
 from app.services.storage.storage_cloudinary import upload_image_bytes, delete_file_by_public_id
+from app.utils.course_progress import calculate_course_progress, build_user_courses_overview
 def get_my_teams(db, user):
     rows = teams_repo.get_teams_for_user(db, user.id)
     data = []
@@ -108,50 +109,8 @@ def course_progress(
     user_id: int,
     course_id: int,
 ) -> Dict[str, Any]:
-    # all items in the course
-    items = content_repo.list_items_for_course(db, course_id=course_id)
-    content_ids = [it.id for it in items]
-    total_items = len(content_ids)
-    
-    # get published quizzes for the course
-    from shared.repos.course_quiz_repo import get_course_quizzes_by_course
-    from shared.models.course_quiz import QuizStatus
-    from shared.repos.quiz_attempt_repo import get_user_quiz_attempts
-    
-    published_quizzes = get_course_quizzes_by_course(db, course_id, QuizStatus.PUBLISHED)
-    total_quizzes = len(published_quizzes)
-    
-    # user progress rows for content items
-    rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
-    
-    # completed content items = completed_at not null OR progress >= 100
-    completed_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
-    completed_items = len(completed_ids)
-    
-    # completed quizzes = quizzes where user has passed attempts
-    completed_quizzes = 0
-    for quiz in published_quizzes:
-        attempts = get_user_quiz_attempts(db, user_id, quiz.id)
-        if any(attempt.passed for attempt in attempts):
-            completed_quizzes += 1
-    
-    # calculate overall progress including both content items and quizzes
-    total_course_items = total_items + total_quizzes
-    completed_course_items = completed_items + completed_quizzes
-    
-    if total_course_items == 0:
-        percent = 0.0
-    else:
-        percent = round((completed_course_items / total_course_items) * 100.0, 2)
-    
-    return {
-        "course_id": course_id,
-        "completed_items": completed_items,
-        "total_items": total_items,
-        "completed_quizzes": completed_quizzes,
-        "total_quizzes": total_quizzes,
-        "percent": percent,
-    }
+    """Get course progress for a user (wrapper around shared utility)"""
+    return calculate_course_progress(db, user_id=user_id, course_id=course_id)
 
 def course_items_progress(
     db: Session,
@@ -239,7 +198,7 @@ def get_starred_courses(db: Session, *, user_id: int) -> Dict[str, Any]:
         if not course.get("is_active"):
             continue  # Skip inactive courses
         
-        progress_data = course_progress(db, user_id=user_id, course_id=course["id"])
+        progress_data = calculate_course_progress(db, user_id=user_id, course_id=course["id"])
         
         result.append({
             "id": course["id"],
@@ -251,8 +210,8 @@ def get_starred_courses(db: Session, *, user_id: int) -> Dict[str, Any]:
             "completed_quizzes": progress_data["completed_quizzes"],
             "total_quizzes": progress_data["total_quizzes"],
             "is_completed": progress_data["percent"] >= 100.0,
-             "department": course.get("department"),
-                "thumbnail_url": course.get("thumbnail_url"),
+            "department": course.get("department"),
+            "thumbnail_url": course.get("thumbnail_url"),
         })
     
     return {"starred_courses": result}
@@ -270,87 +229,26 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     user = db.query(User).filter(User.id == user_id).first()
     user_name = user.Name if user else None
     
-    # Get all active courses
-    all_courses_data = courseContent_service.list_courses(db, active_only=True)
-    all_courses = all_courses_data.get("courses", [])
-    
     # Get starred course IDs
     starred_ids = set(course_stars_repo.list_starred_course_ids(db, user_id=user_id))
     
-    starred_courses = []
-    in_progress_courses = []
-    completed_courses = []
+    # Build courses overview using shared utility
+    overview = build_user_courses_overview(
+        db,
+        user_id=user_id,
+        include_zero_progress=True,
+        include_starred=True,
+        starred_ids=starred_ids
+    )
     
-    for course in all_courses:
-        course_id = course["id"]
-        
-        # Calculate progress
-        progress_data = course_progress(db, user_id=user_id, course_id=course_id)
-        percent = progress_data["percent"]
-        
-        course_info = {
-            "id": course_id,
-            "title": course["title"],
-            "description": course.get("description"),
-            "progress": percent,
-            "completed_items": progress_data["completed_items"],
-            "total_items": progress_data["total_items"],
-            "completed_quizzes": progress_data["completed_quizzes"],
-            "total_quizzes": progress_data["total_quizzes"],
-            "is_starred": course_id in starred_ids,
-            "department": course.get("department"),
-            "thumbnail_url": course.get("thumbnail_url"),
-        }
-        
-        # Categorize
-        if course_id in starred_ids:
-            starred_courses.append(course_info)
-        
-        if percent >= 100.0:
-            completed_courses.append(course_info)
-        elif percent > 0:
-            in_progress_courses.append(course_info)
-    
-    # Calculate statistics
-    total_completed = len(completed_courses)
-    total_in_progress = len(in_progress_courses)
-    total_starred = len(starred_courses)
-    total_courses_started = total_completed + total_in_progress
-    
-    # Calculate overall progress percentage (across all courses with progress)
-    if total_courses_started > 0:
-        overall_progress = round(
-            sum(c["progress"] for c in (in_progress_courses + completed_courses)) / total_courses_started,
-            2
-        )
-    else:
-        overall_progress = 0.0
-    
-    # Calculate total items and quizzes completed vs total across all started courses
-    total_items_completed = sum(c["completed_items"] for c in (in_progress_courses + completed_courses))
-    total_items = sum(c["total_items"] for c in (in_progress_courses + completed_courses))
-    total_quizzes_completed = sum(c["completed_quizzes"] for c in (in_progress_courses + completed_courses))
-    total_quizzes = sum(c["total_quizzes"] for c in (in_progress_courses + completed_courses))
-    
-    stats = {
-        "total_courses_started": total_courses_started,
-        "total_in_progress": total_in_progress,
-        "total_completed": total_completed,
-        "total_starred": total_starred,
-        "overall_progress": overall_progress,
-        "total_items_completed": total_items_completed,
-        "total_items": total_items,
-        "total_quizzes_completed": total_quizzes_completed,
-        "total_quizzes": total_quizzes,
-    }
-    
+    # Add user information to the response
     return {
         "user_name": user_name,
         "profile_picture_url": user.profile_picture_url if user else None,
-        "stats": stats,
-        "starred": starred_courses,
-        "in_progress": in_progress_courses,
-        "completed": completed_courses,
+        "stats": overview["stats"],
+        "starred": overview["starred"],
+        "in_progress": overview["in_progress"],
+        "completed": overview["completed"],
     }
 
 def upload_profile_picture(db: Session, *, user_id: int, file_bytes: bytes) -> Dict[str, Any]:
