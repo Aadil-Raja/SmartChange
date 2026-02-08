@@ -257,3 +257,40 @@ def reorder_content_items(db: Session, *, course_id: int, item_orders: List[dict
         raise ValueError("Failed to reorder content items")
     
     return {"reordered": True}
+
+
+# ---------------------- DEADLINE MANAGEMENT ----------------------
+
+def set_course_deadline(db: Session, *, course_id: int, deadline_weeks: Optional[int]):
+    """
+    Set or update the deadline for a course.
+    
+    Args:
+        course_id: ID of the course
+        deadline_weeks: Number of weeks for deadline, or None to remove deadline
+    
+    Returns:
+        Updated course data
+    """
+    # Validate deadline_weeks if provided
+    if deadline_weeks is not None and deadline_weeks < 1:
+        raise ValueError("Deadline must be at least 1 week")
+    
+    course = repo.set_course_deadline(db, course_id=course_id, deadline_weeks=deadline_weeks)
+    if not course:
+        raise ValueError("Course not found")
+    
+    return {"course": repo.course_to_dict(course)}
+
+
+def remove_course_deadline(db: Session, *, course_id: int):
+    """
+    Remove the deadline from a course.
+    
+    Args:
+        course_id: ID of the course
+    
+    Returns:
+        Updated course data
+    """
+    return set_course_deadline(db, course_id=course_id, deadline_weeks=None)

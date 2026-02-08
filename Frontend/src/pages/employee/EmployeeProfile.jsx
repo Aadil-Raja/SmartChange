@@ -57,6 +57,8 @@ const EmployeeProfile = () => {
         return profileData.in_progress || [];
       case 'completed':
         return profileData.completed || [];
+      case 'expired':
+        return profileData.expired || [];
       default:
         return [];
     }
@@ -288,8 +290,8 @@ const EmployeeProfile = () => {
                   <BookOpen size={24} className="text-[#00ADEF]" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_courses_started || 0}</div>
-              <div className="text-sm text-gray-600 font-medium">Started</div>
+              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_enrolled || 0}</div>
+              <div className="text-sm text-gray-600 font-medium">Enrolled</div>
             </Card>
 
             <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
@@ -404,6 +406,27 @@ const EmployeeProfile = () => {
                     {(profileData?.completed || []).length}
                   </span>
                 </button>
+                
+                {stats.total_expired > 0 && (
+                  <button
+                    onClick={() => setActiveTab('expired')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      activeTab === 'expired'
+                        ? 'bg-red-500 text-white shadow-md'
+                        : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
+                    }`}
+                  >
+                    <Calendar size={16} />
+                    <span>Expired</span>
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      activeTab === 'expired' 
+                        ? 'bg-white/20 text-white' 
+                        : 'bg-red-100 text-red-600'
+                    }`}>
+                      {(profileData?.expired || []).length}
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -415,6 +438,7 @@ const EmployeeProfile = () => {
                     {activeTab === 'starred' && <Star size={48} className="text-gray-300" />}
                     {activeTab === 'in_progress' && <Clock size={48} className="text-gray-300" />}
                     {activeTab === 'completed' && <CheckCircle size={48} className="text-gray-300" />}
+                    {activeTab === 'expired' && <Calendar size={48} className="text-gray-300" />}
                   </div>
                   <h4 className="text-xl font-semibold text-[#333333] mb-2">
                     No {activeTab.replace('_', ' ')} courses yet
@@ -423,22 +447,23 @@ const EmployeeProfile = () => {
                     {activeTab === 'starred' && 'Star courses to keep track of your favorites'}
                     {activeTab === 'in_progress' && 'Start learning to see courses in progress here'}
                     {activeTab === 'completed' && 'Complete courses to see them here'}
+                    {activeTab === 'expired' && 'Courses with expired deadlines will appear here'}
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {getActiveTabCourses().map((course) => {
-                    const progress = {
+                    const progress = course.progress ? {
                       completed: course.completed_items || 0,
                       total: course.total_items || 0,
                       percentage: Math.round(course.progress || 0)
-                    };
+                    } : null;
                     
                     return (
                       <CourseCard
                         key={course.id}
                         course={course}
-                        // progress={progress}
+                        progress={progress}
                       />
                     );
                   })}

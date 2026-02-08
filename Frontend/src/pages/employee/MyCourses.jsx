@@ -11,35 +11,16 @@ const MyCourses = () => {
         loading,
         error,
         fetchCourses,
-        fetchActualCourseProgress,
     } = useCourses();
 
     const [navCollapsed, setNavCollapsed] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all'); // all, in-progress, completed
+    const [statusFilter, setStatusFilter] = useState('all'); // all, in-progress, completed, not-enrolled, expired
 
     // Load courses when component mounts
     useEffect(() => {
         fetchCourses();
     }, []);
-
-    // Fetch progress for courses when they are loaded
-    useEffect(() => {
-        const fetchProgressForCourses = async () => {
-            if (courses.length > 0) {
-                // Only fetch progress for courses that don't already have progress data
-                const coursesNeedingProgress = courses.filter(course => !course.progressData);
-                if (coursesNeedingProgress.length > 0) {
-                    console.log('Fetching progress for courses:', coursesNeedingProgress.map(c => c.id));
-                    const progressPromises = coursesNeedingProgress.map(course =>
-                        fetchActualCourseProgress(course.id)
-                    );
-                    await Promise.allSettled(progressPromises);
-                }
-            }
-        };
-        fetchProgressForCourses();
-    }, [courses.length, fetchActualCourseProgress]);
 
     // Loading State
     if (loading && courses.length === 0) {
@@ -176,6 +157,16 @@ const MyCourses = () => {
                                             All
                                         </button>
                                         <button
+                                            onClick={() => setStatusFilter('not-enrolled')}
+                                            className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
+                                                statusFilter === 'not-enrolled'
+                                                    ? 'bg-[#F58220] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                            }`}
+                                        >
+                                            Not Enrolled
+                                        </button>
+                                        <button
                                             onClick={() => setStatusFilter('in-progress')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'in-progress'
@@ -217,41 +208,23 @@ const MyCourses = () => {
                                                 (course.description && course.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
                                                 (course.department && course.department.toLowerCase().includes(searchQuery.toLowerCase()));
                                             
-                                            // Status filter
+                                            // Status filter using new category field
                                             if (statusFilter === 'all') return matchesSearch;
-                                            
-                                            const progress = course.progressData
-                                                ? Math.round(course.progressData.percent)
-                                                : course.progress !== undefined
-                                                ? Math.round(course.progress || 0)
-                                                : 0;
-                                            
-                                            if (statusFilter === 'completed') {
-                                                return matchesSearch && progress === 100;
-                                            }
-                                            if (statusFilter === 'in-progress') {
-                                                return matchesSearch && progress < 100;
-                                            }
-                                            if (statusFilter === 'starred') {
-                                                return matchesSearch && course.is_starred;
-                                            }
+                                            if (statusFilter === 'not-enrolled') return matchesSearch && course.category === 'not_enrolled';
+                                            if (statusFilter === 'in-progress') return matchesSearch && course.category === 'in_progress';
+                                            if (statusFilter === 'completed') return matchesSearch && course.category === 'completed';
+                                            if (statusFilter === 'starred') return matchesSearch && course.is_starred;
                                             
                                             return matchesSearch;
                                         })
                                         .map((course) => {
-                                            const progress = course.progressData
-                                                ? {
-                                                    completed: course.progressData.completed_items,
-                                                    total: course.progressData.total_items,
-                                                    percentage: Math.round(course.progressData.percent)
-                                                }
-                                                : course.progress !== undefined
-                                                ? {
-                                                    completed: course.completed_items || 0,
-                                                    total: course.total_items || 0,
-                                                    percentage: Math.round(course.progress || 0)
-                                                }
-                                                : null;
+                                            // Use progress from API response
+                                            const progress = course.progress ? {
+                                                completed: course.progress.completed_items,
+                                                total: course.progress.total_items,
+                                                percentage: Math.round(course.progress.percent)
+                                            } : null;
+                                            
                                             return (
                                                 <CourseCard
                                                     key={course.id}
@@ -269,22 +242,10 @@ const MyCourses = () => {
                                         (course.department && course.department.toLowerCase().includes(searchQuery.toLowerCase()));
                                     
                                     if (statusFilter === 'all') return matchesSearch;
-                                    
-                                    const progress = course.progressData
-                                        ? Math.round(course.progressData.percent)
-                                        : course.progress !== undefined
-                                        ? Math.round(course.progress || 0)
-                                        : 0;
-                                    
-                                    if (statusFilter === 'completed') {
-                                        return matchesSearch && progress === 100;
-                                    }
-                                    if (statusFilter === 'in-progress') {
-                                        return matchesSearch && progress < 100;
-                                    }
-                                    if (statusFilter === 'starred') {
-                                        return matchesSearch && course.is_starred;
-                                    }
+                                    if (statusFilter === 'not-enrolled') return matchesSearch && course.category === 'not_enrolled';
+                                    if (statusFilter === 'in-progress') return matchesSearch && course.category === 'in_progress';
+                                    if (statusFilter === 'completed') return matchesSearch && course.category === 'completed';
+                                    if (statusFilter === 'starred') return matchesSearch && course.is_starred;
                                     
                                     return matchesSearch;
                                 }).length === 0 && (

@@ -2,9 +2,21 @@ import api from './api';
 
 // ===== EMPLOYEE COURSE APIs =====
 
-// Get all active courses visible to employees
+// Get all active courses visible to employees with enrollment status and progress
 export const getEmployeeCourses = async () => {
   const response = await api.get('/employee/courses');
+  return response.data;
+};
+
+// Enroll in a course (Start button)
+export const enrollCourse = async (courseId) => {
+  const response = await api.post(`/employee/courses/${courseId}/enroll`);
+  return response.data;
+};
+
+// Unenroll from a course (removes all progress and quiz attempts)
+export const unenrollCourse = async (courseId) => {
+  const response = await api.delete(`/employee/courses/${courseId}/enroll`);
   return response.data;
 };
 

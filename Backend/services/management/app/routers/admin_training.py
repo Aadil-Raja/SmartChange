@@ -11,7 +11,8 @@ from app.services import video_service as vsvc
 from app.utils.response_utils import make_response
 from shared.schemas.training_admin import (
     CourseCreateIn, CourseUpdateIn,
-    ContentItemCreateIn, ContentItemUpdateIn, ContentItemReorderIn, LinkCreate,VideoCreate, LinkUpdate
+    ContentItemCreateIn, ContentItemUpdateIn, ContentItemReorderIn, LinkCreate,VideoCreate, LinkUpdate,
+    CourseDeadlineUpdate
 )
 from app.services import courseContent_service as svc
 
@@ -142,6 +143,35 @@ def delete_course_thumbnail_route(
         return make_response(False, "Failed to delete thumbnail", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
 
+@router.patch("/courses/{course_id}/deadline", status_code=status.HTTP_200_OK)
+def set_course_deadline_route(
+    course_id: int,
+    body: CourseDeadlineUpdate,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Set or update the deadline for a course.
+    
+    Args:
+        course_id: ID of the course
+        body: CourseDeadlineUpdate with deadline_weeks (or null to remove)
+    
+    Returns:
+        Updated course with deadline information
+    """
+    try:
+        return make_response(
+            True, 
+            "Deadline updated" if body.deadline_weeks else "Deadline removed", 
+            data=svc.set_course_deadline(db, course_id=course_id, deadline_weeks=body.deadline_weeks)
+        )
+    except ValueError as e:
+        if "not found" in str(e).lower():
+            return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        return make_response(False, "Invalid deadline value", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+    except Exception as e:
+        return make_response(False, "Failed to update deadline", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
 
 # --------------------------- CONTENT ITEMS ---------------------------

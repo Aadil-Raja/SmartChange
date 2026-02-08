@@ -14,7 +14,11 @@ class Course(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_active = Column(Boolean, nullable=False, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Deadline configuration (in weeks)
+    deadline_weeks = Column(Integer, nullable=True)  # NULL = no deadline
 
     # Relationships
     contents = relationship("ContentItem", back_populates="course", cascade="all, delete-orphan")
     quizzes = relationship("CourseQuiz", back_populates="course", cascade="all, delete-orphan")
+    enrollments = relationship("CourseEnrollment", back_populates="course", cascade="all, delete-orphan")

@@ -8,7 +8,9 @@ import {
     getCourseItemsProgress,
     getProcessedDocuments,
     starCourse,
-    unstarCourse
+    unstarCourse,
+    enrollCourse,
+    unenrollCourse
 } from "../services/courseApi";
 
 export const CourseContext = createContext(null);
@@ -25,57 +27,19 @@ export const CourseProvider = ({ children }) => {
     const fetchingProgress = useRef(new Set());
 
 
-    // Fetch all courses with enhanced data from overview API
+    // Fetch all courses with enrollment status and progress (single API call)
     const fetchCourses = async () => {
         setLoading(true);
         setError(null);
         try {
-            // Fetch both all courses and overview data in parallel
-            const [allCoursesRes, overviewRes] = await Promise.all([
-                getEmployeeCourses(),
-                getEmployeeCoursesOverview()
-            ]);
+            const response = await getEmployeeCourses();
 
-            if (allCoursesRes.success) {
-                const allCourses = allCoursesRes.data.courses || [];
-                
-                // Create maps for quick lookup from overview data
-                const starredMap = new Map();
-                const progressMap = new Map();
-                
-                if (overviewRes.success) {
-                    // Map starred courses
-                    (overviewRes.data.starred || []).forEach(course => {
-                        starredMap.set(course.id, course);
-                    });
-                    
-                    // Map courses with progress data
-                    [...(overviewRes.data.in_progress || []), ...(overviewRes.data.completed || [])].forEach(course => {
-                        progressMap.set(course.id, course);
-                    });
-                }
-
-                // Enhance all courses with starred status and progress data
-                const enhancedCourses = allCourses.map(course => {
-                    const starredData = starredMap.get(course.id);
-                    const progressData = progressMap.get(course.id);
-                    
-                    return {
-                        ...course,
-                        is_starred: !!starredData,
-                        // Add progress data if available
-                        ...(progressData && {
-                            progress: progressData.progress,
-                            completed_items: progressData.completed_items,
-                            total_items: progressData.total_items
-                        })
-                    };
-                });
-
-                setCourses(enhancedCourses);
-                return { success: true, data: enhancedCourses };
+            if (response.success) {
+                const courses = response.data.courses || [];
+                setCourses(courses);
+                return { success: true, data: courses };
             } else {
-                throw new Error(allCoursesRes.message || 'Failed to fetch courses');
+                throw new Error(response.message || 'Failed to fetch courses');
             }
         } catch (err) {
             const errorMsg = err.response?.data?.message || err.message || 'Failed to fetch courses';
@@ -345,6 +309,40 @@ export const CourseProvider = ({ children }) => {
         }
     };
 
+    // Enroll in a course
+    const enrollInCourse = async (courseId) => {
+        try {
+            const result = await enrollCourse(courseId);
+            
+            if (result.success) {
+                // Refresh courses to get updated enrollment status
+                await fetchCourses();
+                return result;
+            }
+            return result;
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to enroll in course';
+            return { success: false, message: errorMsg };
+        }
+    };
+
+    // Unenroll from a course
+    const unenrollFromCourse = async (courseId) => {
+        try {
+            const result = await unenrollCourse(courseId);
+            
+            if (result.success) {
+                // Refresh courses to get updated status
+                await fetchCourses();
+                return result;
+            }
+            return result;
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to unenroll from course';
+            return { success: false, message: errorMsg };
+        }
+    };
+
     return (
         <CourseContext.Provider
             value={{
@@ -361,6 +359,8 @@ export const CourseProvider = ({ children }) => {
                 // Course functions
                 fetchCourses,
                 fetchCourseDetails,
+                enrollInCourse,
+                unenrollFromCourse,
 
                 // Progress functions
                 markModuleDone,

@@ -15,7 +15,9 @@ import {
   AlertCircle,
   FileText,
   Video,
-  Link as LinkIcon
+  Link as LinkIcon,
+  MoreVertical,
+  LogOut
 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 
@@ -30,13 +32,48 @@ const CourseContent = () => {
     completedItems,
     courseItemsProgress,
     getItemProgress,
-    isItemCompleted
+    isItemCompleted,
+    unenrollFromCourse
   } = useCourses();
 
   // Create refs for each content item and quiz
   const contentRefs = useRef({});
   const [activeItemId, setActiveItemId] = useState(null);
   const [activeTab, setActiveTab] = useState('content'); // 'content' or 'quizzes'
+  const [showMenu, setShowMenu] = useState(false);
+  const [isUnenrolling, setIsUnenrolling] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
+  // Handle unenroll
+  const handleUnenroll = async () => {
+    setShowMenu(false);
+    
+    if (!window.confirm('Are you sure you want to unenroll? This will delete all your progress and quiz attempts for this course.')) {
+      return;
+    }
+    
+    setIsUnenrolling(true);
+    const result = await unenrollFromCourse(parseInt(id));
+    setIsUnenrolling(false);
+    
+    if (result.success) {
+      navigate('/employee/mycourses');
+    }
+  };
 
   // Function to scroll to a specific item
   const scrollToItem = (itemId) => {
@@ -186,6 +223,31 @@ const CourseContent = () => {
                   {selectedCourse.department}
                 </span>
               )}
+              
+              {/* Menu Button */}
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                  title="More options"
+                >
+                  <MoreVertical size={20} />
+                </button>
+                
+                {/* Dropdown Menu */}
+                {showMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    <button
+                      onClick={handleUnenroll}
+                      disabled={isUnenrolling}
+                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <LogOut size={16} />
+                      {isUnenrolling ? 'Unenrolling...' : 'Unenroll from Course'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

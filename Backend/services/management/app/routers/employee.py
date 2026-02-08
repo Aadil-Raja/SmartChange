@@ -106,14 +106,23 @@ def list_courses_route(
     user=Depends(get_current_user),
 ):
     """
-    List all *active* courses visible to employees.
-    Reuses courseContent_service.list_courses, then filters to is_active==True.
+    List all *active* courses visible to employees with enrollment status and progress.
+    
+    Returns:
+    - Basic course info (title, description, thumbnail, etc.)
+    - Enrollment status (category, enrolled_at, deadline_at, can_interact)
+    - Progress data (only for enrolled courses)
+    - Starred status
+    
+    Categories:
+    - "not_enrolled": User hasn't enrolled yet
+    - "in_progress": User is enrolled and course is active
+    - "completed": User completed the course
+    - "expired": User enrolled but deadline has passed
     """
     try:
-        data = svc.list_courses(db, active_only=True)  # { "courses": [ { ... } ] }
-        # keep only active for employees
-        courses = [c for c in data.get("courses", []) if c.get("is_active")]
-        return make_response(True, "OK", data={"courses": courses})
+        data = employee_service.get_courses_with_enrollment(db, user_id=user.id)
+        return make_response(True, "OK", data=data)
     except Exception as e:
         return make_response(False, "Could not fetch courses", status_code=500, error=str(e))
 
@@ -394,6 +403,49 @@ def get_my_profile_route(
         return employee_service.get_user_profile(db, user_id=user.id)
     except Exception as e:
         return make_response(False, "Could not fetch profile", status_code=500, error=str(e))
+
+
+# ---------------------------
+# Course Enrollment
+# ---------------------------
+@router.post("/courses/{course_id}/enroll", status_code=status.HTTP_200_OK)
+def enroll_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Enroll in a course (Start button functionality).
+    Idempotent - returns existing enrollment if already enrolled.
+    
+    Returns enrollment status with deadline information.
+    """
+    try:
+        return employee_service.enroll_course(db, user_id=user.id, course_id=course_id)
+    except Exception as e:
+        return make_response(False, "Could not enroll in course", status_code=500, error=str(e))
+
+
+@router.delete("/courses/{course_id}/enroll", status_code=status.HTTP_200_OK)
+def unenroll_course_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Unenroll from a course.
+    
+    WARNING: This will delete:
+    - Enrollment record
+    - All progress on course content
+    - All quiz attempts for this course
+    
+    This action cannot be undone.
+    """
+    try:
+        return employee_service.unenroll_course(db, user_id=user.id, course_id=course_id)
+    except Exception as e:
+        return make_response(False, "Could not unenroll from course", status_code=500, error=str(e))
 
 
 # ============ QUIZ TAKING ENDPOINTS ============

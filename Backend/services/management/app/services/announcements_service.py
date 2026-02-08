@@ -10,7 +10,7 @@ from app.services.storage.storage_cloudinary import (
     delete_file_by_public_id,
     delete_with_thumbnail
 )
-from app.utils.course_progress import build_user_courses_overview
+from app.utils.enrollment_utils import build_enrollment_based_overview
 
 def _is_team_member(db: Session, *, team_id: int, user_id: int) -> bool:
     return db.query(TeamMember.id).filter_by(team_id=team_id, user_id=user_id).first() is not None
@@ -226,7 +226,10 @@ def list_team_members(db: Session, *, team_id: int, user_id: int):
     return make_response(True, "Team members fetched", data=serialized, status_code=200)
 
 def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, member_user_id: int):
-    """Get progress overview for a specific team member (manager only)"""
+    """
+    Get progress overview for a specific team member (manager only).
+    Uses enrollment-based logic - only shows enrolled courses.
+    """
     if not _is_team_manager(db, team_id=team_id, user_id=manager_id):
         return make_response(False, "Only team managers can view member progress", status_code=403)
     
@@ -237,11 +240,10 @@ def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, 
     if not member:
         return make_response(False, "Member not found", status_code=404)
     
-    # Build courses overview using shared utility (exclude courses with 0% progress)
-    overview = build_user_courses_overview(
+    # Build overview using shared utility (no starred courses for team view)
+    overview = build_enrollment_based_overview(
         db,
         user_id=member_user_id,
-        include_zero_progress=False,
         include_starred=False
     )
     
@@ -259,6 +261,7 @@ def get_member_progress_overview(db: Session, *, team_id: int, manager_id: int, 
         "stats": overview["stats"],
         "in_progress": overview["in_progress"],
         "completed": overview["completed"],
+        "expired": overview["expired"],
     }, status_code=200)
 
 # Attachment functions

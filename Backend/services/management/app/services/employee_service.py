@@ -1,14 +1,16 @@
 from app.repositories import teams_repo
 from app.utils.response_utils import make_response
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from shared.models import Team, TeamMember, TeamMemberRole, User
 from app.repositories import progress_repo as prog_repo
 from app.repositories import courseContent_repo as content_repo
 from app.repositories import course_stars_repo
+from app.repositories import course_enrollment_repo as enrollment_repo
 from app.services import courseContent_service
 from app.services.storage.storage_cloudinary import upload_image_bytes, delete_file_by_public_id
 from app.utils.course_progress import calculate_course_progress, build_user_courses_overview
+from app.utils.enrollment_utils import determine_category, build_enrollment_based_overview
 def get_my_teams(db, user):
     rows = teams_repo.get_teams_for_user(db, user.id)
     data = []
@@ -24,6 +26,102 @@ def get_my_teams(db, user):
         })
 
     return make_response(True, "Teams fetched successfully", data=data,status_code=200)
+
+
+def get_courses_with_enrollment(db: Session, *, user_id: int) -> Dict[str, Any]:
+    """
+    Get all active courses with enrollment status, progress, and category for a user.
+    
+    Returns courses with:
+    - Basic course info
+    - Enrollment status (category, enrolled_at, deadline_at, etc.)
+    - Progress data (only for enrolled courses)
+    - Starred status
+    - can_interact flag
+    """
+    # Get all active courses
+    courses_data = courseContent_service.list_courses(db, active_only=True)
+    all_courses = courses_data.get("courses", [])
+    
+    # Get starred course IDs
+    starred_ids = set(course_stars_repo.list_starred_course_ids(db, user_id=user_id))
+    
+    result = []
+    
+    for course in all_courses:
+        course_id = course["id"]
+        
+        # Get enrollment status
+        enrollment_status = enrollment_repo.get_enrollment_with_status(
+            db, user_id=user_id, course_id=course_id
+        )
+        
+        # Determine category based on enrollment status
+        category = _determine_category(enrollment_status)
+        
+        # Calculate progress only for enrolled courses
+        progress_data = None
+        if enrollment_status["is_enrolled"]:
+            progress_calc = calculate_course_progress(db, user_id=user_id, course_id=course_id)
+            progress_data = {
+                "completed_items": progress_calc["completed_items"],
+                "total_items": progress_calc["total_items"],
+                "completed_quizzes": progress_calc["completed_quizzes"],
+                "total_quizzes": progress_calc["total_quizzes"],
+                "percent": progress_calc["percent"]
+            }
+        
+        # Build course response
+        course_info = {
+            "id": course_id,
+            "title": course["title"],
+            "description": course.get("description"),
+            "department": course.get("department"),
+            "thumbnail_url": course.get("thumbnail_url"),
+            "deadline_weeks": course.get("deadline_weeks"),
+            "created_at": course.get("created_at"),
+            
+            # Enrollment info
+            "category": category,
+            "enrolled_at": enrollment_status["enrolled_at"],
+            "completed_at": enrollment_status["completed_at"],
+            "deadline_at": enrollment_status["deadline_at"],
+            "days_remaining": enrollment_status["days_remaining"],
+            "can_interact": enrollment_status["can_interact"],
+            
+            # Progress (null if not enrolled)
+            "progress": progress_data,
+            
+            # Starred status
+            "is_starred": course_id in starred_ids
+        }
+        
+        result.append(course_info)
+    
+    return {"courses": result}
+
+
+def _determine_category(enrollment_status: Dict[str, Any]) -> str:
+    """
+    Determine course category based on enrollment status.
+    
+    Categories:
+    - "not_enrolled": User hasn't enrolled
+    - "expired": Enrolled but deadline passed (and not completed)
+    - "completed": Enrolled and completed
+    - "in_progress": Enrolled and active (includes 0% progress)
+    """
+    if not enrollment_status["is_enrolled"]:
+        return "not_enrolled"
+    
+    status = enrollment_status["status"]
+    
+    if status == "completed":
+        return "completed"
+    elif status == "expired":
+        return "expired"
+    else:  # status == "active"
+        return "in_progress"
 
 def join_with_code(db: Session, *, user_id: int, code: str):
     """Allow a user to join a team using its unique join code."""
@@ -219,11 +317,14 @@ def get_starred_courses(db: Session, *, user_id: int) -> Dict[str, Any]:
 
 def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     """
-    Get comprehensive overview of user's courses categorized by:
-    - Starred courses
-    - In Progress courses (not completed)
-    - Completed courses
-    Plus overall statistics and user information
+    Get comprehensive overview of user's courses categorized by enrollment status.
+    
+    Returns:
+    - Starred courses (can include non-enrolled)
+    - In Progress courses (enrolled, active, not completed)
+    - Completed courses (enrolled, completed)
+    - Expired courses (enrolled, deadline passed)
+    - Statistics based on enrollment
     """
     # Get user information
     user = db.query(User).filter(User.id == user_id).first()
@@ -232,16 +333,14 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
     # Get starred course IDs
     starred_ids = set(course_stars_repo.list_starred_course_ids(db, user_id=user_id))
     
-    # Build courses overview using shared utility
-    overview = build_user_courses_overview(
+    # Build overview using shared utility
+    overview = build_enrollment_based_overview(
         db,
         user_id=user_id,
-        include_zero_progress=True,
         include_starred=True,
         starred_ids=starred_ids
     )
     
-    # Add user information to the response
     return {
         "user_name": user_name,
         "profile_picture_url": user.profile_picture_url if user else None,
@@ -249,7 +348,16 @@ def get_courses_overview(db: Session, *, user_id: int) -> Dict[str, Any]:
         "starred": overview["starred"],
         "in_progress": overview["in_progress"],
         "completed": overview["completed"],
+        "expired": overview["expired"],
     }
+
+
+def _determine_category(enrollment_status: Dict[str, Any]) -> str:
+    """
+    Determine course category based on enrollment status.
+    Wrapper for shared utility function.
+    """
+    return determine_category(enrollment_status)
 
 def upload_profile_picture(db: Session, *, user_id: int, file_bytes: bytes) -> Dict[str, Any]:
     """
@@ -329,3 +437,56 @@ def get_user_profile(db: Session, *, user_id: int) -> Dict[str, Any]:
         "role": user.role.value if user.role else None,
         "created_at": user.created_at
     }, status_code=200)
+
+
+def enroll_course(db: Session, *, user_id: int, course_id: int) -> Dict[str, Any]:
+    """
+    Enroll user in a course (Start button functionality).
+    Idempotent - returns existing enrollment if already enrolled.
+    """
+    # Verify course exists and is active
+    course = content_repo.get_course(db, course_id=course_id)
+    if not course:
+        return make_response(False, "Course not found", status_code=404)
+    
+    if not course.is_active:
+        return make_response(False, "Cannot enroll in inactive course", status_code=400)
+    
+    try:
+        # Create enrollment (idempotent)
+        enrollment = enrollment_repo.enroll_user(db, user_id=user_id, course_id=course_id)
+        
+        # Get full enrollment status
+        enrollment_status = enrollment_repo.get_enrollment_with_status(
+            db, user_id=user_id, course_id=course_id
+        )
+        
+        return make_response(True, "Enrolled successfully", data={
+            "course_id": course_id,
+            "category": _determine_category(enrollment_status),
+            "enrolled_at": enrollment_status["enrolled_at"],
+            "deadline_at": enrollment_status["deadline_at"],
+            "days_remaining": enrollment_status["days_remaining"],
+            "can_interact": enrollment_status["can_interact"]
+        }, status_code=200)
+    except Exception as e:
+        return make_response(False, "Failed to enroll in course", status_code=500, error=str(e))
+
+
+def unenroll_course(db: Session, *, user_id: int, course_id: int) -> Dict[str, Any]:
+    """
+    Unenroll user from a course.
+    Deletes enrollment and all associated progress and quiz attempts.
+    """
+    try:
+        deleted = enrollment_repo.unenroll_user(db, user_id=user_id, course_id=course_id)
+        
+        if not deleted:
+            return make_response(False, "Not enrolled in this course", status_code=404)
+        
+        return make_response(True, "Unenrolled successfully", data={
+            "course_id": course_id,
+            "deleted": True
+        }, status_code=200)
+    except Exception as e:
+        return make_response(False, "Failed to unenroll from course", status_code=500, error=str(e))

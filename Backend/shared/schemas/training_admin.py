@@ -63,6 +63,22 @@ class LinkUpdate(BaseModel):
     title: Optional[str] = None
     url: Optional[str] = None
 
+# 🆕 Deadline Management Schemas
+class CourseDeadlineUpdate(BaseModel):
+    """Schema for setting or removing course deadline"""
+    deadline_weeks: Optional[int] = Field(
+        None, 
+        ge=1, 
+        description="Number of weeks to complete the course. Set to null to remove deadline."
+    )
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "deadline_weeks": 4
+            }
+        }
+
 # 🆕 NEW SCHEMA: Main Topics Update (Dictionary Format)
 class MainTopicsUpdate(BaseModel):
     """

@@ -17,6 +17,7 @@ def course_to_dict(c: Course) -> dict:
         "department": c.department,
         "thumbnail_url": c.thumbnail_url,
         "is_active": bool(c.is_active),
+        "deadline_weeks": c.deadline_weeks,
         "created_at": c.created_at,
     }
 
@@ -250,9 +251,9 @@ def list_courses_by_ids(db: Session, *, course_ids: List[int]) -> List[Dict[str,
             "title": c.title,
             "description": c.description,
             "is_active": c.is_active,
-             "department": c.department,
-              "thumbnail_url": c.thumbnail_url,
-             
+            "department": c.department,
+            "thumbnail_url": c.thumbnail_url,
+            "deadline_weeks": c.deadline_weeks,
         }
         for c in courses
     ]
@@ -343,3 +344,25 @@ def get_content_items_by_ids(db: Session, *, item_ids: List[int], course_id: int
         )
         .all()
     )
+
+
+# ---- deadline management ----
+def set_course_deadline(db: Session, *, course_id: int, deadline_weeks: Optional[int]) -> Optional[Course]:
+    """
+    Set or update the deadline for a course.
+    
+    Args:
+        course_id: ID of the course
+        deadline_weeks: Number of weeks for deadline, or None to remove deadline
+    
+    Returns:
+        Updated Course object or None if not found
+    """
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        return None
+    
+    course.deadline_weeks = deadline_weeks
+    db.commit()
+    db.refresh(course)
+    return course
