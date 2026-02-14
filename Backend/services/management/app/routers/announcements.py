@@ -19,7 +19,12 @@ def create_announcement_route(
 ):
     try:
         return announcements_service.create_announcement(
-            db, team_id=team_id, author_id=current_user.id, title=payload.title, body=payload.body
+            db, 
+            team_id=team_id, 
+            author_id=current_user.id, 
+            title=payload.title, 
+            body=payload.body,
+            related_course_id=payload.related_course_id
         )
     except Exception as e:
         return make_response(False, "Failed to create announcement", status_code=500, error=str(e))

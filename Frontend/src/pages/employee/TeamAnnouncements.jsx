@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
 import { useTeams } from "../../hooks/useTeams";
+import { getEmployeeCourses } from "../../services/courseApi";
 import {
   Megaphone,
   Plus,
@@ -44,10 +45,23 @@ const TeamAnnouncements = () => {
   const [copied, setCopied] = useState(false);
   const [loadingMoreAnnouncements, setLoadingMoreAnnouncements] = useState(false);
   const [loadingMoreComments, setLoadingMoreComments] = useState({});
+  const [courses, setCourses] = useState([]);
 
   // Find current team and check if user is manager
   const currentTeam = teams.find(t => t.team_id === parseInt(teamId));
   const isManager = currentTeam?.role_in_team === "manager";
+
+  const fetchCourses = async () => {
+    try {
+      const response = await getEmployeeCourses();
+      if (response.success && response.data) {
+        setCourses(response.data.courses || response.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch courses:', err);
+      // Don't show error, just leave courses empty
+    }
+  };
 
   const handleCopyCode = async () => {
     if (currentTeam?.join_code) {
@@ -81,6 +95,7 @@ const TeamAnnouncements = () => {
     
     if (teamId) {
       fetchAnnouncements(teamId);
+      fetchCourses();
     }
     return () => clearMessages();
   }, [teamId]);
@@ -297,6 +312,7 @@ const TeamAnnouncements = () => {
             setShowCreateModal(false);
             fetchAnnouncements(teamId);
           }}
+          courses={courses}
         />
       )}
 

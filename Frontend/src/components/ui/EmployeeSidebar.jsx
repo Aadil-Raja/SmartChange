@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GraduationCap, Users, MessageSquare, User, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 
 const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
   const navigate = useNavigate();
@@ -48,6 +49,13 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
             {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         )}
+      </div>
+      
+      {/* Notification Bell - Above Navigation Items */}
+      <div className="p-2 border-b border-gray-200">
+        <div className={`flex ${collapsed ? 'justify-center' : 'justify-start px-1'}`}>
+          <NotificationBell collapsed={collapsed} />
+        </div>
       </div>
       
       {/* Navigation Items */}

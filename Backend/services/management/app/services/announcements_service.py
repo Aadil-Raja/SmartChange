@@ -11,6 +11,8 @@ from app.services.storage.storage_cloudinary import (
     delete_with_thumbnail
 )
 from app.utils.enrollment_utils import build_enrollment_based_overview
+from shared.repos import notification_repo
+from shared.models.notification import NotificationType
 
 def _is_team_member(db: Session, *, team_id: int, user_id: int) -> bool:
     return db.query(TeamMember.id).filter_by(team_id=team_id, user_id=user_id).first() is not None
@@ -19,11 +21,54 @@ def _is_team_manager(db: Session, *, team_id: int, user_id: int) -> bool:
     tm = db.query(TeamMember.role_in_team).filter_by(team_id=team_id, user_id=user_id).first()
     return bool(tm and tm[0] == TeamMemberRole.manager)
 
-def create_announcement(db: Session, *, team_id: int, author_id: int, title: str, body: str):
+def create_announcement(
+    db: Session, 
+    *, 
+    team_id: int, 
+    author_id: int, 
+    title: str, 
+    body: str,
+    related_course_id: int | None = None
+):
     if not _is_team_manager(db, team_id=team_id, user_id=author_id):
         return make_response(False, "Only team managers can create announcements", status_code=403)
     
-    a = announcements_repo.create_announcement(db, team_id=team_id, author_id=author_id, title=title, body=body)
+    a = announcements_repo.create_announcement(
+        db, 
+        team_id=team_id, 
+        author_id=author_id, 
+        title=title, 
+        body=body,
+        related_course_id=related_course_id
+    )
+    
+    # Create notifications for all team members (except the author)
+    try:
+        members = db.query(TeamMember).filter(
+            TeamMember.team_id == team_id,
+            TeamMember.user_id != author_id  # Exclude the announcement author
+        ).all()
+        
+        member_ids = [m.user_id for m in members]
+        
+        if member_ids:
+            # Truncate body to 200 characters for notification message
+            notification_message = body[:200] + "..." if len(body) > 200 else body
+            
+            notification_repo.bulk_create_notifications(
+                db,
+                user_ids=member_ids,
+                type=NotificationType.TEAM_ANNOUNCEMENT,
+                title=title,
+                message=notification_message,
+                sender_id=author_id,
+                related_team_id=team_id,
+                related_course_id=related_course_id
+            )
+    except Exception as e:
+        # Log error but don't fail the announcement creation
+        print(f"Failed to create notifications for announcement {a.id}: {e}")
+    
     return make_response(True, "Announcement created", data=a, status_code=201)
 
 def list_team_announcements(db: Session, *, team_id: int, user_id: int, limit: int, offset: int):
@@ -44,6 +89,8 @@ def list_team_announcements(db: Session, *, team_id: int, user_id: int, limit: i
             "author_profile_picture": a.author.profile_picture_url if a.author else None,
             "can_edit": a.author_id == user_id,
             "can_delete": a.author_id == user_id,
+            "related_course_id": a.related_course_id,
+            "related_course_title": a.course.title if a.course else None,
         }
         for a in rows
     ]
@@ -111,6 +158,8 @@ def get_announcement_with_comments(
         "created_at": a.created_at,
         "can_edit": a.author_id == user_id,
         "can_delete": a.author_id == user_id,
+        "related_course_id": a.related_course_id,
+        "related_course_title": a.course.title if a.course else None,
     }
     
     data = {

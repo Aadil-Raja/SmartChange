@@ -4,6 +4,7 @@ from typing import Optional
 class AnnouncementCreateIn(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1)
+    related_course_id: Optional[int] = None
 
 class AnnouncementUpdateIn(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=200)
@@ -16,6 +17,7 @@ class AnnouncementOut(BaseModel):
     title: str
     body: str
     created_at: str
+    related_course_id: Optional[int] = None
     class Config: 
         from_attributes = True
 

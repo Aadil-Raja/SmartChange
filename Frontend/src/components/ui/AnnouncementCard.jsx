@@ -1,5 +1,6 @@
 // src/components/announcements/AnnouncementCard.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
 import {
   MessageSquare,
@@ -18,6 +19,7 @@ import {
   Video,
   Download,
   Upload,
+  BookOpen,
 } from "lucide-react";
 import Button from "../ui/Button";
 import Textarea from "../ui/Textarea";
@@ -26,6 +28,7 @@ import Card from "../ui/Card";
 import LoadMoreButton from "../ui/LoadMoreButton";
 
 const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments, loadingMoreComments = false }) => {
+  const navigate = useNavigate();
   const { 
     addNewComment, 
     deleteExistingComment, 
@@ -260,6 +263,12 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     <Clock size={16} className="text-gray-400" />
                     <span>{formatRelativeTime(announcement.created_at)}</span>
                   </div>
+                  {announcement.related_course_id && announcement.related_course_title && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
+                      <BookOpen size={16} />
+                      <span className="font-medium">{announcement.related_course_title}</span>
+                    </div>
+                  )}
                   {/* <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
                     <MessageSquare size={16} /> */}
                     {/* <span className="font-medium">
@@ -318,6 +327,19 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                 {announcement.body}
               </p>
             </div>
+
+            {/* Course Link Button */}
+            {announcement.related_course_id && announcement.related_course_title && (
+              <div className="mb-4">
+                <button
+                  onClick={() => navigate(`/employee/course/${announcement.related_course_id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg border border-blue-200 transition-colors"
+                >
+                  <BookOpen size={18} />
+                  <span>View Course: {announcement.related_course_title}</span>
+                </button>
+              </div>
+            )}
 
             {/* Attachments Preview */}
             {attachments.length > 0 && (

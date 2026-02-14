@@ -1,19 +1,20 @@
 // src/components/announcements/CreateAnnouncementModal.jsx
 import { useState } from "react";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
-import { X, Send, Sparkles, Type, MessageSquare } from "lucide-react";
+import { X, Send, Sparkles, Type, MessageSquare, BookOpen } from "lucide-react";
 import Button from "../ui/Button";
 import Input2 from "../ui/Input2";
 import TextArea2 from "../ui/TextArea2";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import Alert from "../ui/Alert";
 
-const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
+const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) => {
   const { createNewAnnouncement, loading, error, clearMessages } = useAnnouncements();
 
   const [formData, setFormData] = useState({
     title: "",
     body: "",
+    related_course_id: "",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -55,6 +56,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
     const result = await createNewAnnouncement(teamId, {
       title: trimmedTitle,
       body: trimmedBody,
+      related_course_id: formData.related_course_id || null,
     });
 
     setSubmitting(false);
@@ -148,6 +150,29 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess }) => {
               <p className="text-xs text-gray-500">Be clear and concise</p>
               <p className="text-xs text-gray-400">{formData.body.length} characters</p>
             </div>
+          </div>
+
+          {/* Related Course (Optional) */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
+              <BookOpen size={18} className="text-[#F58220]" />
+              Related Course (Optional)
+            </label>
+            <select
+              name="related_course_id"
+              value={formData.related_course_id}
+              onChange={handleChange}
+              disabled={submitting}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F58220] focus:border-transparent bg-white text-gray-900"
+            >
+              <option value="">None - General announcement</option>
+              {Array.isArray(courses) && courses.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.title}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">Link this announcement to a specific course</p>
           </div>
 
           {/* Preview Box */}

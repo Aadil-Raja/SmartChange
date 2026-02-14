@@ -24,6 +24,7 @@ import Chatbot from './pages/employee/Chatbot';
 import EmployeeProfile from './pages/employee/EmployeeProfile';
 import QuizTaking from './pages/employee/QuizTaking';
 import QuizResults from './pages/employee/QuizResults';
+import Notifications from './pages/employee/Notifications';
 
 function AppRoutes() {
   return (
@@ -148,6 +149,7 @@ function AppRoutes() {
         <Route path="/employee/profile" element={<EmployeeProfile />} />
         <Route path="/employee/quiz/:quizId" element={<QuizTaking />} />
         <Route path="/employee/quiz/:quizId/results" element={<QuizResults />} />
+        <Route path="/employee/notifications" element={<Notifications />} />
         {/* ---------- Default Redirect ---------- */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

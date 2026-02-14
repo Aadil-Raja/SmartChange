@@ -11,9 +11,11 @@ class Announcement(Base):
     title = Column(String(200), nullable=False)
     body = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    related_course_id = Column(Integer, ForeignKey("courses.id", ondelete="SET NULL"), nullable=True)
 
     team = relationship("Team")
     author = relationship("User")
+    course = relationship("Course")
     comments = relationship(
         "AnnouncementComment",
         back_populates="announcement",
@@ -26,7 +28,6 @@ class Announcement(Base):
         back_populates="announcement",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        order_by="AnnouncementAttachment.id.asc()",
     )
 
     __table_args__ = (

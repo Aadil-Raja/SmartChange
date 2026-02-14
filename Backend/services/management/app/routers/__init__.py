@@ -9,4 +9,6 @@ from . import announcements
 from . import admin_training
 from . import quiz
 from . import course_quiz
-__all__ = [ "health","auth", "admin", "employee","announcements","admin_training","quiz","course_quiz"]
+from . import notifications
+
+__all__ = ["health", "auth", "admin", "employee", "announcements", "admin_training", "quiz", "course_quiz", "notifications"]

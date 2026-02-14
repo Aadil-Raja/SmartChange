@@ -11,8 +11,22 @@ from shared.models import (
 )
 
 
-def create_announcement(db: Session, *, team_id: int, author_id: int, title: str, body: str) -> Announcement:
-    a = Announcement(team_id=team_id, author_id=author_id, title=title.strip(), body=body.strip())
+def create_announcement(
+    db: Session, 
+    *, 
+    team_id: int, 
+    author_id: int, 
+    title: str, 
+    body: str,
+    related_course_id: int | None = None
+) -> Announcement:
+    a = Announcement(
+        team_id=team_id, 
+        author_id=author_id, 
+        title=title.strip(), 
+        body=body.strip(),
+        related_course_id=related_course_id
+    )
     db.add(a)
     db.commit()
     db.refresh(a)

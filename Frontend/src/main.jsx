@@ -10,6 +10,7 @@ import { CourseProvider } from './context/CourseContext';
 import { AdminTrainingProvider } from './context/AdminTrainingContext';
 import { AnnouncementProvider } from './context/AnnouncementContext.jsx'
 import { ChatbotProvider } from './context/ChatbotContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -21,8 +22,10 @@ createRoot(document.getElementById('root')).render(
             <AnnouncementProvider>
             <CourseProvider>
               <ChatbotProvider>
-            <App />
-            </ChatbotProvider>
+                <NotificationProvider>
+                  <App />
+                </NotificationProvider>
+              </ChatbotProvider>
             </CourseProvider>
             </AnnouncementProvider>
           </TeamProvider>

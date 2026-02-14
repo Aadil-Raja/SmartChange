@@ -1,8 +1,10 @@
 // src/components/ui/TeamMembersModal.jsx
 import { useState, useEffect } from 'react';
-import { X, Users, Crown, UserCheck, Mail, Calendar, Loader2, ChevronRight } from 'lucide-react';
+import { X, Users, Crown, UserCheck, Mail, Calendar, Loader2, ChevronRight, MessageSquare } from 'lucide-react';
 import { getTeamMembers } from '../../services/teamApi';
+import { getEmployeeCourses } from '../../services/courseApi';
 import MemberProgressPanel from './MemberProgressPanel';
+import SendMessageModal from './SendMessageModal';
 
 const TeamMembersModal = ({ isOpen, onClose, team }) => {
   const [members, setMembers] = useState([]);
@@ -10,10 +12,14 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
   const [error, setError] = useState('');
   const [selectedMember, setSelectedMember] = useState(null);
   const [showProgressPanel, setShowProgressPanel] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageRecipient, setMessageRecipient] = useState(null);
+  const [courses, setCourses] = useState([]);
 
   useEffect(() => {
     if (isOpen && team) {
       fetchTeamMembers();
+      fetchCourses();
     }
   }, [isOpen, team]);
 
@@ -35,6 +41,19 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
     }
   };
 
+  const fetchCourses = async () => {
+    try {
+      // Fetch all active courses for the course dropdown
+      const response = await getEmployeeCourses();
+      if (response.success) {
+        setCourses(response.data.courses || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch courses:', err);
+      // Don't show error, just leave courses empty
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -51,6 +70,12 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
   const handleCloseProgressPanel = () => {
     setShowProgressPanel(false);
     setSelectedMember(null);
+  };
+
+  const handleSendMessage = (e, member) => {
+    e.stopPropagation(); // Prevent opening progress panel
+    setMessageRecipient(member);
+    setShowMessageModal(true);
   };
 
   if (!isOpen) return null;
@@ -177,8 +202,15 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
                       </div>
                     </div>
 
-                    {/* Click indicator */}
-                    <div className="flex-shrink-0">
+                    {/* Click indicator and Send Message button */}
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleSendMessage(e, member)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Send Message"
+                      >
+                        <MessageSquare size={18} />
+                      </button>
                       <ChevronRight size={20} className="text-gray-400 group-hover:text-[#F58220] transition-colors" />
                     </div>
                   </div>
@@ -205,6 +237,15 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
         onClose={handleCloseProgressPanel}
         member={selectedMember}
         teamId={team?.team_id}
+      />
+
+      {/* Send Message Modal */}
+      <SendMessageModal
+        isOpen={showMessageModal}
+        onClose={() => setShowMessageModal(false)}
+        teamId={team?.team_id}
+        recipient={messageRecipient}
+        courses={courses}
       />
     </div>
   );

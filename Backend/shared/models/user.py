@@ -35,3 +35,4 @@ class User(Base):
     
     # Relationships
     course_enrollments = relationship("CourseEnrollment", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notification", foreign_keys="[Notification.user_id]", back_populates="user", cascade="all, delete-orphan")
