@@ -78,10 +78,19 @@ def process_document(document_id: int) -> dict:
         audit_repo.update_status(db, document_id=document_id, status=ProcessingStatus.PROCESSING)
         
         # Run the full pipeline
+        from pipeline.embeddings import EmbeddingConfig
+        embedding_config = EmbeddingConfig(
+            model_name=settings.embedding_model,
+            batch_size=settings.embedding_batch_size,
+            max_retries=settings.embedding_max_retries,
+            dimension=settings.embedding_dimension
+        )
+        
         result = process_document_task(
             document_id=document_id,
             db_session=db,
             google_api_key=settings.google_api_key,
+            embedding_config=embedding_config,
         )
         
         # Update audit based on result

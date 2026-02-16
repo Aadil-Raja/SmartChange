@@ -71,9 +71,10 @@ def _embed_query(query: str) -> List[float]:
     try:
         print(f"  → Calling embed_content API...", file=sys.stderr)
         result = genai.embed_content(
-            model="models/text-embedding-004",
+            model=settings.embedding_model,
             content=query,
-            task_type="retrieval_query"
+            task_type="retrieval_query",
+            output_dimensionality=768
         )
         
         print(f"  → API Response Type: {type(result)}", file=sys.stderr)
@@ -95,6 +96,13 @@ def _embed_query(query: str) -> List[float]:
             print(f"  ✗ ERROR: Unexpected structure!", file=sys.stderr)
             print(f"  → Result keys (if dict): {result.keys() if isinstance(result, dict) else 'N/A'}", file=sys.stderr)
             raise ValueError(f"Unexpected embedding response structure: {type(result)}")
+        
+        # Normalize for 768 dimensions
+        import numpy as np
+        emb_array = np.array(embedding)
+        norm = np.linalg.norm(emb_array)
+        if norm > 0:
+            embedding = (emb_array / norm).tolist()
         
         return embedding
         

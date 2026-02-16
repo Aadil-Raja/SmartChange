@@ -37,7 +37,7 @@ langchain-google-genai==2.0.5
 google-generativeai==0.8.3
 pydantic==2.10.3
 pydantic-core==2.27.1
-
+openai
 cloudinary
 tiktoken
 requests

@@ -45,7 +45,11 @@ class Settings(BaseSettings):
     
     # Google AI for topic generation
     google_api_key: str | None = None
+    
+    # LLM Provider Configuration
+    llm_provider: str = "gemini"
     llm_model: str = "gemini-2.5-flash"
+    openai_api_key: str | None = None
 
 @lru_cache()
 def get_settings() -> Settings:

@@ -110,17 +110,27 @@ def _embed_query(query: str):
     """Generate embedding for a query string."""
     try:
         result = genai.embed_content(
-            model="models/text-embedding-004",
+            model=settings.embedding_model,
             content=query,
-            task_type="retrieval_query"
+            task_type="retrieval_query",
+            output_dimensionality=768
         )
         
         if hasattr(result, 'embedding'):
-            return result.embedding
+            embedding = result.embedding
         elif isinstance(result, dict) and 'embedding' in result:
-            return result['embedding']
+            embedding = result['embedding']
         else:
             raise ValueError(f"Unexpected embedding response structure")
+        
+        # Normalize for 768 dimensions
+        import numpy as np
+        emb_array = np.array(embedding)
+        norm = np.linalg.norm(emb_array)
+        if norm > 0:
+            embedding = (emb_array / norm).tolist()
+        
+        return embedding
             
     except Exception as e:
         print(f"  ✗ EMBEDDING ERROR: {e}", file=sys.stderr)

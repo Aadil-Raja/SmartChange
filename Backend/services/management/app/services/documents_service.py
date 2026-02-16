@@ -465,16 +465,49 @@ def generate_main_topics_ai(db: Session, *, document_id: int):
             # Join lines with comma
             section_summaries[section] = ", ".join(lines)
         
-        # Step 5: Call Gemini to generate topics
-        if not settings.google_api_key:
+        # Step 5: Call LLM to generate topics using wrapper
+        from shared.llm import get_llm_provider
+        
+        try:
+            # Get the appropriate API key based on provider
+            if settings.llm_provider.lower() == "gemini":
+                if not settings.google_api_key:
+                    return make_response(
+                        False,
+                        "Google API key is required for Gemini provider",
+                        status_code=500
+                    )
+                api_key = settings.google_api_key
+            elif settings.llm_provider.lower() == "openai":
+                if not settings.openai_api_key:
+                    return make_response(
+                        False,
+                        "OpenAI API key is required for OpenAI provider",
+                        status_code=500
+                    )
+                api_key = settings.openai_api_key
+            else:
+                return make_response(
+                    False,
+                    f"Unknown LLM provider: {settings.llm_provider}",
+                    status_code=500
+                )
+            
+            # Create LLM provider
+            llm = get_llm_provider(
+                provider=settings.llm_provider,
+                api_key=api_key,
+                model=settings.llm_model
+            )
+            
+            print(f"[generate_main_topics_ai] Using {settings.llm_provider} provider with model {settings.llm_model}", file=sys.stderr)
+            
+        except ValueError as e:
             return make_response(
                 False,
-                "Google API key not configured",
+                f"LLM configuration error: {str(e)}",
                 status_code=500
             )
-        
-        genai.configure(api_key=settings.google_api_key)
-        model = genai.GenerativeModel(settings.llm_model)
         
         # Build prompt
         sections_text = "\n\n".join([
@@ -510,34 +543,19 @@ Return ONLY valid JSON, no markdown formatting or extra text.
 
 Generate the topics JSON now:"""
         
-        print(f"[generate_main_topics_ai] Calling Gemini ({settings.llm_model})...", file=sys.stderr)
+        print(f"[generate_main_topics_ai] Calling LLM...", file=sys.stderr)
         
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
-        
-        print(f"[generate_main_topics_ai] Received response: {len(response_text)} chars", file=sys.stderr)
-        
-        # Clean up response (remove markdown if present)
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-        
-        # Step 6: Parse JSON
+        # Use wrapper's generate_json method (handles JSON parsing automatically)
         try:
-            main_topics = json.loads(response_text)
+            main_topics = llm.generate_json(prompt)
             
             if not isinstance(main_topics, dict):
                 raise ValueError("Response is not a dictionary")
             
             print(f"[generate_main_topics_ai] Parsed {len(main_topics)} topics", file=sys.stderr)
             
-        except json.JSONDecodeError as e:
-            print(f"[generate_main_topics_ai] JSON parse error: {e}", file=sys.stderr)
-            print(f"[generate_main_topics_ai] Response: {response_text[:500]}", file=sys.stderr)
+        except Exception as e:
+            print(f"[generate_main_topics_ai] LLM error: {e}", file=sys.stderr)
             
             # Fallback: use section titles as topics
             main_topics = {
@@ -546,7 +564,7 @@ Generate the topics JSON now:"""
             }
             print(f"[generate_main_topics_ai] Using fallback topics", file=sys.stderr)
         
-        # Step 7: Save to database
+        # Step 6: Save to database
         updated_doc = documents_repo.update_main_topics(
             db,
             document_id=document_id,

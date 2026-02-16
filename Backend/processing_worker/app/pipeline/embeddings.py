@@ -7,6 +7,7 @@ import logging
 import time
 from typing import List, Optional, Any
 import google.generativeai as genai
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class EmbeddingConfig:
     """Configuration for embedding generation."""
     def __init__(
         self,
-        model_name: str = "models/text-embedding-004",
+        model_name: str = "models/gemini-embedding-001",
         batch_size: int = 100,
         max_retries: int = 3,
         retry_delay: float = 1.0,
@@ -57,7 +58,8 @@ class EmbeddingService:
                     result = genai.embed_content(
                         model=self.config.model_name,
                         content=text,
-                        task_type="retrieval_document"
+                        task_type="retrieval_document",
+                        output_dimensionality=self.config.dimension
                     )
 
                     # Extract embedding safely
@@ -71,6 +73,10 @@ class EmbeddingService:
                     else:
                         raise ValueError("No embedding found in response")
 
+                # Normalize embeddings for 768 dimensions (required for accurate similarity)
+                if self.config.dimension == 768:
+                    embeddings = self._normalize_embeddings(embeddings)
+                
                 return embeddings
 
             except Exception as e:
@@ -82,6 +88,22 @@ class EmbeddingService:
                 else:
                     logger.error(f"All {self.config.max_retries} embedding attempts failed")
                     raise
+
+    def _normalize_embeddings(self, embeddings: List[List[float]]) -> List[List[float]]:
+        """
+        Normalize embeddings to unit length for accurate cosine similarity.
+        Required for 768 and 1536 dimensions according to Google's documentation.
+        """
+        normalized = []
+        for emb in embeddings:
+            emb_array = np.array(emb)
+            norm = np.linalg.norm(emb_array)
+            if norm > 0:
+                normalized_emb = (emb_array / norm).tolist()
+            else:
+                normalized_emb = emb  # Keep original if norm is 0
+            normalized.append(normalized_emb)
+        return normalized
 
 
     

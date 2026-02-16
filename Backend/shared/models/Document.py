@@ -80,7 +80,7 @@ class DocumentChunk(Base):
     char_end = Column(Integer, nullable=True)
     
     # Embedding vector (using PostgreSQL array for pgvector compatibility)
-    # For Google text-embedding-004: 768 dimensions
+    # For Google gemini-embedding-001: 768 dimensions
     embedding = Column(Vector(768), nullable=True)  # native pgvector type # Will store the vector as array
     
     # Optional structural metadata

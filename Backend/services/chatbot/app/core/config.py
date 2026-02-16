@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     google_api_key: str
     rag_google_api_key: str | None = None  # Optional separate key for RAG/embeddings
     summary_google_api_key: str | None = None  # Optional separate key for document summaries
+    embedding_model: str = "models/gemini-embedding-001"
     llm_model: str 
     jwt_secret: str
     jwt_algorithm: str
