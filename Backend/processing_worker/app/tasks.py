@@ -262,16 +262,28 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
             quiz_audit_repo.update_status(db, job_id, QuizGenerationStatus.GENERATING)
         
         # Run the quiz generation pipeline
-        # Use quiz-specific API key if available, otherwise fall back to main key
-        quiz_api_key = settings.quiz_google_api_key or settings.google_api_key
-        logger.info(f"Using {'dedicated quiz' if settings.quiz_google_api_key else 'shared'} API key")
+        # Get API key based on provider using shared utility
+        from shared.llm.utils import get_llm_api_key
+        
+        try:
+            api_key = get_llm_api_key(
+                llm_provider=settings.llm_provider,
+                google_api_key=settings.google_api_key,
+                openai_api_key=settings.openai_api_key
+            )
+            logger.info(f"Using {settings.llm_provider} provider with model {settings.llm_model}")
+        except ValueError as e:
+            logger.error(f"LLM configuration error: {e}")
+            return {"success": False, "error": str(e)}
         
         result = generate_quiz_task(
             quiz_id=quiz_id,
             document_id=document_id,
             num_questions=num_questions,
             db_session=db,
-            google_api_key=quiz_api_key,
+            llm_provider=settings.llm_provider,
+            llm_model=settings.llm_model,
+            api_key=api_key,
             job_id=job_id
         )
         

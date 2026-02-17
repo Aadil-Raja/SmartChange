@@ -18,11 +18,15 @@ class Settings(BaseSettings):
     # Database
     database_url: str
     
-    # Google AI
+    # Google AI (for embeddings only)
     google_api_key: str
-    quiz_google_api_key: str | None = None  # Optional separate key for quiz generation
     embedding_model: str = "models/gemini-embedding-001"
     embedding_dimension: int = 768
+    
+    # LLM Provider Configuration (for quiz & document text generation)
+    llm_provider: str = "gemini"
+    llm_model: str = "gemini-2.5-flash"
+    openai_api_key: str | None = None
     
     # Chunking
     chunk_size: int = 512  # tokens

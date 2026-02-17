@@ -1,13 +1,14 @@
 """
 Embeddings generation using Google Generative AI.
 Handles batching, rate limiting, and retries.
+Uses shared embedding utility for consistent embedding generation.
 """
 
 import logging
 import time
 from typing import List, Optional, Any
-import google.generativeai as genai
-import numpy as np
+
+from shared.llm.utils import embed_single, normalize_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -43,39 +44,33 @@ class EmbeddingService:
         if not api_key:
             raise ValueError("Google API key is required")
         
+        self.api_key = api_key
         self.config = config or EmbeddingConfig()
-        genai.configure(api_key=api_key)
         logger.info(f"Initialized embedding service with model: {self.config.model_name}")
     
     def _embed_batch(self, texts: List[str]) -> List[List[float]]:
         """
         Embed a batch of texts with retry logic.
+        Uses shared embed_single() function for consistent embedding generation.
         """
         embeddings = []
         for attempt in range(self.config.max_retries):
             try:
                 for text in texts:
-                    result = genai.embed_content(
-                        model=self.config.model_name,
-                        content=text,
+                    # Use shared embedding function
+                    emb = embed_single(
+                        text=text,
+                        api_key=self.api_key,
+                        embedding_model=self.config.model_name,
                         task_type="retrieval_document",
-                        output_dimensionality=self.config.dimension
+                        output_dimensionality=self.config.dimension,
+                        normalize=False  # We'll normalize the batch together
                     )
-
-                    # Extract embedding safely
-                    if hasattr(result, 'embedding'):
-                        emb = result.embedding
-                        if hasattr(emb, 'values'):
-                            emb = emb.values
-                        embeddings.append(emb)
-                    elif isinstance(result, dict) and "embedding" in result:
-                        embeddings.append(result["embedding"])
-                    else:
-                        raise ValueError("No embedding found in response")
+                    embeddings.append(emb)
 
                 # Normalize embeddings for 768 dimensions (required for accurate similarity)
                 if self.config.dimension == 768:
-                    embeddings = self._normalize_embeddings(embeddings)
+                    embeddings = normalize_embeddings(embeddings)
                 
                 return embeddings
 
@@ -89,24 +84,6 @@ class EmbeddingService:
                     logger.error(f"All {self.config.max_retries} embedding attempts failed")
                     raise
 
-    def _normalize_embeddings(self, embeddings: List[List[float]]) -> List[List[float]]:
-        """
-        Normalize embeddings to unit length for accurate cosine similarity.
-        Required for 768 and 1536 dimensions according to Google's documentation.
-        """
-        normalized = []
-        for emb in embeddings:
-            emb_array = np.array(emb)
-            norm = np.linalg.norm(emb_array)
-            if norm > 0:
-                normalized_emb = (emb_array / norm).tolist()
-            else:
-                normalized_emb = emb  # Keep original if norm is 0
-            normalized.append(normalized_emb)
-        return normalized
-
-
-    
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
         Embed a list of texts, handling batching automatically.

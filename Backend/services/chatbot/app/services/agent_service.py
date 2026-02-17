@@ -2,9 +2,13 @@
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+
+# Use langchain-classic for both AgentExecutor and agent creation
+from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+
 from app.core.config import get_settings
 import sys
 
@@ -48,13 +52,31 @@ class DocumentAgent:
         self.db = db
         self.chunk_db = chunk_db
         
-        print(f"[AGENT] Initializing with model: {model or settings.llm_model}", file=sys.stderr)
+        # Use provided model or fall back to settings
+        model_to_use = model or settings.llm_model
+        provider = settings.llm_provider.lower()
         
-        self.llm = ChatGoogleGenerativeAI(
-            model=model or settings.llm_model,
-            temperature=0,
-            google_api_key=settings.google_api_key
-        )
+        print(f"[AGENT] Initializing with provider: {provider}, model: {model_to_use}", file=sys.stderr)
+        
+        # Create LLM based on provider
+        if provider == "openai":
+            if not settings.openai_api_key:
+                raise ValueError("OpenAI API key is required for OpenAI provider")
+            self.llm = ChatOpenAI(
+                model=model_to_use,
+                temperature=0,
+                api_key=settings.openai_api_key
+            )
+        elif provider == "gemini":
+            if not settings.google_api_key:
+                raise ValueError("Google API key is required for Gemini provider")
+            self.llm = ChatGoogleGenerativeAI(
+                model=model_to_use,
+                temperature=0,
+                google_api_key=settings.google_api_key
+            )
+        else:
+            raise ValueError(f"Unknown LLM provider: {provider}. Supported: 'openai', 'gemini'")
 
         # Updated prompt to include chat_history placeholder
         self.prompt = ChatPromptTemplate.from_messages([

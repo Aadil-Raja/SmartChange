@@ -1,5 +1,5 @@
 """
-Quiz Generation Pipeline - Uses Gemini 2.5 Flash to generate MCQ questions from document chunks
+Quiz Generation Pipeline - Uses LLM (OpenAI/Gemini) to generate MCQ questions from document chunks
 Follows the same pattern as document processing pipeline.
 """
 
@@ -7,11 +7,11 @@ import logging
 import json
 import random
 from typing import List, Dict, Optional, Any
-import google.generativeai as genai
 from sqlalchemy.orm import Session
 
 from shared.models import DocumentChunk, Quiz, QuizStatus, QuizGenerationStage
 from shared.repos import quiz_repo, quiz_audit_repo
+from shared.llm import get_llm_provider, BaseLLMProvider
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +25,14 @@ class QuizPipelineConfig:
     """Configuration for quiz generation pipeline."""
     def __init__(
         self,
-        google_api_key: str,
-        model_name: str = "gemini-2.5-flash",
+        llm_provider: str,
+        llm_model: str,
+        api_key: str,
         max_retries: int = 3,
     ):
-        self.google_api_key = google_api_key
-        self.model_name = model_name
+        self.llm_provider = llm_provider
+        self.llm_model = llm_model
+        self.api_key = api_key
         self.max_retries = max_retries
 
 
@@ -208,16 +210,16 @@ def run_quiz_pipeline(
         if job_id:
             quiz_audit_repo.update_stage(db, job_id, QuizGenerationStage.CALLING_LLM)
         
-        # Step 3: Call Gemini to generate questions
-        logger.info(f"Step 3: Calling Gemini to generate {num_questions} questions...")
-        questions_data = call_gemini_for_quiz(
+        # Step 3: Call LLM to generate questions
+        logger.info(f"Step 3: Calling {config.llm_provider} LLM to generate {num_questions} questions...")
+        questions_data = call_llm_for_quiz(
             context=context,
             num_questions=num_questions,
             config=config
         )
         
         if not questions_data:
-            logger.error("Gemini returned no questions")
+            logger.error("LLM returned no questions")
             quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
             return QuizPipelineResult(
                 success=False,
@@ -226,7 +228,7 @@ def run_quiz_pipeline(
                 metadata={"error_stage": "LLM_GENERATION"}
             )
         
-        logger.info(f"Gemini generated {len(questions_data)} questions")
+        logger.info(f"LLM generated {len(questions_data)} questions")
         
         # Update audit stage
         if job_id:
@@ -307,13 +309,13 @@ def run_quiz_pipeline(
         )
 
 
-def call_gemini_for_quiz(
+def call_llm_for_quiz(
     context: str,
     num_questions: int,
     config: QuizPipelineConfig
 ) -> Optional[List[Dict]]:
     """
-    Call Gemini 2.5 Flash to generate quiz questions.
+    Call LLM (OpenAI/Gemini) to generate quiz questions using the shared LLM wrapper.
     
     Args:
         context: Combined text from document chunks
@@ -324,11 +326,16 @@ def call_gemini_for_quiz(
         List of question dicts or None if failed
     """
     try:
-        # Configure Gemini
-        genai.configure(api_key=config.google_api_key)
-        model = genai.GenerativeModel(config.model_name)
+        # Create LLM provider using the wrapper
+        llm = get_llm_provider(
+            provider=config.llm_provider,
+            api_key=config.api_key,
+            model=config.llm_model
+        )
         
-        # Build prompt
+        logger.info(f"Using {config.llm_provider} provider with model {config.llm_model}")
+        
+        # Build prompt - format for JSON object mode (OpenAI requirement)
         prompt = f"""Based on the following document content, generate {num_questions} multiple choice questions to test understanding.
 
 DOCUMENT CONTENT:
@@ -340,42 +347,49 @@ INSTRUCTIONS:
 - Only one option should be correct
 - Questions should test key concepts and important information
 - Include a brief explanation for why the correct answer is right
-- Return ONLY valid JSON, no markdown formatting or extra text
+- Return valid JSON with a "questions" array
 
 REQUIRED JSON FORMAT:
-[
-  {{
-    "question": "What is...",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct_index": 0,
-    "explanation": "Option A is correct because..."
-  }}
-]
+{{
+  "questions": [
+    {{
+      "question": "What is...",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_index": 0,
+      "explanation": "Option A is correct because..."
+    }}
+  ]
+}}
 
-Generate the questions now:"""
+Generate the JSON now:"""
         
-        logger.info("Sending request to Gemini...")
-        response = model.generate_content(prompt)
+        logger.info(f"Sending request to {config.llm_provider}...")
         
-        # Extract text from response
-        response_text = response.text.strip()
-        logger.info(f"Received response from Gemini: {len(response_text)} characters")
+        # Use generate_json for automatic JSON parsing
+        questions_data = llm.generate_json(prompt)
         
-        # Clean up response (remove markdown code blocks if present)
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]  # Remove ```json
-        if response_text.startswith("```"):
-            response_text = response_text[3:]  # Remove ```
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]  # Remove trailing ```
-        response_text = response_text.strip()
+        logger.info(f"Received response from {config.llm_provider}")
+        logger.info(f"Response type: {type(questions_data)}")
+        logger.info(f"Response preview: {str(questions_data)[:500]}")
         
-        # Parse JSON
-        questions_data = json.loads(response_text)
+        # Handle case where response might be wrapped in an object
+        if isinstance(questions_data, dict):
+            # Check if it's wrapped in a "questions" key or similar
+            if "questions" in questions_data:
+                questions_data = questions_data["questions"]
+                logger.info("Extracted questions from 'questions' key")
+            elif "items" in questions_data:
+                questions_data = questions_data["items"]
+                logger.info("Extracted questions from 'items' key")
+            else:
+                # If it's a single question object, wrap it in a list
+                logger.warning("Response is a dict, attempting to wrap as single question")
+                questions_data = [questions_data]
         
         # Validate structure
         if not isinstance(questions_data, list):
-            logger.error("Response is not a list")
+            logger.error(f"Response is not a list after processing. Type: {type(questions_data)}")
+            logger.error(f"Response content: {questions_data}")
             return None
         
         # Validate each question
@@ -398,12 +412,15 @@ Generate the questions now:"""
         logger.info(f"Validated {len(valid_questions)} questions")
         return valid_questions
         
+    except ValueError as e:
+        logger.error(f"LLM configuration error: {e}")
+        return None
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Gemini response as JSON: {e}")
-        logger.error(f"Response text: {response_text[:500]}...")
+        logger.error(f"Failed to parse LLM response as JSON: {e}")
         return None
     except Exception as e:
-        logger.error(f"Gemini API call failed: {e}", exc_info=True)
+        logger.error(f"LLM API call failed: {e}", exc_info=True)
+        return None
         return None
 
 
@@ -460,7 +477,9 @@ def generate_quiz_task(
     document_id: int,
     num_questions: int,
     db_session: Session,
-    google_api_key: str,
+    llm_provider: str,
+    llm_model: str,
+    api_key: str,
     job_id: Optional[str] = None,
     **kwargs
 ) -> Dict[str, Any]:
@@ -473,7 +492,9 @@ def generate_quiz_task(
         document_id: Document ID to generate from
         num_questions: Number of questions to generate
         db_session: Database session
-        google_api_key: Google API key
+        llm_provider: LLM provider name (openai/gemini)
+        llm_model: LLM model name
+        api_key: API key for the LLM provider
         job_id: Optional RQ job ID for audit tracking
         **kwargs: Additional config options
         
@@ -481,8 +502,9 @@ def generate_quiz_task(
         Dict with task result
     """
     config = QuizPipelineConfig(
-        google_api_key=google_api_key,
-        model_name=kwargs.get('model_name', 'gemini-2.5-flash'),
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        api_key=api_key,
         max_retries=kwargs.get('max_retries', 3),
     )
     

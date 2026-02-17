@@ -1,16 +1,12 @@
 from typing import List, Dict, Any
-import google.generativeai as genai
 from sqlalchemy.orm import Session
-from app.core.config import get_settings
 import sys
 import json
 
-settings = get_settings()
+from shared.llm import embed_single, create_llm_provider
+from app.core.config import get_settings
 
-# Configure Gemini once (module import time)
-# Use RAG-specific API key if available, otherwise fall back to main key
-rag_api_key = settings.rag_google_api_key or settings.google_api_key
-genai.configure(api_key=rag_api_key)
+settings = get_settings()
 
 def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5) -> Dict[str, Any]:
     print("\n" + "="*80, file=sys.stderr)
@@ -22,7 +18,12 @@ def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5
     
     # Step 1: Generate query embedding
     print("\n[STEP 1] Generating query embedding...", file=sys.stderr)
-    q_emb = _embed_query(question)
+    q_emb = embed_single(
+        text=question,
+        api_key=settings.google_api_key,
+        embedding_model=settings.embedding_model,
+        task_type="retrieval_query"
+    )
     print(f"[STEP 1] ✓ Generated embedding (dimension: {len(q_emb)})", file=sys.stderr)
     print(f"[STEP 1] First 5 values: {q_emb[:5]}", file=sys.stderr)
     
@@ -66,51 +67,6 @@ def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5
         "follow_up_questions": result['follow_up_questions']
     }
 
-def _embed_query(query: str) -> List[float]:
-    """Generate embedding for a query string."""
-    try:
-        print(f"  → Calling embed_content API...", file=sys.stderr)
-        result = genai.embed_content(
-            model=settings.embedding_model,
-            content=query,
-            task_type="retrieval_query",
-            output_dimensionality=768
-        )
-        
-        print(f"  → API Response Type: {type(result)}", file=sys.stderr)
-        
-        # Handle different response formats
-        if hasattr(result, 'embedding'):
-            embedding = result.embedding
-            print(f"  → Accessed via .embedding attribute", file=sys.stderr)
-        elif isinstance(result, dict) and 'embedding' in result:
-            embedding = result['embedding']
-            print(f"  → Accessed via ['embedding'] key", file=sys.stderr)
-        elif isinstance(result, dict) and 'embeddings' in result:
-            embedding = result['embeddings'][0]
-            print(f"  → Accessed via ['embeddings'][0]", file=sys.stderr)
-        elif isinstance(result, list):
-            embedding = result
-            print(f"  → Result is already a list", file=sys.stderr)
-        else:
-            print(f"  ✗ ERROR: Unexpected structure!", file=sys.stderr)
-            print(f"  → Result keys (if dict): {result.keys() if isinstance(result, dict) else 'N/A'}", file=sys.stderr)
-            raise ValueError(f"Unexpected embedding response structure: {type(result)}")
-        
-        # Normalize for 768 dimensions
-        import numpy as np
-        emb_array = np.array(embedding)
-        norm = np.linalg.norm(emb_array)
-        if norm > 0:
-            embedding = (emb_array / norm).tolist()
-        
-        return embedding
-        
-    except Exception as e:
-        print(f"  ✗ EMBEDDING ERROR: {e}", file=sys.stderr)
-        import traceback
-        traceback.print_exc(file=sys.stderr)
-        raise
 
 def _search_similar_chunks(
     chunk_db: Session, 
@@ -248,26 +204,21 @@ IMPORTANT: Return ONLY valid JSON, no preamble or markdown.
 """
     
     print(f"  → Prompt length: {len(prompt)} chars", file=sys.stderr)
-    print(f"  → Calling LLM ({settings.llm_model})...", file=sys.stderr)
+    print(f"  → Calling LLM ({settings.llm_provider}/{settings.llm_model})...", file=sys.stderr)
     
     try:
-        model = genai.GenerativeModel(settings.llm_model)
-        resp = model.generate_content(prompt)
+        # Create LLM provider using shared utility
+        llm = create_llm_provider(
+            llm_provider=settings.llm_provider,
+            llm_model=settings.llm_model,
+            google_api_key=settings.google_api_key,
+            openai_api_key=settings.openai_api_key
+        )
         
-        response_text = resp.text.strip()
-        print(f"  → LLM Response length: {len(response_text)} chars", file=sys.stderr)
+        # Use generate_json for automatic JSON parsing
+        result = llm.generate_json(prompt)
         
-        # Clean up JSON response (remove markdown if present)
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        if response_text.startswith("```"):
-            response_text = response_text[3:]
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-        response_text = response_text.strip()
-        
-        # Parse JSON response
-        result = json.loads(response_text)
+        print(f"  → LLM Response received", file=sys.stderr)
         
         answer = result.get("answer", "No answer provided.")
         follow_up_questions = result.get("follow_up_questions", [])
@@ -282,10 +233,9 @@ IMPORTANT: Return ONLY valid JSON, no preamble or markdown.
         
     except json.JSONDecodeError as e:
         print(f"  ✗ JSON PARSE ERROR: {e}", file=sys.stderr)
-        print(f"  → Raw response: {response_text}", file=sys.stderr)
-        # Fallback: return just the response as answer
+        # Fallback: return error message
         return {
-            "answer": response_text,
+            "answer": "I encountered an error parsing the response. Please try again.",
             "follow_up_questions": []
         }
     except Exception as e:

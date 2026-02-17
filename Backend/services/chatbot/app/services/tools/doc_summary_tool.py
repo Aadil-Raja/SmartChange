@@ -3,13 +3,11 @@
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 import sys
-import google.generativeai as genai
+
+from shared.llm import embed_single, create_llm_provider
 from app.core.config import get_settings
 
 settings = get_settings()
-# Use Summary-specific API key if available, otherwise fall back to RAG key, then main key
-summary_api_key = settings.summary_google_api_key or settings.rag_google_api_key or settings.google_api_key
-genai.configure(api_key=summary_api_key)
 
 class DocSummaryToolArgs(BaseModel):
     """Arguments for document summary generation"""
@@ -69,7 +67,12 @@ def make_doc_summary_tool(chunk_db, document_id: int):
                 print(f"[TOOL]   Search query: {search_query[:100]}...", file=sys.stderr)
                 
                 # Get embedding for this topic
-                topic_embedding = _embed_query(search_query)
+                topic_embedding = embed_single(
+                    text=search_query,
+                    api_key=settings.google_api_key,
+                    embedding_model=settings.embedding_model,
+                    task_type="retrieval_query"
+                )
                 
                 # Retrieve most relevant chunks for this topic
                 chunks = (
@@ -106,35 +109,6 @@ def make_doc_summary_tool(chunk_db, document_id: int):
     
     return doc_summary_tool
 
-def _embed_query(query: str):
-    """Generate embedding for a query string."""
-    try:
-        result = genai.embed_content(
-            model=settings.embedding_model,
-            content=query,
-            task_type="retrieval_query",
-            output_dimensionality=768
-        )
-        
-        if hasattr(result, 'embedding'):
-            embedding = result.embedding
-        elif isinstance(result, dict) and 'embedding' in result:
-            embedding = result['embedding']
-        else:
-            raise ValueError(f"Unexpected embedding response structure")
-        
-        # Normalize for 768 dimensions
-        import numpy as np
-        emb_array = np.array(embedding)
-        norm = np.linalg.norm(emb_array)
-        if norm > 0:
-            embedding = (emb_array / norm).tolist()
-        
-        return embedding
-            
-    except Exception as e:
-        print(f"  ✗ EMBEDDING ERROR: {e}", file=sys.stderr)
-        raise
 
 def _generate_topic_summary(doc_title: str, topic_contexts: dict) -> str:
     """Generate a concise summary using LLM based on topic contexts."""
@@ -175,10 +149,15 @@ Keep the summary clear and under 500 words total."""
     print(f"  → Calling LLM ({settings.llm_model})...", file=sys.stderr)
     
     try:
-        model = genai.GenerativeModel(settings.llm_model)
-        resp = model.generate_content(prompt)
+        # Create LLM provider using shared utility
+        llm = create_llm_provider(
+            llm_provider=settings.llm_provider,
+            llm_model=settings.llm_model,
+            google_api_key=settings.google_api_key,
+            openai_api_key=settings.openai_api_key
+        )
         
-        summary = resp.text
+        summary = llm.generate(prompt)
         print(f"  → Summary length: {len(summary)} chars", file=sys.stderr)
         
         return summary
@@ -186,6 +165,7 @@ Keep the summary clear and under 500 words total."""
     except Exception as e:
         print(f"  ✗ LLM ERROR: {e}", file=sys.stderr)
         return f"Error generating summary: {str(e)}"
+
 
 def _generate_general_summary(chunk_db, document_id: int, doc_title: str) -> str:
     """Fallback: Generate summary from first few chunks if no topics available."""
@@ -218,10 +198,15 @@ Excerpt:
 
 Summary:"""
         
-        model = genai.GenerativeModel(settings.llm_model)
-        resp = model.generate_content(prompt)
+        # Create LLM provider using shared utility
+        llm = create_llm_provider(
+            llm_provider=settings.llm_provider,
+            llm_model=settings.llm_model,
+            google_api_key=settings.google_api_key,
+            openai_api_key=settings.openai_api_key
+        )
         
-        return resp.text
+        return llm.generate(prompt)
         
     except Exception as e:
         print(f"  ✗ Error in general summary: {e}", file=sys.stderr)

@@ -466,38 +466,15 @@ def generate_main_topics_ai(db: Session, *, document_id: int):
             section_summaries[section] = ", ".join(lines)
         
         # Step 5: Call LLM to generate topics using wrapper
-        from shared.llm import get_llm_provider
+        from shared.llm import create_llm_provider
         
         try:
-            # Get the appropriate API key based on provider
-            if settings.llm_provider.lower() == "gemini":
-                if not settings.google_api_key:
-                    return make_response(
-                        False,
-                        "Google API key is required for Gemini provider",
-                        status_code=500
-                    )
-                api_key = settings.google_api_key
-            elif settings.llm_provider.lower() == "openai":
-                if not settings.openai_api_key:
-                    return make_response(
-                        False,
-                        "OpenAI API key is required for OpenAI provider",
-                        status_code=500
-                    )
-                api_key = settings.openai_api_key
-            else:
-                return make_response(
-                    False,
-                    f"Unknown LLM provider: {settings.llm_provider}",
-                    status_code=500
-                )
-            
-            # Create LLM provider
-            llm = get_llm_provider(
-                provider=settings.llm_provider,
-                api_key=api_key,
-                model=settings.llm_model
+            # Create LLM provider using shared utility
+            llm = create_llm_provider(
+                llm_provider=settings.llm_provider,
+                llm_model=settings.llm_model,
+                google_api_key=settings.google_api_key,
+                openai_api_key=settings.openai_api_key
             )
             
             print(f"[generate_main_topics_ai] Using {settings.llm_provider} provider with model {settings.llm_model}", file=sys.stderr)

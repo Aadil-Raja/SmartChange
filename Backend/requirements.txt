@@ -30,11 +30,13 @@ google-generativeai              # Google AI embeddings
 pgvector
 
 # LangChain and AI dependencies
-langchain==0.3.7
-langchain-core==0.3.17           # Updated to 0.3.17 to match langchain-community requirement
-langchain-community==0.3.7
-langchain-google-genai==2.0.5
-google-generativeai==0.8.3
+langchain>=0.3.7
+langchain-core>=0.3.17           # Allow newer versions for compatibility
+langchain-community>=0.3.7
+langchain-google-genai>=2.0.5
+langchain-openai>=0.2.0          # Specify minimum version
+langchain-classic                # For AgentExecutor (deprecated in langchain 1.0+)
+google-generativeai>=0.8.3       # Keep using this - google.genai has breaking changes
 pydantic==2.10.3
 pydantic-core==2.27.1
 openai
