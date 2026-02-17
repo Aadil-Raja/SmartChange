@@ -1,4 +1,6 @@
-import { createContext, useState, useEffect, useRef } from 'react';
+import { createContext, useState, useEffect, useRef, useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import { AdminAuthContext } from './AdminAuthContext';
 import {
   getNotifications,
   getUnreadCount,
@@ -15,6 +17,11 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const refreshIntervalRef = useRef(null);
+  const { token: employeeToken } = useContext(AuthContext);
+  const { token: adminToken } = useContext(AdminAuthContext);
+  
+  // Only poll when employee is logged in AND admin is NOT logged in
+  const shouldPoll = !!employeeToken && !adminToken;
 
   // Fetch notifications
   const fetchNotifications = async (page = 1, limit = 10, unreadOnly = false) => {
@@ -114,8 +121,18 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // Auto-refresh unread count every 30 seconds
+  // Auto-refresh unread count every 30 seconds (only when employee is logged in and admin is not)
   useEffect(() => {
+    // Only run polling when employee is logged in and admin is NOT logged in
+    if (!shouldPoll) {
+      // Clear any existing interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+      return;
+    }
+
     // Initial fetch
     fetchUnreadCount();
 
@@ -130,7 +147,7 @@ export const NotificationProvider = ({ children }) => {
         clearInterval(refreshIntervalRef.current);
       }
     };
-  }, []);
+  }, [shouldPoll]);
 
   return (
     <NotificationContext.Provider

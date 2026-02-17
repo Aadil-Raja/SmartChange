@@ -41,10 +41,10 @@ Use doc_summary_tool when user asks for:
 
 Use doc_qa_tool for specific questions about document content.
 
-Preserve the follow up questions 
+CRITICAL: When a tool returns a response with follow-up questions (marked with 📌), you MUST include them in your final response EXACTLY as provided. Do NOT reformulate or omit the follow-up questions section.
 
-If the tool returns no context, say you don't know. Keep responses concise.
-Always reflect the tool's result faithfully.
+If the tool returns no context, say you don't know.
+Always return the tool's result EXACTLY as provided, including any follow-up questions.
 """
 
 class DocumentAgent:

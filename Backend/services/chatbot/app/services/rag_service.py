@@ -41,11 +41,15 @@ def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5
     print("\n[STEP 3] Splitting chunks for answer and follow-up...", file=sys.stderr)
     answer_chunk_count = max(2, min(3, len(chunks) - 1))  # Use 2-3 chunks for answering
     answer_chunks = chunks[:answer_chunk_count]
+   
     followup_chunks = chunks[answer_chunk_count:]
     
     print(f"[STEP 3] Answer chunks: {len(answer_chunks)}", file=sys.stderr)
     print(f"[STEP 3] Follow-up chunks: {len(followup_chunks)}", file=sys.stderr)
-    
+    print("answer chunks")
+    print(answer_chunks)
+    print("followup chunks")
+    print(followup_chunks)
     # Step 4: Generate answer and follow-up questions in one call
     print("\n[STEP 4] Generating answer with follow-up questions...", file=sys.stderr)
     result = _answer_with_followup(question, answer_chunks, followup_chunks, doc_title=None)
@@ -168,18 +172,20 @@ def _answer_with_followup(
     print(f"  → Total follow-up context length: {len(followup_context)} chars", file=sys.stderr)
 
     prompt = f"""
-You are a helpful assistant answering questions about one selected document.
-Document: {doc_title or 'Selected Document'}
+You are a helpful assistant answering questions about a document.
 
-TASK 1 - ANSWER THE QUESTION:
-Use ONLY the following context to answer the user's question:
-
+CONTEXT FROM DOCUMENT:
 {answer_context}
 
-User Question:
+USER QUESTION:
 {question}
 
-Answer ONLY from the context above. If not found, say you don't know. Be concise and accurate.
+INSTRUCTIONS:
+1. Read the context carefully and extract information that answers the user's question
+2. If the context contains relevant information, provide a clear and direct answer
+3. ONLY say "I don't know" if the context truly does not contain ANY information related to the question
+4. Be concise but complete in your answer
+5. Use the exact information from the context
 
 TASK 2 - GENERATE FOLLOW-UP QUESTIONS:
 {"Based on the additional context below, generate 2-3 specific follow-up questions that:" if followup_context else "Based on any unused information from the answer context, generate 1-2 specific follow-up questions that:"}
@@ -193,7 +199,7 @@ TASK 2 - GENERATE FOLLOW-UP QUESTIONS:
 
 OUTPUT FORMAT (JSON):
 {{
-  "answer": "Your concise answer here",
+  "answer": "Your answer here based on the context",
   "follow_up_questions": [
     "First follow-up question?",
     "Second follow-up question?"
