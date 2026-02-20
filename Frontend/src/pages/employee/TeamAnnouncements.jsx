@@ -169,7 +169,7 @@ const TeamAnnouncements = () => {
                   className="shadow-sm"
                 >
                   <Users size={16} />
-                  <span>View Members</span>
+                  <span>Members</span>
                 </Button>
               )}
               {isManager && (
