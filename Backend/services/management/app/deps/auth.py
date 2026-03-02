@@ -18,6 +18,8 @@ def get_current_user(token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         user_id: str = payload.get("sub")
+        token_version: int = payload.get("tv", 0)
+        
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     except ExpiredSignatureError:
@@ -28,6 +30,14 @@ def get_current_user(token: str, db: Session = Depends(get_db)):
     user = users_repo.get_by_id(db, int(user_id))
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Validate token version
+    current_token_version = getattr(user, "token_version", 0) or 0
+    if token_version != current_token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Token has been revoked. Please login again."
+        )
 
     return user
 
@@ -39,6 +49,8 @@ def get_current_admin(token: str, db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
         user_id: str = payload.get("sub")
+        token_version: int = payload.get("tv", 0)
+        
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     except ExpiredSignatureError:
@@ -49,6 +61,14 @@ def get_current_admin(token: str, db: Session = Depends(get_db)):
     user = users_repo.get_by_id(db, int(user_id))
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Validate token version
+    current_token_version = getattr(user, "token_version", 0) or 0
+    if token_version != current_token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Token has been revoked. Please login again."
+        )
 
     if user.role != UserRole.admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins only")
