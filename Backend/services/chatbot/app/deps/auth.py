@@ -4,7 +4,7 @@ import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import get_settings
-from app.deps.db import get_db
+from app.deps.db import get_management_db
 
 from shared.models import UserRole
 from shared.repos import users_repo
@@ -12,7 +12,7 @@ from shared.repos import users_repo
 settings = get_settings()
 
 
-def get_current_user(token: str, db: Session = Depends(get_db)):
+def get_current_user(token: str, db: Session = Depends(get_management_db)):
     """
     Dependency: verifies JWT and returns the current user (any role).
     """

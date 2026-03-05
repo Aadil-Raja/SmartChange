@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     # Databases
     chatbot_database_url: str
     chunk_database_url: str
+    management_database_url: str  # For accessing users table
 
     # Google API (for embeddings only)
     google_api_key: str
