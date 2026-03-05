@@ -25,6 +25,11 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch notifications
   const fetchNotifications = async (page = 1, limit = 10, unreadOnly = false) => {
+    // Don't fetch if admin is logged in
+    if (!shouldPoll) {
+      return { success: false, message: 'Not available for admin users' };
+    }
+    
     setLoading(true);
     setError(null);
     try {
@@ -47,6 +52,11 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch unread count only
   const fetchUnreadCount = async () => {
+    // Don't fetch if admin is logged in
+    if (!shouldPoll) {
+      return;
+    }
+    
     try {
       const response = await getUnreadCount();
       if (response.success) {
@@ -130,6 +140,9 @@ export const NotificationProvider = ({ children }) => {
         clearInterval(refreshIntervalRef.current);
         refreshIntervalRef.current = null;
       }
+      // Reset state when not polling
+      setNotifications([]);
+      setUnreadCount(0);
       return;
     }
 

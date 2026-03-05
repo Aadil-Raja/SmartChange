@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useCourses } from '../../hooks/useCourses';
 import CourseCard from '../../components/ui/CourseCard';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
@@ -16,10 +16,14 @@ const MyCourses = () => {
     const [navCollapsed, setNavCollapsed] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // all, in-progress, completed, not-enrolled, expired
+    const hasFetched = useRef(false);
 
-    // Load courses when component mounts
+    // Load courses when component mounts (only once)
     useEffect(() => {
-        fetchCourses();
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            fetchCourses();
+        }
     }, []);
 
     // Loading State

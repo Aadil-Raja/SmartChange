@@ -43,6 +43,7 @@ const CourseContent = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
   const menuRef = useRef(null);
+  const hasFetchedCourse = useRef(null); // Track which course has been fetched
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -151,7 +152,8 @@ const CourseContent = () => {
   };
 
   useEffect(() => {
-    if (id) {
+    if (id && hasFetchedCourse.current !== id) {
+      hasFetchedCourse.current = id;
       fetchCourseDetails(parseInt(id));
     }
   }, [id]);
@@ -204,8 +206,22 @@ const CourseContent = () => {
 
   if (!selectedCourse) return null;
 
+  // Check if the displayed course matches the requested ID
+  const isCorrectCourse = selectedCourse && selectedCourse.id === parseInt(id);
+  const showLoadingOverlay = loading || !isCorrectCourse;
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Loading Overlay */}
+      {showLoadingOverlay && (
+        <div className="fixed inset-0 bg-white/100 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 size={48} className="animate-spin text-[#F58220] mx-auto mb-4" />
+            <p className="text-gray-600 font-medium">Loading course...</p>
+          </div>
+        </div>
+      )}
+
       {/* Top Header Bar */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-4">
