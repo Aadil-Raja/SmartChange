@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
-from app.repositories import users_repo, teams_repo, employees_repo
+from app.repositories import teams_repo, employees_repo
+from shared.repos import users_repo
 from shared.models import UserRole, TeamMemberRole, TeamMember
 from app.utils.response_utils import make_response
 

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.core.config import get_settings
-from app.repositories import users_repo
+from shared.repos import users_repo
 from passlib.context import CryptContext
 
 settings = get_settings()

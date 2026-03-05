@@ -2,7 +2,8 @@
 
 from sqlalchemy.orm import Session
 from fastapi import BackgroundTasks
-from app.repositories import auth_repo, users_repo
+from app.repositories import auth_repo
+from shared.repos import users_repo
 from app.core.config import get_settings
 from app.services.email_service import send_otp_email, send_welcome_email, send_password_reset_email
 from app.utils.response_utils import make_response

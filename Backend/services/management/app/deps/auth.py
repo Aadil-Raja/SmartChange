@@ -5,7 +5,7 @@ from jwt import ExpiredSignatureError, InvalidTokenError
 
 from app.core.config import get_settings
 from app.deps.db import get_db
-from app.repositories import users_repo
+from shared.repos import users_repo
 from shared.models import UserRole
 
 settings = get_settings()

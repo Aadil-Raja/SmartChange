@@ -5,7 +5,7 @@ from firebase_admin import auth
 
 from app.core.firebase import ensure_firebase_initialized
 from app.core.config import get_settings
-from app.repositories import users_repo
+from shared.repos import users_repo
 from app.utils.response_utils import make_response
 
 from app.utils.shared_utils import (
