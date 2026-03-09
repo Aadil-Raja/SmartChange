@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, UserPlus, X, Edit2, ChevronDown, ChevronUp, Users, Trash2 } from 'lucide-react';
+import { Plus, UserPlus, X, Edit2, ChevronDown, Users, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -7,7 +7,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const TeamsPage = () => {
-  const { teams, employees, teamRoles, loading, loadTeams, loadEmployees, loadTeamRoles, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
+  const { teams, employees, loading, loadTeams, loadEmployees, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -17,13 +17,23 @@ const TeamsPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
   const [editingMemberId, setEditingMemberId] = useState(null); // Format: "teamId-userId"
   const [expandedTeams, setExpandedTeams] = useState(new Set());
-  const [editingRole, setEditingRole] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  
+  const hasFetchedTeams = useRef(false);
+  const hasFetchedEmployees = useRef(false);
 
   useEffect(() => {
-    loadTeams();
-    loadEmployees();
-    loadTeamRoles();
+    if (!hasFetchedTeams.current) {
+      loadTeams();
+      hasFetchedTeams.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasFetchedEmployees.current) {
+      loadEmployees();
+      hasFetchedEmployees.current = true;
+    }
   }, []);
 
 
@@ -402,9 +412,8 @@ const TeamsPage = () => {
                                         className="rounded-lg border-2 border-[#00ADEF] px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/20 shadow-sm"
                                         autoFocus
                                       >
-                                        {teamRoles.map(role => (
-                                          <option key={role} value={role}>{role}</option>
-                                        ))}
+                                        <option value="member">member</option>
+                                        <option value="manager">manager</option>
                                       </select>
                                     ) : (
                                       <button
@@ -507,9 +516,8 @@ const TeamsPage = () => {
                   className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20"
                 >
                   <option value="">Choose a role...</option>
-                  {teamRoles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
+                  <option value="member">member</option>
+                  <option value="manager">manager</option>
                 </select>
               </div>
 

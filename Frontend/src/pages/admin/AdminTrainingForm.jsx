@@ -1,5 +1,5 @@
 // src/pages/admin/training/AdminTrainingForm.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import { ArrowLeft, Save } from "lucide-react";
@@ -33,11 +33,14 @@ const AdminTrainingForm = () => {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  
+  const hasFetchedCourse = useRef(false);
 
   // Load course data if editing
   useEffect(() => {
-    if (isEditMode && id) {
+    if (isEditMode && id && !hasFetchedCourse.current) {
       fetchCourseDetails(id);
+      hasFetchedCourse.current = true;
     }
     return () => clearMessages();
   }, [id, isEditMode]);

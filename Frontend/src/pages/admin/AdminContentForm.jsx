@@ -1,5 +1,5 @@
 // src/pages/admin/training/AdminContentForm.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import { X, Save } from "lucide-react";
 import Button from "../../components/ui/Button";
@@ -26,10 +26,15 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
   const [availableLinks, setAvailableLinks] = useState([]);
 
   const [submitting, setSubmitting] = useState(false);
+  
+  const hasFetchedResources = useRef(false);
 
   // Load available resources and populate form if editing
   useEffect(() => {
-    loadAvailableResources();
+    if (!hasFetchedResources.current) {
+      loadAvailableResources();
+      hasFetchedResources.current = true;
+    }
 
     if (editingContent) {
       setFormData({

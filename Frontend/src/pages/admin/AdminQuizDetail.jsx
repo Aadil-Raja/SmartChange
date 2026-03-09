@@ -1,5 +1,5 @@
 // src/pages/admin/AdminQuizDetail.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -58,6 +58,9 @@ const AdminQuizDetail = () => {
 
   // Check if quiz is currently being generated
   const isGenerating = !isCourseQuiz && (quiz?.status === 'GENERATING' || audit?.status === 'GENERATING');
+  
+  const hasFetchedQuiz = useRef(false);
+  const hasFetchedAudit = useRef(false);
 
   // Question form
   const [questionForm, setQuestionForm] = useState({
@@ -73,11 +76,18 @@ const AdminQuizDetail = () => {
   });
 
   useEffect(() => {
-    loadQuiz();
-    if (!isCourseQuiz) {
-      loadAudit();
+    if (!hasFetchedQuiz.current) {
+      loadQuiz();
+      hasFetchedQuiz.current = true;
     }
   }, [quizId, quizType]);
+  
+  useEffect(() => {
+    if (!isCourseQuiz && !hasFetchedAudit.current) {
+      loadAudit();
+      hasFetchedAudit.current = true;
+    }
+  }, [quizId, quizType, isCourseQuiz]);
 
   // Poll for audit updates while generating (only audit, not full quiz)
   useEffect(() => {
