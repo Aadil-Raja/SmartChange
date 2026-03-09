@@ -14,9 +14,13 @@ const EmployeeProfile = () => {
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [showPictureMenu, setShowPictureMenu] = useState(false);
   const fileInputRef = useRef(null);
+  const hasFetchedProfile=useRef(false);
 
   useEffect(() => {
-    fetchProfileData();
+    if(!hasFetchedProfile.current){
+      hasFetchedProfile.current=true;
+      fetchProfileData();
+    }
   }, []);
 
   // Close picture menu when clicking outside

@@ -1,5 +1,5 @@
 // src/pages/admin/AdminQuizManagement.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -61,6 +61,7 @@ const AdminQuizManagement = () => {
     num_questions: 10
   });
   const [submitting, setSubmitting] = useState(false);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -72,7 +73,10 @@ const AdminQuizManagement = () => {
       ]);
     };
 
-    loadInitialData();
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      loadInitialData();
+    }
     return () => clearMessages();
   }, []);
 

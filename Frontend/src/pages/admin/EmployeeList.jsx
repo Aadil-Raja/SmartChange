@@ -1,21 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Users, Search, ChevronDown, ChevronUp, User } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
 import { useAdmin } from '../../hooks/useAdmin';
 
 const EmployeeList = () => {
-  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateTeamMemberRole } = useAdmin();
+  const { employees, teamRoles, loading, loadEmployees, updateTeamMemberRole } = useAdmin();
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterTeam, setFilterTeam] = useState('');
   const [editingRole, setEditingRole] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    loadEmployees();
-    loadTeamRoles();
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      loadEmployees();
+    }
   }, []);
 
 
@@ -43,7 +46,6 @@ const EmployeeList = () => {
           team_id: emp.team_id,
           team_name: emp.team_name,
           team_role: emp.team_role,
-          team_member_id: emp.team_member_id
         });
       }
     });

@@ -1,5 +1,5 @@
 // src/pages/admin/training/AdminCourseDetails.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import {
@@ -73,6 +73,7 @@ const AdminCourseDetails = () => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const hasFetchedCourse = useRef(null);
 
   // Clear quiz messages
   const clearQuizMessages = () => {
@@ -81,7 +82,8 @@ const AdminCourseDetails = () => {
   };
 
   useEffect(() => {
-    if (id) {
+    if (id && hasFetchedCourse.current !== id) {
+      hasFetchedCourse.current = id;
       console.log('Loading course details for ID:', id);
       fetchCourseDetails(id);
     }

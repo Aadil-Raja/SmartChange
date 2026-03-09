@@ -1,5 +1,5 @@
 // src/components/ui/TeamMembersModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Users, Crown, UserCheck, Mail, Calendar, Loader2, ChevronRight, MessageSquare } from 'lucide-react';
 import { getTeamMembers } from '../../services/teamApi';
 import { getEmployeeCourses } from '../../services/courseApi';
@@ -15,9 +15,11 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageRecipient, setMessageRecipient] = useState(null);
   const [courses, setCourses] = useState([]);
+  const hasFetchedMember=useRef(false);
 
   useEffect(() => {
-    if (isOpen && team) {
+    if (isOpen && team && !hasFetchedMember.current) {
+      hasFetchedMember.current=true;
       fetchTeamMembers();
       fetchCourses();
     }

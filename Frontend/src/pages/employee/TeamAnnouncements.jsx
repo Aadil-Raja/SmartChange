@@ -1,5 +1,5 @@
 // src/pages/employee/TeamAnnouncements.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
 import { useTeams } from "../../hooks/useTeams";
@@ -46,6 +46,7 @@ const TeamAnnouncements = () => {
   const [loadingMoreAnnouncements, setLoadingMoreAnnouncements] = useState(false);
   const [loadingMoreComments, setLoadingMoreComments] = useState({});
   const [courses, setCourses] = useState([]);
+  const hasFetchedTeam = useRef(null); // Track which team has been fetched
 
   // Find current team and check if user is manager
   const currentTeam = teams.find(t => t.team_id === parseInt(teamId));
@@ -86,14 +87,15 @@ const TeamAnnouncements = () => {
     await loadMoreComments(teamId, announcementId);
     setLoadingMoreComments(prev => ({ ...prev, [announcementId]: false }));
   };
-
+  
   useEffect(() => {
     // Load teams data if not already loaded (for page refresh)
     if (teams.length === 0) {
       loadTeams();
     }
     
-    if (teamId) {
+    if (teamId && hasFetchedTeam.current !== teamId) {
+      hasFetchedTeam.current = teamId;
       fetchAnnouncements(teamId);
       fetchCourses();
     }

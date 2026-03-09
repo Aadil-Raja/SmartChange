@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Plus, UserPlus, X, Edit2, ChevronDown, ChevronUp, Users, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
