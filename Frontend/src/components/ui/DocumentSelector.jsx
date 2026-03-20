@@ -12,14 +12,14 @@ import Input from "./Input";
 const DocumentSelector = ({ onClose }) => {
   const {
     availableDocuments,
-    selectedDocumentId,
+    selectedDocumentIds,
     loading,
     selectDocument,
     fetchDocuments,
   } = useChatbot();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [localSelection, setLocalSelection] = useState(selectedDocumentId);
+  const [localSelection, setLocalSelection] = useState(selectedDocumentIds || []);
 
   useEffect(() => {
     if (availableDocuments.length === 0) {
@@ -31,15 +31,30 @@ const DocumentSelector = ({ onClose }) => {
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSelect = (documentId) => {
-    setLocalSelection(documentId);
+  const handleToggleSelect = (documentId) => {
+    setLocalSelection((prev) => {
+      if (prev.includes(documentId)) {
+        return prev.filter((id) => id !== documentId);
+      } else {
+        return [...prev, documentId];
+      }
+    });
   };
 
   const handleConfirm = () => {
-    if (localSelection) {
-      selectDocument(localSelection);
-      onClose();
-    }
+    // Update the context with all selected documents
+    // First clear existing selections, then add new ones
+    selectedDocumentIds.forEach((id) => {
+      if (!localSelection.includes(id)) {
+        selectDocument(id); // This will remove it
+      }
+    });
+    localSelection.forEach((id) => {
+      if (!selectedDocumentIds.includes(id)) {
+        selectDocument(id); // This will add it
+      }
+    });
+    onClose();
   };
 
   return (
@@ -58,7 +73,7 @@ const DocumentSelector = ({ onClose }) => {
                   <Sparkles size={20} className="text-white/80" />
                 </h2>
                 <p className="text-white/90 text-sm mt-1">
-                  Choose a document to start an intelligent conversation
+                  Choose one or more documents for intelligent conversation
                 </p>
               </div>
             </div>
@@ -122,13 +137,13 @@ const DocumentSelector = ({ onClose }) => {
           ) : (
             <div className="space-y-3">
               {filteredDocuments.map((doc) => {
-                const isSelected = localSelection === doc.id;
-                const isCurrentlyActive = selectedDocumentId === doc.id;
+                const isSelected = localSelection.includes(doc.id);
+                const isCurrentlyActive = selectedDocumentIds.includes(doc.id);
 
                 return (
                   <ChatCard
                     key={doc.id}
-                    onClick={() => handleSelect(doc.id)}
+                    onClick={() => handleToggleSelect(doc.id)}
                     variant={isSelected ? "primary" : "default"}
                     padding="md"
                     hover={true}
@@ -170,9 +185,9 @@ const DocumentSelector = ({ onClose }) => {
                         )}
                       </div>
 
-                      {/* Selection Indicator */}
+                      {/* Selection Checkbox */}
                       <div
-                        className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                        className={`flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center border-2 transition-all ${
                           isSelected
                             ? "bg-[#F58220] border-[#F58220]"
                             : "border-gray-300 group-hover:border-gray-400"
@@ -199,13 +214,15 @@ const DocumentSelector = ({ onClose }) => {
           </PrimaryButton>
           <PrimaryButton
             onClick={handleConfirm}
-            disabled={!localSelection}
+            disabled={localSelection.length === 0}
             variant="primary"
             size="md"
             className="shadow-lg"
           >
             <Check size={18} />
-            <span className="font-semibold">Confirm Selection</span>
+            <span className="font-semibold">
+              Confirm {localSelection.length > 0 ? `(${localSelection.length})` : 'Selection'}
+            </span>
           </PrimaryButton>
         </div>
       </div>

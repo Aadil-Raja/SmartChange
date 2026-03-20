@@ -13,7 +13,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   const {
     activeChatId,
     messages,
-    selectedDocumentId,
+    selectedDocumentIds,
     loading,
     sendMessage,
     fetchMessages,
@@ -27,7 +27,8 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
   
   // Check if we're in read-only mode (viewing history without a document)
-  const isReadOnlyMode = activeChatId && !selectedDocumentId;
+  const isReadOnlyMode = activeChatId && (!selectedDocumentIds || selectedDocumentIds.length === 0);
+  const hasDocuments = selectedDocumentIds && selectedDocumentIds.length > 0;
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -46,7 +47,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   }, [activeChatId]);
 
   const handleSend = async () => {
-    if (!inputMessage.trim() || !selectedDocumentId || sending) return;
+    if (!inputMessage.trim() || !hasDocuments || sending) return;
 
     const messageText = inputMessage.trim();
     setInputMessage("");
@@ -70,7 +71,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
   };
 
   // Show welcome screen only if no document AND no active chat
-  if (!selectedDocumentId && !activeChatId) {
+  if (!hasDocuments && !activeChatId) {
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-lg">
@@ -81,7 +82,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
             Ready to assist you
           </h2>
           <p className="text-gray-600 mb-8 leading-relaxed">
-            Select a document to start an intelligent conversation and get insights from your content.
+            Select one or more documents to start an intelligent conversation and get insights from your content.
           </p>
           <PrimaryButton
             onClick={onOpenDocumentSelector}
@@ -89,7 +90,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
             className="shadow-sm"
           >
             <FileText size={20} />
-            <span>Choose Document</span>
+            <span>Choose Documents</span>
           </PrimaryButton>
         </div>
       </div>
@@ -276,15 +277,15 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask me anything about your document..."
-                    disabled={sending || !selectedDocumentId}
+                    placeholder="Ask me anything about your documents..."
+                    disabled={sending || !hasDocuments}
                     maxRows={4}
                     className="w-full border border-gray-300 focus:border-[#F58220] focus:ring-2 focus:ring-[#F58220]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
                   />
                 </div>
                 <IconButton
                   onClick={handleSend}
-                  disabled={!inputMessage.trim() || sending || !selectedDocumentId}
+                  disabled={!inputMessage.trim() || sending || !hasDocuments}
                   variant="primary"
                   size="lg"
                   tooltip={sending ? "Sending..." : "Send message"}

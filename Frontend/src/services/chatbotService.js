@@ -45,7 +45,7 @@ export const sendChatMessage = async (messageData) => {
   
   const response = await chatbotApi.post('/chat/respond', {
     message: messageData.message,
-    active_doc_id: messageData.active_doc_id,
+    active_doc_ids: messageData.active_doc_ids,
     chathead_id: messageData.chathead_id || null,
     title: messageData.title || null
   });

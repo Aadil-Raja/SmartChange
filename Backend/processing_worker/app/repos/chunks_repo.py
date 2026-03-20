@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import delete
 
 from shared.models.Document import DocumentChunk
+from shared.models.DocumentSection import DocumentSection
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,11 @@ def bulk_insert(
     embeddings: List[List[float]]
 ) -> List[DocumentChunk]:
     """
-    Bulk insert chunks with embeddings.
+    Bulk insert chunks with embeddings and create DocumentSection entries.
+    
+    This function performs streaming section detection: as chunks are inserted,
+    it detects when section_title changes and creates DocumentSection records
+    with chunk boundaries.
     
     Args:
         db: SQLAlchemy session
@@ -42,8 +47,42 @@ def bulk_insert(
     logger.info(f"Bulk inserting {len(chunks)} chunks for document {document_id}")
     
     chunk_records = []
+    section_records = []
+    
+    # Section tracking variables
+    current_section_title = None
+    section_start_index = None
     
     for chunk, embedding in zip(chunks, embeddings):
+        # Normalize section_title (handle NULL/empty)
+        section_title = chunk.section_title if chunk.section_title else "General Content"
+        
+        # Detect section change
+        if section_title != current_section_title:
+            # Save previous section (if exists)
+            if current_section_title is not None and section_start_index is not None:
+                previous_chunk_index = chunk.chunk_index - 1
+                chunk_count = previous_chunk_index - section_start_index + 1
+                
+                section_record = DocumentSection(
+                    document_id=document_id,
+                    section_title=current_section_title,
+                    start_chunk_index=section_start_index,
+                    end_chunk_index=previous_chunk_index,
+                    chunk_count=chunk_count
+                )
+                section_records.append(section_record)
+                
+                logger.debug(
+                    f"Section '{current_section_title}': chunks {section_start_index}-{previous_chunk_index} "
+                    f"(count={chunk_count})"
+                )
+            
+            # Start tracking new section
+            current_section_title = section_title
+            section_start_index = chunk.chunk_index
+        
+        # Create chunk record
         record = DocumentChunk(
             document_id=document_id,
             text=chunk.text,
@@ -57,11 +96,34 @@ def bulk_insert(
         )
         chunk_records.append(record)
     
-    # Bulk insert
+    # Save the last section (if any chunks were processed)
+    if current_section_title is not None and section_start_index is not None and chunks:
+        last_chunk_index = chunks[-1].chunk_index
+        chunk_count = last_chunk_index - section_start_index + 1
+        
+        section_record = DocumentSection(
+            document_id=document_id,
+            section_title=current_section_title,
+            start_chunk_index=section_start_index,
+            end_chunk_index=last_chunk_index,
+            chunk_count=chunk_count
+        )
+        section_records.append(section_record)
+        
+        logger.debug(
+            f"Section '{current_section_title}': chunks {section_start_index}-{last_chunk_index} "
+            f"(count={chunk_count})"
+        )
+    
+    # Bulk insert both chunks and sections in single transaction
     db.bulk_save_objects(chunk_records, return_defaults=True)
+    db.bulk_save_objects(section_records, return_defaults=True)
     db.commit()
     
-    logger.info(f"Successfully inserted {len(chunk_records)} chunks")
+    logger.info(
+        f"Successfully inserted {len(chunk_records)} chunks and {len(section_records)} sections "
+        f"for document {document_id}"
+    )
     return chunk_records
 
 
@@ -114,6 +176,7 @@ def get_by_id(db: Session, chunk_id: int) -> Optional[DocumentChunk]:
 def delete_by_document(db: Session, document_id: int) -> int:
     """
     Delete all chunks for a document.
+    Note: DocumentSection records are automatically deleted via CASCADE.
     
     Args:
         db: SQLAlchemy session
@@ -122,14 +185,25 @@ def delete_by_document(db: Session, document_id: int) -> int:
     Returns:
         Number of chunks deleted
     """
-    result = db.execute(
+    # Delete sections first (explicit, though CASCADE would handle it)
+    sections_result = db.execute(
+        delete(DocumentSection).where(DocumentSection.document_id == document_id)
+    )
+    sections_deleted = sections_result.rowcount
+    
+    # Delete chunks
+    chunks_result = db.execute(
         delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
     )
+    chunks_deleted = chunks_result.rowcount
+    
     db.commit()
     
-    deleted_count = result.rowcount
-    logger.info(f"Deleted {deleted_count} chunks for document {document_id}")
-    return deleted_count
+    logger.info(
+        f"Deleted {chunks_deleted} chunks and {sections_deleted} sections "
+        f"for document {document_id}"
+    )
+    return chunks_deleted
 
 
 def count_by_document(db: Session, document_id: int) -> int:

@@ -29,7 +29,7 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 def get_db():
-    """Dependency for FastAPI routes"""
+    """Dependency for FastAPI routes - Chatbot database"""
     db = SessionLocal()
     try:
         yield db
@@ -37,33 +37,7 @@ def get_db():
         db.close()
 
 
-        
-chunk_engine = create_engine(
-    settings.chunk_database_url,
-    future=True,
-    pool_pre_ping=True,  # Test connections before using
-    pool_recycle=3600,   # Recycle connections after 1 hour
-    pool_size=5,         # Connection pool size
-    max_overflow=10,     # Max overflow connections
-    connect_args={
-        "connect_timeout": 10,
-        "keepalives": 1,
-        "keepalives_idle": 30,
-        "keepalives_interval": 10,
-        "keepalives_count": 5,
-    }
-)
-ChunkSessionLocal = sessionmaker(bind=chunk_engine, autoflush=False, autocommit=False)
-
-def get_chunk_db():
-    db = ChunkSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# Management database connection (for accessing users table)
+# Management database connection (for documents, chunks, sections, users, etc.)
 management_engine = create_engine(
     settings.management_database_url,
     future=True,
@@ -82,7 +56,7 @@ management_engine = create_engine(
 ManagementSessionLocal = sessionmaker(bind=management_engine, autoflush=False, autocommit=False)
 
 def get_management_db():
-    """Dependency for accessing management database (users, etc.)"""
+    """Dependency for accessing management database (documents, chunks, sections, users)"""
     db = ManagementSessionLocal()
     try:
         yield db
