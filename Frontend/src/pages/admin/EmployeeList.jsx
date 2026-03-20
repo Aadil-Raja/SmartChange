@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Users, Search, ChevronDown, ChevronUp, User } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
@@ -12,10 +12,13 @@ const EmployeeList = () => {
   const [filterTeam, setFilterTeam] = useState('');
   const [editingRole, setEditingRole] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
-
+  const hasFetched = useRef(false);
   useEffect(() => {
-    loadEmployees();
-    loadTeamRoles();
+    if (!hasFetched.current) {
+      hasFetched.current=true;
+      loadEmployees();
+      loadTeamRoles();
+    }
   }, []);
 
 
@@ -64,16 +67,16 @@ const EmployeeList = () => {
 
   const uniqueTeams = [...new Set(employees.filter(e => e.team_name).map(e => e.team_name))];
 
-  const handleRoleChange = async (teamId,userId, newRole) => {
+  const handleRoleChange = async (teamId, userId, newRole) => {
     // Validate inputs
     console.log(userId);
     if (!userId) {
-      
+
       alert('Invalid team member ID');
       return;
     }
-        if (!teamId) {
-          console.log(teamId);
+    if (!teamId) {
+      console.log(teamId);
       alert('Invalid team ID');
       return;
     }
@@ -84,7 +87,7 @@ const EmployeeList = () => {
     }
 
     // Call the API to update the role
-    const result = await updateTeamMemberRole(teamId,userId, newRole);
+    const result = await updateTeamMemberRole(teamId, userId, newRole);
 
     if (result.success) {
       setEditingRole(null);
@@ -109,11 +112,11 @@ const EmployeeList = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <AdminSidebar 
-        collapsed={navCollapsed} 
-        onToggle={() => setNavCollapsed(!navCollapsed)} 
+      <AdminSidebar
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed(!navCollapsed)}
       />
-      
+
       <div className="flex-1 overflow-auto">
         {/* Page Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -122,7 +125,7 @@ const EmployeeList = () => {
             <p className="text-gray-600 mt-1">Manage employee roles and team assignments</p>
           </div>
         </div>
-        
+
         <div className="p-6">
           <div className="mx-auto max-w-7xl space-y-6">
             {/* Page Header with Stats */}
@@ -271,8 +274,8 @@ const EmployeeList = () => {
                   </div>
                   <h3 className="text-xl font-semibold text-[#333333] mb-2">No employees found</h3>
                   <p className="text-gray-600">
-                    {searchQuery || filterRole || filterTeam 
-                      ? 'Try adjusting your search filters' 
+                    {searchQuery || filterRole || filterTeam
+                      ? 'Try adjusting your search filters'
                       : 'No employees in the system yet'}
                   </p>
                 </div>
@@ -292,7 +295,7 @@ const EmployeeList = () => {
                     return (
                       <div key={employee.id} className="border-b border-gray-200 last:border-b-0">
                         {/* Employee Row */}
-                        <div 
+                        <div
                           className="grid grid-cols-8 gap-4 px-6 py-4 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
                           onClick={() => toggleExpanded(employee.id)}
                         >

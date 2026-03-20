@@ -1,5 +1,5 @@
 // src/pages/admin/training/AdminTrainingList.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import { Plus, BookOpen, Calendar, FileText, Search, MoreVertical, Edit, Trash2, Power, PowerOff, ClipboardList } from "lucide-react";
@@ -27,9 +27,13 @@ const AdminTrainingList = () => {
   const [filter, setFilter] = useState('all'); // 'all', 'active', 'inactive'
   const [searchTerm, setSearchTerm] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    fetchCourses();
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchCourses();
+    }
     return () => clearMessages();
   }, []);
 

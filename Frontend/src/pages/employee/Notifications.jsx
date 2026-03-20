@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationItem from '../../components/ui/NotificationItem';
@@ -23,9 +23,13 @@ const Notifications = () => {
   const [markingAll, setMarkingAll] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    fetchNotifications(1, 50);
+    if(!hasFetched.current){
+      hasFetched.current=true;
+      fetchNotifications(1, 50);
+    }
   }, []);
 
   // Check for message or announcement ID in URL params

@@ -1,5 +1,5 @@
 // pages/AdminDashboard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FileText, Upload, Play, CheckCircle, AlertCircle, Clock, RefreshCw, Edit, Plus, X, ClipboardList, Search, Filter } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import Card from '../../components/ui/Card';
@@ -41,10 +41,14 @@ const AdminDashboard = () => {
   const [auditStats, setAuditStats] = useState({ queued: 0, processing: 0, completed: 0, failed: 0 });
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   const [auditStatusFilter, setAuditStatusFilter] = useState('all');
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      loadDocuments();
+    }
+  }, []);
 
 
   // Poll for job status updates

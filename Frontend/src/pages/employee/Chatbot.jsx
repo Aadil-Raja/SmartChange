@@ -1,5 +1,5 @@
 // src/pages/employee/Chatbot.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
 import ChatSidebar from "../../components/ui/ChatSidebar";
 import ChatWindow from "../../components/ui/ChatWindow";
@@ -22,21 +22,23 @@ const Chatbot = () => {
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
-
+  const hasFetchedChats = useRef(false);
   useEffect(() => {
     // Load chat heads and documents on mount
-    fetchChatHeads();
-    fetchDocuments();
-
+    if (!hasFetchedChats.current) {
+      hasFetchedChats.current=true;
+      fetchChatHeads();
+      fetchDocuments();
+    }
     return () => clearMessages();
   }, []);
 
   return (
     <div className="flex h-screen bg-[#FFFDF7] overflow-hidden">
       {/* Employee Sidebar */}
-      <EmployeeSidebar 
-        collapsed={navCollapsed} 
-        onToggle={() => setNavCollapsed(!navCollapsed)} 
+      <EmployeeSidebar
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed(!navCollapsed)}
       />
 
       {/* Main Chat Container */}

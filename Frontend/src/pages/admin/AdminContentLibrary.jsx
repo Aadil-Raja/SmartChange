@@ -1,5 +1,5 @@
 // src/pages/admin/AdminContentLibrary.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import {
@@ -46,6 +46,10 @@ const AdminContentLibrary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState(false);
+  
+  const hasFetchedLinks = useRef(false);
+  const hasFetchedVideos = useRef(false);
+  const hasFetchedDocuments = useRef(false);
 
   // Debug state changes
   useEffect(() => {
@@ -90,12 +94,25 @@ const AdminContentLibrary = () => {
       activeTab
     });
     console.log('AdminContentLibrary: Loading initial data...');
-    fetchExternalLinks().then(result => console.log('External links result:', result));
-    fetchVideos().then(result => {
-      console.log('Videos result:', result);
-      console.log('Videos data:', result.data);
-    });
-    loadDocuments();
+    
+    if (!hasFetchedLinks.current) {
+      fetchExternalLinks().then(result => console.log('External links result:', result));
+      hasFetchedLinks.current = true;
+    }
+    
+    if (!hasFetchedVideos.current) {
+      fetchVideos().then(result => {
+        console.log('Videos result:', result);
+        console.log('Videos data:', result.data);
+      });
+      hasFetchedVideos.current = true;
+    }
+    
+    if (!hasFetchedDocuments.current) {
+      loadDocuments();
+      hasFetchedDocuments.current = true;
+    }
+    
     return () => clearMessages();
   }, []);
 

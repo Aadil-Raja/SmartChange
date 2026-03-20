@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import TeamCard from '../../components/ui/TeamCard';
 import JoinTeamModal from '../../components/ui/JoinTeamModal';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
@@ -11,10 +11,14 @@ const MyTeams = () => {
     const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [navCollapsed, setNavCollapsed] = useState(true);
+    const hasFetched = useRef(false);
 
-    // Load teams when component mounts
+    // Load teams when component mounts (only once)
     useEffect(() => {
-        loadTeams();
+        if (!hasFetched.current) {
+            hasFetched.current = true;
+            loadTeams();
+        }
     }, []);
 
     // YOUR ORIGINAL HANDLERS - DON'T TOUCH
