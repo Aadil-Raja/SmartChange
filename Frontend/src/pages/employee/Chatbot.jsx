@@ -11,7 +11,7 @@ import EmployeeSidebar from "../../components/ui/EmployeeSidebar";
 
 const Chatbot = () => {
   const {
-    selectedDocumentId,
+    selectedDocumentIds,
     error,
     success,
     clearMessages,
@@ -54,7 +54,9 @@ const Chatbot = () => {
                   <Sparkles size={16} className="text-[#F58220]" />
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {selectedDocumentId ? "Ready to help with your document" : "Select a document to begin"}
+                  {selectedDocumentIds.length > 0 
+                    ? `${selectedDocumentIds.length} document${selectedDocumentIds.length > 1 ? 's' : ''} selected` 
+                    : "Select documents to begin"}
                 </p>
               </div>
             </div>
@@ -62,19 +64,24 @@ const Chatbot = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setChatDrawerOpen(true)}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
                 title="Chat History"
+                aria-label="Open chat history"
               >
-                <History size={18} />
+                <History size={20} />
               </button>
               <PrimaryButton
                 onClick={() => setShowDocumentSelector(true)}
-                variant={selectedDocumentId ? "secondary" : "primary"}
+                variant={selectedDocumentIds.length > 0 ? "secondary" : "primary"}
                 size="sm"
                 className="shadow-sm"
               >
                 <FileText size={16} />
-                <span>{selectedDocumentId ? "Change Document" : "Select Document"}</span>
+                <span>
+                  {selectedDocumentIds.length > 0 
+                    ? `${selectedDocumentIds.length} Selected` 
+                    : "Select Documents"}
+                </span>
               </PrimaryButton>
             </div>
           </div>
@@ -101,6 +108,7 @@ const Chatbot = () => {
           <div className="w-full max-w-4xl mx-auto h-full bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden flex flex-col">
             <ChatWindow
               onOpenDocumentSelector={() => setShowDocumentSelector(true)}
+              onCloseSidebar={() => setChatDrawerOpen(false)}
               minimal={true}
             />
           </div>

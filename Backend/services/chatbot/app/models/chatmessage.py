@@ -11,6 +11,7 @@ from sqlalchemy import (
     func,
     Index,
     ForeignKey,
+    ARRAY,
 )
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -37,7 +38,7 @@ class ChatMessage(Base):
     )
     
     message = Column(Text, nullable=False)
-    active_doc_id = Column(BigInteger, nullable=True, index=True)
+    active_doc_ids = Column(ARRAY(BigInteger), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationship

@@ -19,7 +19,7 @@ def add_message(
     chathead_id: int, 
     role: MessageRole,
     message: str, 
-    active_doc_id: Optional[int]
+    active_doc_ids: Optional[List[int]]
 ) -> ChatMessage:
     """
     Add a message to a chathead.
@@ -29,7 +29,7 @@ def add_message(
         chathead_id: ID of the chathead
         role: MessageRole enum (USER or ASSISTANT)
         message: Content of the message
-        active_doc_id: Optional document ID
+        active_doc_ids: Optional list of document IDs
     
     Returns:
         Created ChatMessage object
@@ -38,7 +38,7 @@ def add_message(
         chathead_id=chathead_id, 
         role=role,
         message=message, 
-        active_doc_id=active_doc_id
+        active_doc_ids=active_doc_ids
     )
     db.add(msg)
     db.flush()

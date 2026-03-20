@@ -15,7 +15,7 @@ export const ChatbotProvider = ({ children }) => {
   const [chatHeads, setChatHeads] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState({});
-  const [selectedDocumentId, setSelectedDocumentId] = useState(null);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState([]);
   const [availableDocuments, setAvailableDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -138,8 +138,8 @@ export const ChatbotProvider = ({ children }) => {
 
   // Send message
   const sendMessage = async (messageText, chatHeadId = null, title = null) => {
-    if (!selectedDocumentId) {
-      setError("Please select a document first");
+    if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
+      setError("Please select at least one document first");
       return { success: false, message: "No document selected" };
     }
     console.log("Sending message:", { messageText, chatHeadId, title });
@@ -153,7 +153,7 @@ export const ChatbotProvider = ({ children }) => {
       role: "user",
       message: messageText,
       created_at: new Date().toISOString(),
-      active_doc_id: selectedDocumentId,
+      active_doc_ids: selectedDocumentIds,
     };
 
     console.log("Temp user message:", tempUserMessage);
@@ -172,13 +172,13 @@ export const ChatbotProvider = ({ children }) => {
       console.log("Calling sendChatMessage API");
       console.log("Parameters:", {
         chathead_id: chatHeadId,
-        active_doc_id: selectedDocumentId,
+        active_doc_ids: selectedDocumentIds,
         message: messageText,
         title: title,
       });
       const res = await sendChatMessage({
         message: messageText,
-        active_doc_id: selectedDocumentId,
+        active_doc_ids: selectedDocumentIds,
         chathead_id: chatHeadId,
         title: title,
       });
@@ -199,7 +199,7 @@ export const ChatbotProvider = ({ children }) => {
           role: "assistant",
           message: assistantResponse,
           created_at: new Date().toISOString(),
-          active_doc_id: selectedDocumentId,
+          active_doc_ids: selectedDocumentIds,
         };
 
         // Handle message updates properly
@@ -273,9 +273,22 @@ export const ChatbotProvider = ({ children }) => {
     }
   };
 
-  // Select document
+  // Select document (now supports multiple)
   const selectDocument = (documentId) => {
-    setSelectedDocumentId(documentId);
+    setSelectedDocumentIds((prev) => {
+      if (prev.includes(documentId)) {
+        // Remove if already selected
+        return prev.filter((id) => id !== documentId);
+      } else {
+        // Add to selection
+        return [...prev, documentId];
+      }
+    });
+  };
+
+  // Clear document selection
+  const clearDocumentSelection = () => {
+    setSelectedDocumentIds([]);
   };
 
   // ==================== CHAT ACTIONS ====================
@@ -304,7 +317,7 @@ export const ChatbotProvider = ({ children }) => {
         chatHeads,
         activeChatId,
         messages,
-        selectedDocumentId,
+        selectedDocumentIds,
         availableDocuments,
         loading,
         error,
@@ -319,6 +332,7 @@ export const ChatbotProvider = ({ children }) => {
         // Document Functions
         fetchDocuments,
         selectDocument,
+        clearDocumentSelection,
         // Chat Actions
         startNewChat,
         switchToChat,

@@ -1,6 +1,7 @@
 # app/services/chat_service.py
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import List
 from langchain_core.messages import HumanMessage, AIMessage
 from app.repositories import chat_repo
 from app.services.agent_service import DocumentAgent
@@ -58,16 +59,16 @@ def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
 
 def respond_turn(
     db: Session,
-    chunk_db: Session,
+    management_db: Session,
     *,
     user_id: int,
     chathead_id: int | None,
-    active_doc_id: int,
+    active_doc_ids: List[int],
     message: str,
     title: str | None = None
 ) -> dict:
     try:
-        print(f"[respond_turn] start user_id={user_id} chathead_id={chathead_id} doc={active_doc_id}", file=sys.stderr)
+        print(f"[respond_turn] start user_id={user_id} chathead_id={chathead_id} docs={active_doc_ids}", file=sys.stderr)
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
 
         # Load chat history BEFORE saving the new user message
@@ -82,13 +83,13 @@ def respond_turn(
             chathead_id=cid, 
             role=MessageRole.USER,  # ← Use enum
             message=message, 
-            active_doc_id=active_doc_id
+            active_doc_ids=active_doc_ids
         )
 
         print("[respond_turn] running agent", file=sys.stderr)
-        agent = DocumentAgent(db, chunk_db)
+        agent = DocumentAgent(db, management_db)
         out = agent.get_response(
-            active_doc_id=active_doc_id, 
+            active_doc_ids=active_doc_ids, 
             user_message=message,
             chat_history=chat_history  # ← Pass history to agent
         )
@@ -101,7 +102,7 @@ def respond_turn(
             chathead_id=cid, 
             role=MessageRole.ASSISTANT,  # ← Use enum
             message=out["answer"], 
-            active_doc_id=active_doc_id
+            active_doc_ids=active_doc_ids
         )
 
         chat = chat_repo.get_chathead(db, cid)

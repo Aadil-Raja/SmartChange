@@ -8,9 +8,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Databases
-    chatbot_database_url: str
-    chunk_database_url: str
-    management_database_url: str  # For accessing users table
+    chatbot_database_url: str  # For chat messages and chat heads
+    management_database_url: str  # For documents, chunks, sections, users, etc.
 
     # Google API (for embeddings only)
     google_api_key: str

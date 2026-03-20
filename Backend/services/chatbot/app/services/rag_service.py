@@ -252,3 +252,75 @@ IMPORTANT: Return ONLY valid JSON, no preamble or markdown.
             "answer": f"I encountered an error while generating the answer: {str(e)}",
             "follow_up_questions": []
         }
+
+
+def retrieve_chunks_with_scores(
+    chunk_db: Session,
+    *,
+    document_id: int,
+    question: str,
+    top_k: int = 5
+) -> List[Dict[str, Any]]:
+    """
+    Retrieve top-k chunks with their similarity scores.
+    
+    Returns:
+        List of dicts with keys: 'text', 'score', 'chunk_index', 'section_title'
+    """
+    import numpy as np
+    
+    print(f"[retrieve_chunks_with_scores] doc_id={document_id}, top_k={top_k}", file=sys.stderr)
+    
+    try:
+        # Generate query embedding
+        q_emb = embed_single(
+            text=question,
+            api_key=settings.google_api_key,
+            embedding_model=settings.embedding_model,
+            task_type="retrieval_query"
+        )
+        
+        # Search for similar chunks
+        from shared.models.Document import DocumentChunk
+        
+        chunks = (
+            chunk_db.query(DocumentChunk)
+            .filter(DocumentChunk.document_id == document_id)
+            .order_by(DocumentChunk.embedding.cosine_distance(q_emb))
+            .limit(top_k)
+            .all()
+        )
+        
+        if not chunks:
+            return []
+        
+        # Calculate cosine similarity scores
+        results = []
+        q_emb_np = np.array(q_emb)
+        
+        for chunk in chunks:
+            try:
+                # Calculate cosine similarity
+                c_emb_np = np.array(chunk.embedding)
+                cosine_sim = np.dot(q_emb_np, c_emb_np) / (
+                    np.linalg.norm(q_emb_np) * np.linalg.norm(c_emb_np)
+                )
+                
+                results.append({
+                    'text': chunk.text,
+                    'score': float(cosine_sim),
+                    'chunk_index': chunk.chunk_index,
+                    'section_title': getattr(chunk, 'section_title', None)
+                })
+            except Exception as e:
+                print(f"[retrieve_chunks_with_scores] Error calculating score for chunk {chunk.chunk_index}: {e}", file=sys.stderr)
+                continue
+        
+        print(f"[retrieve_chunks_with_scores] Returning {len(results)} chunks", file=sys.stderr)
+        return results
+        
+    except Exception as e:
+        print(f"[retrieve_chunks_with_scores] Error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return []
