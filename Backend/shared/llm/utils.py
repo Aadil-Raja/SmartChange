@@ -144,7 +144,7 @@ def embed_single(
     api_key: str,
     embedding_model: str = "models/gemini-embedding-001",
     task_type: str = "retrieval_query",
-    output_dimensionality: int = 768,
+    output_dimensionality: int = 3072,
     normalize: bool = True
 ) -> List[float]:
     """
@@ -158,8 +158,8 @@ def embed_single(
         api_key: Google API key
         embedding_model: Gemini embedding model name (default: models/gemini-embedding-001)
         task_type: "retrieval_query" for queries, "retrieval_document" for documents
-        output_dimensionality: Embedding dimension (768 or 1536)
-        normalize: Whether to normalize to unit length (recommended for 768/1536)
+        output_dimensionality: Embedding dimension (3072 for high quality, 768 for faster)
+        normalize: Whether to normalize to unit length (recommended for 768/3072)
         
     Returns:
         List of floats representing the embedding vector
@@ -175,7 +175,7 @@ def embed_single(
         ...     embedding_model=settings.embedding_model
         ... )
         >>> len(embedding)
-        768
+        3072
     """
     try:
         logger.debug(f"Generating embedding for text (length: {len(text)} chars)")

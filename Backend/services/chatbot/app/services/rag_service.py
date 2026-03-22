@@ -7,6 +7,7 @@ from shared.llm import embed_single, create_llm_provider
 from app.core.config import get_settings
 
 settings = get_settings()
+settings = get_settings()
 
 def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5) -> Dict[str, Any]:
     print("\n" + "="*80, file=sys.stderr)
@@ -22,7 +23,8 @@ def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5
         text=question,
         api_key=settings.google_api_key,
         embedding_model=settings.embedding_model,
-        task_type="retrieval_query"
+        task_type="retrieval_query",
+        output_dimensionality=3072
     )
     print(f"[STEP 1] ✓ Generated embedding (dimension: {len(q_emb)})", file=sys.stderr)
     print(f"[STEP 1] First 5 values: {q_emb[:5]}", file=sys.stderr)
@@ -261,28 +263,20 @@ def retrieve_chunks_with_scores(
     question: str,
     top_k: int = 5
 ) -> List[Dict[str, Any]]:
-    """
-    Retrieve top-k chunks with their similarity scores.
-    
-    Returns:
-        List of dicts with keys: 'text', 'score', 'chunk_index', 'section_title'
-    """
     import numpy as np
-    
-    print(f"[retrieve_chunks_with_scores] doc_id={document_id}, top_k={top_k}", file=sys.stderr)
-    
     try:
-        # Generate query embedding
+        # embed_single is already imported from shared.llm at top of file
+        # use retrieval_query task type for questions
         q_emb = embed_single(
             text=question,
             api_key=settings.google_api_key,
             embedding_model=settings.embedding_model,
-            task_type="retrieval_query"
+            task_type="retrieval_query",
+            output_dimensionality=3072
         )
-        
-        # Search for similar chunks
+
         from shared.models.Document import DocumentChunk
-        
+
         chunks = (
             chunk_db.query(DocumentChunk)
             .filter(DocumentChunk.document_id == document_id)
@@ -290,22 +284,19 @@ def retrieve_chunks_with_scores(
             .limit(top_k)
             .all()
         )
-        
+
         if not chunks:
             return []
-        
-        # Calculate cosine similarity scores
-        results = []
+
         q_emb_np = np.array(q_emb)
-        
+        results = []
+
         for chunk in chunks:
             try:
-                # Calculate cosine similarity
                 c_emb_np = np.array(chunk.embedding)
                 cosine_sim = np.dot(q_emb_np, c_emb_np) / (
                     np.linalg.norm(q_emb_np) * np.linalg.norm(c_emb_np)
                 )
-                
                 results.append({
                     'text': chunk.text,
                     'score': float(cosine_sim),
@@ -313,12 +304,11 @@ def retrieve_chunks_with_scores(
                     'section_title': getattr(chunk, 'section_title', None)
                 })
             except Exception as e:
-                print(f"[retrieve_chunks_with_scores] Error calculating score for chunk {chunk.chunk_index}: {e}", file=sys.stderr)
+                print(f"[retrieve_chunks_with_scores] Score error for chunk {chunk.chunk_index}: {e}", file=sys.stderr)
                 continue
-        
-        print(f"[retrieve_chunks_with_scores] Returning {len(results)} chunks", file=sys.stderr)
+
         return results
-        
+
     except Exception as e:
         print(f"[retrieve_chunks_with_scores] Error: {e}", file=sys.stderr)
         import traceback

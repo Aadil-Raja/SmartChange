@@ -334,4 +334,4 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
         db.close()
 
 
-process_document(35)
+process_document(26)

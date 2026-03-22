@@ -277,6 +277,60 @@ async def queue_document_route(
         return make_response(False, "Could not queue document", status_code=500, error=str(e))
 
 
+@router.post("/documents/{document_id}/reprocess")
+async def reprocess_document_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Force reprocess a document even if it's already PROCESSED.
+    Useful for regenerating embeddings after dimension changes or algorithm updates.
+    
+    This will:
+    1. Delete all existing chunks for the document
+    2. Reset document status to STORED
+    3. Queue the document for reprocessing
+    """
+    try:
+        return documents_service.reprocess_document(db, document_id=document_id)
+    except Exception as e:
+        print(f"Error reprocessing document {document_id}: {e}")
+        traceback.print_exc()
+        return make_response(False, "Could not reprocess document", status_code=500, error=str(e))
+
+
+@router.post("/documents/{document_id}/resume-processing")
+async def resume_processing_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(get_current_admin),
+):
+    """
+    Resume processing a document from where it failed.
+    
+    Analyzes the last processing audit record to determine where processing failed
+    and intelligently resumes from the appropriate stage:
+    
+    - LOADING/PREPROCESSING failed → Restart from beginning
+    - CHUNKING failed → Restart chunking
+    - EMBEDDING/STORING failed → Delete partial chunks, restart from chunking
+    
+    Returns:
+        - document_id: ID of the document
+        - job_id: New RQ job ID
+        - failed_stage: Where processing originally failed
+        - resume_from: Stage where processing will resume
+        - chunks_deleted: Number of partial chunks cleaned up (if any)
+    """
+    try:
+        return documents_service.resume_processing(db, document_id=document_id)
+    except Exception as e:
+        print(f"Error resuming processing for document {document_id}: {e}")
+        traceback.print_exc()
+        return make_response(False, "Could not resume processing", status_code=500, error=str(e))
+
+
 @router.get("/jobs/{job_id}")
 async def get_job(job_id: str = Path(...)):
     try:

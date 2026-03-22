@@ -80,8 +80,8 @@ class DocumentChunk(Base):
     char_end = Column(Integer, nullable=True)
     
     # Embedding vector (using PostgreSQL array for pgvector compatibility)
-    # For Google gemini-embedding-001: 768 dimensions
-    embedding = Column(Vector(768), nullable=True)  # native pgvector type # Will store the vector as array
+    # For Google gemini-embedding-001: 3072 dimensions (higher quality)
+    embedding = Column(Vector(3072), nullable=True)  # native pgvector type # Will store the vector as array
     
     # Optional structural metadata
     section_title = Column(String, nullable=True)   # e.g., "Payment Terms", "Introduction"

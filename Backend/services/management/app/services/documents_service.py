@@ -220,6 +220,146 @@ def queue_document(db, *, document_id: int):
         status_code=202,
     )
 
+
+def reprocess_document(db, *, document_id: int):
+    """
+    Force reprocess a document even if already PROCESSED.
+    Deletes all chunks and requeues for complete reprocessing.
+    """
+    from shared.repos import chunks_repo
+    
+    doc = documents_repo.get_document(db, document_id)
+    if not doc:
+        return make_response(False, "Document not found", status_code=404)
+    
+    # Delete all existing chunks
+    deleted_count = chunks_repo.delete_by_document(db, document_id)
+    
+    # Reset document status to STORED
+    documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
+    
+    # Queue for reprocessing
+    q = get_queue()
+    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    
+    # Update status to QUEUED
+    documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
+    
+    # Create new audit record
+    audit_repo.create_audit_record(
+        db,
+        document_id=doc.id,
+        job_id=job_id,
+        status=ProcessingStatus.QUEUED,
+        current_stage=ProcessingStage.QUEUED
+    )
+    
+    return make_response(
+        True,
+        "Document queued for reprocessing",
+        data={
+            "document_id": doc.id,
+            "job_id": job_id,
+            "status": DocStatus.QUEUED.value,
+            "chunks_deleted": deleted_count
+        },
+        status_code=202,
+    )
+
+
+def resume_processing(db, *, document_id: int):
+    """
+    Resume processing from where it failed based on the last audit stage.
+    
+    Determines the last successful stage and resumes from the next stage:
+    - LOADING failed → Start from LOADING
+    - PREPROCESSING failed → Start from PREPROCESSING
+    - CHUNKING failed → Start from CHUNKING
+    - EMBEDDING failed → Delete chunks, start from CHUNKING
+    - STORING failed → Delete chunks, start from CHUNKING
+    """
+    from shared.repos import chunks_repo
+    
+    doc = documents_repo.get_document(db, document_id)
+    if not doc:
+        return make_response(False, "Document not found", status_code=404)
+    
+    # Get the latest audit record for this document
+    latest_audit = audit_repo.get_latest_audit(db, document_id=document_id)
+    
+    if not latest_audit:
+        return make_response(
+            False,
+            "No processing history found. Use /queue endpoint instead.",
+            status_code=400
+        )
+    
+    if latest_audit.status == ProcessingStatus.COMPLETED:
+        return make_response(
+            False,
+            "Document already completed. Use /reprocess to start over.",
+            status_code=400
+        )
+    
+    # Determine resume strategy based on failed stage
+    failed_stage = latest_audit.current_stage
+    resume_from = None
+    chunks_deleted = 0
+    
+    if failed_stage in [ProcessingStage.QUEUED, ProcessingStage.LOADING, ProcessingStage.PREPROCESSING]:
+        # Early stages - just restart from beginning
+        resume_from = ProcessingStage.LOADING
+        documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
+        
+    elif failed_stage == ProcessingStage.CHUNKING:
+        # Chunking failed - restart chunking
+        resume_from = ProcessingStage.CHUNKING
+        documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
+        
+    elif failed_stage in [ProcessingStage.EMBEDDING, ProcessingStage.STORING]:
+        # Embedding or storing failed - delete partial chunks and restart from chunking
+        chunks_deleted = chunks_repo.delete_by_document(db, document_id)
+        resume_from = ProcessingStage.CHUNKING
+        documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
+    
+    else:
+        return make_response(
+            False,
+            f"Cannot resume from stage: {failed_stage.value}",
+            status_code=400
+        )
+    
+    # Queue for processing
+    q = get_queue()
+    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    
+    # Update status to QUEUED
+    documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
+    
+    # Create new audit record
+    audit_repo.create_audit_record(
+        db,
+        document_id=doc.id,
+        job_id=job_id,
+        status=ProcessingStatus.QUEUED,
+        current_stage=ProcessingStage.QUEUED
+    )
+    
+    return make_response(
+        True,
+        f"Document queued to resume from {resume_from.value}",
+        data={
+            "document_id": doc.id,
+            "job_id": job_id,
+            "status": DocStatus.QUEUED.value,
+            "failed_stage": failed_stage.value,
+            "resume_from": resume_from.value,
+            "chunks_deleted": chunks_deleted
+        },
+        status_code=202,
+    )
+
+
 def get_job_info(job_id: str):
     conn = get_redis()
     try:

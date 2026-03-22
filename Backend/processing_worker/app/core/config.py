@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Google AI (for embeddings only)
     google_api_key: str
     embedding_model: str = "models/gemini-embedding-001"
-    embedding_dimension: int = 768
+    embedding_dimension: int = 3072
     
     # LLM Provider Configuration (for quiz & document text generation)
     llm_provider: str = "gemini"
