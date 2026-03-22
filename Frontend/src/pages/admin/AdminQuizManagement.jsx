@@ -2,28 +2,61 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Plus,
   FileText,
   Trash2,
   Search,
-  Eye,
   CheckCircle,
   Clock,
   Loader,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import Alert from "../../components/ui/Alert";
-import Modal from "../../components/ui/Modal";
-import AdminSidebar from "../../components/ui/AdminSidebar";
-import Input2 from "../../components/ui/Input2";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
+import AdminSidebar from "../../components/ui/AdminSidebar";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import * as quizApi from "../../services/quizApi";
+
+const C = {
+  bg: "#faf6ef",
+  ink: "#1a1209",
+  orange: "#F58220",
+  teal: "#0d9488",
+  muted: "#9c8e80",
+  border: "#e8e0d5",
+  card: "#ffffff",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "10px 14px",
+  border: `1.5px solid ${C.border}`,
+  borderRadius: 10,
+  fontSize: 14,
+  outline: "none",
+  background: "#fff",
+  color: C.ink,
+  transition: "border-color 0.15s, box-shadow 0.15s",
+};
+
+const focusStyle = {
+  borderColor: C.orange,
+  boxShadow: "0 0 0 3px rgba(245,130,32,0.12)",
+};
+
+function FocusInput({ style, ...props }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      {...props}
+      style={{ ...inputStyle, ...(focused ? focusStyle : {}), ...style }}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+    />
+  );
+}
 
 const AdminQuizManagement = () => {
   const navigate = useNavigate();
@@ -31,63 +64,42 @@ const AdminQuizManagement = () => {
 
   const [documents, setDocuments] = useState([]);
   const [navCollapsed, setNavCollapsed] = useState(true);
-  
-  // Document Quiz State
+
   const [quizzes, setQuizzes] = useState({});
   const [expandedDocs, setExpandedDocs] = useState(new Set());
   const [loadingQuizzes, setLoadingQuizzes] = useState({});
-  const [selectedDocument, setSelectedDocument] = useState(null);
 
-  // Course Quiz State
   const [courseQuizzes, setCourseQuizzes] = useState({});
   const [expandedCourses, setExpandedCourses] = useState(new Set());
   const [loadingCourseQuizzes, setLoadingCourseQuizzes] = useState({});
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
 
-  const [quizStats, setQuizStats] = useState(null);
+  const [docQuizCounts, setDocQuizCounts] = useState({});
+  const [courseQuizCounts, setCourseQuizCounts] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [activeTab, setActiveTab] = useState("document");
 
-  const [activeTab, setActiveTab] = useState('document');
-
-  // Generate quiz form
-  const [generateForm, setGenerateForm] = useState({
-    title: '',
-    description: '',
-    num_questions: 10
-  });
+  const [generateForm, setGenerateForm] = useState({ title: "", description: "", num_questions: 10 });
   const [submitting, setSubmitting] = useState(false);
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    const loadInitialData = async () => {
-      // Load all required data in parallel for better performance
-      await Promise.all([
-        loadDocuments(),
-        loadQuizStats(),
-        fetchCourses()
-      ]);
-    };
-
     if (!hasFetched.current) {
       hasFetched.current = true;
-      loadInitialData();
+      Promise.all([loadDocuments(), fetchCourses().then((result) => {
+        // Load counts for all courses in background
+        const list = Array.isArray(result?.data) ? result.data : [];
+        list.forEach((c) => loadQuizzesForCourse(c.id));
+      })]);
     }
     return () => clearMessages();
   }, []);
-
-  const loadQuizStats = async () => {
-    try {
-      const stats = await quizApi.getQuizStats();
-      setQuizStats(stats);
-    } catch (err) {
-      console.error('Failed to load quiz stats:', err);
-    }
-  };
 
   const loadDocuments = async () => {
     setLoading(true);
@@ -95,12 +107,13 @@ const AdminQuizManagement = () => {
       const result = await fetchProcessedDocuments();
       if (result.success) {
         const docs = result.data?.documents || [];
-        // Filter only PROCESSED documents
-        const processedDocs = docs.filter(doc => doc.status === 'PROCESSED');
-        setDocuments(processedDocs);
+        const processed = docs.filter((d) => d.status === "PROCESSED");
+        setDocuments(processed);
+        // Load counts for all docs in background
+        processed.forEach((doc) => loadQuizzesForDocument(doc.id));
       }
-    } catch (err) {
-      setError('Failed to load documents');
+    } catch {
+      setError("Failed to load documents");
     } finally {
       setLoading(false);
     }
@@ -108,81 +121,57 @@ const AdminQuizManagement = () => {
 
   const loadQuizzesForDocument = async (documentId, forceReload = false) => {
     if (quizzes[documentId] && !forceReload) return;
-
-    setLoadingQuizzes(prev => ({ ...prev, [documentId]: true }));
+    setLoadingQuizzes((p) => ({ ...p, [documentId]: true }));
     try {
       const response = await quizApi.getQuizzesByDocument(documentId);
-      setQuizzes(prev => ({
-        ...prev,
-        [documentId]: response.quizzes || []
-      }));
-    } catch (err) {
-      console.error(`Failed to load quizzes for document ${documentId}:`, err);
-      setQuizzes(prev => ({ ...prev, [documentId]: [] }));
+      const list = response.quizzes || [];
+      setQuizzes((p) => ({ ...p, [documentId]: list }));
+      setDocQuizCounts((p) => ({ ...p, [documentId]: response.total ?? list.length }));
+    } catch {
+      setQuizzes((p) => ({ ...p, [documentId]: [] }));
     } finally {
-      setLoadingQuizzes(prev => ({ ...prev, [documentId]: false }));
+      setLoadingQuizzes((p) => ({ ...p, [documentId]: false }));
     }
   };
 
   const toggleDocumentExpand = (documentId) => {
-    const newExpanded = new Set(expandedDocs);
-    if (newExpanded.has(documentId)) {
-      newExpanded.delete(documentId);
-    } else {
-      newExpanded.add(documentId);
-      loadQuizzesForDocument(documentId);
-    }
-    setExpandedDocs(newExpanded);
+    const next = new Set(expandedDocs);
+    if (next.has(documentId)) { next.delete(documentId); } else { next.add(documentId); loadQuizzesForDocument(documentId); }
+    setExpandedDocs(next);
   };
 
   const loadQuizzesForCourse = async (courseId, forceReload = false) => {
     if (courseQuizzes[courseId] && !forceReload) return;
-
-    setLoadingCourseQuizzes(prev => ({ ...prev, [courseId]: true }));
+    setLoadingCourseQuizzes((p) => ({ ...p, [courseId]: true }));
     try {
       const response = await quizApi.listCourseQuizzes(courseId);
-      setCourseQuizzes(prev => ({
-        ...prev,
-        [courseId]: response.quizzes || []
-      }));
-    } catch (err) {
-      console.error(`Failed to load quizzes for course ${courseId}:`, err);
-      setCourseQuizzes(prev => ({ ...prev, [courseId]: [] }));
+      const list = response.quizzes || [];
+      setCourseQuizzes((p) => ({ ...p, [courseId]: list }));
+      setCourseQuizCounts((p) => ({ ...p, [courseId]: response.total ?? list.length }));
+    } catch {
+      setCourseQuizzes((p) => ({ ...p, [courseId]: [] }));
     } finally {
-      setLoadingCourseQuizzes(prev => ({ ...prev, [courseId]: false }));
+      setLoadingCourseQuizzes((p) => ({ ...p, [courseId]: false }));
     }
   };
 
   const toggleCourseExpand = (courseId) => {
-    const newExpanded = new Set(expandedCourses);
-    if (newExpanded.has(courseId)) {
-      newExpanded.delete(courseId);
-    } else {
-      newExpanded.add(courseId);
-      loadQuizzesForCourse(courseId);
-    }
-    setExpandedCourses(newExpanded);
+    const next = new Set(expandedCourses);
+    if (next.has(courseId)) { next.delete(courseId); } else { next.add(courseId); loadQuizzesForCourse(courseId); }
+    setExpandedCourses(next);
   };
 
-  const handleGenerateQuiz = (document) => {
-    setSelectedDocument(document);
+  const handleGenerateQuiz = (doc) => {
+    setSelectedDocument(doc);
     setSelectedCourse(null);
-    setGenerateForm({
-      title: `${document.title} - Quiz`,
-      description: '',
-      num_questions: 10
-    });
+    setGenerateForm({ title: `${doc.title} - Quiz`, description: "", num_questions: 10 });
     setShowGenerateModal(true);
   };
 
   const handleCreateCourseQuiz = (course) => {
     setSelectedCourse(course);
     setSelectedDocument(null);
-    setGenerateForm({
-      title: `${course.title} - Quiz`,
-      description: '',
-      num_questions: 10
-    });
+    setGenerateForm({ title: `${course.title} - Quiz`, description: "", num_questions: 10 });
     setShowGenerateModal(true);
   };
 
@@ -190,31 +179,21 @@ const AdminQuizManagement = () => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-
     try {
-      if (activeTab === 'document' && selectedDocument) {
+      if (activeTab === "document" && selectedDocument) {
         const response = await quizApi.generateQuiz(selectedDocument.id, generateForm);
         setSuccess(`Quiz generation started! Quiz ID: ${response.quiz_id}`);
         setShowGenerateModal(false);
-        setTimeout(() => {
-          loadQuizzesForDocument(selectedDocument.id, true);
-          loadQuizStats();
-        }, 2000);
-      } else if (activeTab === 'course' && selectedCourse) {
-        const quizData = {
-          title: generateForm.title,
-          description: generateForm.description
-        };
-        const response = await quizApi.createCourseQuiz(selectedCourse.id, quizData);
-        setSuccess(`Course quiz created successfully!`);
+        setTimeout(() => { loadQuizzesForDocument(selectedDocument.id, true); }, 2000);
+      } else if (activeTab === "course" && selectedCourse) {
+        await quizApi.createCourseQuiz(selectedCourse.id, { title: generateForm.title, description: generateForm.description });
+        setSuccess("Course quiz created successfully!");
         setShowGenerateModal(false);
         loadQuizzesForCourse(selectedCourse.id, true);
-        loadQuizStats();
       }
     } catch (err) {
-      console.error('Generate quiz error:', err);
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to generate quiz';
-      setError(typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage));
+      const msg = err.response?.data?.detail || err.message || "Failed to generate quiz";
+      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setSubmitting(false);
     }
@@ -222,529 +201,329 @@ const AdminQuizManagement = () => {
 
   const handleDeleteQuiz = async (quizId, documentId = null, courseId = null) => {
     try {
-      if (documentId) {
-        await quizApi.deleteQuiz(quizId);
-        loadQuizzesForDocument(documentId, true);
-      } else if (courseId) {
-        await quizApi.deleteCourseQuiz(quizId);
-        loadQuizzesForCourse(courseId, true);
-      }
-      setSuccess('Quiz deleted successfully');
-      loadQuizStats();
+      if (documentId) { await quizApi.deleteQuiz(quizId); loadQuizzesForDocument(documentId, true); }
+      else if (courseId) { await quizApi.deleteCourseQuiz(quizId); loadQuizzesForCourse(courseId, true); }
+      setSuccess("Quiz deleted successfully");
       setDeleteConfirm(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to delete quiz');
-    }
-  };
-
-  const handlePublishQuiz = async (quizId, documentId = null, courseId = null) => {
-    try {
-      if (documentId) {
-        await quizApi.publishQuiz(quizId);
-        loadQuizzesForDocument(documentId, true);
-      } else if (courseId) {
-        await quizApi.publishCourseQuiz(quizId);
-        loadQuizzesForCourse(courseId, true);
-      }
-      setSuccess('Quiz published successfully');
-      loadQuizStats();
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to publish quiz');
+      setError(err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to delete quiz");
+      setDeleteConfirm(null);
     }
   };
 
   const getStatusBadge = (status) => {
-    const statusConfig = {
-      GENERATING: { color: 'bg-blue-100 text-blue-700', icon: Loader, text: 'Generating' },
-      DRAFT: { color: 'bg-yellow-100 text-yellow-700', icon: Clock, text: 'Draft' },
-      PUBLISHED: { color: 'bg-green-100 text-green-700', icon: CheckCircle, text: 'Published' },
-      ARCHIVED: { color: 'bg-gray-100 text-gray-700', icon: FileText, text: 'Archived' }
+    const map = {
+      GENERATING: { bg: "#eff6ff", color: "#1d4ed8", icon: Loader, text: "Generating" },
+      DRAFT: { bg: "#fffbeb", color: "#b45309", icon: Clock, text: "Draft" },
+      PUBLISHED: { bg: "#f0fdf4", color: "#15803d", icon: CheckCircle, text: "Published" },
+      ARCHIVED: { bg: "#f9fafb", color: "#6b7280", icon: FileText, text: "Archived" },
     };
-
-    const config = statusConfig[status] || statusConfig.DRAFT;
-    const Icon = config.icon;
-
+    const cfg = map[status] || map.DRAFT;
+    const Icon = cfg.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
-        <Icon size={12} />
-        {config.text}
+      <span style={{ background: cfg.bg, color: cfg.color, padding: "2px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+        <Icon size={11} /> {cfg.text}
       </span>
     );
   };
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredCourses = (courses || []).filter(course =>
-    course.title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDocuments = documents.filter((d) => d.title?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredCourses = (courses || []).filter((c) => c.title?.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (loading && documents.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <AdminSidebar
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed(!navCollapsed)}
-      />
-      
-      <div className="flex-1 overflow-auto">
+    <div style={{ display: "flex", height: "100vh", background: C.bg, overflow: "hidden" }}>
+      <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
+
+      <div style={{ flex: 1, overflowY: "auto" }}>
         {/* Page Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-[#333333]">Quiz Management</h1>
-            <p className="text-gray-600 mt-1">Generate and manage quizzes from processed documents</p>
+        <div style={{ background: C.ink, padding: "28px 36px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ fontFamily: "Georgia, serif", fontSize: 28, fontWeight: 700, color: "#fff", margin: 0 }}>Quiz Management</h1>
+            <p style={{ color: "#b8a898", fontSize: 13, marginTop: 4 }}>Generate and manage quizzes from documents and courses</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {[
+              { label: "Documents",     value: documents.length,                                          dot: "#faf6ef" },
+              { label: "Doc Quizzes",   value: Object.values(docQuizCounts).reduce((a, b) => a + b, 0),  dot: "#4ade80" },
+              { label: "Courses",       value: (courses || []).length,                                    dot: "#c084fc" },
+              { label: "Course Quizzes",value: Object.values(courseQuizCounts).reduce((a, b) => a + b, 0),dot: "#fb923c" },
+            ].map(s => (
+              <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 500, color: "#faf6ef" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+                {s.label}: {s.value}
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="mx-auto max-w-7xl">
+        <div style={{ padding: "28px 36px" }}>
 
-            {/* Tabs */}
-            <div className="border-b border-gray-200 mb-6">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => {
-                    setActiveTab('document');
-                    setSearchTerm('');
-                  }}
-                  className={`${activeTab === 'document'
-                    ? 'border-[#78BE20] text-[#78BE20]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
-                >
-                  Document Quizzes
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('course');
-                    setSearchTerm('');
-                  }}
-                  className={`${activeTab === 'course'
-                    ? 'border-[#78BE20] text-[#78BE20]'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                    whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200`}
-                >
-                  Course Quizzes
-                </button>
-              </nav>
+          {/* Alerts */}
+          {error && (
+            <div style={{ background: "#fff1f0", border: "1px solid #fca5a5", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ color: "#b91c1c", fontSize: 13 }}>{error}</span>
+              <button onClick={() => setError(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#b91c1c" }}><X size={16} /></button>
             </div>
+          )}
+          {success && (
+            <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ color: "#15803d", fontSize: 13 }}>{success}</span>
+              <button onClick={() => setSuccess(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d" }}><X size={16} /></button>
+            </div>
+          )}
 
-            {/* Tab Content */}
-            {activeTab === 'document' ? (
-              <div className="space-y-6">
-                {/* Alerts */}
-                {error && (
-                  <Alert variant="error" onClose={() => setError(null)}>
-                    {error}
-                  </Alert>
-                )}
-                {success && (
-                  <Alert variant="success" onClose={() => setSuccess(null)}>
-                    {success}
-                  </Alert>
-                )}
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="p-6">
-                    <div className="flex items-center gap-4">
-                      <FileText size={20} className="text-[#78BE20]" />
-                      <div>
-                        <p className="text-2xl font-bold text-[#333333]">{documents.length}</p>
-                        <p className="text-xs text-gray-600">Processed Documents</p>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-4">
-                      <CheckCircle size={20} className="text-[#F58220]" />
-                      <div>
-                        <p className="text-2xl font-bold text-[#333333]">
-                          {quizStats?.total_quizzes || 0}
-                        </p>
-                        <p className="text-xs text-gray-600">Total Quizzes</p>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-4">
-                      <Clock size={20} className="text-blue-500" />
-                      <div>
-                        <p className="text-2xl font-bold text-[#333333]">
-                          {quizStats?.published_count || 0}
-                        </p>
-                        <p className="text-xs text-gray-600">Published Quizzes</p>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search documents..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#78BE20] focus:border-transparent"
-                  />
-                </div>
-
-                {/* Documents List */}
-                <div className="space-y-6">
-                  {filteredDocuments.length === 0 ? (
-                    <Card className="p-12 text-center">
-                      <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No processed documents found</h3>
-                      <p className="text-gray-500 mb-4">Upload and process documents first to generate quizzes</p>
-                      <Button onClick={() => navigate('/admin/training/library')}>
-                        Go to Content Library
-                      </Button>
-                    </Card>
-                  ) : (
-                    filteredDocuments.map((doc) => (
-                      <Card key={doc.id} className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 flex-1">
-                            <button
-                              onClick={() => toggleDocumentExpand(doc.id)}
-                              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-                            >
-                              {expandedDocs.has(doc.id) ? (
-                                <ChevronDown size={18} className="text-gray-600" />
-                              ) : (
-                                <ChevronRight size={18} className="text-gray-600" />
-                              )}
-                            </button>
-                            <div className="flex-1">
-                              <h3 className="text-base font-semibold text-[#333333]">{doc.title}</h3>
-                              {(() => {
-                                const docStats = quizStats?.by_document?.find(d => d.document_id === doc.id);
-                                const count = docStats?.total || 0;
-                                return count > 0 && (
-                                  <p className="text-xs text-[#78BE20] mt-0.5">
-                                    {count} {count === 1 ? 'quiz' : 'quizzes'}
-                                  </p>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => handleGenerateQuiz(doc)}
-                            size="sm"
-                            fullWidth={false}
-                            className="bg-[#78BE20] hover:bg-[#6BA51D] flex-shrink-0"
-                          >
-                            <Plus size={14} />
-                            <span className="text-sm">Generate Quiz</span>
-                          </Button>
-                        </div>
-
-                        {/* Quizzes for this document - only show when expanded */}
-                        {expandedDocs.has(doc.id) && (
-                          <div className="mt-3 space-y-2 pl-8">
-                            {loadingQuizzes[doc.id] ? (
-                              <div className="flex items-center justify-center py-4">
-                                <LoadingSpinner size="sm" />
-                                <span className="ml-2 text-sm text-gray-500">Loading quizzes...</span>
-                              </div>
-                            ) : quizzes[doc.id]?.length > 0 ? (
-                              quizzes[doc.id].map((quiz) => (
-                                <div
-                                  key={quiz.id}
-                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h4 className="text-sm font-medium text-[#333333]">{quiz.title}</h4>
-                                      {getStatusBadge(quiz.status)}
-                                    </div>
-                                    <p className="text-xs text-gray-600">
-                                      {quiz.total_questions} questions • {new Date(quiz.created_at).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
-                                      className="border-[#78BE20] text-[#78BE20] hover:bg-[#78BE20] hover:text-white"
-                                    >
-                                      <Eye size={16} />
-                                      <span>View Details</span>
-                                    </Button>
-                                    {quiz.status === 'DRAFT' && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handlePublishQuiz(quiz.id, doc.id)}
-                                        className="text-green-600 hover:text-green-700"
-                                      >
-                                        <CheckCircle size={16} />
-                                        <span>Publish</span>
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setDeleteConfirm({ quizId: quiz.id, documentId: doc.id })}
-                                      className="text-red-600 hover:text-red-700"
-                                    >
-                                      <Trash2 size={16} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-gray-500 italic">No quizzes generated yet</p>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="Search courses..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#78BE20] focus:border-transparent"
-                  />
-                </div>
-
-                {/* Course List */}
-                <div className="space-y-6">
-                  {coursesLoading && courses?.length === 0 ? (
-                    <div className="flex items-center justify-center py-12">
-                      <LoadingSpinner size="lg" />
-                    </div>
-                  ) : filteredCourses.length === 0 ? (
-                    <Card className="p-12 text-center">
-                      <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-600 mb-2">No courses found</h3>
-                      <p className="text-gray-500 mb-4">Create courses first to generate quizzes</p>
-                      <Button onClick={() => navigate('/admin/training/create')}>
-                        Create Course
-                      </Button>
-                    </Card>
-                  ) : (
-                    filteredCourses.map((course) => (
-                      <Card key={course.id} className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 flex-1">
-                            {/* Expand Button */}
-                            <button
-                              onClick={() => toggleCourseExpand(course.id)}
-                              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-                            >
-                              {expandedCourses.has(course.id) ? (
-                                <ChevronDown size={18} className="text-gray-600" />
-                              ) : (
-                                <ChevronRight size={18} className="text-gray-600" />
-                              )}
-                            </button>
-
-                            {/* Thumbnail */}
-                            <div className="w-16 h-16 rounded-lg bg-gray-100 flex-shrink-0 overflow-hidden border border-gray-200">
-                              {course.thumbnail_url ? (
-                                <img
-                                  src={course.thumbnail_url}
-                                  alt={course.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <FileText size={24} className="text-gray-300" />
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="flex-1">
-                              <h3 className="text-base font-semibold text-[#333333]">{course.title}</h3>
-                              <p className="text-sm text-gray-500 line-clamp-1">{course.description}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                  course.is_active 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {course.is_active ? 'Active' : 'Inactive'}
-                                </span>
-                                {course.department && (
-                                  <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-200">
-                                    {course.department}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <Button
-                            onClick={() => handleCreateCourseQuiz(course)}
-                            size="sm"
-                            fullWidth={false}
-                            className="bg-[#78BE20] hover:bg-[#6BA51D] flex-shrink-0 ml-4"
-                          >
-                            <Plus size={14} />
-                            <span className="text-sm">Generate Quiz</span>
-                          </Button>
-                        </div>
-
-                        {/* Quizzes for this course - only show when expanded */}
-                        {expandedCourses.has(course.id) && (
-                          <div className="mt-3 space-y-2 pl-20">
-                            {loadingCourseQuizzes[course.id] ? (
-                              <div className="flex items-center justify-center py-4">
-                                <LoadingSpinner size="sm" />
-                                <span className="ml-2 text-sm text-gray-500">Loading quizzes...</span>
-                              </div>
-                            ) : courseQuizzes[course.id]?.length > 0 ? (
-                              courseQuizzes[course.id].map((quiz) => (
-                                <div
-                                  key={quiz.id}
-                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                                >
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <h4 className="text-sm font-medium text-[#333333]">{quiz.title}</h4>
-                                      {getStatusBadge(quiz.status || 'DRAFT')}
-                                    </div>
-                                    <p className="text-xs text-gray-600">
-                                      {quiz.description || 'No description'}
-                                    </p>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => navigate(`/admin/quiz/${quiz.id}?type=course`)}
-                                      className="border-[#78BE20] text-[#78BE20] hover:bg-[#78BE20] hover:text-white"
-                                    >
-                                      <Eye size={16} />
-                                      <span>View Details</span>
-                                    </Button>
-                                    {quiz.status === 'DRAFT' && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handlePublishQuiz(quiz.id, null, course.id)}
-                                        className="text-green-600 hover:text-green-700"
-                                      >
-                                        <CheckCircle size={16} />
-                                        <span>Publish</span>
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setDeleteConfirm({ quizId: quiz.id, courseId: course.id })}
-                                      className="text-red-600 hover:text-red-700"
-                                    >
-                                      <Trash2 size={16} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-gray-500 italic">No quizzes created yet</p>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Tab Toggle */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+            {["document", "course"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setSearchTerm(""); }}
+                style={{
+                  padding: "8px 22px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.15s",
+                  background: activeTab === tab ? C.orange : "transparent",
+                  color: activeTab === tab ? "#fff" : C.muted,
+                  border: activeTab === tab ? `1.5px solid ${C.orange}` : `1.5px solid ${C.border}`,
+                }}
+              >
+                {tab === "document" ? "Document Quizzes" : "Course Quizzes"}
+              </button>
+            ))}
           </div>
+
+          {/* Search */}
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <Search size={16} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
+            <FocusInput
+              type="text"
+              placeholder={activeTab === "document" ? "Search documents..." : "Search courses..."}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: 44, borderRadius: 999, fontSize: 14 }}
+            />
+          </div>
+
+          {/* Document Tab */}
+          {activeTab === "document" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {filteredDocuments.length === 0 ? (
+                <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
+                  <FileText size={40} color={C.border} style={{ margin: "0 auto 12px" }} />
+                  <p style={{ color: C.muted, fontSize: 14 }}>No processed documents found</p>
+                </div>
+              ) : filteredDocuments.map((doc) => (
+                <div key={doc.id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", gap: 12 }}>
+                    <button
+                      onClick={() => toggleDocumentExpand(doc.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: C.muted, display: "flex", alignItems: "center" }}
+                    >
+                      {expandedDocs.has(doc.id) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14, color: C.ink }}>
+                      {doc.title}
+                      {docQuizCounts[doc.id] > 0 && (
+                        <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 600, color: C.orange, background: "#fff7ed", padding: "2px 8px", borderRadius: 999 }}>
+                          {docQuizCounts[doc.id]} {docQuizCounts[doc.id] === 1 ? "quiz" : "quizzes"}
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      onClick={() => handleGenerateQuiz(doc)}
+                      style={{ background: C.orange, color: "#fff", border: "none", borderRadius: 999, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Plus size={14} /> Generate Quiz
+                    </button>
+                  </div>
+                  {expandedDocs.has(doc.id) && (
+                    <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px 12px 52px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      {loadingQuizzes[doc.id] ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                          <LoadingSpinner size="sm" /><span style={{ fontSize: 13, color: C.muted }}>Loading...</span>
+                        </div>
+                      ) : quizzes[doc.id]?.length > 0 ? quizzes[doc.id].map((quiz) => (
+                        <div key={quiz.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 16px", gap: 12 }}>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink }}>{quiz.title}</span>
+                          {getStatusBadge(quiz.status || "DRAFT")}
+                          <button
+                            onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d", fontSize: 13, fontWeight: 600 }}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm({ quizId: quiz.id, documentId: doc.id })}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", display: "flex", alignItems: "center" }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )) : (
+                        <p style={{ fontSize: 13, color: C.muted, fontStyle: "italic" }}>No quizzes generated yet</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Course Tab */}
+          {activeTab === "course" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {coursesLoading && !courses?.length ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><LoadingSpinner size="lg" /></div>
+              ) : filteredCourses.length === 0 ? (
+                <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
+                  <BookOpen size={40} color={C.border} style={{ margin: "0 auto 12px" }} />
+                  <p style={{ color: C.muted, fontSize: 14 }}>No courses found</p>
+                </div>
+              ) : filteredCourses.map((course) => (
+                <div key={course.id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", padding: "16px 20px", gap: 12 }}>
+                    <button
+                      onClick={() => toggleCourseExpand(course.id)}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: C.muted, display: "flex", alignItems: "center" }}
+                    >
+                      {expandedCourses.has(course.id) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </button>
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14, color: C.ink }}>
+                      {course.title}
+                      {courseQuizCounts[course.id] > 0 && (
+                        <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 600, color: C.orange, background: "#fff7ed", padding: "2px 8px", borderRadius: 999 }}>
+                          {courseQuizCounts[course.id]} {courseQuizCounts[course.id] === 1 ? "quiz" : "quizzes"}
+                        </span>
+                      )}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999,
+                      background: course.is_active ? "#f0fdf4" : "#f9fafb",
+                      color: course.is_active ? "#15803d" : "#6b7280",
+                      marginRight: 8
+                    }}>
+                      {course.is_active ? "Active" : "Inactive"}
+                    </span>
+                    <button
+                      onClick={() => handleCreateCourseQuiz(course)}
+                      style={{ background: C.orange, color: "#fff", border: "none", borderRadius: 999, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <Plus size={14} /> Create Quiz
+                    </button>
+                  </div>
+                  {expandedCourses.has(course.id) && (
+                    <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px 12px 52px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      {loadingCourseQuizzes[course.id] ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
+                          <LoadingSpinner size="sm" /><span style={{ fontSize: 13, color: C.muted }}>Loading...</span>
+                        </div>
+                      ) : courseQuizzes[course.id]?.length > 0 ? courseQuizzes[course.id].map((quiz) => (
+                        <div key={quiz.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 16px", gap: 12 }}>
+                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink }}>{quiz.title}</span>
+                          {getStatusBadge(quiz.status || "DRAFT")}
+                          <button
+                            onClick={() => navigate(`/admin/quiz/${quiz.id}?type=course`)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d", fontSize: 13, fontWeight: 600 }}
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm({ quizId: quiz.id, courseId: course.id })}
+                            disabled={quiz.status === "PUBLISHED"}
+                            style={{ background: "none", border: "none", cursor: quiz.status === "PUBLISHED" ? "not-allowed" : "pointer", color: quiz.status === "PUBLISHED" ? C.border : "#dc2626", display: "flex", alignItems: "center" }}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )) : (
+                        <p style={{ fontSize: 13, color: C.muted, fontStyle: "italic" }}>No quizzes created yet</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Generate Quiz Modal */}
-      <Modal
-        isOpen={showGenerateModal}
-        onClose={() => setShowGenerateModal(false)}
-        title={activeTab === 'document' ? "Generate Quiz" : "Create Course Quiz"}
-      >
-        <form onSubmit={submitGenerateQuiz} className="space-y-4">
-          <Input2
-            label="Quiz Title"
-            name="title"
-            value={generateForm.title}
-            onChange={(e) => setGenerateForm({ ...generateForm, title: e.target.value })}
-            required
-            disabled={submitting}
-          />
-          <Input2
-            label="Description (Optional)"
-            name="description"
-            value={generateForm.description}
-            onChange={(e) => setGenerateForm({ ...generateForm, description: e.target.value })}
-            disabled={submitting}
-          />
-          
-          {activeTab === 'document' && (
-            <Input2
-              label="Number of Questions"
-              type="number"
-              name="num_questions"
-              value={generateForm.num_questions}
-              onChange={(e) => setGenerateForm({ ...generateForm, num_questions: parseInt(e.target.value) })}
-              min="5"
-              max="20"
-              required
-              disabled={submitting}
-              helpText="Choose between 5 and 20 questions"
-            />
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowGenerateModal(false)}
-              disabled={submitting}
-              fullWidth
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={submitting}
-              fullWidth
-              className="bg-[#78BE20] hover:bg-[#6BA51D]"
-            >
-              {submitting ? 'Processing...' : (activeTab === 'document' ? 'Generate Quiz' : 'Create Quiz')}
-            </Button>
+      {/* Generate / Create Quiz Modal */}
+      {showGenerateModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(26,18,9,0.55)", backdropFilter: "blur(2px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 520, padding: "32px 36px", position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <h2 style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: C.ink, margin: 0 }}>
+                {activeTab === "document" ? "Generate Quiz" : "Create Course Quiz"}
+              </h2>
+              <button onClick={() => setShowGenerateModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: C.orange }}><X size={20} /></button>
+            </div>
+            <form onSubmit={submitGenerateQuiz} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>Quiz Title</label>
+                <FocusInput
+                  type="text"
+                  value={generateForm.title}
+                  onChange={(e) => setGenerateForm({ ...generateForm, title: e.target.value })}
+                  required
+                  disabled={submitting}
+                  placeholder="Enter quiz title"
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>Description (Optional)</label>
+                <FocusInput
+                  type="text"
+                  value={generateForm.description}
+                  onChange={(e) => setGenerateForm({ ...generateForm, description: e.target.value })}
+                  disabled={submitting}
+                  placeholder="Brief description"
+                />
+              </div>
+              {activeTab === "document" && (
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: C.ink, display: "block", marginBottom: 6 }}>Number of Questions</label>
+                  <FocusInput
+                    type="number"
+                    value={generateForm.num_questions}
+                    onChange={(e) => setGenerateForm({ ...generateForm, num_questions: parseInt(e.target.value) })}
+                    min="5" max="20" required disabled={submitting}
+                  />
+                  <p style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>Choose between 5 and 20 questions</p>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setShowGenerateModal(false)}
+                  disabled={submitting}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: `1.5px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: "none", background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}
+                >
+                  {submitting ? "Processing..." : activeTab === "document" ? "Generate Quiz" : "Create Quiz"}
+                </button>
+              </div>
+            </form>
           </div>
-        </form>
-      </Modal>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
         <ConfirmDialog
           onCancel={() => setDeleteConfirm(null)}
-          onConfirm={() => {
-            if (deleteConfirm?.quizId) {
-              handleDeleteQuiz(deleteConfirm.quizId, deleteConfirm.documentId, deleteConfirm.courseId);
-            }
-          }}
+          onConfirm={() => { if (deleteConfirm?.quizId) handleDeleteQuiz(deleteConfirm.quizId, deleteConfirm.documentId, deleteConfirm.courseId); }}
           title="Delete Quiz"
           message="Are you sure you want to delete this quiz? This action cannot be undone."
           confirmText="Delete"

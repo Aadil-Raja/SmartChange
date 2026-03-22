@@ -53,7 +53,7 @@ const Modal = ({
       onClick={handleOverlayClick}
     >
       <div 
-        className={`w-full ${sizes[size]} bg-white rounded-xl shadow-xl animate-in zoom-in duration-200 ${className}`}
+        className={`w-full ${sizes[size]} bg-white rounded-xl shadow-xl animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] ${className}`}
       >
         {/* Header */}
         {(title || showCloseButton) && (
@@ -76,7 +76,7 @@ const Modal = ({
         )}
         
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto max-h-[calc(100vh-10rem)]">
           {children}
         </div>
       </div>

@@ -376,7 +376,10 @@ def get_available_document_questions(db: Session, course_id: int) -> List[QuizQu
         db.query(QuizQuestion)
         .join(Quiz, QuizQuestion.quiz_id == Quiz.id)
         .filter(Quiz.document_id.in_(document_id_list))
-        .options(joinedload(QuizQuestion.options))
+        .options(
+            joinedload(QuizQuestion.options),
+            joinedload(QuizQuestion.quiz).joinedload(Quiz.document)
+        )
         .all()
     )
 

@@ -303,18 +303,35 @@ def update_team(db: Session, *, id: int, name: str):
 
 def delete_team(db: Session, *, id: int):
     """
-    Delete a team and all its members.
+    Delete a team only if it has no announcements or comments.
     """
+    from shared.models.announcement import Announcement, AnnouncementComment
+
     team = teams_repo.get_team(db, id)
     if not team:
         return make_response(False, "Team not found", status_code=404)
+
+    # Block deletion if the team has any announcements (which may also have comments/attachments)
+    announcement_count = db.query(Announcement.id).filter(Announcement.team_id == id).count()
+    if announcement_count > 0:
+        # Also count total comments across all announcements for a helpful message
+        comment_count = (
+            db.query(AnnouncementComment.id)
+            .join(Announcement, AnnouncementComment.announcement_id == Announcement.id)
+            .filter(Announcement.team_id == id)
+            .count()
+        )
+        detail = f"{announcement_count} announcement{'s' if announcement_count != 1 else ''}"
+        if comment_count > 0:
+            detail += f" and {comment_count} comment{'s' if comment_count != 1 else ''}"
+        return make_response(
+            False,
+            f"Cannot delete team — it has {detail}. Remove all announcements first.",
+            status_code=409,
+        )
 
     success = teams_repo.delete_team(db, id)
     if not success:
         return make_response(False, "Failed to delete team", status_code=500)
 
-    return make_response(
-        True,
-        "Team deleted successfully",
-        status_code=200
-    )
+    return make_response(True, "Team deleted successfully", status_code=200)

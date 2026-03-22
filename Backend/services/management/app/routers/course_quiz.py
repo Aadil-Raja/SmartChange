@@ -236,6 +236,12 @@ def update_quiz_configuration(
     Creates new configuration if none exists.
     """
     try:
+        from shared.repos import course_quiz_repo as cq_repo
+        from shared.models.course_quiz import QuizStatus
+        quiz = cq_repo.get_course_quiz_by_id(db, quiz_id)
+        if quiz and quiz.status == QuizStatus.PUBLISHED:
+            return make_response(False, "Cannot change configuration of a published quiz", status_code=409, error="Quiz is published and locked")
+
         config = quiz_configuration_repo.create_or_update_quiz_config(
             db,
             quiz_id=quiz_id,

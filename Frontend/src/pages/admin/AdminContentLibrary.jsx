@@ -1,864 +1,665 @@
 // src/pages/admin/AdminContentLibrary.jsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
+import AdminSidebar from "../../components/ui/AdminSidebar";
 import {
-  ArrowLeft,
-  Plus,
-  Video,
-  Link as LinkIcon,
-  FileText,
-  Upload,
-  Edit,
-  Trash2,
-  Search,
-  Play
+  Video, Link as LinkIcon, FileText, Upload, Edit2,
+  Trash2, Search, Play, Plus, X, ExternalLink,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import Alert from "../../components/ui/Alert";
-import Modal from "../../components/ui/Modal";
-import Input2 from "../../components/ui/Input2";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 
+const C = {
+  bg: "#faf6ef",
+  card: "#ffffff",
+  orange: "#F58220",
+  orangeLight: "rgba(245,130,32,0.10)",
+  orangeBorder: "rgba(245,130,32,0.25)",
+  ink: "#1a1209",
+  muted: "#9c8e80",
+  border: "#e8e0d5",
+  blue: "#00ADEF",
+  blueLight: "rgba(0,173,239,0.10)",
+  green: "#78BE20",
+  greenLight: "rgba(120,190,32,0.10)",
+};
+
+const formatDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+const formatSize = (bytes) => {
+  if (!bytes) return null;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${Math.round((bytes / Math.pow(1024, i)) * 10) / 10} ${sizes[i]}`;
+};
+
+// ── Tab Button ────────────────────────────────────────────────────────────────
+const TabBtn = ({ active, onClick, label, count }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all"
+    style={
+      active
+        ? { background: C.orange, color: "#fff" }
+        : { background: "transparent", color: C.muted }
+    }
+  >
+    {label}
+    <span
+      className="text-xs font-bold px-2 py-0.5 rounded-full"
+      style={
+        active
+          ? { background: "rgba(255,255,255,0.25)", color: "#fff" }
+          : { background: "#f0ebe3", color: C.muted }
+      }
+    >
+      {count}
+    </span>
+  </button>
+);
+
+// ── shared card shell ─────────────────────────────────────────────────────────
+const cardStyle = {
+  background: C.card,
+  border: `1px solid #e5ddd0`,
+  borderRadius: "16px",
+  boxShadow: "0 1px 4px rgba(26,18,9,0.06)",
+  transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+};
+const cardHover = {
+  transform: "translateY(-4px)",
+  boxShadow: "0 8px 24px rgba(26,18,9,0.12)",
+  borderColor: "#c8bfb0",
+};
+
+// ── Video Card ────────────────────────────────────────────────────────────────
+const VideoCard = ({ video, onDelete }) => {
+  const [hovered, setHovered] = useState(false);
+  const url = video.secure_url || video.cloudinary_url;
+
+  return (
+    <div
+      className="overflow-hidden flex flex-col"
+      style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Cover — fixed 180px */}
+      <div
+        className="relative flex-shrink-0 cursor-pointer group overflow-hidden"
+        style={{ height: 180, background: "#1a1209" }}
+        onClick={() => url && window.open(url, "_blank")}
+      >
+        {video.thumbnail_url ? (
+          <img
+            src={video.thumbnail_url}
+            alt={video.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(245,130,32,0.18)" }}>
+              <Play size={22} style={{ color: C.orange }} fill={C.orange} />
+            </div>
+          </div>
+        )}
+        {/* hover overlay */}
+        <div className="absolute inset-0 bg-black/45 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg" style={{ background: C.orange }}>
+            <Play size={20} color="#fff" fill="#fff" />
+          </div>
+        </div>
+        {/* status dot */}
+        <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full ring-2 ring-white" style={{ background: C.orange }} />
+        {/* duration badge */}
+        {video.duration_sec && (
+          <span
+            className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded text-[11px] font-bold tracking-wide"
+            style={{ background: "rgba(0,0,0,0.72)", color: "#fff" }}
+          >
+            {Math.floor(video.duration_sec / 60)}:{String(Math.floor(video.duration_sec % 60)).padStart(2, "0")}
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+        <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{video.title}</p>
+        <p className="text-xs" style={{ color: C.muted }}>{formatDate(video.created_at)}</p>
+        {video.size_bytes && (
+          <p className="text-xs" style={{ color: C.muted }}>{formatSize(video.size_bytes)}</p>
+        )}
+      </div>
+
+      {/* Footer — anchored */}
+      <div className="px-4 pb-4 pt-2 flex items-center gap-2">
+        <button
+          onClick={() => url && window.open(url, "_blank")}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-88"
+          style={{ background: C.orange }}
+        >
+          <Play size={12} fill="#fff" /> Watch
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-red-50"
+          style={{ border: "1.5px solid #fca5a5" }}
+        >
+          <Trash2 size={13} color="#ef4444" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Document Card ─────────────────────────────────────────────────────────────
+const DocCard = ({ doc }) => {
+  const [hovered, setHovered] = useState(false);
+  const statusMap = {
+    PROCESSED:  { label: "Processed",  bg: "rgba(120,190,32,0.12)", color: C.green,   dot: C.green   },
+    STORED:     { label: "Stored",     bg: "rgba(0,173,239,0.12)",  color: C.blue,    dot: C.blue    },
+    QUEUED:     { label: "Queued",     bg: C.orangeLight,           color: C.orange,  dot: C.orange  },
+    PROCESSING: { label: "Processing", bg: C.orangeLight,           color: C.orange,  dot: C.orange  },
+    FAILED:     { label: "Failed",     bg: "rgba(239,68,68,0.10)",  color: "#ef4444", dot: "#ef4444" },
+  };
+  const badge = statusMap[doc.status] || statusMap.STORED;
+  const viewUrl = doc.cloudinary_url;
+  const canView = doc.status === "PROCESSED" || doc.status === "STORED";
+
+  return (
+    <div
+      className="overflow-hidden flex flex-col"
+      style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Cover — fixed 180px */}
+      <div
+        className="relative flex-shrink-0 flex items-center justify-center overflow-hidden"
+        style={{ height: 180, background: "rgba(120,190,32,0.08)" }}
+      >
+        {doc.cloudinary_thumbnail_url ? (
+          <img
+            src={doc.cloudinary_thumbnail_url}
+            alt={doc.title || doc.filename}
+            className="w-full h-full object-cover transition-transform duration-300"
+            style={{ transform: hovered ? "scale(1.04)" : "scale(1)" }}
+          />
+        ) : (
+          <FileText
+            size={52}
+            style={{ color: C.green, opacity: 0.28, transition: "transform 0.3s", transform: hovered ? "scale(1.08)" : "scale(1)" }}
+          />
+        )}
+        {/* status dot corner */}
+        <div
+          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-white"
+          style={{ background: badge.bg }}
+          title={badge.label}
+        >
+          <span className="w-2 h-2 rounded-full" style={{ background: badge.dot }} />
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+        <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{doc.title || doc.filename}</p>
+        <div className="flex items-center gap-1.5">
+          <FileText size={11} style={{ color: C.muted }} />
+          <span className="text-xs" style={{ color: C.muted }}>PDF Document</span>
+        </div>
+        <span
+          className="self-start flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
+          style={{ background: badge.bg, color: badge.color }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: badge.dot }} />
+          {badge.label}
+        </span>
+        <p className="text-xs" style={{ color: C.muted }}>{formatDate(doc.created_at)}</p>
+      </div>
+
+      {/* Footer — anchored */}
+      <div className="px-4 pb-4 pt-2">
+        <button
+          onClick={() => viewUrl && canView && window.open(viewUrl, "_blank")}
+          disabled={!viewUrl || !canView}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity"
+          style={{
+            background: canView && viewUrl ? C.orange : "#d4cdc5",
+            cursor: canView && viewUrl ? "pointer" : "not-allowed",
+            opacity: canView && viewUrl ? 1 : 0.6,
+          }}
+        >
+          <FileText size={12} /> View Document
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Link Card ─────────────────────────────────────────────────────────────────
+const LinkCard = ({ link, onEdit, onDelete }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      className="overflow-hidden flex flex-col"
+      style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Cover — fixed 180px */}
+      <div
+        className="relative flex-shrink-0 flex items-center justify-center overflow-hidden"
+        style={{ height: 180, background: "#e8f4fd" }}
+      >
+        <LinkIcon
+          size={52}
+          style={{ color: C.blue, opacity: 0.30, transition: "transform 0.3s", transform: hovered ? "scale(1.08)" : "scale(1)" }}
+        />
+        <div
+          className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-white"
+          style={{ background: "rgba(0,173,239,0.15)" }}
+        >
+          <LinkIcon size={12} style={{ color: C.blue }} />
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+        <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{link.title}</p>
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs truncate hover:underline"
+          style={{ color: C.orange }}
+        >
+          {link.url}
+        </a>
+        <p className="text-xs" style={{ color: C.muted }}>{formatDate(link.created_at)}</p>
+      </div>
+
+      {/* Footer — anchored */}
+      <div className="px-4 pb-4 pt-2 flex items-center gap-2">
+        <button
+          onClick={() => window.open(link.url, "_blank")}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-88"
+          style={{ background: C.orange }}
+        >
+          <ExternalLink size={12} /> Open Link
+        </button>
+        <button
+          onClick={onEdit}
+          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-orange-50"
+          style={{ border: `1.5px solid ${C.orangeBorder}` }}
+        >
+          <Edit2 size={13} style={{ color: C.orange }} />
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-red-50"
+          style={{ border: "1.5px solid #fca5a5" }}
+        >
+          <Trash2 size={13} color="#ef4444" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Upload Video Modal ────────────────────────────────────────────────────────
+const VideoUploadModal = ({ onClose, onSubmit, submitting }) => {
+  const [form, setForm] = useState({ title: "", file: null });
+  const fileRef = useRef();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.file) return;
+    onSubmit(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl p-6 shadow-2xl" style={{ background: C.card }}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold" style={{ color: C.ink }}>Upload Video</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X size={18} style={{ color: C.muted }} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>Title <span style={{ color: C.orange }}>*</span></label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Enter video title"
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none transition-all"
+              style={{ border: `1.5px solid ${C.border}`, color: C.ink }}
+              onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
+              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>MP4 File <span style={{ color: C.orange }}>*</span></label>
+            <div
+              className="w-full rounded-xl border-2 border-dashed flex flex-col items-center justify-center py-6 cursor-pointer transition-colors hover:bg-orange-50"
+              style={{ borderColor: form.file ? C.orange : C.border }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload size={24} style={{ color: form.file ? C.orange : C.muted }} />
+              <p className="text-sm mt-2" style={{ color: form.file ? C.orange : C.muted }}>
+                {form.file ? form.file.name : "Click to select MP4 file"}
+              </p>
+              {form.file && <p className="text-xs mt-0.5" style={{ color: C.muted }}>{formatSize(form.file.size)}</p>}
+            </div>
+            <input ref={fileRef} type="file" accept=".mp4" className="hidden" onChange={e => setForm(f => ({ ...f, file: e.target.files[0] || null }))} />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-colors hover:bg-gray-100" style={{ color: C.muted, border: `1px solid ${C.border}` }}>Cancel</button>
+            <button
+              type="submit"
+              disabled={submitting || !form.title.trim() || !form.file}
+              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{ background: C.orange }}
+            >
+              {submitting ? "Uploading…" : "Upload"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── Add / Edit Link Modal ─────────────────────────────────────────────────────
+const LinkModal = ({ editing, onClose, onSubmit, submitting }) => {
+  const [form, setForm] = useState({ title: editing?.title || "", url: editing?.url || "" });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.title.trim() || !form.url.trim()) return;
+    onSubmit(form);
+  };
+
+  const fieldStyle = {
+    border: `1.5px solid ${C.border}`,
+    color: C.ink,
+    borderRadius: "12px",
+    padding: "10px 14px",
+    fontSize: "14px",
+    width: "100%",
+    outline: "none",
+    transition: "border-color 0.15s, box-shadow 0.15s",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl p-6 shadow-2xl" style={{ background: C.card }}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-lg font-bold" style={{ color: C.ink }}>{editing ? "Edit Link" : "Add Link"}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <X size={18} style={{ color: C.muted }} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>Title <span style={{ color: C.orange }}>*</span></label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Link title"
+              style={fieldStyle}
+              onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
+              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1.5" style={{ color: C.ink }}>URL <span style={{ color: C.orange }}>*</span></label>
+            <input
+              type="url"
+              value={form.url}
+              onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+              placeholder="https://example.com"
+              style={fieldStyle}
+              onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
+              onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+            />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-full text-sm font-semibold transition-colors hover:bg-gray-100" style={{ color: C.muted, border: `1px solid ${C.border}` }}>Cancel</button>
+            <button
+              type="submit"
+              disabled={submitting || !form.title.trim() || !form.url.trim()}
+              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+              style={{ background: C.orange }}
+            >
+              {submitting ? "Saving…" : editing ? "Save Changes" : "Add Link"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 const AdminContentLibrary = () => {
-  const navigate = useNavigate();
   const {
-    externalLinks,
-    videos,
-    loading,
-    error,
-    success,
-    fetchExternalLinks,
-    fetchVideos,
-    createNewExternalLink,
-    updateExistingExternalLink,
-    deleteExistingExternalLink,
-    uploadNewVideo,
-    deleteExistingVideo,
-    fetchProcessedDocuments,
-    clearMessages,
+    externalLinks, videos, loading,
+    fetchExternalLinks, fetchVideos,
+    createNewExternalLink, updateExistingExternalLink, deleteExistingExternalLink,
+    uploadNewVideo, deleteExistingVideo,
+    fetchProcessedDocuments, clearMessages,
   } = useAdminTraining();
 
-
-  const [activeTab, setActiveTab] = useState('videos'); // 'videos', 'links', 'documents'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showVideoUpload, setShowVideoUpload] = useState(false);
-  const [showLinkForm, setShowLinkForm] = useState(false);
-  
-  const hasFetchedLinks = useRef(false);
-  const hasFetchedVideos = useRef(false);
-  const hasFetchedDocuments = useRef(false);
-
-  // Debug state changes
-  useEffect(() => {
-    console.log('showVideoUpload changed:', showVideoUpload);
-  }, [showVideoUpload]);
-
-  useEffect(() => {
-    console.log('showLinkForm changed:', showLinkForm);
-  }, [showLinkForm]);
-
-  useEffect(() => {
-    console.log('Videos state updated:', videos);
-    videos.forEach((video, index) => {
-      console.log(`Video ${index}:`, {
-        id: video.id,
-        title: video.title,
-        secure_url: video.secure_url,
-        cloudinary_url: video.cloudinary_url,
-        thumbnail_url: video.thumbnail_url,
-        size_bytes: video.size_bytes,
-        duration_sec: video.duration_sec
-      });
-    });
-  }, [videos]);
+  const [navCollapsed, setNavCollapsed] = useState(true);
+  const [activeTab, setActiveTab] = useState("videos");
+  const [search, setSearch] = useState("");
+  const [documents, setDocuments] = useState([]);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
   const [editingLink, setEditingLink] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [documents, setDocuments] = useState([]);
-
-  // Form states
-  const [videoForm, setVideoForm] = useState({ title: '', file: null });
-  const [linkForm, setLinkForm] = useState({ title: '', url: '' });
+  const [deleteError, setDeleteError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [fileInputKey, setFileInputKey] = useState(0);
 
-
+  const fetched = useRef({ links: false, videos: false, docs: false });
 
   useEffect(() => {
-    console.log('AdminContentLibrary: Component mounted');
-    console.log('AdminContentLibrary: Initial state:', {
-      showVideoUpload,
-      showLinkForm,
-      activeTab
-    });
-    console.log('AdminContentLibrary: Loading initial data...');
-    
-    if (!hasFetchedLinks.current) {
-      fetchExternalLinks().then(result => console.log('External links result:', result));
-      hasFetchedLinks.current = true;
-    }
-    
-    if (!hasFetchedVideos.current) {
-      fetchVideos().then(result => {
-        console.log('Videos result:', result);
-        console.log('Videos data:', result.data);
-      });
-      hasFetchedVideos.current = true;
-    }
-    
-    if (!hasFetchedDocuments.current) {
-      loadDocuments();
-      hasFetchedDocuments.current = true;
-    }
-    
+    if (!fetched.current.links)   { fetchExternalLinks(); fetched.current.links = true; }
+    if (!fetched.current.videos)  { fetchVideos();        fetched.current.videos = true; }
+    if (!fetched.current.docs)    { loadDocs();           fetched.current.docs = true; }
     return () => clearMessages();
   }, []);
 
-  const loadDocuments = async () => {
-    const result = await fetchProcessedDocuments();
-    if (result.success) {
-      setDocuments(result.data?.documents || []);
-    }
+  const loadDocs = async () => {
+    const res = await fetchProcessedDocuments();
+    if (res.success) setDocuments(res.data?.documents || res.data || []);
   };
 
-  const handleVideoUpload = async (e) => {
-    e.preventDefault();
-    if (!videoForm.title.trim() || !videoForm.file) return;
-
-    setSubmitting(true);
-    console.log('Uploading video:', { title: videoForm.title, file: videoForm.file });
-    
-    try {
-      const result = await uploadNewVideo(videoForm.title.trim(), videoForm.file);
-      console.log('Upload result:', result);
-      
-      if (result.success) {
-        setShowVideoUpload(false);
-        setVideoForm({ title: '', file: null });
-        setFileInputKey(prev => prev + 1); // Force file input reset
-      }
-    } catch (error) {
-      console.error('Video upload error:', error);
-    } finally {
-      setSubmitting(false);
-    }
+  const filter = (items) => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter(i =>
+      i.title?.toLowerCase().includes(q) ||
+      i.filename?.toLowerCase().includes(q) ||
+      i.url?.toLowerCase().includes(q)
+    );
   };
 
-  const handleLinkSubmit = async (e) => {
-    e.preventDefault();
-    if (!linkForm.title.trim() || !linkForm.url.trim()) return;
-
+  const handleVideoUpload = async (form) => {
     setSubmitting(true);
-    console.log('Submitting link:', linkForm, 'editing:', editingLink);
-    
-    try {
-      let result;
-      if (editingLink) {
-        result = await updateExistingExternalLink(editingLink.id, linkForm);
-      } else {
-        result = await createNewExternalLink(linkForm);
-      }
-      console.log('Link submit result:', result);
+    const res = await uploadNewVideo(form.title.trim(), form.file);
+    setSubmitting(false);
+    if (res.success) setShowVideoModal(false);
+  };
 
-      if (result.success) {
-        setShowLinkForm(false);
-        setEditingLink(null);
-        setLinkForm({ title: '', url: '' });
-      }
-    } catch (error) {
-      console.error('Link submit error:', error);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleLinkSubmit = async (form) => {
+    setSubmitting(true);
+    const res = editingLink
+      ? await updateExistingExternalLink(editingLink.id, form)
+      : await createNewExternalLink(form);
+    setSubmitting(false);
+    if (res.success) { setShowLinkModal(false); setEditingLink(null); }
   };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
-
-    let result;
-    if (deleteConfirm.type === 'video') {
-      result = await deleteExistingVideo(deleteConfirm.id);
-    } else if (deleteConfirm.type === 'link') {
-      result = await deleteExistingExternalLink(deleteConfirm.id);
-    }
-
-    if (result?.success) {
+    const res = deleteConfirm.type === "video"
+      ? await deleteExistingVideo(deleteConfirm.id)
+      : await deleteExistingExternalLink(deleteConfirm.id);
+    if (res?.success) {
       setDeleteConfirm(null);
+      setDeleteError(null);
+    } else {
+      setDeleteError(res?.message || "Failed to delete item.");
     }
   };
 
-  const filterItems = (items, type) => {
-    if (!searchTerm) return items;
-    return items.filter(item => 
-      item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (type === 'link' && item.url?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes) return 'Unknown size';
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
+  const filteredVideos = filter(videos);
+  const filteredLinks  = filter(externalLinks);
+  const filteredDocs   = filter(documents);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex h-16 items-center justify-between px-6">
-          <button
-            onClick={() => navigate("/admin/training")}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Training</span>
-          </button>
+    <div className="flex h-screen overflow-hidden" style={{ background: C.bg }}>
+      <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(p => !p)} />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Hero Banner ── */}
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: "#1a1209" }}>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "#faf6ef", fontFamily: "Georgia, serif" }}>
+            Content Library
+          </h1>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-gray-600 sm:block">Admin User</span>
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]" />
-          </div>
-        </div>
-      </header>
-
-        {/* Page Header Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-[#333333] mb-2">Content Library</h1>
-                <p className="text-gray-600">Manage videos, links, and documents for training courses</p>
+            {[
+              { label: "Videos",    value: videos.length,        dot: C.orange },
+              { label: "Links",     value: externalLinks.length, dot: C.blue   },
+              { label: "Documents", value: documents.length,     dot: C.green  },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#faf6ef" }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+                {s.label}: {s.value}
               </div>
-              
-              {/* Quick Stats */}
-              <div className="flex gap-4">
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <Video size={20} className="text-[#F58220]" />
-                    <div>
-                      <p className="text-2xl font-bold text-[#333333]">{videos.length}</p>
-                      <p className="text-xs text-gray-600">Videos</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <LinkIcon size={20} className="text-[#00ADEF]" />
-                    <div>
-                      <p className="text-2xl font-bold text-[#333333]">{externalLinks.length}</p>
-                      <p className="text-xs text-gray-600">Links</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <FileText size={20} className="text-[#78BE20]" />
-                    <div>
-                      <p className="text-2xl font-bold text-[#333333]">{documents.length}</p>
-                      <p className="text-xs text-gray-600">Documents</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        <main className="p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Alerts */}
-            {success && (
-              <Alert variant="success" className="mb-6" onClose={clearMessages}>
-                {success}
-              </Alert>
-            )}
-            {error && (
-              <Alert variant="error" className="mb-6" onClose={clearMessages}>
-                {error}
-              </Alert>
-            )}
+        {/* ── Tab Container ── */}
+        <div className="flex-1 overflow-auto px-8 py-6">
+          <div className="rounded-2xl overflow-hidden" style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(26,18,9,0.06)" }}>
 
-            {/* Tabs and Search Bar */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
-              {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <div className="flex gap-1 p-2">
-                  <button
-                    onClick={() => setActiveTab('videos')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
-                      activeTab === 'videos'
-                        ? 'bg-[#F58220] text-white shadow-sm'
-                        : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                    }`}
-                  >
-                    <Video size={16} />
-                    <span>Videos</span>
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'videos' 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {videos.length}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('links')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
-                      activeTab === 'links'
-                        ? 'bg-[#F58220] text-white shadow-sm'
-                        : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                    }`}
-                  >
-                    <LinkIcon size={16} />
-                    <span>Links</span>
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'links' 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {externalLinks.length}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('documents')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all ${
-                      activeTab === 'documents'
-                        ? 'bg-[#F58220] text-white shadow-sm'
-                        : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                    }`}
-                  >
-                    <FileText size={16} />
-                    <span>Documents</span>
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'documents' 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {documents.length}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Search and Actions Bar */}
-              <div className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search content..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] transition-colors text-sm"
-                  />
-                </div>
-                
-                <div className="flex gap-3">
-                  {activeTab === 'videos' && (
-                    <Button 
-                      variant="primary"
-                      onClick={(e) => {
-                        console.log('Upload Video button clicked!');
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowVideoUpload(true);
-                      }}
-                      fullWidth={false}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload size={16} />
-                      <span>Upload Video</span>
-                    </Button>
-                  )}
-                  
-                  {activeTab === 'links' && (
-                    <Button 
-                      variant="primary"
-                      onClick={(e) => {
-                        console.log('Add Link button clicked!');
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowLinkForm(true);
-                      }}
-                      fullWidth={false}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus size={16} />
-                      <span>Add Link</span>
-                    </Button>
-                  )}
-                </div>
-              </div>
+            {/* Tab bar */}
+            <div className="px-5 pt-4 pb-0 flex items-center gap-1" style={{ borderBottom: `1px solid ${C.border}` }}>
+              <TabBtn active={activeTab === "videos"}    onClick={() => setActiveTab("videos")}    label="Videos"    count={videos.length} />
+              <TabBtn active={activeTab === "links"}     onClick={() => setActiveTab("links")}     label="Links"     count={externalLinks.length} />
+              <TabBtn active={activeTab === "documents"} onClick={() => setActiveTab("documents")} label="Documents" count={documents.length} />
             </div>
 
-            {/* Content Grid */}
-            {loading ? (
-              <div className="flex justify-center items-center py-20">
-                <LoadingSpinner size="large" />
+            {/* Search + Action row */}
+            <div className="px-5 py-4 flex items-center justify-between gap-4" style={{ borderBottom: `1px solid ${C.border}` }}>
+              {/* Search pill */}
+              <div className="relative flex-1 max-w-xs">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search…"
+                  className="w-full pl-9 pr-4 py-2 text-sm rounded-full outline-none transition-all"
+                  style={{ background: C.bg, border: `1.5px solid ${C.border}`, color: C.ink }}
+                  onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
+                  onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Videos Tab */}
-                {activeTab === 'videos' && filterItems(videos, 'video').map((video) => (
-                  <Card key={video.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
-                    {/* Video Thumbnail/Preview */}
-                    <div 
-                      className="aspect-video bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center cursor-pointer relative overflow-hidden"
-                      onClick={() => {
-                        console.log('Opening video:', video.secure_url || video.cloudinary_url);
-                        window.open(video.secure_url || video.cloudinary_url, '_blank');
-                      }}
-                    >
-                      {video.thumbnail_url ? (
-                        <>
-                          <img
-                            src={video.thumbnail_url}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Play button overlay */}
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-white rounded-full p-4 shadow-lg transform group-hover:scale-110 transition-transform">
-                              <Play size={28} className="text-[#F58220] ml-1" fill="#F58220" />
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <Video size={56} className="text-gray-300" />
-                          {/* Play button overlay for no thumbnail */}
-                          <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-white rounded-full p-3 shadow-lg">
-                              <Play size={24} className="text-[#F58220] ml-0.5" fill="#F58220" />
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    
-                    {/* Card Content */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="font-bold text-[#333333] line-clamp-2 min-h-[3rem]">{video.title}</h3>
-                      
-                      <div className="flex items-center gap-4 text-xs text-gray-600 border-t border-gray-100 pt-3">
-                        {video.duration_sec && (
-                          <div className="flex items-center gap-1">
-                            <Play size={12} />
-                            <span>{Math.floor(video.duration_sec / 60)}:{(video.duration_sec % 60).toString().padStart(2, '0')}</span>
-                          </div>
-                        )}
-                        {video.size_bytes && (
-                          <div className="flex items-center gap-1">
-                            <FileText size={12} />
-                            <span>{formatFileSize(video.size_bytes)}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-gray-500">Uploaded {formatDate(video.created_at)}</p>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
-                        {(video.secure_url || video.cloudinary_url) && (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => window.open(video.secure_url || video.cloudinary_url, '_blank')}
-                            className="flex-1 flex items-center justify-center gap-2"
-                          >
-                            <Play size={14} />
-                            <span>Watch</span>
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteConfirm({ ...video, type: 'video' })}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
 
-                {/* Links Tab */}
-                {activeTab === 'links' && filterItems(externalLinks, 'link').map((link) => (
-                  <Card key={link.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
-                    <div className="aspect-video bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center relative overflow-hidden">
-                      <LinkIcon size={56} className="text-[#00ADEF]/30" />
-                      <div className="absolute top-3 right-3">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
-                          <LinkIcon size={16} className="text-[#00ADEF]" />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Card Content */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="font-bold text-[#333333] line-clamp-2 min-h-[3rem]">{link.title}</h3>
-                      
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block text-sm text-[#00ADEF] hover:text-[#0090C8] hover:underline line-clamp-1 border-t border-gray-100 pt-3"
-                      >
-                        {link.url}
-                      </a>
-                      
-                      <p className="text-xs text-gray-500">Created {formatDate(link.created_at)}</p>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => window.open(link.url, '_blank')}
-                          className="flex-1 flex items-center justify-center gap-2"
-                        >
-                          <LinkIcon size={14} />
-                          <span>Open Link</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingLink(link);
-                            setLinkForm({ title: link.title, url: link.url });
-                            setShowLinkForm(true);
-                          }}
-                          className="text-[#F58220] hover:text-[#E0741C] hover:bg-[#F58220]/10 px-3"
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteConfirm({ ...link, type: 'link' })}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+              {/* Action button */}
+              {activeTab === "videos" && (
+                <button
+                  onClick={() => setShowVideoModal(true)}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ background: C.orange }}
+                >
+                  <Upload size={14} /> Upload Video
+                </button>
+              )}
+              {activeTab === "links" && (
+                <button
+                  onClick={() => { setEditingLink(null); setShowLinkModal(true); }}
+                  className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  style={{ background: C.orange }}
+                >
+                  <Plus size={14} /> Add Link
+                </button>
+              )}
+            </div>
 
-                {/* Documents Tab */}
-                {activeTab === 'documents' && filterItems(documents, 'document').map((doc) => (
-                  <Card key={doc.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all group">
-                    <div className="aspect-video bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center relative overflow-hidden">
-                      {doc.cloudinary_thumbnail_url ? (
-                        <img
-                          src={doc.cloudinary_thumbnail_url}
-                          alt={doc.title || doc.filename}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <FileText size={56} className="text-[#78BE20]/30" />
-                      )}
-                      <div className="absolute top-3 right-3">
-                        <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-sm">
-                          <FileText size={16} className="text-[#78BE20]" />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Card Content */}
-                    <div className="p-4 space-y-3">
-                      <h3 className="font-bold text-[#333333] line-clamp-2 min-h-[3rem]">{doc.title || doc.filename}</h3>
-                      
-                      <div className="flex items-center gap-4 text-xs text-gray-600 border-t border-gray-100 pt-3">
-                        <div className="flex items-center gap-1">
-                          <FileText size={12} />
-                          <span>PDF Document</span>
-                        </div>
-                        <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          doc.status === 'PROCESSED' 
-                            ? 'bg-green-50 text-green-700 border border-green-200' 
-                            : doc.status === 'FAILED'
-                            ? 'bg-red-50 text-red-700 border border-red-200'
-                            : doc.status === 'PROCESSING' || doc.status === 'QUEUED'
-                            ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {doc.status || 'STORED'}
-                        </div>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500">Uploaded {formatDate(doc.created_at)}</p>
-                      
-                      {/* Action Button */}
-                      {doc.cloudinary_url && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => window.open(doc.cloudinary_url, '_blank')}
-                          className="w-full flex items-center justify-center gap-2 mt-2"
-                        >
-                          <FileText size={14} />
-                          <span>View Document</span>
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+            {/* ── Grid ── */}
+            <div className="p-5">
+              {loading ? (
+                <div className="py-20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: `${C.orange} transparent ${C.orange} ${C.orange}` }} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {activeTab === "videos"    && filteredVideos.map(v => <VideoCard key={v.id} video={v} onDelete={() => setDeleteConfirm({ ...v, type: "video" })} />)}
+                  {activeTab === "links"     && filteredLinks.map(l  => <LinkCard  key={l.id} link={l}  onEdit={() => { setEditingLink(l); setShowLinkModal(true); }} onDelete={() => setDeleteConfirm({ ...l, type: "link" })} />)}
+                  {activeTab === "documents" && filteredDocs.map(d   => <DocCard   key={d.id} doc={d} />)}
+                </div>
+              )}
 
-            {/* Empty States */}
-            {!loading && (
-              <>
-                {activeTab === 'videos' && filterItems(videos, 'video').length === 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg text-center py-16 px-6">
-                    <div className="max-w-md mx-auto">
-                      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                        <Video size={48} className="text-[#F58220]" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-[#333333] mb-3">
-                        {videos.length === 0 ? 'No videos uploaded yet' : 'No videos match your search'}
-                      </h3>
-                      <p className="text-gray-600 mb-8">
-                        {videos.length === 0 
-                          ? 'Upload your first MP4 video to get started with video training content' 
-                          : 'Try adjusting your search criteria to find what you\'re looking for'
-                        }
-                      </p>
-                      {videos.length === 0 && (
-                        <Button 
-                          variant="primary"
-                          onClick={(e) => {
-                            console.log('Empty state Upload Video button clicked!');
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowVideoUpload(true);
-                          }}
-                          className="inline-flex items-center gap-2"
-                        >
-                          <Upload size={18} />
-                          <span>Upload Your First Video</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'links' && filterItems(externalLinks, 'link').length === 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg text-center py-16 px-6">
-                    <div className="max-w-md mx-auto">
-                      <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                        <LinkIcon size={48} className="text-[#00ADEF]" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-[#333333] mb-3">
-                        {externalLinks.length === 0 ? 'No links added yet' : 'No links match your search'}
-                      </h3>
-                      <p className="text-gray-600 mb-8">
-                        {externalLinks.length === 0 
-                          ? 'Add external links to training resources, articles, or websites' 
-                          : 'Try adjusting your search criteria to find what you\'re looking for'
-                        }
-                      </p>
-                      {externalLinks.length === 0 && (
-                        <Button 
-                          variant="primary"
-                          onClick={(e) => {
-                            console.log('Empty state Add Link button clicked!');
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowLinkForm(true);
-                          }}
-                          className="inline-flex items-center gap-2"
-                        >
-                          <Plus size={18} />
-                          <span>Add Your First Link</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'documents' && filterItems(documents, 'document').length === 0 && (
-                  <div className="bg-white border border-gray-200 rounded-lg text-center py-16 px-6">
-                    <div className="max-w-md mx-auto">
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                        <FileText size={48} className="text-[#78BE20]" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-[#333333] mb-3">
-                        {documents.length === 0 ? 'No documents found' : 'No documents match your search'}
-                      </h3>
-                      <p className="text-gray-600 mb-8">
-                        {documents.length === 0 
-                          ? 'Upload PDF documents from the main documents section to use in training courses' 
-                          : 'Try adjusting your search criteria to find what you\'re looking for'
-                        }
-                      </p>
-                      {documents.length === 0 && (
-                        <Button 
-                          variant="primary" 
-                          onClick={() => navigate('/admin/documents')}
-                          className="inline-flex items-center gap-2"
-                        >
-                          <FileText size={18} />
-                          <span>Go to Documents</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+              {/* Empty states */}
+              {!loading && activeTab === "videos"    && filteredVideos.length === 0 && <EmptyState icon={Video}    color={C.orange} bg={C.orangeLight} title={videos.length === 0 ? "No videos yet" : "No results"} sub={videos.length === 0 ? "Upload your first MP4 video" : "Try a different search"} />}
+              {!loading && activeTab === "links"     && filteredLinks.length  === 0 && <EmptyState icon={LinkIcon} color={C.blue}   bg={C.blueLight}   title={externalLinks.length === 0 ? "No links yet" : "No results"} sub={externalLinks.length === 0 ? "Add your first external link" : "Try a different search"} />}
+              {!loading && activeTab === "documents" && filteredDocs.length   === 0 && <EmptyState icon={FileText} color={C.green}  bg={C.greenLight}  title={documents.length === 0 ? "No documents yet" : "No results"} sub={documents.length === 0 ? "Upload documents from the Dashboard" : "Try a different search"} />}
+            </div>
           </div>
-        </main>
+        </div>
+      </div>
 
-      {/* Video Upload Modal */}
-      <Modal
-        isOpen={showVideoUpload}
-        title="Upload Video"
-        onClose={() => {
-          console.log('Video modal closing...');
-          setShowVideoUpload(false);
-          setVideoForm({ title: '', file: null });
-          setFileInputKey(prev => prev + 1);
-        }}
-      >
-          <form onSubmit={handleVideoUpload} className="space-y-4">
-            <Input2
-              label="Video Title"
-              value={videoForm.title}
-              onChange={(e) => setVideoForm(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Enter video title"
-              required
-            />
-            <div>
-              <label className="block text-sm font-semibold text-[#333333] mb-2">
-                Video File (MP4 only, max 500MB)
-              </label>
-              <input
-                key={fileInputKey}
-                type="file"
-                accept=".mp4"
-                onChange={(e) => setVideoForm(prev => ({ ...prev, file: e.target.files[0] }))}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] transition-colors"
-                required
-              />
+      {/* Modals */}
+      {showVideoModal && <VideoUploadModal onClose={() => setShowVideoModal(false)} onSubmit={handleVideoUpload} submitting={submitting} />}
+      {showLinkModal  && <LinkModal editing={editingLink} onClose={() => { setShowLinkModal(false); setEditingLink(null); }} onSubmit={handleLinkSubmit} submitting={submitting} />}
+      {deleteConfirm  && (
+        <>
+          {deleteError && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+              <div
+                className="pointer-events-auto max-w-sm w-full mx-4 px-4 py-3 rounded-xl flex items-start gap-3 shadow-lg"
+                style={{ background: "#fef2f2", border: "1px solid #fecaca", marginBottom: "220px" }}
+              >
+                <span className="text-red-500 text-lg leading-none flex-shrink-0">⚠</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-700">Cannot delete</p>
+                  <p className="text-xs text-red-600 mt-0.5">{deleteError}</p>
+                </div>
+                <button onClick={() => setDeleteError(null)} className="text-red-400 hover:text-red-600 text-lg leading-none">×</button>
+              </div>
             </div>
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="secondary" 
-                onClick={() => {
-                  setShowVideoUpload(false);
-                  setVideoForm({ title: '', file: null });
-                  setFileInputKey(prev => prev + 1);
-                }}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                variant="primary"
-                disabled={!videoForm.title.trim() || !videoForm.file || submitting}
-                className="flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <LoadingSpinner size="small" />
-                    Uploading...
-                  </>
-                ) : (
-                  'Upload Video'
-                )}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-      {/* Link Form Modal */}
-      <Modal
-        isOpen={showLinkForm}
-        title={editingLink ? "Edit Link" : "Add External Link"}
-        onClose={() => {
-          console.log('Link modal closing...');
-          setShowLinkForm(false);
-          setEditingLink(null);
-          setLinkForm({ title: '', url: '' });
-        }}
-      >
-          <form onSubmit={handleLinkSubmit} className="space-y-4">
-            <Input2
-              label="Link Title"
-              value={linkForm.title}
-              onChange={(e) => setLinkForm(prev => ({ ...prev, title: e.target.value }))}
-              placeholder="Enter link title"
-              required
-            />
-            <Input2
-              label="URL"
-              type="url"
-              value={linkForm.url}
-              onChange={(e) => setLinkForm(prev => ({ ...prev, url: e.target.value }))}
-              placeholder="https://example.com"
-              required
-            />
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button 
-                type="button" 
-                variant="secondary" 
-                onClick={() => {
-                  setShowLinkForm(false);
-                  setEditingLink(null);
-                  setLinkForm({ title: '', url: '' });
-                }}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit"
-                variant="primary"
-                disabled={!linkForm.title.trim() || !linkForm.url.trim() || submitting}
-                className="flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <LoadingSpinner size="small" />
-                    {editingLink ? 'Updating...' : 'Adding...'}
-                  </>
-                ) : (
-                  editingLink ? 'Update Link' : 'Add Link'
-                )}
-              </Button>
-            </div>
-          </form>
-        </Modal>
-
-      {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <ConfirmDialog
-          title={`Delete ${deleteConfirm.type === 'video' ? 'Video' : 'Link'}`}
-          message={`Are you sure you want to delete "${deleteConfirm.title}"? This action cannot be undone.`}
-          confirmText="Delete"
-          cancelText="Cancel"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteConfirm(null)}
-          variant="danger"
-        />
+          )}
+          <ConfirmDialog
+            title={`Delete ${deleteConfirm.type === "video" ? "Video" : "Link"}`}
+            message={`Are you sure you want to delete "${deleteConfirm.title}"? This cannot be undone.`}
+            onConfirm={handleDelete}
+            onCancel={() => { setDeleteConfirm(null); setDeleteError(null); }}
+          />
+        </>
       )}
     </div>
   );
 };
+
+// ── Empty State ───────────────────────────────────────────────────────────────
+const EmptyState = ({ icon: Icon, color, bg, title, sub }) => (
+  <div className="py-16 flex flex-col items-center gap-3">
+    <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: bg }}>
+      <Icon size={32} style={{ color }} />
+    </div>
+    <p className="font-bold text-base" style={{ color: C.ink }}>{title}</p>
+    <p className="text-sm" style={{ color: C.muted }}>{sub}</p>
+  </div>
+);
 
 export default AdminContentLibrary;

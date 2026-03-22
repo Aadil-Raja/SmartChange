@@ -302,13 +302,15 @@ def delete_external_link(
     _admin = Depends(get_current_admin),
 ):
     """
-    Delete an external link.
+    Delete an external link. Blocked if referenced by any course content item.
     """
     try:
         data = link_svc.delete_link(db, link_id=link_id)
         return make_response(True, "External link deleted", data=data)
     except ValueError as e:
-        return make_response(False, "Link not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        msg = str(e)
+        code = status.HTTP_409_CONFLICT if "Cannot delete" in msg else status.HTTP_404_NOT_FOUND
+        return make_response(False, msg, status_code=code, error=msg)
     except Exception as e:
         return make_response(False, "Failed to delete external link", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
@@ -380,11 +382,13 @@ def delete_video_route(
     _admin = Depends(get_current_admin),
 ):
     """
-    Delete a video from Cloudinary and the database.
+    Delete a video. Blocked if referenced by any course content item.
     """
     try:
         return make_response(True, "Video deleted", data=vsvc.delete_video(db, video_id=video_id))
     except ValueError as e:
-        return make_response(False, "Video not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        msg = str(e)
+        code = status.HTTP_409_CONFLICT if "Cannot delete" in msg else status.HTTP_404_NOT_FOUND
+        return make_response(False, msg, status_code=code, error=msg)
     except Exception as e:
         return make_response(False, "Failed to delete video", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))

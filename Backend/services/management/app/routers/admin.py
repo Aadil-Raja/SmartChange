@@ -407,6 +407,25 @@ async def get_all_main_topics(
         return make_response(False, "Could not fetch main topics", status_code=500, error=str(e))
 
 
+@router.get("/documents/{document_id}/sections", status_code=status.HTTP_200_OK)
+async def get_document_sections(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """
+    Get all sections for a processed document with chunk text previews.
+    Returns section titles, chunk count, first 2 lines of the opening chunk,
+    and last 2 lines of the closing chunk.
+    """
+    try:
+        return documents_service.get_document_sections_with_preview(db, document_id=document_id)
+    except Exception as e:
+        print(f"Error fetching sections for document {document_id}: {e}", file=sys.stderr)
+        traceback.print_exc()
+        return make_response(False, "Could not fetch sections", status_code=500, error=str(e))
+
+
 @router.post("/documents/{document_id}/generate-main-topics", status_code=status.HTTP_200_OK)
 async def generate_document_main_topics_ai(
     document_id: int,

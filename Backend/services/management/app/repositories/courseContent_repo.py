@@ -74,7 +74,7 @@ def create_course(db: Session, *, title: str, description: Optional[str], depart
         description=description,
         department=department,
         created_by=created_by,
-        is_active=True,
+        is_active=False,
     )
     db.add(course)
     db.commit()
@@ -226,9 +226,26 @@ def delete_content_item(db: Session, *, content_id: int) -> bool:
     item = db.query(ContentItem).filter(ContentItem.id == content_id).first()
     if not item:
         return False
+    course_id = item.course_id
     db.delete(item)
     db.commit()
+
+    # Remove deleted content_id from prerequisite_content_ids of all quizzes in this course
+    _remove_prerequisite_from_course_quizzes(db, course_id=course_id, content_id=content_id)
+
     return True
+
+
+def _remove_prerequisite_from_course_quizzes(db: Session, *, course_id: int, content_id: int) -> None:
+    """Strip a deleted content item ID from all course quiz prerequisite lists."""
+    from shared.models.course_quiz import CourseQuiz
+    quizzes = db.query(CourseQuiz).filter(CourseQuiz.course_id == course_id).all()
+    for quiz in quizzes:
+        if quiz.prerequisite_content_ids and content_id in quiz.prerequisite_content_ids:
+            quiz.prerequisite_content_ids = [
+                pid for pid in quiz.prerequisite_content_ids if pid != content_id
+            ]
+    db.commit()
 
 
 

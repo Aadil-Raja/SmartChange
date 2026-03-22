@@ -716,7 +716,76 @@ Generate the topics JSON now:"""
         )
 
 
-def _extract_first_line(text: str) -> str:
+def get_document_sections_with_preview(db: Session, *, document_id: int):
+    """
+    Get all sections for a document with actual chunk text previews.
+    For each section, fetches:
+      - The first chunk (start_chunk_index) → first 2 lines of text
+      - The last chunk (end_chunk_index)   → last 2 lines of text
+    """
+    from shared.models.DocumentSection import DocumentSection
+    from shared.models.Document import DocumentChunk
+
+    doc = documents_repo.get_document(db, document_id)
+    if not doc:
+        return make_response(False, "Document not found", status_code=404)
+
+    sections = (
+        db.query(DocumentSection)
+        .filter(DocumentSection.document_id == document_id)
+        .order_by(DocumentSection.start_chunk_index)
+        .all()
+    )
+
+    def first_two_lines(text: str) -> str:
+        if not text:
+            return ""
+        lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+        preview = " ".join(lines[:2])
+        return preview[:150] + "…" if len(preview) > 150 else preview
+
+    def last_two_lines(text: str) -> str:
+        if not text:
+            return ""
+        lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+        preview = " ".join(lines[-2:])
+        return preview[:150] + "…" if len(preview) > 150 else preview
+
+    def get_chunk_text(chunk_index: int) -> str:
+        chunk = (
+            db.query(DocumentChunk)
+            .filter(
+                DocumentChunk.document_id == document_id,
+                DocumentChunk.chunk_index == chunk_index,
+            )
+            .first()
+        )
+        return chunk.text if chunk else ""
+
+    data = []
+    for s in sections:
+        start_text = get_chunk_text(s.start_chunk_index)
+        # Only fetch end chunk separately if it's a different chunk
+        if s.start_chunk_index == s.end_chunk_index:
+            end_text = start_text
+        else:
+            end_text = get_chunk_text(s.end_chunk_index)
+        data.append({
+            "id": s.id,
+            "section_title": s.section_title,
+            "chunk_count": s.chunk_count,
+            "start_preview": first_two_lines(start_text),
+            "end_preview": last_two_lines(end_text),
+            "single_chunk": s.start_chunk_index == s.end_chunk_index,
+        })
+
+    return make_response(
+        True,
+        "Sections retrieved successfully",
+        data={"sections": data, "count": len(data)},
+        status_code=200,
+    )
+
     """
     Extract first line from text.
     Up to first period (.) or max 100-120 characters.

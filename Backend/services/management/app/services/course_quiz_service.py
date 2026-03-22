@@ -273,10 +273,18 @@ def delete_course_quiz(db: Session, *, quiz_id: int, user_id: int):
     quiz = course_quiz_repo.get_course_quiz_by_id(db, quiz_id)
     if not quiz:
         return make_response(False, "Course quiz not found", status_code=404, error="Course quiz does not exist")
-    
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can delete", status_code=403, error="User is not the quiz creator")
-    
+
+    if quiz.status == QuizStatus.PUBLISHED:
+        return make_response(
+            False,
+            "Cannot delete a published quiz. Employee attempt history is tied to this quiz. Archive it instead if you want to hide it.",
+            status_code=409,
+            error="Quiz is published and has employee data"
+        )
+
     course_quiz_repo.delete_course_quiz(db, quiz_id)
     return make_response(True, "Course quiz deleted", status_code=200)
 
@@ -294,6 +302,9 @@ def add_referenced_question(
     if not quiz:
         return make_response(False, "Course quiz not found", status_code=404, error="Course quiz does not exist")
     
+    if quiz.status == QuizStatus.PUBLISHED:
+        return make_response(False, "Cannot add questions to a published quiz", status_code=409, error="Quiz is published and locked")
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can add questions", status_code=403, error="User is not the quiz creator")
     
@@ -351,6 +362,9 @@ def add_course_specific_question(
     if not quiz:
         return make_response(False, "Course quiz not found", status_code=404, error="Course quiz does not exist")
     
+    if quiz.status == QuizStatus.PUBLISHED:
+        return make_response(False, "Cannot add questions to a published quiz", status_code=409, error="Quiz is published and locked")
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can add questions", status_code=403, error="User is not the quiz creator")
     
@@ -412,6 +426,9 @@ def update_course_question(
         return make_response(False, "Question not found", status_code=404, error="Question does not exist")
     
     quiz = course_quiz_repo.get_course_quiz_by_id(db, question.course_quiz_id)
+    if quiz.status == QuizStatus.PUBLISHED:
+        return make_response(False, "Cannot edit questions in a published quiz", status_code=409, error="Quiz is published and locked")
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can edit questions", status_code=403, error="User is not the quiz creator")
     
@@ -470,6 +487,9 @@ def delete_course_question(db: Session, *, question_id: int, user_id: int):
         return make_response(False, "Question not found", status_code=404, error="Question does not exist")
     
     quiz = course_quiz_repo.get_course_quiz_by_id(db, question.course_quiz_id)
+    if quiz.status == QuizStatus.PUBLISHED:
+        return make_response(False, "Cannot delete questions from a published quiz", status_code=409, error="Quiz is published and locked")
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can delete questions", status_code=403, error="User is not the quiz creator")
     
@@ -490,6 +510,7 @@ def get_available_questions(db: Session, *, course_id: int, user_id: int):
             "question_text": question.question_text,
             "correct_answer_index": question.correct_answer_index,
             "explanation": question.explanation,
+            "document_title": question.quiz.document.title if question.quiz and question.quiz.document else None,
             "options": [
                 {
                     "id": opt.id,

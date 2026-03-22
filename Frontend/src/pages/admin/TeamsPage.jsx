@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
-import { Plus, UserPlus, X, Edit2, ChevronDown, Users, Trash2 } from 'lucide-react';
+import { Plus, UserPlus, X, ChevronDown, ChevronUp, Users, Trash2 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdmin } from '../../hooks/useAdmin';
+
+const AVATAR_COLORS = ['bg-blue-400', 'bg-emerald-400', 'bg-violet-400', 'bg-pink-400', 'bg-amber-400', 'bg-teal-400'];
+const TEAM_ROLES = ['member', 'manager'];
 
 const TeamsPage = () => {
   const { teams, employees, loading, loadTeams, loadEmployees, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
@@ -15,547 +16,505 @@ const TeamsPage = () => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const [editingMemberId, setEditingMemberId] = useState(null); // Format: "teamId-userId"
+  const [editingMemberId, setEditingMemberId] = useState(null);
   const [expandedTeams, setExpandedTeams] = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  
+  const [deleteError, setDeleteError] = useState(null);
+
   const hasFetchedTeams = useRef(false);
   const hasFetchedEmployees = useRef(false);
 
   useEffect(() => {
-    if (!hasFetchedTeams.current) {
-      loadTeams();
-      hasFetchedTeams.current = true;
-    }
+    if (!hasFetchedTeams.current) { loadTeams(); hasFetchedTeams.current = true; }
   }, []);
-
   useEffect(() => {
-    if (!hasFetchedEmployees.current) {
-      loadEmployees();
-      hasFetchedEmployees.current = true;
-    }
+    if (!hasFetchedEmployees.current) { loadEmployees(); hasFetchedEmployees.current = true; }
   }, []);
 
-
-
-  // Group employees by ID to get unique list
   const groupedEmployees = (() => {
     const grouped = {};
     employees.forEach(emp => {
-      if (!grouped[emp.id]) {
-        grouped[emp.id] = {
-          id: emp.id,
-          email: emp.email,
-          name: emp.name,
-          teams: []
-        };
-      }
-      if (emp.team_id) {
-        grouped[emp.id].teams.push({
-          team_id: emp.team_id,
-          team_name: emp.team_name,
-          team_member_id: emp.team_member_id,
-          team_role: emp.team_role
-        });
-      }
+      if (!grouped[emp.id]) grouped[emp.id] = { id: emp.id, email: emp.email, name: emp.name, teams: [] };
+      if (emp.team_id) grouped[emp.id].teams.push({ team_id: emp.team_id, team_name: emp.team_name, team_member_id: emp.team_member_id, team_role: emp.team_role });
     });
     return Object.values(grouped);
   })();
 
-  // Get employees available for the selected team (not already in that specific team)
   const availableEmployeesForTeam = (() => {
     if (!selectedTeam) return groupedEmployees;
-    
-    // Get team member user IDs from employees data for this team
-    const teamMemberIds = employees
-      .filter(emp => emp.team_id === selectedTeam.id)
-      .map(emp => emp.id);
-    
-    return groupedEmployees.filter(emp => !teamMemberIds.includes(emp.id));
+    const inTeam = employees.filter(e => e.team_id === selectedTeam.id).map(e => e.id);
+    return groupedEmployees.filter(e => !inTeam.includes(e.id));
   })();
 
-  // Get team members with their details
   const getTeamMembers = (teamId) => {
-    const members = employees.filter(emp => emp.team_id === teamId);
-    
-    // Group by user_id to avoid duplicates
-    const uniqueMembers = {};
-    members.forEach(member => {
-      if (!uniqueMembers[member.id]) {
-        uniqueMembers[member.id] = {
-          id: member.id,
-          user_id: member.id,
-          name: member.name,
-          email: member.email,
-          role_in_team: member.team_role,
-          team_member_id: member.team_member_id
-        };
-      }
+    const unique = {};
+    employees.filter(e => e.team_id === teamId).forEach(m => {
+      if (!unique[m.id]) unique[m.id] = { id: m.id, user_id: m.id, name: m.name, email: m.email, role_in_team: m.team_role, team_member_id: m.team_member_id };
     });
-    
-    return Object.values(uniqueMembers);
+    return Object.values(unique);
   };
 
   const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) {
-      alert('Please enter a team name');
-      return;
-    }
+    if (!newTeamName.trim()) return;
     const result = await createTeam(newTeamName);
-    if (result.success) {
-      setShowCreateModal(false);
-      setNewTeamName('');
-    } else {
-      alert(result.message || 'Failed to create team');
-    }
+    if (result.success) { setShowCreateModal(false); setNewTeamName(''); }
+    else alert(result.message || 'Failed to create team');
   };
 
   const handleAddMember = async () => {
-    if (!selectedUserId || !selectedRole) {
-      alert('Please select both employee and role');
-      return;
-    }
+    if (!selectedUserId || !selectedRole) return;
     const result = await addMemberToTeam(selectedTeam.id, parseInt(selectedUserId), selectedRole);
-    if (result.success) {
-      setShowAddMemberModal(false);
-      setSelectedUserId('');
-      setSelectedRole('');
-      setSelectedTeam(null);
-    } else {
-      alert(result.message || 'Failed to add member');
-    }
+    if (result.success) { setShowAddMemberModal(false); setSelectedUserId(''); setSelectedRole(''); setSelectedTeam(null); }
+    else alert(result.message || 'Failed to add member');
   };
 
   const handleRemoveMember = async (teamId, userId) => {
     if (window.confirm('Remove this member from the team?')) {
       const result = await removeMemberFromTeam(teamId, userId);
-      if (!result.success) {
-        alert(result.message || 'Failed to remove member');
-      }
+      if (!result.success) alert(result.message || 'Failed to remove member');
     }
   };
 
   const handleDeleteTeam = async () => {
     if (!deleteConfirm) return;
-
     const result = await deleteTeam(deleteConfirm.id);
     if (result.success) {
       setDeleteConfirm(null);
-      // Reload teams list
+      setDeleteError(null);
       loadTeams();
       loadEmployees();
     } else {
-      alert(result.message || 'Failed to delete team');
+      setDeleteError(result.message || 'Failed to delete team');
     }
   };
 
-  const handleUpdateMemberRole = async (teamId,userId, newRole) => {
-    // Validate inputs
-    console.log(userId);
-    if (!userId) {
-      
-      alert('Invalid team member ID');
-      return;
-    }
-        if (!teamId) {
-          console.log(teamId);
-      alert('Invalid team ID');
-      return;
-    }
-
-    if (!newRole) {
-      alert('Please select a role');
-      return;
-    }
-
-    // Call the API to update the role
-    const result = await updateTeamMemberRole(teamId,userId, newRole);
-
-    if (result.success) {
-      setEditingRole(null);
-      // Optionally show a success message
-      // alert('Role updated successfully');
-    } else {
-      alert(result.message || 'Failed to update role');
-    }
+  const handleUpdateMemberRole = async (teamId, userId, newRole) => {
+    if (!userId || !teamId || !newRole) return;
+    const result = await updateTeamMemberRole(teamId, userId, newRole);
+    if (result.success) setEditingMemberId(null);
+    else alert(result.message || 'Failed to update role');
   };
 
   const toggleTeamExpanded = (teamId) => {
-    const newExpanded = new Set(expandedTeams);
-    if (newExpanded.has(teamId)) {
-      newExpanded.delete(teamId);
-    } else {
-      newExpanded.add(teamId);
-    }
-    setExpandedTeams(newExpanded);
+    const next = new Set(expandedTeams);
+    if (next.has(teamId)) next.delete(teamId); else next.add(teamId);
+    setExpandedTeams(next);
   };
 
+  const totalMembers = teams.reduce((sum, t) => sum + getTeamMembers(t.id).length, 0);
+
+  const stats = [
+    { label: 'Total Teams',   value: teams.length,           dot: '#faf6ef' },
+    { label: 'Total Members', value: totalMembers,            dot: '#4ade80' },
+    { label: 'Employees',     value: groupedEmployees.length, dot: '#c084fc' },
+  ];
+
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <AdminSidebar 
-        collapsed={navCollapsed} 
-        onToggle={() => setNavCollapsed(!navCollapsed)} 
-      />
-      
-      <div className="flex-1 overflow-auto">
-        {/* Page Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-[#333333]">Team Management</h1>
-            <p className="text-gray-600 mt-1">Create and manage teams and their members</p>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#faf6ef' }}>
+      <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* ── Hero Banner ── */}
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#1a1209' }}>
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#faf6ef', fontFamily: 'Georgia, serif' }}>
+            Team Management
+          </h1>
+          <div className="flex items-center gap-3">
+            {stats.map(s => (
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: 'rgba(255,255,255,0.08)', color: '#faf6ef' }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+                {s.label}: {s.value}
+              </div>
+            ))}
           </div>
         </div>
-        
-        <div className="p-6">
-          <div className="mx-auto max-w-7xl space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <Users size={24} className="text-[#00ADEF]" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Total Teams</p>
-                    <p className="text-2xl font-bold text-[#333333]">{teams.length}</p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <Users size={24} className="text-[#78BE20]" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Total Members</p>
-                    <p className="text-2xl font-bold text-[#78BE20]">
-                      {teams.reduce((sum, team) => sum + getTeamMembers(team.id).length, 0)}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-              <Card className="p-4 border border-gray-200">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Users size={24} className="text-[#333333]" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Available Employees</p>
-                    <p className="text-2xl font-bold text-[#333333]">{groupedEmployees.length}</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
 
-            {/* Create Team Section - Compact and Interactive */}
-            <div 
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-auto">
+          <div className="px-8 py-6 max-w-7xl mx-auto space-y-5">
+
+            {/* Create Team CTA */}
+            <button
               onClick={() => setShowCreateModal(true)}
-              className="group relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-white to-gray-50 p-6 cursor-pointer transition-all duration-300 hover:border-[#F58220] hover:shadow-lg hover:scale-[1.02]"
+              className="group w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white px-6 py-5 flex items-center gap-4 transition-all hover:border-[#F58220] hover:shadow-md text-left"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#F58220] to-[#E0741C] shadow-md group-hover:shadow-lg transition-all">
-                    <Plus size={24} className="text-white" />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
-                      Create New Team
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Click to add a new team and organize your employees
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-[#F58220] opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-sm font-medium">Get Started</span>
-                  <ChevronDown size={20} className="transform group-hover:translate-x-1 transition-transform" />
-                </div>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors" style={{ background: '#f3ede4' }}>
+                <Plus size={20} className="text-gray-500 group-hover:text-[#F58220] transition-colors" />
               </div>
-            </div>
+              <div>
+                <p className="text-sm font-semibold text-[#1a1209] group-hover:text-[#F58220] transition-colors">Create New Team</p>
+                <p className="text-xs text-gray-400">Add a new team and organize your employees</p>
+              </div>
+            </button>
 
-            {/* Teams List */}
-            <Card className="p-6 border border-gray-200">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <Users size={20} className="text-[#333333]" />
-                </div>
+            {/* Teams List Card */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#333333]">All Teams</h2>
-                  <p className="text-sm text-gray-600">Manage team members and roles</p>
+                  <h2 className="text-xl font-extrabold" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>All Teams</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">Manage team members and roles</p>
                 </div>
+                <span className="rounded-full bg-blue-50 border border-blue-100 px-3 py-1 text-xs font-semibold text-blue-600">
+                  {teams.length} {teams.length === 1 ? 'Team' : 'Teams'}
+                </span>
               </div>
 
               {loading ? (
                 <div className="py-16 text-center">
                   <div className="inline-flex p-4 bg-gray-50 rounded-full mb-4 animate-pulse">
-                    <Users size={48} className="text-gray-300" />
+                    <Users size={40} className="text-gray-200" />
                   </div>
-                  <p className="text-gray-500">Loading teams...</p>
+                  <p className="text-sm text-gray-400">Loading teams...</p>
                 </div>
               ) : teams.length === 0 ? (
                 <div className="py-16 text-center">
                   <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
-                    <Users size={64} className="text-gray-300" />
+                    <Users size={48} className="text-gray-200" />
                   </div>
-                  <h3 className="text-xl font-semibold text-[#333333] mb-2">No Teams Yet</h3>
-                  <p className="text-gray-600 mb-6">Create your first team to get started</p>
-                  <Button onClick={() => setShowCreateModal(true)} variant="primary" size="md">
-                    <Plus size={18} />
-                    Create First Team
-                  </Button>
+                  <h3 className="text-base font-semibold mb-1" style={{ color: '#1a1209' }}>No teams yet</h3>
+                  <p className="text-sm text-gray-400 mb-5">Create your first team to get started</p>
+                  <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-colors"
+                    style={{ background: '#1a1209' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#F58220'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
+                  >
+                    <Plus size={15} /> Create First Team
+                  </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {teams.map((team) => {
+                <div>
+                  {/* Table header */}
+                  <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100">
+                    <div className="col-span-5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Team</div>
+                    <div className="col-span-3 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Members</div>
+                    <div className="col-span-4 text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-right">Actions</div>
+                  </div>
+
+                  {teams.map(team => {
                     const isExpanded = expandedTeams.has(team.id);
                     const teamMembers = getTeamMembers(team.id);
                     const memberCount = teamMembers.length;
 
                     return (
-                      <div key={team.id} className="group rounded-xl border-2 border-gray-200 bg-white shadow-sm overflow-hidden hover:border-[#F58220]/30 hover:shadow-md transition-all">
-                        {/* Team Header - Clickable Row */}
-                        <div 
-                          className="flex items-center justify-between p-5 hover:bg-gradient-to-r hover:from-[#F58220]/5 hover:to-transparent transition-all cursor-pointer"
+                      <div key={team.id} className="border-b border-gray-100 last:border-b-0">
+                        {/* Team row */}
+                        <div
+                          className="grid grid-cols-12 gap-4 px-6 py-4 cursor-pointer transition-colors hover:bg-[#faf6ef]"
                           onClick={() => toggleTeamExpanded(team.id)}
                         >
-                          <div className="flex items-center gap-4 flex-1">
-                            {/* Team Icon */}
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#00ADEF] to-[#0090C5] shadow-sm group-hover:shadow-md transition-all">
-                              <Users size={24} className="text-white" />
+                          {/* Team name */}
+                          <div className="col-span-5 flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#1a1209' }}>
+                              <Users size={16} className="text-white" />
                             </div>
-                            
-                            <div className="flex-1">
-                              <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
-                                {team.name}
-                              </h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                                  <Users size={12} />
-                                  {memberCount} {memberCount === 1 ? 'member' : 'members'}
-                                </span>
-                                {memberCount === 0 && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium animate-pulse">
-                                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                                    Empty Team
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            <p className="text-sm font-semibold" style={{ color: '#1a1209' }}>{team.name}</p>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            <Button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTeam(team);
-                                setShowAddMemberModal(true);
-                              }}
-                              variant="secondary"
-                              size="sm"
-                              className="shadow-sm"
-                            >
-                              <UserPlus size={16} />
-                              Add Member
-                            </Button>
+                          {/* Member count */}
+                          <div className="col-span-3 flex items-center">
+                            {memberCount === 0
+                              ? <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">Empty</span>
+                              : <span className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                                  {memberCount} {memberCount === 1 ? 'Member' : 'Members'}
+                                </span>
+                            }
+                          </div>
+
+                          {/* Actions */}
+                          <div className="col-span-4 flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteConfirm(team);
-                              }}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              onClick={() => { setSelectedTeam(team); setShowAddMemberModal(true); }}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 text-[#1a1209] hover:border-[#F58220] hover:text-[#F58220] transition-colors bg-white"
+                            >
+                              <UserPlus size={13} /> Add Member
+                            </button>
+                            <button
+                              onClick={() => setDeleteConfirm(team)}
+                              className="p-1.5 rounded-lg text-red-600 border border-transparent hover:bg-[#fff0f0] hover:border-red-200 transition-all"
                               title="Delete team"
                             >
-                              <Trash2 size={18} />
+                              <Trash2 size={15} />
                             </button>
+                            {isExpanded
+                              ? <ChevronUp size={15} className="text-gray-400" />
+                              : <ChevronDown size={15} className="text-gray-400" />
+                            }
                           </div>
                         </div>
 
-                        {/* Team Members - Enhanced UI */}
-                        {isExpanded && memberCount > 0 && (
-                          <div className="border-t-2 border-[#F58220]/20 bg-gradient-to-b from-gray-50 to-white p-5">
-                            <div className="flex items-center justify-between mb-4">
-                              <h4 className="text-sm font-bold text-[#333333] uppercase tracking-wide flex items-center gap-2">
-                                <Users size={16} className="text-[#F58220]" />
-                                Team Members
-                              </h4>
-                              <span className="px-2 py-1 bg-[#F58220]/10 text-[#F58220] rounded-full text-xs font-semibold">
-                                {memberCount} Total
-                              </span>
-                            </div>
-                            <div className="space-y-3">
-                              {teamMembers.map((member) => (
-                                <div 
-                                  key={`${team.id}-${member.user_id}-${member.team_member_id}`}
-                                  className="group/member flex items-center justify-between rounded-xl border-2 border-gray-200 bg-white p-4 hover:border-[#00ADEF]/30 hover:shadow-md transition-all"
-                                >
-                                  <div className="flex items-center gap-3 flex-1">
-                                    {/* Avatar */}
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#F58220] to-[#E0741C] text-white font-bold shadow-sm">
-                                      {(member.name || member.email).charAt(0).toUpperCase()}
-                                    </div>
-                                    
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-semibold text-[#333333] truncate">
-                                        {member.name || member.email}
-                                      </p>
-                                      <p className="text-xs text-gray-600 truncate">{member.email}</p>
-                                    </div>
-                                  </div>
+                        {/* Expanded members */}
+                        {isExpanded && (
+                          <div className="px-6 py-4 border-t border-gray-100" style={{ background: '#faf6ef' }}>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Team Members</p>
+                            {memberCount === 0 ? (
+                              <p className="text-xs text-gray-400">No members yet. Add someone to get started.</p>
+                            ) : (
+                              <div className="space-y-2">
+                                {teamMembers.map(member => {
+                                  const colorClass = AVATAR_COLORS[member.id % AVATAR_COLORS.length];
+                                  const initials = member.name
+                                    ? member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                                    : (member.email?.[0] ?? '?').toUpperCase();
 
-                                  <div className="flex items-center gap-2">
-                                    {/* Role Editor */}
-                                    {editingMemberId === `${team.id}-${member.id}` ? (
-                                      <select
-                                        defaultValue={member.role_in_team}
-                                        onChange={(e) => handleUpdateMemberRole(team.id, member.id, e.target.value)}
-                                        onBlur={() => setEditingMemberId(null)}
-                                        className="rounded-lg border-2 border-[#00ADEF] px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00ADEF]/20 shadow-sm"
-                                        autoFocus
-                                      >
-                                        <option value="member">member</option>
-                                        <option value="manager">manager</option>
-                                      </select>
-                                    ) : (
-                                      <button
-                                        onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
-                                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium bg-gradient-to-r from-gray-100 to-gray-50 border-2 border-gray-200 transition-all hover:from-[#00ADEF]/10 hover:to-[#00ADEF]/5 hover:border-[#00ADEF]/30 shadow-sm"
-                                      >
-                                        <span className="text-[#333333] font-semibold">{member.role_in_team}</span>
-                                        <Edit2 size={14} className="text-gray-500 group-hover/member:text-[#00ADEF] transition-colors" />
-                                      </button>
-                                    )}
-
-                                    {/* Remove Button */}
-                                    <button
-                                      onClick={() => handleRemoveMember(team.id, member.user_id)}
-                                      className="rounded-lg p-2 text-red-600 transition-all hover:bg-red-50 border-2 border-transparent hover:border-red-200 shadow-sm"
-                                      title="Remove from team"
+                                  return (
+                                    <div
+                                      key={`${team.id}-${member.user_id}`}
+                                      className="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3"
                                     >
-                                      <X size={18} />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                                          <span className="text-white text-xs font-bold">{initials}</span>
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="text-sm font-semibold truncate" style={{ color: '#1a1209' }}>{member.name || member.email}</p>
+                                          <p className="text-xs text-gray-400 truncate">{member.email}</p>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        {/* Role dropdown */}
+                                        {editingMemberId === `${team.id}-${member.id}` ? (
+                                          <RoleDropdown
+                                            value={member.role_in_team}
+                                            roles={TEAM_ROLES}
+                                            onChange={newRole => handleUpdateMemberRole(team.id, member.id, newRole)}
+                                            onClose={() => setEditingMemberId(null)}
+                                          />
+                                        ) : (
+                                          <button
+                                            onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
+                                            className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#F58220] hover:text-[#F58220]"
+                                            style={{ color: '#1a1209' }}
+                                          >
+                                            {member.role_in_team}
+                                          </button>
+                                        )}
+
+                                        {/* Remove */}
+                                        <button
+                                          onClick={() => handleRemoveMember(team.id, member.user_id)}
+                                          className="p-1.5 rounded-lg text-red-600 border border-transparent hover:bg-[#fff0f0] hover:border-red-200 transition-all"
+                                          title="Remove from team"
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                  );
+                    );
                   })}
                 </div>
               )}
-            </Card>
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Create Team Modal */}
+      {/* ── Create Team Modal ── */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <Card className="w-full max-w-md" padding="lg" shadow="xl">
-            <h2 className="mb-4 text-xl font-bold text-[#333333]">Create New Team</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[#333333]">Team Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter team name (e.g., Marketing, Engineering)"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleCreateTeam()}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20"
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-3">
-                <Button onClick={handleCreateTeam} variant="primary" size="md" className="flex-1" disabled={!newTeamName.trim()}>
-                  Create Team
-                </Button>
-                <Button onClick={() => {
-                  setShowCreateModal(false);
-                  setNewTeamName('');
-                }} variant="secondary" size="md">
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
+        <ModalOverlay onClose={() => { setShowCreateModal(false); setNewTeamName(''); }}>
+          <h2 className="text-lg font-bold mb-1" style={{ color: '#1a1209' }}>Create New Team</h2>
+          <p className="text-xs text-gray-400 mb-5">Give your team a clear, descriptive name</p>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Team Name</label>
+          <input
+            type="text"
+            placeholder="e.g. Marketing, Engineering..."
+            value={newTeamName}
+            onChange={e => setNewTeamName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleCreateTeam()}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-5"
+            autoFocus
+          />
+          <div className="flex gap-3">
+            <button
+              onClick={handleCreateTeam}
+              disabled={!newTeamName.trim()}
+              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40"
+              style={{ background: '#1a1209' }}
+              onMouseEnter={e => { if (newTeamName.trim()) e.currentTarget.style.background = '#F58220'; }}
+              onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
+            >
+              Create Team
+            </button>
+            <button
+              onClick={() => { setShowCreateModal(false); setNewTeamName(''); }}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#F58220] text-[#F58220] hover:bg-orange-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
-      {/* Add Member Modal */}
+      {/* ── Add Member Modal ── */}
       {showAddMemberModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <Card className="w-full max-w-md" padding="lg" shadow="xl">
-            <h2 className="mb-4 text-xl font-bold text-[#333333]">Add Member to {selectedTeam?.name || 'Team'}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[#333333]">Select Employee</label>
-                <select
-                  value={selectedUserId}
-                  onChange={(e) => setSelectedUserId(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20"
-                >
-                  <option value="">Choose an employee...</option>
-                  {availableEmployeesForTeam.map(emp => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name || emp.email} {emp.teams.length > 0 ? `(In ${emp.teams.length} team${emp.teams.length > 1 ? 's' : ''})` : ''}
-                    </option>
-                  ))}
-                </select>
-                {availableEmployeesForTeam.length === 0 && (
-                  <p className="mt-2 text-sm text-gray-600">All employees are already in this team</p>
-                )}
-              </div>
+        <ModalOverlay onClose={() => { setShowAddMemberModal(false); setSelectedUserId(''); setSelectedRole(''); setSelectedTeam(null); }}>
+          <h2 className="text-lg font-bold mb-1" style={{ color: '#1a1209' }}>Add Member</h2>
+          <p className="text-xs text-gray-400 mb-5">Adding to <span className="font-semibold text-[#1a1209]">{selectedTeam?.name}</span></p>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-[#333333]">Select Role</label>
-                <select
-                  value={selectedRole}
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20"
-                >
-                  <option value="">Choose a role...</option>
-                  <option value="member">member</option>
-                  <option value="manager">manager</option>
-                </select>
-              </div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Employee</label>
+          <select
+            value={selectedUserId}
+            onChange={e => setSelectedUserId(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-4"
+          >
+            <option value="">Choose an employee...</option>
+            {availableEmployeesForTeam.map(emp => (
+              <option key={emp.id} value={emp.id}>
+                {emp.name || emp.email}{emp.teams.length > 0 ? ` (${emp.teams.length} team${emp.teams.length > 1 ? 's' : ''})` : ''}
+              </option>
+            ))}
+          </select>
+          {availableEmployeesForTeam.length === 0 && (
+            <p className="text-xs text-amber-600 mb-4">All employees are already in this team.</p>
+          )}
 
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleAddMember} 
-                  variant="primary"
-                  size="md"
-                  className="flex-1"
-                  disabled={!selectedUserId || !selectedRole || availableEmployeesForTeam.length === 0}
-                >
-                  Add Member
-                </Button>
-                <Button onClick={() => {
-                  setShowAddMemberModal(false);
-                  setSelectedUserId('');
-                  setSelectedRole('');
-                  setSelectedTeam(null);
-                }} variant="secondary" size="md">
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Role</label>
+          <select
+            value={selectedRole}
+            onChange={e => setSelectedRole(e.target.value)}
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-5"
+          >
+            <option value="">Choose a role...</option>
+            {TEAM_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleAddMember}
+              disabled={!selectedUserId || !selectedRole || availableEmployeesForTeam.length === 0}
+              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40"
+              style={{ background: '#1a1209' }}
+              onMouseEnter={e => { if (selectedUserId && selectedRole) e.currentTarget.style.background = '#F58220'; }}
+              onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
+            >
+              Add Member
+            </button>
+            <button
+              onClick={() => { setShowAddMemberModal(false); setSelectedUserId(''); setSelectedRole(''); setSelectedTeam(null); }}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#F58220] text-[#F58220] hover:bg-orange-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
-      {/* Delete Team Confirmation Dialog */}
+      {/* ── Delete Confirm ── */}
       {deleteConfirm && (
-        <ConfirmDialog
-          title="Delete Team"
-          message={`Are you sure you want to delete "${deleteConfirm.name}"? This will remove all team members and cannot be undone.`}
-          confirmText="Delete Team"
-          cancelText="Cancel"
-          onConfirm={handleDeleteTeam}
-          onCancel={() => setDeleteConfirm(null)}
-          variant="danger"
-        />
+        <>
+          {deleteError && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+              <div
+                className="pointer-events-auto max-w-sm w-full mx-4 px-4 py-3 rounded-xl flex items-start gap-3 shadow-lg"
+                style={{ background: '#fef2f2', border: '1px solid #fecaca', marginBottom: '220px' }}
+              >
+                <span className="text-red-500 text-lg leading-none flex-shrink-0">⚠</span>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-700">Cannot delete team</p>
+                  <p className="text-xs text-red-600 mt-0.5">{deleteError}</p>
+                </div>
+                <button onClick={() => setDeleteError(null)} className="text-red-400 hover:text-red-600 text-lg leading-none flex-shrink-0">×</button>
+              </div>
+            </div>
+          )}
+          <ConfirmDialog
+            title="Delete Team"
+            message={`Are you sure you want to delete "${deleteConfirm.name}"? This will remove all team members and cannot be undone.`}
+            confirmText="Delete Team"
+            cancelText="Cancel"
+            onConfirm={handleDeleteTeam}
+            onCancel={() => { setDeleteConfirm(null); setDeleteError(null); }}
+            variant="danger"
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+// ── Modal Overlay ──────────────────────────────────────────────────────────────
+const ModalOverlay = ({ children, onClose }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative" style={{ border: '1px solid #f0ebe3' }}>
+      <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+        <X size={16} />
+      </button>
+      {children}
+    </div>
+  </div>
+);
+
+// ── Role Dropdown ──────────────────────────────────────────────────────────────
+const RoleDropdown = ({ value, roles, onChange, onClose }) => {
+  const [selected, setSelected] = useState(value);
+  const [open, setOpen] = useState(true);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = e => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  const handleSelect = role => {
+    setSelected(role);
+    setOpen(false);
+    onChange(role);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onMouseDown={e => { e.stopPropagation(); e.preventDefault(); setOpen(v => !v); }}
+        className="text-xs font-semibold border border-[#F58220] text-[#F58220] px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-orange-50"
+      >
+        {selected}
+        <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1.5 z-30 bg-white rounded-2xl overflow-hidden"
+          style={{ minWidth: '150px', boxShadow: '0 8px 32px rgba(26,18,9,0.14)', border: '1px solid #f0ebe3' }}
+        >
+          <div className="px-3 pt-2.5 pb-1">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Role</p>
+          </div>
+          <div className="pb-2">
+            {roles.map(role => (
+              <button
+                key={role}
+                onClick={e => { e.stopPropagation(); handleSelect(role); }}
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
+                style={role === selected ? { background: '#F58220', color: '#fff', fontWeight: 600 } : { color: '#1a1209' }}
+                onMouseEnter={e => { if (role !== selected) e.currentTarget.style.background = '#faf6ef'; }}
+                onMouseLeave={e => { if (role !== selected) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <span>{role}</span>
+                {role === selected && (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

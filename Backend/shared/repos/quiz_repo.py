@@ -101,6 +101,33 @@ def delete_quiz(db: Session, quiz_id: int) -> bool:
     return True
 
 
+def get_course_quiz_references_for_quiz(db: Session, quiz_id: int) -> int:
+    """Count how many CourseQuizQuestions actively reference any question from this quiz"""
+    from shared.models.course_quiz_question import CourseQuizQuestion, QuestionType
+    return (
+        db.query(CourseQuizQuestion)
+        .join(QuizQuestion, CourseQuizQuestion.source_document_question_id == QuizQuestion.id)
+        .filter(
+            QuizQuestion.quiz_id == quiz_id,
+            CourseQuizQuestion.question_type == QuestionType.REFERENCED
+        )
+        .count()
+    )
+
+
+def get_course_quiz_references_for_question(db: Session, question_id: int) -> int:
+    """Count how many CourseQuizQuestions actively reference this specific question"""
+    from shared.models.course_quiz_question import CourseQuizQuestion, QuestionType
+    return (
+        db.query(CourseQuizQuestion)
+        .filter(
+            CourseQuizQuestion.source_document_question_id == question_id,
+            CourseQuizQuestion.question_type == QuestionType.REFERENCED
+        )
+        .count()
+    )
+
+
 def update_total_questions(db: Session, quiz_id: int) -> Optional[Quiz]:
     """Recalculate and update total_questions count"""
     quiz = get_quiz_by_id(db, quiz_id)

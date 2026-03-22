@@ -22,6 +22,8 @@ import {
   getVideos,
   getVideo,
   deleteVideo,
+  getProcessedDocuments,
+  getAvailableEmployees,
 } from "../services/trainingApi";
 
 export const AdminTrainingContext = createContext(null);
@@ -594,7 +596,6 @@ export const AdminTrainingProvider = ({ children }) => {
         // Additional utility functions
         fetchProcessedDocuments: async () => {
           try {
-            const { getProcessedDocuments } = await import('../services/trainingApi');
             const res = await getProcessedDocuments();
             return { success: res?.success || true, data: res?.data || res };
           } catch (err) {
@@ -604,7 +605,6 @@ export const AdminTrainingProvider = ({ children }) => {
         
         fetchAvailableEmployees: async () => {
           try {
-            const { getAvailableEmployees } = await import('../services/trainingApi');
             const res = await getAvailableEmployees();
             return { success: res?.success || true, data: res?.data || res };
           } catch (err) {

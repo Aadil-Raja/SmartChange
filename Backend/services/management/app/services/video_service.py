@@ -77,18 +77,24 @@ def get_video_by_id(db: Session, video_id: int):
 
 
 def delete_video(db: Session, video_id: int):
+    from shared.models.course_content import ContentItem
     video = videos_repo.get_video(db, video_id)
     if not video:
         raise ValueError(f"Video with id {video_id} not found")
-    
+
+    # Block if referenced by any course content item
+    ref_count = db.query(ContentItem.id).filter(ContentItem.video_id == video_id).count()
+    if ref_count > 0:
+        raise ValueError(
+            f"Cannot delete — this video is used in {ref_count} course content item{'s' if ref_count != 1 else ''}. "
+            "Remove it from all courses first."
+        )
+
     # Delete from Cloudinary
     try:
-        delete_with_thumbnail(video.cloudinary_public_id,"video")
+        delete_with_thumbnail(video.cloudinary_public_id, "video")
     except Exception as e:
-        # Log the error but continue with DB deletion
         print(f"Warning: Failed to delete video from Cloudinary: {e}")
-    
-    # Delete from database
+
     videos_repo.delete_video(db, video_id)
-    
     return {"id": video_id, "deleted": True}

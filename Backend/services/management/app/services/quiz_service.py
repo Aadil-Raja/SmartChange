@@ -239,10 +239,20 @@ def delete_quiz(db: Session, *, quiz_id: int, user_id: int):
     quiz = quiz_repo.get_quiz_by_id(db, quiz_id)
     if not quiz:
         return make_response(False, "Quiz not found", status_code=404, error="Quiz does not exist")
-    
+
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can delete", status_code=403, error="User is not the quiz creator")
-    
+
+    ref_count = quiz_repo.get_course_quiz_references_for_quiz(db, quiz_id)
+    if ref_count > 0:
+        return make_response(
+            False,
+            f"Cannot delete: {ref_count} question(s) from this quiz are referenced by course quizzes. "
+            "Remove those references first.",
+            status_code=409,
+            error="Quiz questions are in use by course quizzes"
+        )
+
     quiz_repo.delete_quiz(db, quiz_id)
     return make_response(True, "Quiz deleted", status_code=200)
 
@@ -323,6 +333,27 @@ def update_question(
     quiz = quiz_repo.get_quiz_by_id(db, question.quiz_id)
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can edit questions", status_code=403, error="User is not the quiz creator")
+
+    # Block edit if this question is referenced by a published course quiz
+    from shared.models.course_quiz_question import CourseQuizQuestion, QuestionType
+    from shared.models.course_quiz import CourseQuiz, QuizStatus as CourseQuizStatus
+    published_ref_count = (
+        db.query(CourseQuizQuestion)
+        .join(CourseQuiz, CourseQuizQuestion.course_quiz_id == CourseQuiz.id)
+        .filter(
+            CourseQuizQuestion.source_document_question_id == question_id,
+            CourseQuizQuestion.question_type == QuestionType.REFERENCED,
+            CourseQuiz.status == CourseQuizStatus.PUBLISHED
+        )
+        .count()
+    )
+    if published_ref_count > 0:
+        return make_response(
+            False,
+            f"Cannot edit: this question is referenced by {published_ref_count} published course quiz(zes). Editing it would affect employees currently taking those quizzes.",
+            status_code=409,
+            error="Question is referenced by published course quizzes"
+        )
     
     updated_question = quiz_repo.update_question_with_options(
         db,
@@ -361,11 +392,21 @@ def delete_question(db: Session, *, question_id: int, user_id: int):
     question = quiz_repo.get_question_by_id(db, question_id)
     if not question:
         return make_response(False, "Question not found", status_code=404, error="Question does not exist")
-    
+
     quiz = quiz_repo.get_quiz_by_id(db, question.quiz_id)
     if quiz.created_by != user_id:
         return make_response(False, "Only quiz creator can delete questions", status_code=403, error="User is not the quiz creator")
-    
+
+    ref_count = quiz_repo.get_course_quiz_references_for_question(db, question_id)
+    if ref_count > 0:
+        return make_response(
+            False,
+            f"Cannot delete: this question is referenced by {ref_count} course quiz(zes). "
+            "Remove those references first.",
+            status_code=409,
+            error="Question is in use by course quizzes"
+        )
+
     quiz_repo.delete_question(db, question_id)
     return make_response(True, "Question deleted", status_code=200)
 

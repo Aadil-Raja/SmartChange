@@ -3,1148 +3,619 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import {
-  ArrowLeft,
-  Edit,
-  Upload,
-  Plus,
-  FileText,
-  Video,
-  Link as LinkIcon,
-  Trash2,
-  Edit3,
-  HelpCircle,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Users,
-  Settings,
-  Eye,
-  GripVertical,
+  ArrowLeft, Edit, Upload, Plus, FileText, Video,
+  Link as LinkIcon, Trash2, Edit3, HelpCircle, Clock,
+  CheckCircle, Eye, GripVertical, X, ChevronRight,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 import AdminContentForm from "./AdminContentForm";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
-import Modal from "../../components/ui/Modal";
-import Input2 from "../../components/ui/Input2";
+import AdminSidebar from "../../components/ui/AdminSidebar";
 import * as quizApi from "../../services/quizApi";
+
+const quizInputBase = {
+  width: "100%", padding: "10px 14px", borderRadius: "10px",
+  border: "1.5px solid #e0d8ce", background: "white",
+  fontSize: "14px", color: "#1a1209", outline: "none",
+  transition: "border-color 0.15s, box-shadow 0.15s",
+};
+const qFocusOn  = (e) => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
+const qFocusOff = (e) => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; };
+
+const COURSE_EMOJIS = ["📚","🎯","💡","🔬","🛠️","📊","🌐","🧠","⚡","🚀"];
+const getEmoji = (id) => COURSE_EMOJIS[(id || 0) % COURSE_EMOJIS.length];
 
 const AdminCourseDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const {
-    currentCourse,
-    contentItems,
-    quizzes,
-    loading,
-    error,
-    success,
-    fetchCourseDetails,
-    uploadThumbnail,
-    deleteContent,
-    reorderContent,
-    clearMessages,
+    currentCourse, contentItems, quizzes, loading, error, success,
+    fetchCourseDetails, uploadThumbnail, deleteContent, reorderContent, clearMessages,
   } = useAdminTraining();
 
-  // Local state for quiz operation messages
   const [quizError, setQuizError] = useState(null);
   const [quizSuccess, setQuizSuccess] = useState(null);
-
   const [showContentForm, setShowContentForm] = useState(false);
   const [editingContent, setEditingContent] = useState(null);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-  // Quiz management state
   const [showCreateQuizModal, setShowCreateQuizModal] = useState(false);
   const [showQuizDetailModal, setShowQuizDetailModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [quizForm, setQuizForm] = useState({
-    title: '',
-    description: '',
-    prerequisite_content_ids: []
-  });
+  const [quizForm, setQuizForm] = useState({ title: '', description: '', prerequisite_content_ids: [] });
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [deleteQuizConfirm, setDeleteQuizConfirm] = useState(null);
-
-  // Drag and drop state
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(true);
   const hasFetchedCourse = useRef(null);
 
-  // Clear quiz messages
-  const clearQuizMessages = () => {
-    setQuizError(null);
-    setQuizSuccess(null);
-  };
+  const clearQuizMessages = () => { setQuizError(null); setQuizSuccess(null); };
 
   useEffect(() => {
     if (id && hasFetchedCourse.current !== id) {
       hasFetchedCourse.current = id;
-      console.log('Loading course details for ID:', id);
       fetchCourseDetails(id);
     }
-    return () => {
-      clearMessages();
-      clearQuizMessages();
-    };
+    return () => { clearMessages(); clearQuizMessages(); };
   }, [id]);
 
-  // Debug effect to track quizzes changes
-  useEffect(() => {
-    console.log('Quizzes updated:', quizzes);
-  }, [quizzes]);
+  useEffect(() => { console.log('Quizzes updated:', quizzes); }, [quizzes]);
 
   const handleThumbnailUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const maxSize = 100 * 1024 * 1024; // 100MB
-    if (file.size > maxSize) {
-      alert(`File size exceeds 100MB limit`);
-      e.target.value = "";
-      return;
-    }
-
+    if (file.size > 100 * 1024 * 1024) { alert('File size exceeds 100MB limit'); e.target.value = ''; return; }
     setUploadingThumbnail(true);
     const result = await uploadThumbnail(id, file);
     setUploadingThumbnail(false);
-    e.target.value = "";
-
-    if (result.success) {
-      await fetchCourseDetails(id);
-    }
+    e.target.value = '';
+    if (result.success) await fetchCourseDetails(id);
   };
 
-  const handleAddContent = () => {
-    setEditingContent(null);
-    setShowContentForm(true);
-  };
-
-  const handleEditContent = (content) => {
-    setEditingContent(content);
-    setShowContentForm(true);
-  };
+  const handleAddContent = () => { setEditingContent(null); setShowContentForm(true); };
+  const handleEditContent = (content) => { setEditingContent(content); setShowContentForm(true); };
 
   const handleDeleteContent = async () => {
     if (!deleteConfirm) return;
-    
     const result = await deleteContent(deleteConfirm.id, id);
     setDeleteConfirm(null);
-    
-    if (result.success) {
-      await fetchCourseDetails(id);
-    }
+    if (result.success) await fetchCourseDetails(id);
   };
 
-  // Quiz management functions
   const handleCreateQuiz = () => {
-    setQuizForm({
-      title: `${currentCourse.title} - Quiz`,
-      description: '',
-      prerequisite_content_ids: []
-    });
+    setSelectedQuiz(null);
+    setQuizForm({ title: `${currentCourse.title} - Quiz`, description: '', prerequisite_content_ids: [] });
     setShowCreateQuizModal(true);
   };
 
   const handleEditQuiz = (quiz) => {
     setSelectedQuiz(quiz);
-    setQuizForm({
-      title: quiz.title,
-      description: quiz.description || '',
-      prerequisite_content_ids: quiz.prerequisite_content_ids || []
-    });
+    setQuizForm({ title: quiz.title, description: quiz.description || '', prerequisite_content_ids: quiz.prerequisite_content_ids || [] });
     setShowCreateQuizModal(true);
   };
 
-  const handleViewQuiz = (quiz) => {
-    setSelectedQuiz(quiz);
-    setShowQuizDetailModal(true);
-  };
+  const handleViewQuiz = (quiz) => { setSelectedQuiz(quiz); setShowQuizDetailModal(true); };
 
-  // Helper function to refresh quiz data
   const refreshQuizData = async () => {
-    try {
-      console.log('Refreshing quiz data for course ID:', id);
-      
-      // Add a small delay to ensure backend has processed the changes
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Force a fresh fetch of course details
-      const result = await fetchCourseDetails(id);
-      console.log('Quiz refresh result:', result);
-      
-      return result;
-    } catch (err) {
-      console.error('Failed to refresh quiz data:', err);
-      return { success: false };
-    }
+    try { await new Promise(r => setTimeout(r, 300)); return await fetchCourseDetails(id); }
+    catch { return { success: false }; }
   };
 
   const submitQuiz = async (e) => {
     e.preventDefault();
     setSubmittingQuiz(true);
     clearQuizMessages();
-    
     try {
-      let result;
-      if (selectedQuiz) {
-        // Update existing quiz
-        result = await quizApi.updateCourseQuiz(selectedQuiz.id, quizForm);
-        setQuizSuccess('Quiz updated successfully');
-      } else {
-        // Create new quiz
-        result = await quizApi.createCourseQuiz(id, quizForm);
-        setQuizSuccess('Quiz created successfully');
-      }
-      
+      if (selectedQuiz) { await quizApi.updateCourseQuiz(selectedQuiz.id, quizForm); setQuizSuccess('Quiz updated successfully'); }
+      else              { await quizApi.createCourseQuiz(id, quizForm);               setQuizSuccess('Quiz created successfully'); }
       setShowCreateQuizModal(false);
       setSelectedQuiz(null);
-      
-      // Immediately refresh quiz data
       await refreshQuizData();
-      
-    } catch (err) {
-      console.error('Quiz operation error:', err);
-      setQuizError(err.response?.data?.detail || 'Failed to save quiz');
-    } finally {
-      setSubmittingQuiz(false);
-    }
+    } catch (err) { setQuizError(err.response?.data?.detail || 'Failed to save quiz'); }
+    finally { setSubmittingQuiz(false); }
   };
 
   const handleDeleteQuiz = async () => {
     if (!deleteQuizConfirm) return;
-    
     clearQuizMessages();
     try {
       await quizApi.deleteCourseQuiz(deleteQuizConfirm.id);
       setQuizSuccess('Quiz deleted successfully');
       setDeleteQuizConfirm(null);
-      
-      // Immediately refresh quiz data
       await refreshQuizData();
-      
     } catch (err) {
-      console.error('Quiz deletion error:', err);
-      setQuizError(err.response?.data?.detail || 'Failed to delete quiz');
+      setQuizError(err.response?.data?.message || err.response?.data?.detail || err.message || 'Failed to delete quiz');
+      setDeleteQuizConfirm(null);
     }
   };
 
   const handlePublishQuiz = async (quizId) => {
     clearQuizMessages();
-    try {
-      await quizApi.publishCourseQuiz(quizId);
-      setQuizSuccess('Quiz published successfully');
-      
-      // Immediately refresh quiz data
-      await refreshQuizData();
-      
-    } catch (err) {
-      console.error('Quiz publish error:', err);
-      setQuizError(err.response?.data?.detail || 'Failed to publish quiz');
-    }
+    try { await quizApi.publishCourseQuiz(quizId); setQuizSuccess('Quiz published successfully'); await refreshQuizData(); }
+    catch (err) { setQuizError(err.response?.data?.message || err.response?.data?.detail || 'Failed to publish quiz'); }
   };
 
-  // Drag and drop handlers
-  const handleDragStart = (e, item, index) => {
-    setDraggedItem({ item, index });
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
+  const handleDragStart = (e, item, index) => { setDraggedItem({ item, index }); e.dataTransfer.effectAllowed = 'move'; };
+  const handleDragOver  = (e, index) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverIndex(index); };
+  const handleDragLeave = () => setDragOverIndex(null);
 
   const handleDrop = async (e, dropIndex) => {
-    e.preventDefault();
-    setDragOverIndex(null);
-    
-    if (!draggedItem || draggedItem.index === dropIndex) {
-      setDraggedItem(null);
-      return;
-    }
-
+    e.preventDefault(); setDragOverIndex(null);
+    if (!draggedItem || draggedItem.index === dropIndex) { setDraggedItem(null); return; }
     setIsReordering(true);
-    
     try {
-      // Create new order array
       const newItems = [...contentItems];
-      const [movedItem] = newItems.splice(draggedItem.index, 1);
-      newItems.splice(dropIndex, 0, movedItem);
-
-      // Update order_index for all items
-      const reorderData = newItems.map((item, index) => ({
-        id: item.id,
-        order_index: index
-      }));
-
-      // Call API to reorder
-      const result = await reorderContent(id, reorderData);
-      
-      if (result.success) {
-        // Success message is handled by context
-      }
-    } catch (err) {
-      console.error('Reorder error:', err);
-      setQuizError('Failed to reorder content items');
-    } finally {
-      setIsReordering(false);
-      setDraggedItem(null);
-    }
+      const [moved] = newItems.splice(draggedItem.index, 1);
+      newItems.splice(dropIndex, 0, moved);
+      await reorderContent(id, newItems.map((item, i) => ({ id: item.id, order_index: i })));
+    } catch { setQuizError('Failed to reorder content items'); }
+    finally { setIsReordering(false); setDraggedItem(null); }
   };
 
   const getContentIcon = (type) => {
     switch (type) {
-      case "document":
-        return <FileText size={22} className="text-[#00ADEF]" />;
-      case "video":
-        return <Video size={22} className="text-[#F58220]" />;
-      case "link":
-        return <LinkIcon size={22} className="text-[#78BE20]" />;
-      default:
-        return <FileText size={22} className="text-gray-500" />;
+      case 'document': return <FileText size={18} className="text-[#00ADEF]" />;
+      case 'video':    return <Video    size={18} className="text-[#F58220]" />;
+      case 'link':     return <LinkIcon size={18} className="text-[#78BE20]" />;
+      default:         return <FileText size={18} className="text-gray-400"  />;
     }
   };
 
-  const getQuizStatusIcon = (status) => {
-    switch (status?.toUpperCase()) {
-      case "PUBLISHED":
-        return <CheckCircle size={16} className="text-green-600" />;
-      case "DRAFT":
-        return <Clock size={16} className="text-yellow-600" />;
-      default:
-        return <AlertCircle size={16} className="text-gray-600" />;
-    }
-  };
+  const fmt = (d) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
+  // ── Loading / error states ──
   if (loading && !currentCourse) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="large" />
+      <div className="flex h-screen overflow-hidden" style={{ background: '#faf6ef' }}>
+        <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
+        <div className="flex-1 flex items-center justify-center"><LoadingSpinner size="large" /></div>
       </div>
     );
   }
-
   if (!currentCourse) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Alert variant="error">Course not found</Alert>
+      <div className="flex h-screen overflow-hidden" style={{ background: '#faf6ef' }}>
+        <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
+        <div className="flex-1 flex items-center justify-center px-8"><Alert variant="error">Course not found</Alert></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen  bg-gray-50">
-      {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <button
-            onClick={() => navigate("/admin/training")}
-            className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Courses</span>
-          </button>
-        </div>
-      </div>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#faf6ef' }}>
+      <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Success/Error Alerts */}
-        {success && (
-          <Alert variant="success" className="mb-6" onClose={clearMessages}>
-            {success}
-          </Alert>
-        )}
-        {error && (
-          <Alert variant="error" className="mb-6" onClose={clearMessages}>
-            {error}
-          </Alert>
-        )}
-        {quizSuccess && (
-          <Alert variant="success" className="mb-6" onClose={clearQuizMessages}>
-            {quizSuccess}
-          </Alert>
-        )}
-        {quizError && (
-          <Alert variant="error" className="mb-6" onClose={clearQuizMessages}>
-            {quizError}
-          </Alert>
-        )}
-
-        {/* Course Hero Section */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm mb-8">
-          {/* Thumbnail Banner */}
-          <div className="relative h-64 bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 overflow-hidden group">
-            {currentCourse.thumbnail_url ? (
-              <>
-                <img
-                  src={currentCourse.thumbnail_url}
-                  alt={currentCourse.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Upload size={64} className="text-[#F58220]/30" />
-              </div>
-            )}
-            
-            {/* Upload Overlay */}
-            <label
-              htmlFor="thumbnail-upload"
-              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-            >
-              <div className="text-white text-center">
-                <div className="bg-white/20 backdrop-blur-sm rounded-full p-4 inline-block mb-3">
-                  <Upload size={32} />
-                </div>
-                <p className="text-lg font-semibold">
-                  {uploadingThumbnail ? "Uploading..." : "Change Thumbnail"}
-                </p>
-                <p className="text-sm text-white/80 mt-1">Click to upload a new image</p>
-              </div>
-            </label>
-            <input
-              type="file"
-              id="thumbnail-upload"
-              className="hidden"
-              accept="image/*"
-              onChange={handleThumbnailUpload}
-              disabled={uploadingThumbnail}
-            />
-
-            {/* Status Badge & Edit Button */}
-            <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Breadcrumb top bar ── */}
+        <div className="bg-white flex-shrink-0" style={{ borderBottom: '1px solid #e8e0d4' }}>
+          <div className="px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-sm">
+              <button
+                onClick={() => navigate('/admin/training')}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full border font-medium transition-all"
+                style={{ borderColor: '#e0d8ce', color: '#6b5e4e', background: 'white' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#F58220'; e.currentTarget.style.color = '#F58220'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; }}
+              >
+                <ArrowLeft size={13} /> Courses
+              </button>
+              <ChevronRight size={14} style={{ color: '#c4b8a8' }} />
+              <span className="font-semibold truncate max-w-xs" style={{ color: '#1a1209' }}>{currentCourse.title}</span>
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate(`/admin/training/edit/${id}`)}
-                className="group flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm border-2 border-gray-200 rounded-lg shadow-lg hover:border-[#F58220] hover:bg-[#F58220] transition-all duration-300"
-                title="Edit Course"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all"
+                style={{ borderColor: '#e0d8ce', color: '#3d3228', background: 'white' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#F58220'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#F58220'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#3d3228'; e.currentTarget.style.borderColor = '#e0d8ce'; }}
               >
-                <Edit size={18} className="text-gray-700 group-hover:text-white transition-colors" />
-                <span className="text-sm font-semibold text-gray-700 group-hover:text-white transition-colors">
-                  Edit
-                </span>
+                <Edit size={13} /> Edit
               </button>
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
-                  currentCourse.is_active
-                    ? "bg-green-500/90 text-white"
-                    : "bg-gray-500/90 text-white"
-                }`}
-              >
-                {currentCourse.is_active ? "Active" : "Inactive"}
+              <span className="px-4 py-1.5 rounded-full text-xs font-semibold"
+                style={currentCourse.is_active
+                  ? { background: '#e6f4f1', color: '#0d9488', border: '1px solid #99e6da' }
+                  : { background: '#f0ede8', color: '#78716c', border: '1px solid #d6cfc6' }}>
+                {currentCourse.is_active ? '● Active' : '● Inactive'}
               </span>
             </div>
           </div>
-
-          {/* Course Details */}
-          <div className="p-6">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-[#333333] mb-3">
-                {currentCourse.title}
-              </h1>
-              {currentCourse.department && (
-                <div className="mb-4">
-                  <span className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-[#F58220] px-4 py-2 rounded-lg text-sm font-semibold">
-                    <FileText size={16} />
-                    {currentCourse.department}
-                  </span>
-                </div>
-              )}
-              {currentCourse.description && (
-                <p className="text-gray-700 leading-relaxed text-base max-w-3xl mx-auto">
-                  {currentCourse.description}
-                </p>
-              )}
-            </div>
-
-            {/* Stats Row */}
-            <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="bg-gray-100 rounded-lg p-2">
-                  <HelpCircle size={18} className="text-[#78BE20]" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Quizzes</p>
-                  <p className="font-bold text-[#333333]">{quizzes.length}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="bg-gray-100 rounded-lg p-2">
-                  <FileText size={18} className="text-[#F58220]" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Content Items</p>
-                  <p className="font-bold text-[#333333]">{contentItems.length}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="bg-gray-100 rounded-lg p-2">
-                  <Video size={18} className="text-[#00ADEF]" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Videos</p>
-                  <p className="font-bold text-[#333333]">
-                    {contentItems.filter(item => item.type === 'video').length}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <div className="bg-gray-100 rounded-lg p-2">
-                  <LinkIcon size={18} className="text-[#78BE20]" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Links</p>
-                  <p className="font-bold text-[#333333]">
-                    {contentItems.filter(item => item.type === 'link').length}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm ml-auto">
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">Created</p>
-                  <p className="font-semibold text-gray-700">{formatDate(currentCourse.created_at)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Content Items Section Header */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-[#333333] mb-1">Course Content</h2>
-              <p className="text-gray-600 text-sm">
-                {isReordering 
-                  ? "Reordering content items..." 
-                  : "Manage lessons, videos, and resources for this course. Drag items to reorder."
-                }
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                onClick={() => navigate("/admin/training/library")}
-                className="flex items-center gap-2"
-                disabled={isReordering}
-              >
-                <FileText size={18} />
-                <span>Content Library</span>
-              </Button>
-              <Button 
-                variant="primary"
-                onClick={handleAddContent}
-                className="flex items-center gap-2"
-                disabled={isReordering}
-              >
-                <Plus size={18} />
-                <span>Add Content</span>
-              </Button>
-            </div>
-          </div>
-        </div>
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
 
-        {/* Content Items List */}
-        {isReordering && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              <p className="text-sm text-blue-700">Reordering content items...</p>
-            </div>
-          </div>
-        )}
-        
-        {contentItems.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-lg text-center py-16 px-6">
-            <div className="max-w-md mx-auto">
-              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                <FileText size={48} className="text-[#F58220]" />
+            {success && <Alert variant="success" onClose={clearMessages}>{success}</Alert>}
+            {error   && <Alert variant="error"   onClose={clearMessages}>{error}</Alert>}
+
+            {/* Hero card */}
+            <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 4px 24px rgba(26,18,9,0.08)' }}>
+              <div className="relative h-52 flex items-center justify-center overflow-hidden" style={{ background: '#1a1209' }}>
+                <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
+                <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
+                <div className="absolute top-8 right-24 w-20 h-20 rounded-full border opacity-10" style={{ borderColor: '#F58220' }} />
+                {currentCourse.thumbnail_url
+                  ? <img src={currentCourse.thumbnail_url} alt={currentCourse.title} className="w-full h-full object-cover absolute inset-0" />
+                  : <span className="text-7xl select-none z-10">{getEmoji(currentCourse.id)}</span>}
+                <label htmlFor="thumbnail-upload"
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full cursor-pointer transition-all z-20"
+                  style={{ background: 'rgba(250,246,239,0.12)', color: 'rgba(250,246,239,0.6)', fontSize: '11px' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(250,246,239,0.22)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(250,246,239,0.12)'}>
+                  <Upload size={11} />{uploadingThumbnail ? 'Uploading…' : 'Upload Cover'}
+                </label>
+                <input type="file" id="thumbnail-upload" className="hidden" accept="image/*" onChange={handleThumbnailUpload} disabled={uploadingThumbnail} />
               </div>
-              <h3 className="text-2xl font-bold text-[#333333] mb-3">
-                No content yet
-              </h3>
-              <p className="text-gray-600 mb-8">
-                Add lessons, videos, documents, or links to build your course curriculum
-              </p>
-              <Button 
-                variant="primary"
-                onClick={handleAddContent}
-                className="inline-flex items-center gap-2"
-              >
-                <Plus size={18} />
-                <span>Add Your First Content</span>
-              </Button>
+              <div className="px-8 py-6">
+                <h1 className="text-3xl font-extrabold mb-4 leading-tight" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>{currentCourse.title}</h1>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <StatChip icon={<HelpCircle size={14} />} value={quizzes.length}                                    label="Quizzes"       tint="teal"    />
+                  <StatChip icon={<FileText   size={14} />} value={contentItems.length}                               label="Content Items" tint="orange"  />
+                  <StatChip icon={<Video      size={14} />} value={contentItems.filter(i=>i.type==='video').length}   label="Videos"        tint="neutral" />
+                  <StatChip icon={<LinkIcon   size={14} />} value={contentItems.filter(i=>i.type==='link').length}    label="Links"         tint="neutral" />
+                </div>
+                <p className="text-xs text-gray-400">Created {fmt(currentCourse.created_at)}</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {contentItems.map((item, index) => (
-              <div 
-                key={item.id} 
-                className={`bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all group relative ${
-                  dragOverIndex === index ? 'border-[#F58220] border-2 bg-orange-50' : ''
-                } ${isReordering ? 'pointer-events-none opacity-75' : ''} ${
-                  draggedItem?.index === index ? 'opacity-50 transform rotate-1' : ''
-                }`}
-                draggable={!isReordering}
-                onDragStart={(e) => handleDragStart(e, item, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-              >
-                <div className="p-5">
-                  <div className="flex items-start gap-4">
-                    {/* Drag Handle */}
-                    <div className="flex-shrink-0 cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
-                      <GripVertical size={20} className="text-gray-400 hover:text-gray-600" />
-                    </div>
 
-                    {/* Index Number */}
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 rounded-lg bg-white border-2 border-[#F58220] flex items-center justify-center text-[#E0741C] font-bold shadow-sm">
-                        {index + 1}
+            {/* Content section */}
+            <SectionCard title="Course Content" subtitle={isReordering ? 'Reordering…' : 'Drag items to reorder'}
+              actions={<>
+                <PillBtn onClick={() => navigate('/admin/training/library')} disabled={isReordering}><FileText size={13} /> Library</PillBtn>
+                <PillBtn primary onClick={handleAddContent} disabled={isReordering}><Plus size={13} /> Add Content</PillBtn>
+              </>}>
+              {quizSuccess && <Alert variant="success" className="mb-4" onClose={clearQuizMessages}>{quizSuccess}</Alert>}
+              {quizError   && <Alert variant="error"   className="mb-4" onClose={clearQuizMessages}>{quizError}</Alert>}
+              {isReordering && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl mb-3" style={{ background: '#e8f4fd', border: '1px solid #bfdbfe' }}>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500" />
+                  <p className="text-sm text-blue-700">Reordering…</p>
+                </div>
+              )}
+              {contentItems.length === 0
+                ? <EmptyState icon={<FileText size={40} className="text-[#F58220]" />} title="No content yet" sub="Add lessons, videos, documents, or links">
+                    <PillBtn primary onClick={handleAddContent}><Plus size={13} /> Add First Content</PillBtn>
+                  </EmptyState>
+                : <div className="space-y-2">
+                    {contentItems.map((item, index) => (
+                      <div key={item.id} draggable={!isReordering}
+                        onDragStart={e => handleDragStart(e, item, index)} onDragOver={e => handleDragOver(e, index)}
+                        onDragLeave={handleDragLeave} onDrop={e => handleDrop(e, index)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all
+                          ${dragOverIndex===index ? 'border-[#F58220] bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}
+                          ${isReordering ? 'pointer-events-none opacity-60' : ''}
+                          ${draggedItem?.index===index ? 'opacity-40' : ''}`}
+                        style={{ boxShadow: '0 1px 4px rgba(26,18,9,0.05)' }}>
+                        <GripVertical size={16} className="text-gray-300 cursor-move flex-shrink-0" />
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: '#fff0e8', color: '#E0741C' }}>{index+1}</span>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f5f0ea' }}>
+                          {item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover rounded-xl" /> : getContentIcon(item.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate" style={{ color: '#1a1209' }}>{item.title}</p>
+                          {item.description && <p className="text-xs text-gray-400 truncate">{item.description}</p>}
+                        </div>
+                        <TypeBadge type={item.type} />
+                        <div className="flex gap-1 flex-shrink-0">
+                          <IconAction onClick={() => handleEditContent(item)} title="Edit" hoverClass="hover:text-[#F58220] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => setDeleteConfirm(item)} title="Delete" danger><Trash2 size={15} /></IconAction>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>}
+            </SectionCard>
 
-                    {/* Thumbnail */}
-                    <div className="flex-shrink-0">
-                      <div className="w-16 h-16 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
-                        {item.thumbnail_url ? (
-                          <img
-                            src={item.thumbnail_url}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            {getContentIcon(item.type)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Content Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#F58220] transition-colors">
-                          {item.title}
-                        </h3>
-                        <span className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-                          item.type === 'video' 
-                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                            : item.type === 'link'
-                            ? 'bg-green-50 text-green-700 border border-green-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {item.type}
+            {/* Quizzes section */}
+            <SectionCard title="Course Quizzes" subtitle="Manage assessments and evaluations"
+              actions={<PillBtn primary onClick={handleCreateQuiz}><Plus size={13} /> Create Quiz</PillBtn>}>
+              {quizzes.length === 0
+                ? <EmptyState icon={<HelpCircle size={40} className="text-[#78BE20]" />} title="No quizzes yet" sub="Create assessments to test student knowledge">
+                    <PillBtn primary onClick={handleCreateQuiz}><Plus size={13} /> Create First Quiz</PillBtn>
+                  </EmptyState>
+                : <div className="space-y-2">
+                    {quizzes.map((quiz, index) => (
+                      <div key={quiz.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-100 bg-white hover:border-gray-200 transition-all" style={{ boxShadow: '0 1px 4px rgba(26,18,9,0.05)' }}>
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: '#e6f4f1', color: '#0d9488' }}>{index+1}</span>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f1' }}><HelpCircle size={18} className="text-teal-600" /></div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate" style={{ color: '#1a1209' }}>{quiz.title}</p>
+                          <p className="text-xs text-gray-400">{quiz.total_questions} question{quiz.total_questions!==1?'s':''}{quiz.published_at?` · Published ${fmt(quiz.published_at)}`:''}</p>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${quiz.status==='PUBLISHED'?'bg-green-50 text-green-700 border border-green-200':'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                          {quiz.status?.toLowerCase()||'draft'}
                         </span>
+                        <div className="flex gap-1 flex-shrink-0">
+                          {quiz.status==='DRAFT' && <IconAction onClick={() => handlePublishQuiz(quiz.id)} title="Publish" hoverClass="hover:text-teal-600 hover:bg-teal-50"><CheckCircle size={15} /></IconAction>}
+                          <IconAction onClick={() => handleViewQuiz(quiz)} title="View" hoverClass="hover:text-teal-600 hover:bg-teal-50"><Eye size={15} /></IconAction>
+                          <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#F58220] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => setDeleteQuizConfirm(quiz)} title={quiz.status==='PUBLISHED'?'Cannot delete a published quiz':'Delete'} danger disabled={quiz.status==='PUBLISHED'}><Trash2 size={15} /></IconAction>
+                        </div>
                       </div>
-
-                      {item.description && (
-                        <p className="text-gray-600 text-sm mb-3 leading-relaxed">
-                          {item.description}
-                        </p>
-                      )}
-
-                      {item.external_url && (
-                        <a
-                          href={item.external_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-[#00ADEF] hover:text-[#0090C8] hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <LinkIcon size={14} />
-                          <span>View External Link</span>
-                        </a>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditContent(item)}
-                        className="text-[#F58220] hover:text-[#E0741C] hover:bg-[#F58220]/10"
-                        disabled={isReordering}
-                      >
-                        <Edit3 size={18} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeleteConfirm(item)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        disabled={isReordering}
-                      >
-                        <Trash2 size={18} />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    ))}
+                  </div>}
+            </SectionCard>
           </div>
-        )}
-
-        {/* Quizzes Section */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-[#333333] mb-1">Course Quizzes</h2>
-              <p className="text-gray-600 text-sm">Manage assessments and evaluations for this course</p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="primary"
-                onClick={handleCreateQuiz}
-                className="flex items-center gap-2"
-              >
-                <Plus size={18} />
-                <span>Create Quiz</span>
-              </Button>
-            </div>
-          </div>
-
-          {quizzes.length === 0 ? (
-            <div className="text-center py-12 px-6">
-              <div className="max-w-md mx-auto">
-                <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
-                  <HelpCircle size={48} className="text-[#78BE20]" />
-                </div>
-                <h3 className="text-2xl font-bold text-[#333333] mb-3">
-                  No quizzes yet
-                </h3>
-                <p className="text-gray-600 mb-8">
-                  Create assessments to test student knowledge and track their progress
-                </p>
-                <Button 
-                  variant="primary"
-                  onClick={handleCreateQuiz}
-                  className="inline-flex items-center gap-2"
-                >
-                  <Plus size={18} />
-                  <span>Create Your First Quiz</span>
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {quizzes.map((quiz, index) => (
-                <div 
-                  key={quiz.id} 
-                  className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all group"
-                >
-                  <div className="p-5">
-                    <div className="flex items-start gap-4">
-                      {/* Index Number */}
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-lg bg-white border-2 border-[#78BE20] flex items-center justify-center text-[#78BE20] font-bold shadow-sm">
-                          {index + 1}
-                        </div>
-                      </div>
-
-                      {/* Quiz Icon */}
-                      <div className="flex-shrink-0 mt-1">
-                        <HelpCircle size={22} className="text-[#78BE20]" />
-                      </div>
-                      
-                      {/* Quiz Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4 mb-2">
-                          <h3 className="text-lg font-bold text-[#333333] group-hover:text-[#78BE20] transition-colors">
-                            {quiz.title}
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <span className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize ${
-                              quiz.status === 'PUBLISHED' 
-                                ? 'bg-green-50 text-green-700 border border-green-200'
-                                : quiz.status === 'DRAFT'
-                                ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                                : 'bg-gray-50 text-gray-700 border border-gray-200'
-                            }`}>
-                              {quiz.status?.toLowerCase() || 'draft'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {quiz.description && (
-                          <p className="text-gray-600 text-sm mb-3 leading-relaxed">
-                            {quiz.description}
-                          </p>
-                        )}
-
-                        {/* Quiz Stats */}
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <HelpCircle size={14} />
-                            <span>{quiz.total_questions} question{quiz.total_questions !== 1 ? 's' : ''}</span>
-                          </div>
-                          {quiz.prerequisite_content_ids && quiz.prerequisite_content_ids.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Users size={14} />
-                              <span>{quiz.prerequisite_content_ids.length} prerequisite{quiz.prerequisite_content_ids.length !== 1 ? 's' : ''}</span>
-                            </div>
-                          )}
-                          {quiz.published_at && (
-                            <div className="flex items-center gap-1">
-                              <Clock size={14} />
-                              <span>Published {formatDate(quiz.published_at)}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 flex-shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewQuiz(quiz)}
-                          className="text-[#00ADEF] hover:text-[#0090C5] hover:bg-[#00ADEF]/10"
-                        >
-                          <Eye size={18} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditQuiz(quiz)}
-                          className="text-[#78BE20] hover:text-[#6BA01B] hover:bg-[#78BE20]/10"
-                        >
-                          <Edit3 size={18} />
-                        </Button>
-                        {quiz.status === 'DRAFT' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePublishQuiz(quiz.id)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            <CheckCircle size={18} />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteQuizConfirm(quiz)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 size={18} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+      </div>
 
-        {/* Content Form Modal */}
-        {showContentForm && (
-          <AdminContentForm
-            courseId={parseInt(id)}
-            editingContent={editingContent}
-            onClose={() => {
-              setShowContentForm(false);
-              setEditingContent(null);
-            }}
-            onSuccess={() => {
-              setShowContentForm(false);
-              setEditingContent(null);
-              fetchCourseDetails(id);
-            }}
-          />
-        )}
+      {/* ── Modals ── */}
+      {showContentForm && (
+        <AdminContentForm courseId={parseInt(id)} editingContent={editingContent}
+          onClose={() => { setShowContentForm(false); setEditingContent(null); }}
+          onSuccess={() => { setShowContentForm(false); setEditingContent(null); fetchCourseDetails(id); }} />
+      )}
 
-        {/* Delete Confirmation Dialog */}
-        {deleteConfirm && (
-          <ConfirmDialog
-            title="Delete Content"
-            message={`Are you sure you want to delete "${deleteConfirm.title}"? This action cannot be undone.`}
-            confirmText="Delete"
-            cancelText="Cancel"
-            onConfirm={handleDeleteContent}
-            onCancel={() => setDeleteConfirm(null)}
-            variant="danger"
-          />
-        )}
+      {deleteConfirm && (
+        <ConfirmDialog title="Delete Content" message={`Delete "${deleteConfirm.title}"? This cannot be undone.`}
+          confirmText="Delete" cancelText="Cancel" variant="danger"
+          onConfirm={handleDeleteContent} onCancel={() => setDeleteConfirm(null)} />
+      )}
 
-        {/* Quiz Delete Confirmation Dialog */}
-        {deleteQuizConfirm && (
-          <ConfirmDialog
-            title="Delete Quiz"
-            message={`Are you sure you want to delete "${deleteQuizConfirm.title}"? This action cannot be undone.`}
-            confirmText="Delete Quiz"
-            cancelText="Cancel"
-            onConfirm={handleDeleteQuiz}
-            onCancel={() => setDeleteQuizConfirm(null)}
-            variant="danger"
-          />
-        )}
+      {deleteQuizConfirm && (
+        <ConfirmDialog title="Delete Quiz" message={`Delete "${deleteQuizConfirm.title}"? This cannot be undone.`}
+          confirmText="Delete Quiz" cancelText="Cancel" variant="danger"
+          onConfirm={handleDeleteQuiz} onCancel={() => setDeleteQuizConfirm(null)} />
+      )}
 
-        {/* Create/Edit Quiz Modal */}
-        {showCreateQuizModal && (
-          <Modal
-            isOpen={showCreateQuizModal}
-            onClose={() => {
-              setShowCreateQuizModal(false);
-              setSelectedQuiz(null);
-            }}
-            title={selectedQuiz ? 'Edit Quiz' : 'Create New Quiz'}
-            size="lg"
-          >
-            <form onSubmit={submitQuiz} className="space-y-4">
-              <Input2
-                label="Quiz Title"
-                name="title"
-                value={quizForm.title}
-                onChange={(e) => setQuizForm({ ...quizForm, title: e.target.value })}
-                required
-                disabled={submittingQuiz}
-              />
-              <Input2
-                label="Description (Optional)"
-                name="description"
-                value={quizForm.description}
-                onChange={(e) => setQuizForm({ ...quizForm, description: e.target.value })}
-                disabled={submittingQuiz}
-                helpText="Provide a brief description of what this quiz covers"
-              />
-
-              {/* Prerequisites Selection - Only show when editing */}
-              {selectedQuiz && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prerequisites (Optional)
-                  </label>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Select content items that must be completed before this quiz becomes available
-                  </p>
-                  <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 bg-gray-50">
-                    {contentItems.length === 0 ? (
-                      <p className="text-sm text-gray-500 italic">No content items available</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {contentItems.map((item) => (
-                          <label
-                            key={item.id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={quizForm.prerequisite_content_ids.includes(item.id)}
-                              onChange={(e) => {
-                                const newPrereqs = e.target.checked
+      {/* Create / Edit Quiz modal */}
+      {showCreateQuizModal && (
+        <CustomModal onClose={() => { setShowCreateQuizModal(false); setSelectedQuiz(null); }}
+          title={selectedQuiz ? 'Edit Quiz' : 'Create New Quiz'}>
+          <form onSubmit={submitQuiz} className="px-7 py-6 space-y-5">
+            <ModalField label="Quiz Title" required>
+              <input name="title" value={quizForm.title} onChange={e => setQuizForm({...quizForm, title: e.target.value})}
+                placeholder="e.g., Module 1 Assessment" required disabled={submittingQuiz}
+                style={quizInputBase} onFocus={qFocusOn} onBlur={qFocusOff} />
+            </ModalField>
+            <ModalField label="Description" hint="Optional">
+              <textarea name="description" value={quizForm.description} onChange={e => setQuizForm({...quizForm, description: e.target.value})}
+                placeholder="Briefly describe what this quiz covers…" rows={3} disabled={submittingQuiz}
+                style={{ ...quizInputBase, resize: 'vertical', minHeight: '90px' }} onFocus={qFocusOn} onBlur={qFocusOff} />
+            </ModalField>
+            {selectedQuiz && (
+              <ModalField label="Prerequisites" hint="Optional">
+                <p className="text-xs mb-2" style={{ color: '#9c8e80' }}>Content items that must be completed before this quiz unlocks</p>
+                <div className="max-h-44 overflow-y-auto rounded-xl p-2 space-y-1" style={{ border: '1.5px solid #e0d8ce', background: '#faf6ef' }}>
+                  {contentItems.length === 0
+                    ? <p className="text-sm italic px-2 py-1" style={{ color: '#9c8e80' }}>No content items available</p>
+                    : contentItems.map(item => {
+                        const checked = quizForm.prerequisite_content_ids.includes(item.id);
+                        return (
+                          <label key={item.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                            style={{ background: checked ? '#fff0e8' : 'white', border: `1px solid ${checked ? '#fcd9b8' : 'transparent'}` }}>
+                            <input type="checkbox" checked={checked} disabled={submittingQuiz} style={{ accentColor: '#F58220' }}
+                              onChange={e => {
+                                const p = e.target.checked
                                   ? [...quizForm.prerequisite_content_ids, item.id]
-                                  : quizForm.prerequisite_content_ids.filter(id => id !== item.id);
-                                setQuizForm({ ...quizForm, prerequisite_content_ids: newPrereqs });
-                              }}
-                              disabled={submittingQuiz}
-                              className="rounded border-gray-300 text-[#78BE20] focus:ring-[#78BE20]"
-                            />
-                            <div className="flex items-center gap-2 flex-1">
-                              <div className="w-8 h-8 rounded bg-gray-100 overflow-hidden border border-gray-200 flex-shrink-0">
-                                {item.thumbnail_url ? (
-                                  <img
-                                    src={item.thumbnail_url}
-                                    alt={item.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    {getContentIcon(item.type)}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {item.title}
-                                </p>
-                                <p className="text-xs text-gray-500 capitalize">
-                                  {item.type}
-                                </p>
-                              </div>
+                                  : quizForm.prerequisite_content_ids.filter(pid => pid !== item.id);
+                                setQuizForm({...quizForm, prerequisite_content_ids: p});
+                              }} />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#f3ede4' }}>
+                              {item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover rounded-lg" /> : getContentIcon(item.type)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate" style={{ color: '#1a1209' }}>{item.title}</p>
+                              <p className="text-xs capitalize" style={{ color: '#9c8e80' }}>{item.type}</p>
                             </div>
                           </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {quizForm.prerequisite_content_ids.length > 0 && (
-                    <p className="text-xs text-gray-600 mt-2">
-                      {quizForm.prerequisite_content_ids.length} item{quizForm.prerequisite_content_ids.length !== 1 ? 's' : ''} selected
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowCreateQuizModal(false);
-                    setSelectedQuiz(null);
-                  }}
-                  disabled={submittingQuiz}
-                  fullWidth
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={submittingQuiz}
-                  fullWidth
-                  className="bg-[#78BE20] hover:bg-[#6BA51D]"
-                >
-                  {submittingQuiz ? 'Saving...' : selectedQuiz ? 'Update Quiz' : 'Create Quiz'}
-                </Button>
-              </div>
-            </form>
-          </Modal>
-        )}
-
-        {/* Quiz Detail Modal */}
-        {showQuizDetailModal && selectedQuiz && (
-          <Modal
-            isOpen={showQuizDetailModal}
-            onClose={() => {
-              setShowQuizDetailModal(false);
-              setSelectedQuiz(null);
-            }}
-            title={selectedQuiz.title}
-            size="lg"
-          >
-            <div className="space-y-4">
-              {/* Quiz Info */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      selectedQuiz.status === 'PUBLISHED' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {selectedQuiz.status === 'PUBLISHED' ? (
-                        <CheckCircle size={12} />
-                      ) : (
-                        <Clock size={12} />
-                      )}
-                      {selectedQuiz.status || 'Draft'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Questions</p>
-                    <p className="font-semibold">{selectedQuiz.total_questions || 0}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Prerequisites</p>
-                    <p className="font-semibold">
-                      {selectedQuiz.prerequisite_content_ids?.length || 0} item{(selectedQuiz.prerequisite_content_ids?.length || 0) !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Created</p>
-                    <p className="font-semibold">{formatDate(selectedQuiz.created_at)}</p>
-                  </div>
-                  {selectedQuiz.published_at && (
-                    <div>
-                      <p className="text-sm text-gray-600">Published</p>
-                      <p className="font-semibold">{formatDate(selectedQuiz.published_at)}</p>
-                    </div>
-                  )}
-                </div>
-                {selectedQuiz.description && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600">Description</p>
-                    <p className="text-gray-800">{selectedQuiz.description}</p>
-                  </div>
-                )}
-                
-                {/* Prerequisites Display */}
-                {selectedQuiz.prerequisite_content_ids && selectedQuiz.prerequisite_content_ids.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-600 mb-2">Prerequisites</p>
-                    <div className="space-y-2">
-                      {selectedQuiz.prerequisite_content_ids.map((prereqId) => {
-                        const contentItem = contentItems.find(item => item.id === prereqId);
-                        if (!contentItem) return null;
-                        return (
-                          <div key={prereqId} className="flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="w-10 h-10 rounded bg-blue-100 overflow-hidden border border-blue-200 flex-shrink-0">
-                              {contentItem.thumbnail_url ? (
-                                <img
-                                  src={contentItem.thumbnail_url}
-                                  alt={contentItem.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  {getContentIcon(contentItem.type)}
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-blue-900">{contentItem.title}</p>
-                              <p className="text-xs text-blue-700 capitalize">{contentItem.type}</p>
-                            </div>
-                          </div>
                         );
                       })}
-                    </div>
-                  </div>
+                </div>
+                {quizForm.prerequisite_content_ids.length > 0 && (
+                  <p className="text-xs mt-1.5" style={{ color: '#9c6a3a' }}>{quizForm.prerequisite_content_ids.length} item{quizForm.prerequisite_content_ids.length!==1?'s':''} selected</p>
                 )}
-              </div>
+              </ModalField>
+            )}
+            <ModalFooter>
+              <ModalCancelBtn onClick={() => { setShowCreateQuizModal(false); setSelectedQuiz(null); }} disabled={submittingQuiz}>Cancel</ModalCancelBtn>
+              <ModalSubmitBtn disabled={submittingQuiz}>{submittingQuiz ? 'Saving…' : selectedQuiz ? 'Update Quiz' : 'Create Quiz'}</ModalSubmitBtn>
+            </ModalFooter>
+          </form>
+        </CustomModal>
+      )}
 
-              {/* Note about question management */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <HelpCircle size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">Manage Quiz Questions</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      To add, edit, or remove questions from this quiz, use the dedicated Quiz Management page 
-                      where you can access the full question editor.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate('/admin/quiz')}
-                      className="mt-3 border-blue-300 text-blue-700 hover:bg-blue-100"
-                    >
-                      Go to Quiz Management
-                    </Button>
-                  </div>
+      {/* Quiz Detail modal */}
+      {showQuizDetailModal && selectedQuiz && (
+        <CustomModal onClose={() => { setShowQuizDetailModal(false); setSelectedQuiz(null); }} title={selectedQuiz.title}>
+          <div className="px-7 py-6 space-y-5">
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-4 p-5 rounded-2xl" style={{ background: '#faf6ef', border: '1px solid #ede8e0' }}>
+              <div>
+                <p className="text-xs font-medium mb-1.5" style={{ color: '#9c8e80' }}>Status</p>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${selectedQuiz.status==='PUBLISHED'?'bg-green-50 text-green-700 border border-green-200':'bg-amber-50 text-amber-700 border border-amber-200'}`}>
+                  {selectedQuiz.status==='PUBLISHED' ? <CheckCircle size={11} /> : <Clock size={11} />}
+                  {selectedQuiz.status || 'Draft'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: '#9c8e80' }}>Questions</p>
+                <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{selectedQuiz.total_questions || 0}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: '#9c8e80' }}>Prerequisites</p>
+                <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{selectedQuiz.prerequisite_content_ids?.length || 0} item{(selectedQuiz.prerequisite_content_ids?.length||0)!==1?'s':''}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: '#9c8e80' }}>Created</p>
+                <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{fmt(selectedQuiz.created_at)}</p>
+              </div>
+              {selectedQuiz.published_at && (
+                <div>
+                  <p className="text-xs font-medium mb-1" style={{ color: '#9c8e80' }}>Published</p>
+                  <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{fmt(selectedQuiz.published_at)}</p>
+                </div>
+              )}
+              {selectedQuiz.description && (
+                <div className="col-span-2">
+                  <p className="text-xs font-medium mb-1" style={{ color: '#9c8e80' }}>Description</p>
+                  <p className="text-sm" style={{ color: '#3d3228' }}>{selectedQuiz.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Prerequisites list */}
+            {selectedQuiz.prerequisite_content_ids?.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold mb-2" style={{ color: '#9c8e80' }}>PREREQUISITE CONTENT</p>
+                <div className="space-y-2">
+                  {selectedQuiz.prerequisite_content_ids.map(prereqId => {
+                    const ci = contentItems.find(i => i.id === prereqId);
+                    if (!ci) return null;
+                    return (
+                      <div key={prereqId} className="flex items-center gap-3 px-3 py-2 rounded-xl" style={{ background: '#fff0e8', border: '1px solid #fcd9b8' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#f5f0ea' }}>
+                          {ci.thumbnail_url ? <img src={ci.thumbnail_url} alt="" className="w-full h-full object-cover rounded-lg" /> : getContentIcon(ci.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate" style={{ color: '#1a1209' }}>{ci.title}</p>
+                          <p className="text-xs capitalize" style={{ color: '#9c8e80' }}>{ci.type}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
+
+            {/* Manage questions hint */}
+            <div className="flex items-start gap-3 px-4 py-4 rounded-2xl" style={{ background: '#fff8f2', border: '1.5px solid #fcd9b8' }}>
+              <HelpCircle size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#F58220' }} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold mb-0.5" style={{ color: '#1a1209' }}>Manage Quiz Questions</p>
+                <p className="text-xs mb-3" style={{ color: '#9c6a3a' }}>To add, edit, or remove questions use the dedicated Quiz Management page.</p>
+                <button onClick={() => navigate('/admin/quiz')}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+                  style={{ border: '1.5px solid #F58220', color: '#F58220', background: 'white' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F58220'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#F58220'; }}>
+                  Go to Quiz Management
+                </button>
+              </div>
             </div>
-          </Modal>
-        )}
-      </div>
+          </div>
+        </CustomModal>
+      )}
     </div>
   );
 };
+
+// ── Reusable primitives ────────────────────────────────────────────────────────
+
+const CustomModal = ({ onClose, title, children }) => (
+  <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ background: 'rgba(26,18,9,0.55)', backdropFilter: 'blur(2px)' }}>
+    <div className="bg-white w-full overflow-y-auto" style={{ maxWidth: '520px', maxHeight: '90vh', borderRadius: '20px', boxShadow: '0 24px 64px rgba(26,18,9,0.22)' }}>
+      <div className="flex items-center justify-between px-7 pt-6 pb-5" style={{ borderBottom: '1px solid #f0ebe3' }}>
+        <h2 className="text-xl font-extrabold" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>{title}</h2>
+        <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+          style={{ background: '#f3ede4', color: '#6b5e4e' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#fee2c8'; e.currentTarget.style.color = '#F58220'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#f3ede4'; e.currentTarget.style.color = '#6b5e4e'; }}>
+          <X size={16} />
+        </button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+const ModalField = ({ label, hint, required, children }) => (
+  <div>
+    <label className="block text-sm font-semibold mb-1.5" style={{ color: '#3d3228' }}>
+      {label}{required && <span className="text-[#F58220] ml-0.5">*</span>}
+      {hint && <span className="ml-2 text-xs font-normal" style={{ color: '#9c8e80' }}>{hint}</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const ModalFooter = ({ children }) => (
+  <div className="flex justify-end gap-3" style={{ borderTop: '1px solid #f0ebe3', paddingTop: '20px' }}>{children}</div>
+);
+
+const ModalCancelBtn = ({ onClick, disabled, children }) => (
+  <button type="button" onClick={onClick} disabled={disabled}
+    className="px-5 py-2.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50"
+    style={{ borderColor: '#d0c8be', color: '#6b5e4e', background: 'white' }}
+    onMouseEnter={e => e.currentTarget.style.borderColor = '#F58220'}
+    onMouseLeave={e => e.currentTarget.style.borderColor = '#d0c8be'}>
+    {children}
+  </button>
+);
+
+const ModalSubmitBtn = ({ disabled, children }) => (
+  <button type="submit" disabled={disabled}
+    className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
+    style={{ background: '#F58220' }}
+    onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#d96e10'; }}
+    onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = '#F58220'; }}>
+    {children}
+  </button>
+);
+
+const StatChip = ({ icon, value, label, tint }) => {
+  const s = { teal: { background: '#e6f4f1', color: '#0d9488' }, orange: { background: '#fff0e8', color: '#E0741C' }, neutral: { background: '#f3ede4', color: '#78716c' } };
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={s[tint]||s.neutral}>
+      {icon}<span className="font-bold">{value}</span><span className="font-normal opacity-75">{label}</span>
+    </div>
+  );
+};
+
+const SectionCard = ({ title, subtitle, actions, children }) => (
+  <div className="bg-white rounded-[20px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 2px 12px rgba(26,18,9,0.06)' }}>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4" style={{ background: '#faf6ef', borderBottom: '1px solid #ede8e0' }}>
+      <div>
+        <h2 className="text-lg font-bold" style={{ color: '#1a1209' }}>{title}</h2>
+        {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
+      </div>
+      <div className="flex gap-2">{actions}</div>
+    </div>
+    <div className="p-5">{children}</div>
+  </div>
+);
+
+const PillBtn = ({ children, primary, onClick, disabled }) => (
+  <button onClick={onClick} disabled={disabled}
+    className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    style={primary ? { background: '#1a1209', color: '#faf6ef' } : { background: 'white', color: '#4b4540', border: '1px solid #e0d8ce' }}
+    onMouseEnter={e => { if (!disabled && primary) e.currentTarget.style.background = '#F58220'; }}
+    onMouseLeave={e => { if (!disabled && primary) e.currentTarget.style.background = '#1a1209'; }}>
+    {children}
+  </button>
+);
+
+const TypeBadge = ({ type }) => {
+  const m = {
+    document: { label: 'Document', style: { background: '#fff0e8', color: '#E0741C', border: '1px solid #fcd9b8' } },
+    video:    { label: 'Video',    style: { background: '#fef9e7', color: '#b45309', border: '1px solid #fde68a' } },
+    link:     { label: 'Link',     style: { background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' } },
+  };
+  const c = m[type] || { label: type, style: { background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' } };
+  return <span className="px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 capitalize" style={c.style}>{c.label}</span>;
+};
+
+const IconAction = ({ children, onClick, title, hoverClass, disabled, danger }) => (
+  <button onClick={onClick} title={title} disabled={disabled}
+    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+      danger
+        ? 'text-red-600 hover:bg-[#fff0f0] hover:border hover:border-red-300 border border-transparent'
+        : `text-gray-400 ${hoverClass}`
+    }`}>
+    {children}
+  </button>
+);
+
+const EmptyState = ({ icon, title, sub, children }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: '#f3ede4' }}>{icon}</div>
+    <h3 className="text-lg font-bold mb-1" style={{ color: '#1a1209' }}>{title}</h3>
+    <p className="text-sm text-gray-400 mb-5 max-w-xs">{sub}</p>
+    {children}
+  </div>
+);
 
 export default AdminCourseDetails;

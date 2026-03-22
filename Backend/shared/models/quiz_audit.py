@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Enum, DateTime, ForeignKey, func, Index, Text, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import enum
 
 from .user import Base
@@ -88,7 +88,7 @@ class QuizGenerationAudit(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    quiz = relationship("Quiz", backref="generation_audits")
+    quiz = relationship("Quiz", backref=backref("generation_audits", passive_deletes=True))
     document = relationship("Document", backref="quiz_generation_audits")
     
     # Indexes for efficient queries

@@ -142,3 +142,9 @@ export const fetchProcessingJobs = async () => {
   const res = await api.get("/admin/processing-jobs");
   return res.data;
 };
+
+// ============ DOCUMENT SECTIONS ============
+export const fetchDocumentSections = async (documentId) => {
+  const res = await api.get(`/admin/documents/${documentId}/sections`);
+  return res.data;
+};

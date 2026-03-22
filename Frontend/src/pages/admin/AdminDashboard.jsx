@@ -1,26 +1,78 @@
 // pages/AdminDashboard.jsx
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Upload, Play, CheckCircle, AlertCircle, Clock, RefreshCw, Edit, Plus, X, ClipboardList, Search, Filter } from 'lucide-react';
+import {
+  FileText, Upload, Play, CheckCircle, AlertCircle, Clock, RefreshCw,
+  Edit, Plus, X, ClipboardList, Search, Filter, BookOpen
+} from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
-import Card from '../../components/ui/Card';
-import Modal from '../../components/ui/Modal';
-import Button from '../../components/ui/Button';
 import { useAdmin } from '../../hooks/useAdmin';
-import { getMainTopics, updateMainTopics, generateMainTopicsAI, fetchProcessingJobs } from '../../services/adminApi';
+import { fetchProcessingJobs, fetchDocumentSections } from '../../services/adminApi';
+
+const C = {
+  bg: '#faf6ef',
+  card: '#ffffff',
+  orange: '#F58220',
+  orangeLight: 'rgba(245,130,32,0.10)',
+  orangeBorder: 'rgba(245,130,32,0.25)',
+  ink: '#1a1209',
+  muted: '#9c8e80',
+  border: '#e8e0d5',
+  cream: '#f5f0e8',
+  blue: '#00ADEF',
+  green: '#78BE20',
+};
+
+// ─── tiny helpers ────────────────────────────────────────────────────────────
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B';
+  const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+};
+
+const formatDate = (date) =>
+  new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+const formatDuration = (s) => {
+  if (!s) return 'N/A';
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+};
+
+const getStatusBadge = (status) => {
+  switch (status) {
+    case 'STORED':     return { color: '#00ADEF', bg: 'rgba(0,173,239,0.10)',  label: 'Stored' };
+    case 'QUEUED':     return { color: '#F58220', bg: 'rgba(245,130,32,0.10)', label: 'Queued' };
+    case 'PROCESSING': return { color: '#F58220', bg: 'rgba(245,130,32,0.10)', label: 'Processing' };
+    case 'PROCESSED':  return { color: '#78BE20', bg: 'rgba(120,190,32,0.10)', label: 'Processed' };
+    case 'FAILED':     return { color: '#ef4444', bg: 'rgba(239,68,68,0.10)',  label: 'Failed' };
+    default:           return { color: C.muted,   bg: C.cream,                 label: status };
+  }
+};
+
+const auditStatusColor = (s) => {
+  switch (s?.toLowerCase()) {
+    case 'queued':     return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
+    case 'processing': return { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' };
+    case 'completed':  return { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' };
+    case 'failed':     return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
+    default:           return { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' };
+  }
+};
+
+// ─── shared input style ───────────────────────────────────────────────────────
+const inputCls = `w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all
+  focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]`;
+
 
 const AdminDashboard = () => {
   const {
-    documents,
-    loading,
-    error,
-    jobStatuses,
-    loadDocuments,
-    uploadDoc,
-    queueDoc,
-    checkJobStatus,
-    deleteDoc,
-    downloadDoc,
-    clearError
+    documents, loading, error, jobStatuses,
+    loadDocuments, uploadDoc, queueDoc, checkJobStatus,
+    deleteDoc, downloadDoc, clearError,
   } = useAdmin();
 
   const [navCollapsed, setNavCollapsed] = useState(true);
@@ -29,11 +81,9 @@ const AdminDashboard = () => {
   const [uploadTitle, setUploadTitle] = useState('');
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
-  const [showMainTopicsModal, setShowMainTopicsModal] = useState(false);
-  const [mainTopics, setMainTopics] = useState({});
-  const [loadingTopics, setLoadingTopics] = useState(false);
-  const [savingTopics, setSavingTopics] = useState(false);
-  const [generatingTopics, setGeneratingTopics] = useState(false);
+  const [showSectionsModal, setShowSectionsModal] = useState(false);
+  const [sections, setSections] = useState([]);
+  const [loadingSections, setLoadingSections] = useState(false);
   const [processingDocs, setProcessingDocs] = useState(new Set());
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditJobs, setAuditJobs] = useState([]);
@@ -44,883 +94,709 @@ const AdminDashboard = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      loadDocuments();
-    }
+    if (!hasFetched.current) { hasFetched.current = true; loadDocuments(); }
   }, []);
 
-
-  // Poll for job status updates
   useEffect(() => {
-    const pollInterval = setInterval(() => {
-      Object.entries(jobStatuses).forEach(([jobId, status]) => {
-        if (status.status !== 'finished' && status.status !== 'failed') {
-          checkJobStatus(jobId);
-        }
+    const id = setInterval(() => {
+      Object.entries(jobStatuses).forEach(([jobId, s]) => {
+        if (s.status !== 'finished' && s.status !== 'failed') checkJobStatus(jobId);
       });
-    }, 2000); // Poll every 2 seconds
-
-    return () => clearInterval(pollInterval);
+    }, 2000);
+    return () => clearInterval(id);
   }, [jobStatuses, checkJobStatus]);
 
-
-
+  // ── handlers ────────────────────────────────────────────────────────────────
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const maxSize = 100 * 1024 * 1024; // 100MB in bytes
-
-      if (file.size > maxSize) {
-        // alert(`File size (${formatFileSize(file.size)}) exceeds the 100MB limit`);
-        e.target.value = ''; // Reset the file input
-        return;
-      }
-
-      setUploadingFile(file);
-      // Auto-fill title with filename if empty
-      if (!uploadTitle) {
-        setUploadTitle(file.name);
-      }
-    }
+    if (!file) return;
+    if (file.size > 100 * 1024 * 1024) { e.target.value = ''; return; }
+    setUploadingFile(file);
+    if (!uploadTitle) setUploadTitle(file.name);
   };
 
   const handleUpload = async () => {
-    if (!uploadingFile) {
-      alert('Please select a file');
-      return;
-    }
-
+    if (!uploadingFile) return;
     setUploading(true);
     try {
-      // Pass the title if it's not empty, otherwise pass null to use the filename
-      const titleToUse = uploadTitle.trim() ? uploadTitle.trim() : null;
-      const result = await uploadDoc(uploadingFile, titleToUse);
-      if (result.success) {
-        setShowUploadModal(false);
-        setUploadingFile(null);
-        setUploadTitle('');
-      } else {
-        // alert(result.message || 'Upload failed');
-      }
-    } catch (err) {
-      // alert('Upload error: ' + err.message);
-    } finally {
-      setUploading(false);
-    }
+      const result = await uploadDoc(uploadingFile, uploadTitle.trim() || null);
+      if (result.success) { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }
+    } finally { setUploading(false); }
   };
 
   const handleQueueDocument = async (documentId) => {
     setProcessingDocs(prev => new Set(prev).add(documentId));
-    try {
-      const result = await queueDoc(documentId);
-      if (!result.success) {
-        // This handles cases where the API returns a structured error (e.g., 404)
-        // alert(`Failed to queue document: ${result.message}`);
-      }
-    } catch (err) {
-      // --- THIS IS THE IMPORTANT PART FOR A 500 ERROR ---
-      // The error object 'err' from Axios/fetch contains the server response
-      const status = err.response?.status;
-      // if (status === 500) {
-      //   alert('Queue Error: The server encountered an unexpected issue. Please contact support or check the backend logs.');
-      // } else {
-      //   alert('Queue error: ' + err.message);
-      // }
-      // --------------------------------------------------------
-    } finally {
-      setProcessingDocs(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(documentId);
-        return newSet;
-      });
+    try { await queueDoc(documentId); }
+    finally {
+      setProcessingDocs(prev => { const s = new Set(prev); s.delete(documentId); return s; });
     }
   };
 
-
-
-
-  const handleOpenMainTopics = async (doc) => {
+  const handleOpenSections = async (doc) => {
     setSelectedDoc(doc);
-    setLoadingTopics(true);
-    setShowMainTopicsModal(true);
-    
+    setLoadingSections(true);
+    setShowSectionsModal(true);
     try {
-      const result = await getMainTopics(doc.id);
-      if (result.success) {
-        setMainTopics(result.data.topics || {});
-      } else {
-        setMainTopics({});
-      }
-    } catch (err) {
-      console.error('Failed to load main topics:', err);
-      setMainTopics({});
-    } finally {
-      setLoadingTopics(false);
-    }
-  };
-
-  const handleSaveMainTopics = async () => {
-    if (!selectedDoc) return;
-    
-    setSavingTopics(true);
-    try {
-      const result = await updateMainTopics(selectedDoc.id, mainTopics);
-      if (result.success) {
-        setShowMainTopicsModal(false);
-        setMainTopics({});
-        setSelectedDoc(null);
-        // Optionally reload documents to show updated data
-        loadDocuments();
-      }
-    } catch (err) {
-      console.error('Failed to save main topics:', err);
-    } finally {
-      setSavingTopics(false);
-    }
-  };
-
-  const handleAddTopic = () => {
-    const newKey = `Topic ${Object.keys(mainTopics).length + 1}`;
-    setMainTopics(prev => ({ ...prev, [newKey]: '' }));
-  };
-
-  const handleUpdateTopic = (oldKey, newKey, value) => {
-    setMainTopics(prev => {
-      const updated = { ...prev };
-      if (oldKey !== newKey && oldKey in updated) {
-        delete updated[oldKey];
-      }
-      updated[newKey] = value;
-      return updated;
-    });
-  };
-
-  const handleRemoveTopic = (key) => {
-    setMainTopics(prev => {
-      const updated = { ...prev };
-      delete updated[key];
-      return updated;
-    });
-  };
-
-  const handleGenerateMainTopics = async () => {
-    if (!selectedDoc) return;
-    
-    setGeneratingTopics(true);
-    try {
-      const result = await generateMainTopicsAI(selectedDoc.id);
-      if (result.success) {
-        // Update the topics with AI-generated ones
-        setMainTopics(result.data.main_topics || {});
-        alert(`✅ Generated ${Object.keys(result.data.main_topics || {}).length} topics from ${result.data.chunks_analyzed} chunks!`);
-      } else {
-        alert(`❌ Failed to generate topics: ${result.message}`);
-      }
-    } catch (err) {
-      console.error('Failed to generate main topics:', err);
-      alert(`❌ Error: ${err.response?.data?.message || err.message}`);
-    } finally {
-      setGeneratingTopics(false);
-    }
-  };
-
-  const handleReprocess = async (documentId) => {
-    await handleQueueDocument(documentId);
+      const r = await fetchDocumentSections(doc.id);
+      setSections(r.success ? (r.data.sections || []) : []);
+    } catch { setSections([]); }
+    finally { setLoadingSections(false); }
   };
 
   const handleOpenAuditLog = async () => {
-    setShowAuditLog(true);
-    setLoadingAudit(true);
-    
+    setShowAuditLog(true); setLoadingAudit(true);
     try {
-      const result = await fetchProcessingJobs();
-      if (result.success) {
-        setAuditJobs(result.data.jobs || []);
-        setAuditStats(result.data.stats || { queued: 0, processing: 0, completed: 0, failed: 0 });
-      }
-    } catch (err) {
-      console.error('Failed to load audit log:', err);
-      setAuditJobs([]);
-    } finally {
-      setLoadingAudit(false);
-    }
+      const r = await fetchProcessingJobs();
+      if (r.success) { setAuditJobs(r.data.jobs || []); setAuditStats(r.data.stats || {}); }
+    } catch { setAuditJobs([]); }
+    finally { setLoadingAudit(false); }
   };
 
   const getFilteredAuditJobs = () => {
-    let filtered = auditJobs;
-
-    // Filter by status
-    if (auditStatusFilter !== 'all') {
-      filtered = filtered.filter(job => job.status.toLowerCase() === auditStatusFilter);
-    }
-
-    // Filter by search term
-    if (auditSearchTerm) {
-      filtered = filtered.filter(job => 
-        job.document_title?.toLowerCase().includes(auditSearchTerm.toLowerCase()) ||
-        job.job_id?.toLowerCase().includes(auditSearchTerm.toLowerCase())
-      );
-    }
-
-    return filtered;
+    let f = auditJobs;
+    if (auditStatusFilter !== 'all') f = f.filter(j => j.status.toLowerCase() === auditStatusFilter);
+    if (auditSearchTerm) f = f.filter(j =>
+      j.document_title?.toLowerCase().includes(auditSearchTerm.toLowerCase()) ||
+      j.job_id?.toLowerCase().includes(auditSearchTerm.toLowerCase())
+    );
+    return f;
   };
 
-  const formatDuration = (seconds) => {
-    if (!seconds || seconds === 0) return 'N/A';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  const docStats = {
+    total: documents.length,
+    ready: documents.filter(d => d.status === 'STORED').length,
+    processing: documents.filter(d => d.status === 'PROCESSING' || d.status === 'QUEUED').length,
+    completed: documents.filter(d => d.status === 'PROCESSED').length,
   };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'queued':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'failed':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'STORED':
-        return { icon: FileText, color: 'bg-blue-100 text-blue-800', label: 'Stored' };
-      case 'QUEUED':
-        return { icon: Clock, color: 'bg-yellow-100 text-yellow-800', label: 'Queued' };
-      case 'PROCESSING':
-        return { icon: Clock, color: 'bg-orange-100 text-orange-800', label: 'Processing' };
-      case 'PROCESSED':
-        return { icon: CheckCircle, color: 'bg-green-100 text-green-800', label: 'Processed' };
-      case 'FAILED':
-        return { icon: AlertCircle, color: 'bg-red-100 text-red-800', label: 'Failed' };
-      default:
-        return { icon: FileText, color: 'bg-gray-100 text-gray-800', label: status };
-    }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
+  // ── render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      <AdminSidebar 
-        collapsed={navCollapsed} 
-        onToggle={() => setNavCollapsed(!navCollapsed)} 
-      />
-      
-      <div className="flex-1 overflow-auto">
-        {/* Page Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-[#333333]">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Manage documents and monitor system activity</p>
+    <div className="flex h-screen overflow-hidden" style={{ background: C.bg }}>
+      <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Hero Banner ── */}
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#1a1209' }}>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#faf6ef', fontFamily: 'Georgia, serif' }}>
+              Document Dashboard
+            </h1>
+            <p style={{ color: 'rgba(250,246,239,0.45)', fontSize: 13, marginTop: 4 }}>
+              Manage documents and monitor system activity
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            {[
+              { label: 'Total',      value: docStats.total,      dot: '#faf6ef' },
+              { label: 'Ready',      value: docStats.ready,      dot: C.blue },
+              { label: 'Processing', value: docStats.processing, dot: C.orange },
+              { label: 'Completed',  value: docStats.completed,  dot: C.green },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"
+                style={{ background: 'rgba(255,255,255,0.08)', color: '#faf6ef' }}>
+                <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+                {s.label}: <span className="font-bold ml-0.5">{s.value}</span>
+              </div>
+            ))}
           </div>
         </div>
-        
-        <div className="p-6">
-          <div className="mx-auto max-w-7xl space-y-6">
-            {/* Error Alert */}
-            {error && (
-              <Card className="border-l-4 border-red-500 bg-red-50 p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle size={20} className="mt-0.5 text-red-600" />
-                    <div>
-                      <h3 className="font-semibold text-red-900">Error</h3>
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={clearError}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </Card>
-            )}
 
-            {/* Welcome Section with Stats */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Upload Card - Takes 2 columns */}
-              <Card className="lg:col-span-2 overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
-                <div className="p-6">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-md">
-                      <Upload size={28} className="text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-[#333333]">Document Management</h2>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Upload and process PDF documents for AI training
-                      </p>
-                    </div>
-                  </div>
+        {/* ── Scrollable body ── */}
+        <div className="flex-1 overflow-auto">
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-                  {/* Requirements Section */}
-                  <div className="mb-4 p-4 bg-white-50 border border-blue-200 rounded-lg">
-                    <h3 className="text-sm font-semibold text-[#333333] mb-3">Upload Requirements</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-start gap-2">
-                        <FileText size={18} className="text-[#00ADEF] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-[#333333]">File Format</p>
-                          <p className="text-xs text-gray-600">PDF documents only</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <AlertCircle size={18} className="text-[#F58220] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-[#333333]">File Size</p>
-                          <p className="text-xs text-gray-600">Maximum 100MB per file</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <CheckCircle size={18} className="text-[#78BE20] mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-[#333333]">Processing</p>
-                          <p className="text-xs text-gray-600">Automatic AI extraction</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upload Button */}
-                  <Button
-                    onClick={() => setShowUploadModal(true)}
-                    variant="primary"
-                    className="w-full flex items-center justify-center gap-2 py-3 shadow-md hover:shadow-lg transition-all"
-                  >
-                    <Upload size={20} />
-                    Upload New Document
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Stats Card - Takes 1 column */}
-              <Card className="border border-gray-200">
-                <div className="p-6">
-                  <h3 className="text-lg font-bold text-[#333333] mb-4">Document Statistics</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[#333333]"></div>
-                        <span className="text-sm text-gray-600">Total</span>
-                      </div>
-                      <span className="text-xl font-bold text-[#333333]">{documents.length}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[#00ADEF]"></div>
-                        <span className="text-sm text-gray-600">Ready</span>
-                      </div>
-                      <span className="text-xl font-bold text-[#00ADEF]">
-                        {documents.filter(d => d.status === 'STORED').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[#F58220]"></div>
-                        <span className="text-sm text-gray-600">Processing</span>
-                      </div>
-                      <span className="text-xl font-bold text-[#F58220]">
-                        {documents.filter(d => d.status === 'PROCESSING' || d.status === 'QUEUED').length}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-[#78BE20]"></div>
-                        <span className="text-sm text-gray-600">Completed</span>
-                      </div>
-                      <span className="text-xl font-bold text-[#78BE20]">
-                        {documents.filter(d => d.status === 'PROCESSED').length}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+          {/* ── Error ── */}
+          {error && (
+            <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 14 }}
+              className="flex items-start justify-between p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle size={18} color="#dc2626" className="mt-0.5" />
+                <p style={{ color: '#991b1b', fontSize: 13 }}>{error}</p>
+              </div>
+              <button onClick={clearError} style={{ color: '#dc2626' }}><X size={16} /></button>
             </div>
+          )}
 
-            {/* Documents List */}
-            <Card className="p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-[#333333]">Recent Documents</h2>
-                  <p className="text-sm text-gray-600 mt-1">Manage and process your uploaded files</p>
+          {/* ── Upload Card ── */}
+          <div>
+
+            {/* Upload / Document Management Card */}
+            <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}` }}
+              className="p-6 shadow-sm">
+
+              {/* Icon + Title */}
+              <div className="flex items-start gap-4 mb-5">
+                <div style={{
+                  width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                  background: C.orange, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Upload size={26} color="#fff" />
                 </div>
-                <div className="flex items-center gap-3">
-                  {documents.length > 0 && (
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap">
-                      {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
-                    </span>
-                  )}
-                  <Button
-                    onClick={handleOpenAuditLog}
-                    variant="secondary"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <ClipboardList size={16} />
-                    Audit Log
-                  </Button>
+                <div>
+                  <h2 style={{ fontFamily: 'Georgia, serif', color: C.ink, fontSize: 22, fontWeight: 700 }}>
+                    Document Management
+                  </h2>
+                  <p style={{ color: C.muted, fontSize: 13, marginTop: 3 }}>
+                    Upload and process PDF documents for AI training
+                  </p>
                 </div>
               </div>
 
-              {loading ? (
-                <div className="py-12 text-center text-gray-500">Loading documents...</div>
-              ) : documents.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
-                    <FileText size={64} className="text-gray-300" />
+              {/* Requirements box */}
+              <div style={{ background: C.cream, border: `1px solid ${C.border}`, borderRadius: 12 }}
+                className="p-4 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {[
+                    { icon: <FileText size={16} color={C.blue} />, label: 'File Format', desc: 'PDF documents only', dot: C.blue },
+                    { icon: <AlertCircle size={16} color={C.orange} />, label: 'File Size', desc: 'Maximum 100 MB per file', dot: C.orange },
+                    { icon: <CheckCircle size={16} color={C.green} />, label: 'Processing', desc: 'Automatic AI extraction', dot: C.green },
+                  ].map(({ icon, label, desc }) => (
+                    <div key={label} className="flex items-start gap-2">
+                      <div className="mt-0.5 flex-shrink-0">{icon}</div>
+                      <div>
+                        <p style={{ color: C.ink, fontSize: 13, fontWeight: 600 }}>{label}</p>
+                        <p style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Upload button */}
+              <button
+                onClick={() => setShowUploadModal(true)}
+                style={{
+                  width: '100%', background: C.orange, color: '#fff', border: 'none',
+                  borderRadius: 50, padding: '12px 0', fontSize: 14, fontWeight: 600,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#e0741c'}
+                onMouseLeave={e => e.currentTarget.style.background = C.orange}
+              >
+                <Upload size={18} /> Upload New Document
+              </button>
+            </div>
+          </div>
+
+          {/* ── Recent Documents Card ── */}
+          <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}` }}
+            className="p-6 shadow-sm">
+
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 style={{ fontFamily: 'Georgia, serif', color: C.ink, fontSize: 22, fontWeight: 700 }}>
+                  Recent Documents
+                </h2>
+                <p style={{ color: C.muted, fontSize: 13, marginTop: 3 }}>
+                  Manage and process your uploaded files
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {documents.length > 0 && (
+                  <span style={{
+                    background: C.cream, color: C.muted, borderRadius: 50,
+                    padding: '4px 14px', fontSize: 12, fontWeight: 600,
+                  }}>
+                    {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
+                  </span>
+                )}
+                <button
+                  onClick={handleOpenAuditLog}
+                  style={{
+                    border: `1.5px solid ${C.orange}`, color: C.orange, background: 'transparent',
+                    borderRadius: 50, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <ClipboardList size={14} /> Audit Log
+                </button>
+              </div>
+            </div>
+
+            {/* Document rows */}
+            {loading ? (
+              <div className="py-12 text-center" style={{ color: C.muted }}>Loading documents…</div>
+            ) : documents.length === 0 ? (
+              <div className="py-16 text-center">
+                <div style={{ display: 'inline-flex', padding: 24, background: C.cream, borderRadius: '50%', marginBottom: 16 }}>
+                  <FileText size={48} color={C.border} />
+                </div>
+                <h3 style={{ color: C.ink, fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No documents yet</h3>
+                <p style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>
+                  Upload your first document to get started with AI processing
+                </p>
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  style={{
+                    background: C.orange, color: '#fff', border: 'none', borderRadius: 50,
+                    padding: '10px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                  }}
+                >
+                  <Upload size={16} /> Upload First Document
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {documents.map((doc) => {
+                  const badge = getStatusBadge(doc.status);
+                  const isProcessing = processingDocs.has(doc.id);
+                  return (
+                    <div key={doc.id}
+                      style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.card }}
+                      className="flex items-center justify-between px-4 py-3 hover:shadow-sm transition-shadow">
+
+                      {/* Left: icon + info */}
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <FileText size={28} color={C.muted} className="mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p style={{ color: C.ink, fontWeight: 600, fontSize: 14 }} className="truncate">
+                            {doc.title}
+                          </p>
+                          <p style={{ color: C.muted, fontSize: 12 }} className="truncate">{doc.original_filename}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                            {/* Status pill */}
+                            <span style={{
+                              background: badge.bg, color: badge.color,
+                              borderRadius: 50, padding: '2px 10px', fontSize: 11, fontWeight: 600,
+                            }}>
+                              {badge.label}
+                            </span>
+                            <span style={{ color: C.muted, fontSize: 11 }}>{formatFileSize(doc.size_bytes)}</span>
+                            <span style={{ color: C.muted, fontSize: 11 }}>{formatDate(doc.created_at)}</span>
+                            <span style={{ color: C.muted, fontSize: 11 }}>by {doc.uploader_email}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: actions */}
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                        {doc.status === 'STORED' && (
+                          <button
+                            onClick={() => handleQueueDocument(doc.id)}
+                            disabled={isProcessing}
+                            style={{
+                              background: C.orange, color: '#fff', border: 'none',
+                              borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                              cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.6 : 1,
+                              display: 'flex', alignItems: 'center', gap: 5,
+                            }}
+                          >
+                            <Play size={13} /> {isProcessing ? 'Queuing…' : 'Process'}
+                          </button>
+                        )}
+                        {(doc.status === 'QUEUED' || doc.status === 'PROCESSING') && (
+                          <span style={{
+                            background: 'rgba(245,130,32,0.10)', color: C.orange,
+                            borderRadius: 50, padding: '5px 12px', fontSize: 11, fontWeight: 600,
+                          }}>
+                            In Progress…
+                          </span>
+                        )}
+                        {doc.status === 'FAILED' && (
+                          <button
+                            onClick={() => handleQueueDocument(doc.id)}
+                            disabled={isProcessing}
+                            style={{
+                              background: '#ef4444', color: '#fff', border: 'none',
+                              borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                              cursor: isProcessing ? 'not-allowed' : 'pointer',
+                              display: 'flex', alignItems: 'center', gap: 5,
+                            }}
+                          >
+                            <RefreshCw size={13} /> {isProcessing ? 'Reprocessing…' : 'Reprocess'}
+                          </button>
+                        )}
+                        {/* Sections button — only for PROCESSED docs */}
+                        {doc.status === 'PROCESSED' && (
+                          <button
+                            onClick={() => handleOpenSections(doc)}
+                            style={{
+                              background: 'transparent', border: 'none', cursor: 'pointer',
+                              color: C.orange, padding: 6, borderRadius: 8,
+                              display: 'flex', alignItems: 'center',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            title="View Sections"
+                          >
+                            <BookOpen size={17} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        </div>{/* end scrollable body */}
+      </div>{/* end flex-col */}
+
+
+      {/* ════════════════════════════════════════════════════════════════
+          UPLOAD MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div style={{ background: C.card, borderRadius: 20, width: '100%', maxWidth: 480 }} className="shadow-2xl">
+            <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ color: C.ink, fontSize: 18, fontWeight: 700 }}>Upload Document</h2>
+              <button onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label style={{ color: C.ink, fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                  Document Title
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter document title (optional)"
+                  value={uploadTitle}
+                  onChange={e => setUploadTitle(e.target.value)}
+                  className={inputCls}
+                  style={{ borderColor: C.border, color: C.ink, background: C.cream }}
+                />
+              </div>
+              <div style={{ border: `2px dashed ${C.border}`, borderRadius: 14, padding: 24, textAlign: 'center' }}>
+                <input type="file" onChange={handleFileSelect} className="hidden" id="file-input" />
+                <label htmlFor="file-input" style={{ cursor: 'pointer', display: 'block' }}>
+                  <Upload size={40} color={C.muted} style={{ margin: '0 auto 10px' }} />
+                  <p style={{ color: C.ink, fontWeight: 600, fontSize: 14 }}>
+                    {uploadingFile ? uploadingFile.name : 'Click to select or drag & drop'}
+                  </p>
+                  <p style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>
+                    {uploadingFile ? formatFileSize(uploadingFile.size) : 'Maximum file size: 100 MB'}
+                  </p>
+                </label>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUpload}
+                  disabled={!uploadingFile || uploading}
+                  style={{
+                    flex: 1, background: C.orange, color: '#fff', border: 'none',
+                    borderRadius: 50, padding: '11px 0', fontSize: 14, fontWeight: 600,
+                    cursor: (!uploadingFile || uploading) ? 'not-allowed' : 'pointer',
+                    opacity: (!uploadingFile || uploading) ? 0.6 : 1,
+                  }}
+                >
+                  {uploading ? 'Uploading…' : 'Upload'}
+                </button>
+                <button
+                  onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }}
+                  style={{
+                    flex: 1, background: 'transparent', color: C.orange,
+                    border: `1.5px solid ${C.orange}`, borderRadius: 50,
+                    padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════════
+          AUDIT LOG MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      {showAuditLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div style={{ background: C.card, borderRadius: 20, width: '100%', maxWidth: 680, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            className="shadow-2xl">
+
+            {/* Header */}
+            <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ color: C.ink, fontSize: 18, fontWeight: 700 }}>Processing Audit Log</h2>
+              <button onClick={() => { setShowAuditLog(false); setAuditSearchTerm(''); setAuditStatusFilter('all'); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-6 space-y-4">
+              {/* Stat tiles */}
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  { label: 'Queued',     value: auditStats.queued,     bg: '#fef3c7', text: '#92400e' },
+                  { label: 'Processing', value: auditStats.processing, bg: '#dbeafe', text: '#1e40af' },
+                  { label: 'Completed',  value: auditStats.completed,  bg: '#dcfce7', text: '#166534' },
+                  { label: 'Failed',     value: auditStats.failed,     bg: '#fee2e2', text: '#991b1b' },
+                ].map(({ label, value, bg, text }) => (
+                  <div key={label} style={{ background: bg, borderRadius: 12, padding: '14px 8px', textAlign: 'center' }}>
+                    <p style={{ color: text, fontSize: 28, fontWeight: 700, lineHeight: 1 }}>{value}</p>
+                    <p style={{ color: text, fontSize: 11, fontWeight: 600, marginTop: 6 }}>{label}</p>
                   </div>
-                  <h3 className="text-xl font-semibold text-[#333333] mb-2">No documents yet</h3>
-                  <p className="text-gray-600 mb-6">Upload your first document to get started with AI processing</p>
-                  <Button
-                    onClick={() => setShowUploadModal(true)}
-                    variant="primary"
-                    className="inline-flex items-center gap-2"
+                ))}
+              </div>
+
+              {/* Search + filter */}
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Search size={16} color={C.muted} className="absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by document title or job ID…"
+                    value={auditSearchTerm}
+                    onChange={e => setAuditSearchTerm(e.target.value)}
+                    className={inputCls}
+                    style={{ paddingLeft: 36, borderColor: C.border, background: C.cream, color: C.ink, borderRadius: 50 }}
+                  />
+                </div>
+                <div className="relative">
+                  <Filter size={14} color={C.muted} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <select
+                    value={auditStatusFilter}
+                    onChange={e => setAuditStatusFilter(e.target.value)}
+                    style={{
+                      paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
+                      border: `1.5px solid ${C.border}`, borderRadius: 50, fontSize: 13,
+                      background: C.cream, color: C.ink, outline: 'none', cursor: 'pointer',
+                    }}
                   >
-                    <Upload size={18} />
-                    Upload First Document
-                  </Button>
+                    <option value="all">All Status</option>
+                    <option value="queued">Queued</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Jobs */}
+              {loadingAudit ? (
+                <div className="py-12 text-center" style={{ color: C.muted }}>Loading audit log…</div>
+              ) : getFilteredAuditJobs().length === 0 ? (
+                <div className="py-12 text-center">
+                  <ClipboardList size={40} color={C.border} style={{ margin: '0 auto 12px' }} />
+                  <p style={{ color: C.muted }}>No processing jobs found</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {documents.map((doc) => {
-                    const statusInfo = getStatusBadge(doc.status);
-                    const StatusIcon = statusInfo.icon;
-                    const isProcessing = processingDocs.has(doc.id);
-
+                  {getFilteredAuditJobs().map((job) => {
+                    const sc = auditStatusColor(job.status);
                     return (
-                      <div
-                        key={doc.id}
-                        className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 transition-all hover:shadow-md"
-                      >
-                        <div className="flex flex-1 items-start gap-4">
-                          <FileText size={32} className="mt-1 text-gray-400" />
-
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-[#333333]">{doc.title}</h3>
-                            <p className="text-xs text-gray-500">{doc.original_filename}</p>
-                            <div className="mt-2 flex flex-wrap items-center gap-3">
-                              <div className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${statusInfo.color}`}>
-                                <StatusIcon size={14} />
-                                {statusInfo.label}
+                      <div key={job.job_id}
+                        style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14 }}
+                        className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <p style={{ color: C.ink, fontWeight: 700, fontSize: 14 }}>{job.document_title}</p>
+                            <p style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>Job ID: {job.job_id}</p>
+                          </div>
+                          <span style={{
+                            background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
+                            borderRadius: 50, padding: '3px 12px', fontSize: 11, fontWeight: 700,
+                          }}>
+                            {job.status?.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                          {[
+                            { label: 'Stage', value: job.current_stage },
+                            { label: 'Duration', value: formatDuration(job.time_elapsed_seconds) },
+                            { label: 'Chunks Created', value: job.chunks_created || 0 },
+                            ...(job.pages_processed > 0 ? [{ label: 'Pages Processed', value: job.pages_processed }] : []),
+                            ...(job.queued_at ? [{ label: 'Queued At', value: formatDate(job.queued_at) }] : []),
+                          ].map(({ label, value }) => (
+                            <div key={label}>
+                              <p style={{ color: C.muted, fontSize: 11, marginBottom: 2 }}>{label}</p>
+                              <p style={{ color: C.ink, fontWeight: 600, fontSize: 13 }}>{value}</p>
+                            </div>
+                          ))}
+                          {/* Progress bar spans full width */}
+                          <div className="col-span-2">
+                            <p style={{ color: C.muted, fontSize: 11, marginBottom: 4 }}>Progress</p>
+                            <div className="flex items-center gap-3">
+                              <div style={{ flex: 1, background: C.border, borderRadius: 50, height: 8 }}>
+                                <div style={{
+                                  width: `${job.progress_percentage}%`, background: C.orange,
+                                  height: 8, borderRadius: 50, transition: 'width 0.3s',
+                                }} />
                               </div>
-                              <span className="text-xs text-gray-500">{formatFileSize(doc.size_bytes)}</span>
-                              <span className="text-xs text-gray-500">{formatDate(doc.created_at)}</span>
-                              <span className="text-xs text-gray-500">by {doc.uploader_email}</span>
+                              <span style={{ color: C.ink, fontWeight: 700, fontSize: 13, minWidth: 36 }}>
+                                {job.progress_percentage}%
+                              </span>
                             </div>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          {/* Queue Button - Only for STORED documents */}
-                          {doc.status === 'STORED' && (
-                            <Button
-                              onClick={() => handleQueueDocument(doc.id)}
-                              disabled={isProcessing}
-                              variant="primary"
-                              size="sm"
-                              className="flex items-center gap-2"
-                            >
-                              <Play size={16} />
-                              {isProcessing ? 'Queuing...' : 'Process'}
-                            </Button>
-                          )}
-
-                          {/* Status Badge for In-Progress */}
-                          {(doc.status === 'QUEUED' || doc.status === 'PROCESSING') && (
-                            <div className="rounded-md bg-orange-100 px-3 py-2 text-xs font-medium text-orange-800">
-                              In Progress...
-                            </div>
-                          )}
-
-                          {/* Reprocess Button - Only for FAILED documents */}
-                          {doc.status === 'FAILED' && (
-                            <Button
-                              onClick={() => handleReprocess(doc.id)}
-                              disabled={isProcessing}
-                              variant="danger"
-                              size="sm"
-                              className="flex items-center gap-2"
-                            >
-                              <RefreshCw size={16} />
-                              {isProcessing ? 'Reprocessing...' : 'Reprocess'}
-                            </Button>
-                          )}
-
-                          {/* Update Main Topics Button - For all documents */}
-                          <button
-                            onClick={() => handleOpenMainTopics(doc)}
-                            className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-orange-50"
-                            title="Update Main Topics"
-                          >
-                            <Edit size={18} />
-                          </button>
-                        </div>
+                        {job.error_message && (
+                          <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 8, padding: '8px 12px', marginTop: 10 }}>
+                            <p style={{ color: '#991b1b', fontSize: 12, fontWeight: 600 }}>Error: {job.error_message}</p>
+                            {job.error_stage && <p style={{ color: '#b91c1c', fontSize: 11, marginTop: 2 }}>Failed at: {job.error_stage}</p>}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               )}
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* Upload Modal */}
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => {
-          setShowUploadModal(false);
-          setUploadingFile(null);
-          setUploadTitle('');
-        }}
-        title="Upload Document"
-        closeOnOverlayClick={false}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">Document Title</label>
-            <input
-              type="text"
-              placeholder="Enter document title (optional)"
-              value={uploadTitle}
-              onChange={(e) => setUploadTitle(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-4 py-2.5 focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
-            />
-          </div>
-
-          <div className="rounded-lg border-2 border-dashed border-gray-300 p-6">
-            <input
-              type="file"
-              onChange={handleFileSelect}
-              className="hidden"
-              id="file-input"
-            />
-            <label
-              htmlFor="file-input"
-              className="flex cursor-pointer flex-col items-center justify-center text-center"
-            >
-              <Upload size={48} className="mb-2 text-gray-400" />
-              <p className="font-medium text-gray-700">
-                {uploadingFile ? uploadingFile.name : 'Click to select file or drag and drop'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {uploadingFile ? `${formatFileSize(uploadingFile.size)}` : 'Maximum file size: 100MB'}
-              </p>
-            </label>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              onClick={handleUpload}
-              variant="primary"
-              className="flex-1"
-              disabled={!uploadingFile || uploading}
-            >
-              {uploading ? 'Uploading...' : 'Upload'}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowUploadModal(false);
-                setUploadingFile(null);
-                setUploadTitle('');
-              }}
-              variant="secondary"
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Main Topics Modal */}
-      <Modal
-        isOpen={showMainTopicsModal}
-        onClose={() => {
-          setShowMainTopicsModal(false);
-          setMainTopics({});
-          setSelectedDoc(null);
-        }}
-        title="Update Main Topics"
-        closeOnOverlayClick={false}
-      >
-        {selectedDoc && (
-          <div className="space-y-4">
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Document</p>
-              <p className="text-sm font-semibold text-[#333333]">{selectedDoc.title}</p>
             </div>
 
-            {loadingTopics ? (
-              <div className="py-8 text-center text-gray-500">Loading topics...</div>
-            ) : (
-              <>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {Object.entries(mainTopics).map(([key, value], index) => (
-                    <div key={index} className="p-3 bg-white border border-gray-200 rounded-lg">
-                      <div className="flex items-start gap-2 mb-2">
-                        <input
-                          type="text"
-                          value={key}
-                          onChange={(e) => handleUpdateTopic(key, e.target.value, value)}
-                          placeholder="Topic name (e.g., AI)"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-semibold focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
-                        />
-                        <button
-                          onClick={() => handleRemoveTopic(key)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="Remove topic"
-                        >
-                          <X size={18} />
-                        </button>
+            {/* Footer close button */}
+            <div className="p-4" style={{ borderTop: `1px solid ${C.border}` }}>
+              <button
+                onClick={() => { setShowAuditLog(false); setAuditSearchTerm(''); setAuditStatusFilter('all'); }}
+                style={{
+                  width: '100%', background: 'transparent', color: C.orange,
+                  border: `1.5px solid ${C.orange}`, borderRadius: 50,
+                  padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ════════════════════════════════════════════════════════════════
+          DOCUMENT SECTIONS MODAL
+      ════════════════════════════════════════════════════════════════ */}
+      {showSectionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div style={{ background: C.card, borderRadius: 20, width: '100%', maxWidth: 560, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            className="shadow-2xl">
+
+            {/* Header */}
+            <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${C.border}` }}>
+              <div>
+                <h2 style={{ color: C.ink, fontSize: 18, fontWeight: 700 }}>Document Sections</h2>
+                {selectedDoc && (
+                  <p style={{ color: C.muted, fontSize: 12, marginTop: 3 }} className="truncate max-w-xs">
+                    {selectedDoc.title}
+                  </p>
+                )}
+              </div>
+              <button onClick={() => { setShowSectionsModal(false); setSections([]); setSelectedDoc(null); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto flex-1 p-5">
+              {loadingSections ? (
+                <div className="py-12 text-center" style={{ color: C.muted }}>Loading sections…</div>
+              ) : sections.length === 0 ? (
+                <div className="py-12 text-center">
+                  <BookOpen size={40} color={C.border} style={{ margin: '0 auto 12px' }} />
+                  <p style={{ color: C.muted, fontSize: 14 }}>No sections found for this document.</p>
+                  <p style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Sections are created during processing.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Summary pill */}
+                  <div style={{ background: C.cream, borderRadius: 10, padding: '8px 14px', marginBottom: 12 }}
+                    className="flex items-center justify-between">
+                    <span style={{ color: C.muted, fontSize: 12 }}>Total sections</span>
+                    <span style={{ color: C.ink, fontWeight: 700, fontSize: 14 }}>{sections.length}</span>
+                  </div>
+
+                  {sections.map((sec, i) => (
+                    <div key={sec.id}
+                      style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', background: C.card }}>
+
+                      {/* Section header */}
+                      <div style={{ background: C.cream, padding: '10px 14px' }}
+                        className="flex items-start gap-3">
+                        <div style={{
+                          width: 26, height: 26, borderRadius: 8, background: C.orange,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                        }}>
+                          <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p style={{ color: C.ink, fontWeight: 700, fontSize: 13 }} className="truncate">
+                            {sec.section_title}
+                          </p>
+                          <p style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>
+                            {sec.chunk_count} {sec.chunk_count === 1 ? 'chunk' : 'chunks'}
+                          </p>
+                        </div>
                       </div>
-                      <textarea
-                        value={value}
-                        onChange={(e) => handleUpdateTopic(key, key, e.target.value)}
-                        placeholder="Description (e.g., Artificial Intelligence fundamentals, neural networks)"
-                        rows={2}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
-                      />
+
+                      {/* Text previews */}
+                      <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {sec.single_chunk ? (
+                          /* Single chunk — just show one preview */
+                          <div style={{
+                            background: 'rgba(245,130,32,0.06)', border: '1px solid rgba(245,130,32,0.18)',
+                            borderRadius: 10, padding: '8px 12px',
+                          }}>
+                            <p style={{ color: C.orange, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
+                              ↳ Single chunk
+                            </p>
+                            <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
+                              {sec.start_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Start preview */}
+                            <div style={{
+                              background: 'rgba(0,173,239,0.06)', border: '1px solid rgba(0,173,239,0.18)',
+                              borderRadius: 10, padding: '8px 12px',
+                            }}>
+                              <p style={{ color: C.blue, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
+                                ↳ Opening
+                              </p>
+                              <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
+                                {sec.start_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
+                              </p>
+                            </div>
+
+                            {/* End preview */}
+                            <div style={{
+                              background: 'rgba(120,190,32,0.06)', border: '1px solid rgba(120,190,32,0.18)',
+                              borderRadius: 10, padding: '8px 12px',
+                            }}>
+                              <p style={{ color: C.green, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
+                                ↳ Closing
+                              </p>
+                              <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
+                                {sec.end_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    onClick={handleAddTopic}
-                    variant="ghost"
-                    className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-[#F58220]"
-                  >
-                    <Plus size={18} />
-                    Add New Topic
-                  </Button>
-
-                  {/* 🤖 AI Generate Button - Only for PROCESSED documents */}
-                  {selectedDoc?.status === 'PROCESSED' && (
-                    <Button
-                      onClick={handleGenerateMainTopics}
-                      variant="secondary"
-                      className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white hover:from-purple-600 hover:to-indigo-700"
-                      disabled={generatingTopics}
-                    >
-                      {generatingTopics ? (
-                        <>
-                          <RefreshCw size={18} className="animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5h-1v1.27c.6.34 1 .99 1 1.73a2 2 0 0 1-4 0c0-.74.4-1.39 1-1.73V9h-1a5 5 0 0 0-5 5H3a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
-                          </svg>
-                          🤖 Generate with AI
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-gray-200">
-                  <Button
-                    onClick={handleSaveMainTopics}
-                    variant="primary"
-                    className="flex-1"
-                    disabled={savingTopics}
-                  >
-                    {savingTopics ? 'Saving...' : 'Save Topics'}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowMainTopicsModal(false);
-                      setMainTopics({});
-                      setSelectedDoc(null);
-                    }}
-                    variant="secondary"
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
-
-      {/* Audit Log Modal */}
-      <Modal
-        isOpen={showAuditLog}
-        onClose={() => {
-          setShowAuditLog(false);
-          setAuditSearchTerm('');
-          setAuditStatusFilter('all');
-        }}
-        title="Processing Audit Log"
-        closeOnOverlayClick={false}
-      >
-        <div className="space-y-4">
-          {/* Stats Summary */}
-          <div className="grid grid-cols-4 gap-3">
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-              <p className="text-2xl font-bold text-yellow-800">{auditStats.queued}</p>
-              <p className="text-xs text-yellow-600 font-medium">Queued</p>
+              )}
             </div>
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-              <p className="text-2xl font-bold text-blue-800">{auditStats.processing}</p>
-              <p className="text-xs text-blue-600 font-medium">Processing</p>
-            </div>
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-center">
-              <p className="text-2xl font-bold text-green-800">{auditStats.completed}</p>
-              <p className="text-xs text-green-600 font-medium">Completed</p>
-            </div>
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-center">
-              <p className="text-2xl font-bold text-red-800">{auditStats.failed}</p>
-              <p className="text-xs text-red-600 font-medium">Failed</p>
-            </div>
-          </div>
 
-          {/* Search and Filter */}
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by document title or job ID..."
-                value={auditSearchTerm}
-                onChange={(e) => setAuditSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]"
-              />
-            </div>
-            <div className="relative">
-              <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <select
-                value={auditStatusFilter}
-                onChange={(e) => setAuditStatusFilter(e.target.value)}
-                className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] appearance-none bg-white"
+            {/* Footer */}
+            <div className="p-4" style={{ borderTop: `1px solid ${C.border}` }}>
+              <button
+                onClick={() => { setShowSectionsModal(false); setSections([]); setSelectedDoc(null); }}
+                style={{
+                  width: '100%', background: 'transparent', color: C.orange,
+                  border: `1.5px solid ${C.orange}`, borderRadius: 50,
+                  padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}
               >
-                <option value="all">All Status</option>
-                <option value="queued">Queued</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
+                Close
+              </button>
             </div>
-          </div>
-
-          {/* Jobs List */}
-          {loadingAudit ? (
-            <div className="py-12 text-center text-gray-500">Loading audit log...</div>
-          ) : getFilteredAuditJobs().length === 0 ? (
-            <div className="py-12 text-center">
-              <ClipboardList size={48} className="mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-600">No processing jobs found</p>
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {getFilteredAuditJobs().map((job) => (
-                <div key={job.job_id} className="p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-[#333333] text-sm">{job.document_title}</h4>
-                      <p className="text-xs text-gray-500 mt-1">Job ID: {job.job_id}</p>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(job.status)}`}>
-                      {job.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs">
-                    <div>
-                      <p className="text-gray-500">Stage</p>
-                      <p className="font-medium text-[#333333]">{job.current_stage}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Progress</p>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-[#F58220] h-2 rounded-full transition-all"
-                            style={{ width: `${job.progress_percentage}%` }}
-                          />
-                        </div>
-                        <span className="font-medium text-[#333333]">{job.progress_percentage}%</span>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Duration</p>
-                      <p className="font-medium text-[#333333]">{formatDuration(job.time_elapsed_seconds)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Chunks Created</p>
-                      <p className="font-medium text-[#333333]">{job.chunks_created || 0}</p>
-                    </div>
-                    {job.pages_processed > 0 && (
-                      <div>
-                        <p className="text-gray-500">Pages Processed</p>
-                        <p className="font-medium text-[#333333]">{job.pages_processed}</p>
-                      </div>
-                    )}
-                    {job.queued_at && (
-                      <div>
-                        <p className="text-gray-500">Queued At</p>
-                        <p className="font-medium text-[#333333]">{formatDate(job.queued_at)}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {job.error_message && (
-                    <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded">
-                      <p className="text-xs font-semibold text-red-800">Error:</p>
-                      <p className="text-xs text-red-700 mt-1">{job.error_message}</p>
-                      {job.error_stage && (
-                        <p className="text-xs text-red-600 mt-1">Failed at: {job.error_stage}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4 border-t border-gray-200">
-            <Button
-              onClick={() => {
-                setShowAuditLog(false);
-                setAuditSearchTerm('');
-                setAuditStatusFilter('all');
-              }}
-              variant="secondary"
-            >
-              Close
-            </Button>
           </div>
         </div>
-      </Modal>
+      )}
+
     </div>
   );
 };

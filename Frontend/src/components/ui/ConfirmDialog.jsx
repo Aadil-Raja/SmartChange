@@ -1,6 +1,5 @@
 // src/components/ui/ConfirmDialog.jsx
 import { AlertTriangle } from "lucide-react";
-import Button from "./Button";
 
 const ConfirmDialog = ({
   title,
@@ -12,34 +11,38 @@ const ConfirmDialog = ({
   variant = "danger",
 }) => {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <div className="flex items-start gap-4 mb-4">
-          <div
-            className={`flex-shrink-0 ${
-              variant === "danger" ? "text-red-600" : "text-yellow-600"
-            }`}
-          >
-            <AlertTriangle size={24} />
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden">
+        {/* Content */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-start gap-3 mb-3">
+            <AlertTriangle size={22} className="text-red-500 flex-shrink-0 mt-0.5" />
+            <h3 className="text-base font-bold text-[#1a1209]">{title}</h3>
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-[#333333] mb-2">
-              {title}
-            </h3>
-            <p className="text-gray-600 text-sm">{message}</p>
-          </div>
+          <p className="text-sm text-gray-500 leading-relaxed pl-8">{message}</p>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-          <Button variant="secondary" onClick={onCancel}>
+        {/* Divider */}
+        <div className="border-t border-gray-100" />
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4">
+          <button
+            onClick={onCancel}
+            className="px-5 py-2 rounded-full border border-[#F58220] text-[#F58220] text-sm font-semibold hover:bg-orange-50 transition-colors"
+          >
             {cancelText}
-          </Button>
-          <Button
-            variant={variant === "danger" ? "danger" : "primary"}
+          </button>
+          <button
             onClick={onConfirm}
+            className={`px-5 py-2 rounded-full text-sm font-bold text-white transition-colors ${
+              variant === "danger"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-[#F58220] hover:bg-[#E0741C]"
+            }`}
           >
             {confirmText}
-          </Button>
+          </button>
         </div>
       </div>
     </div>

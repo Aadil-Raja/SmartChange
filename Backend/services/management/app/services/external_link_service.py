@@ -63,7 +63,18 @@ def update_link(db: Session, *, link_id: int, body: LinkUpdate):
     }
 
 def delete_link(db: Session, *, link_id: int):
-    ok = external_link_repo.delete_link(db, link_id)
-    if not ok:
+    from shared.models.course_content import ContentItem
+    link = external_link_repo.get_link(db, link_id)
+    if not link:
         raise ValueError("Link not found")
+
+    # Block if referenced by any course content item
+    ref_count = db.query(ContentItem.id).filter(ContentItem.external_link_id == link_id).count()
+    if ref_count > 0:
+        raise ValueError(
+            f"Cannot delete — this link is used in {ref_count} course content item{'s' if ref_count != 1 else ''}. "
+            "Remove it from all courses first."
+        )
+
+    external_link_repo.delete_link(db, link_id)
     return {"deleted": True}

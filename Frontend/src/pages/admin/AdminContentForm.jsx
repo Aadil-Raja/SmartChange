@@ -1,41 +1,54 @@
 // src/pages/admin/training/AdminContentForm.jsx
 import { useState, useEffect, useRef } from "react";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
-import { X, Save } from "lucide-react";
-import Button from "../../components/ui/Button";
-import Input2 from "../../components/ui/Input2";
-import TextArea2 from "../../components/ui/TextArea2";
-import Select2 from "../../components/ui/Select2";
+import { X, Plus, Save, Upload } from "lucide-react";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 
+// ── Shared styled primitives ───────────────────────────────────────────────────
+const inputBase = {
+  width: "100%",
+  padding: "10px 14px",
+  borderRadius: "10px",
+  border: "1.5px solid #e0d8ce",
+  background: "white",
+  fontSize: "14px",
+  color: "#1a1209",
+  outline: "none",
+  transition: "border-color 0.15s, box-shadow 0.15s",
+};
+
+const focusOn  = (e) => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
+const focusOff = (e) => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; };
+
+const Field = ({ label, required, children }) => (
+  <div>
+    <label className="block text-sm font-semibold mb-1.5" style={{ color: "#3d3228" }}>
+      {label}{required && <span className="text-[#F58220] ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
 const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
-  const { addContent, updateContent, loading, error, clearMessages } = useAdminTraining();
+  const { addContent, updateContent, error, clearMessages,
+          fetchProcessedDocuments, fetchVideos, fetchExternalLinks } = useAdminTraining();
 
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    type: "document",
-    document_id: "",
-    video_id: "",
-    external_link_id: "",
+    title: "", description: "", type: "document",
+    document_id: "", video_id: "", external_link_id: "",
   });
-
   const [availableDocuments, setAvailableDocuments] = useState([]);
-  const [availableVideos, setAvailableVideos] = useState([]);
-  const [availableLinks, setAvailableLinks] = useState([]);
-
+  const [availableVideos, setAvailableVideos]       = useState([]);
+  const [availableLinks, setAvailableLinks]         = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  
   const hasFetchedResources = useRef(false);
 
-  // Load available resources and populate form if editing
   useEffect(() => {
     if (!hasFetchedResources.current) {
-      loadAvailableResources();
       hasFetchedResources.current = true;
+      loadAvailableResources();
     }
-
     if (editingContent) {
       setFormData({
         title: editingContent.title || "",
@@ -48,39 +61,10 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
     }
   }, [editingContent]);
 
-  const {
-    fetchProcessedDocuments,
-    fetchVideos,
-    fetchExternalLinks
-  } = useAdminTraining();
-
   const loadAvailableResources = async () => {
-    try {
-      const docsResult = await fetchProcessedDocuments();
-      if (docsResult.success) {
-        setAvailableDocuments(docsResult.data?.documents || []);
-      }
-    } catch (err) {
-      console.error('Failed to load documents:', err);
-    }
-
-    try {
-      const videosResult = await fetchVideos();
-      if (videosResult.success) {
-        setAvailableVideos(videosResult.data?.videos || []);
-      }
-    } catch (err) {
-      console.error('Failed to load videos:', err);
-    }
-
-    try {
-      const linksResult = await fetchExternalLinks();
-      if (linksResult.success) {
-        setAvailableLinks(linksResult.data?.links || []);
-      }
-    } catch (err) {
-      console.error('Failed to load links:', err);
-    }
+    try { const r = await fetchProcessedDocuments(); if (r.success) setAvailableDocuments(r.data?.documents || []); } catch {}
+    try { const r = await fetchVideos();              if (r.success) setAvailableVideos(r.data?.videos || []);       } catch {}
+    try { const r = await fetchExternalLinks();       if (r.success) setAvailableLinks(r.data?.links || []);         } catch {}
   };
 
   const handleChange = (e) => {
@@ -90,258 +74,200 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // ADD THIS CHECK
-    if (!courseId) {
-      console.error('courseId is missing!');
-      alert('Course ID is required');
-      return;
-    }
-
+    if (!courseId) { alert("Course ID is required"); return; }
     setSubmitting(true);
     clearMessages();
 
-    // Prepare data based on content type
     const submitData = {
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
     };
+    if (!editingContent) submitData.type = formData.type;
+    if (formData.type === "document") submitData.document_id = formData.document_id ? parseInt(formData.document_id) : null;
+    else if (formData.type === "video") submitData.video_id = formData.video_id ? parseInt(formData.video_id) : null;
+    else if (formData.type === "link")  submitData.external_link_id = formData.external_link_id ? parseInt(formData.external_link_id) : null;
 
-    // Add type-specific fields
-    if (!editingContent) {
-      submitData.type = formData.type;
-    }
-
-    if (formData.type === "document") {
-      submitData.document_id = formData.document_id ? parseInt(formData.document_id) : null;
-    } else if (formData.type === "video") {
-      submitData.video_id = formData.video_id ? parseInt(formData.video_id) : null;
-    } else if (formData.type === "link") {
-      submitData.external_link_id = formData.external_link_id ? parseInt(formData.external_link_id) : null;
-    }
-
-    console.log('Submitting to courseId:', courseId); // DEBUG
-    console.log('Submit data:', submitData); // DEBUG
-
-    let result;
-    if (editingContent) {
-      result = await updateContent(editingContent.id, submitData);
-    } else {
-      result = await addContent(courseId, submitData);
-    }
+    const result = editingContent
+      ? await updateContent(editingContent.id, submitData)
+      : await addContent(courseId, submitData);
 
     setSubmitting(false);
-
-    if (result.success) {
-      setTimeout(() => {
-        onSuccess();
-      }, 1000);
-    }
+    if (result.success) setTimeout(() => onSuccess(), 1000);
   };
 
-  // ADD THIS HANDLER
-  const handleClose = () => {
-    if (!submitting) {
-      clearMessages();
-      onClose();
-    }
-  };
+  const handleClose = () => { if (!submitting) { clearMessages(); onClose(); } };
+
+  const uploadHintLabel = formData.type === "video" ? "Upload New Video"
+    : formData.type === "link" ? "Create New Link"
+    : "Upload New Document";
+
+  const uploadHintTarget = formData.type === "document" ? "/admin" : "/admin/training/library";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 p-4"
+      style={{ background: "rgba(26,18,9,0.55)", backdropFilter: "blur(2px)" }}
+    >
+      <div
+        className="bg-white w-full overflow-y-auto"
+        style={{
+          maxWidth: "520px",
+          maxHeight: "90vh",
+          borderRadius: "20px",
+          boxShadow: "0 24px 64px rgba(26,18,9,0.22)",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-[#333333]">
+        <div className="flex items-center justify-between px-7 pt-6 pb-5" style={{ borderBottom: "1px solid #f0ebe3" }}>
+          <h2 className="text-xl font-extrabold" style={{ color: "#1a1209", fontFamily: "Georgia, serif" }}>
             {editingContent ? "Edit Content" : "Add New Content"}
           </h2>
           <button
             type="button"
             onClick={handleClose}
-            className="text-gray-400 hover:text-[#F58220] transition-colors"
             disabled={submitting}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+            style={{ background: "#f3ede4", color: "#6b5e4e" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fee2c8"; e.currentTarget.style.color = "#F58220"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#f3ede4"; e.currentTarget.style.color = "#6b5e4e"; }}
           >
-            <X size={24} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Error Alert */}
+        {/* Error */}
         {error && (
-          <div className="p-6 pb-0">
-            <Alert variant="error" onClose={clearMessages}>
-              {error}
-            </Alert>
+          <div className="px-7 pt-5">
+            <Alert variant="error" onClose={clearMessages}>{error}</Alert>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* Title */}
-          <Input2
-            label="Content Title"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            placeholder="e.g., Introduction to React Hooks"
-            required
-            disabled={submitting}
-          />
+        <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">
 
-          {/* Description */}
-          <TextArea2
-            label="Description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Describe this content item..."
-            rows={3}
-            disabled={submitting}
-          />
-
-          {/* Content Type (only for new content) */}
-          {!editingContent && (
-            <Select2
-              label="Content Type"
-              name="type"  // ADD THIS - CRITICAL!
-              value={formData.type}
-              onChange={handleChange}
-              required
-              disabled={submitting}
-              options={[
-                { label: "Document", value: "document" },
-                { label: "Video", value: "video" },
-                { label: "External Link", value: "link" }
-              ]}
+          <Field label="Content Title" required>
+            <input
+              name="title" value={formData.title} onChange={handleChange}
+              placeholder="e.g., Introduction to React Hooks"
+              required disabled={submitting}
+              style={inputBase} onFocus={focusOn} onBlur={focusOff}
             />
+          </Field>
+
+          <Field label="Description">
+            <textarea
+              name="description" value={formData.description} onChange={handleChange}
+              placeholder="Describe this content item…"
+              rows={3} disabled={submitting}
+              style={{ ...inputBase, resize: "vertical", minHeight: "90px" }}
+              onFocus={focusOn} onBlur={focusOff}
+            />
+          </Field>
+
+          {!editingContent && (
+            <Field label="Content Type" required>
+              <select
+                name="type" value={formData.type} onChange={handleChange}
+                required disabled={submitting}
+                style={inputBase} onFocus={focusOn} onBlur={focusOff}
+              >
+                <option value="document">Document</option>
+                <option value="video">Video</option>
+                <option value="link">External Link</option>
+              </select>
+            </Field>
           )}
 
-          {/* Type-specific fields */}
           {formData.type === "document" && (
-            <Select2
-              label="Select Document"
-              name="document_id"
-              value={formData.document_id}
-              onChange={handleChange}
-              required
-              disabled={submitting}
-              options={[
-                { label: "Select a document...", value: "" },
-                ...availableDocuments.map(doc => ({
-                  label: doc.title || doc.filename,
-                  value: doc.id.toString()
-                }))
-              ]}
-              helpText="Choose from uploaded and processed documents"
-            />
+            <Field label="Select Document" required>
+              <select
+                name="document_id" value={formData.document_id} onChange={handleChange}
+                required disabled={submitting}
+                style={inputBase} onFocus={focusOn} onBlur={focusOff}
+              >
+                <option value="">Select a document…</option>
+                {availableDocuments.map(doc => (
+                  <option key={doc.id} value={doc.id.toString()}>{doc.title || doc.filename}</option>
+                ))}
+              </select>
+            </Field>
           )}
 
           {formData.type === "video" && (
-            <Select2
-              label="Select Video"
-              name="video_id"
-              value={formData.video_id}
-              onChange={handleChange}
-              required
-              disabled={submitting}
-              options={[
-                { label: "Select a video...", value: "" },
-                ...availableVideos.map(video => ({
-                  label: video.title,
-                  value: video.id.toString()
-                }))
-              ]}
-              helpText="Choose from uploaded videos"
-            />
+            <Field label="Select Video" required>
+              <select
+                name="video_id" value={formData.video_id} onChange={handleChange}
+                required disabled={submitting}
+                style={inputBase} onFocus={focusOn} onBlur={focusOff}
+              >
+                <option value="">Select a video…</option>
+                {availableVideos.map(v => (
+                  <option key={v.id} value={v.id.toString()}>{v.title}</option>
+                ))}
+              </select>
+            </Field>
           )}
 
           {formData.type === "link" && (
-            <Select2
-              label="Select External Link"
-              name="external_link_id"
-              value={formData.external_link_id}
-              onChange={handleChange}
-              required
-              disabled={submitting}
-              options={[
-                { label: "Select a link...", value: "" },
-                ...availableLinks.map(link => ({
-                  label: `${link.title} (${link.url})`,
-                  value: link.id.toString()
-                }))
-              ]}
-              helpText="Choose from created external links"
-            />
+            <Field label="Select External Link" required>
+              <select
+                name="external_link_id" value={formData.external_link_id} onChange={handleChange}
+                required disabled={submitting}
+                style={inputBase} onFocus={focusOn} onBlur={focusOff}
+              >
+                <option value="">Select a link…</option>
+                {availableLinks.map(l => (
+                  <option key={l.id} value={l.id.toString()}>{l.title} ({l.url})</option>
+                ))}
+              </select>
+            </Field>
           )}
 
-          {/* Quick Actions */}
-          <div className="bg-gray-50 rounded-md p-4">
-            <p className="text-sm text-gray-600 mb-3">Need to add new content?</p>
-            <div className="flex gap-2">
-              {formData.type === "video" && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => window.open('/admin/training/library', '_blank')}
-                  fullWidth={false}
-                >
-                  Upload New Video
-                </Button>
-              )}
-              {formData.type === "link" && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => window.open('/admin/training/library', '_blank')}
-                  fullWidth={false}
-                >
-                  Create New Link
-                </Button>
-              )}
-              {formData.type === "document" && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => window.open('/admin')}
-                  fullWidth={false}
-                >
-                  Upload New Document
-                </Button>
-              )}
-            </div>
+          {/* Upload hint box */}
+          <div
+            className="flex items-center justify-between px-4 py-3 rounded-xl"
+            style={{ background: "#fff8f2", border: "1.5px solid #fcd9b8" }}
+          >
+            <p className="text-sm" style={{ color: "#9c6a3a" }}>Need to add new content?</p>
+            <button
+              type="button"
+              onClick={() => window.open(uploadHintTarget)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={{ border: "1.5px solid #F58220", color: "#F58220", background: "white" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F58220"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#F58220"; }}
+            >
+              <Upload size={12} /> {uploadHintLabel}
+            </button>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 mt-6">
-            <Button
+          {/* Footer buttons */}
+          <div className="flex justify-end gap-3 pt-2" style={{ borderTop: "1px solid #f0ebe3", marginTop: "8px", paddingTop: "20px" }}>
+            <button
               type="button"
-              variant="secondary"
               onClick={handleClose}
               disabled={submitting}
-              fullWidth={false}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50"
+              style={{ borderColor: "#d0c8be", color: "#6b5e4e", background: "white" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#F58220"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "#d0c8be"}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              variant="primary"
               disabled={submitting}
-              fullWidth={false}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
+              style={{ background: "#F58220" }}
+              onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = "#d96e10"; }}
+              onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = "#F58220"; }}
             >
               {submitting ? (
-                <>
-                  <LoadingSpinner size="small" />
-                  {editingContent ? "Updating..." : "Adding..."}
-                </>
+                <><LoadingSpinner size="small" />{editingContent ? "Updating…" : "Adding…"}</>
               ) : (
-                <>
-                  <Save size={20} />
-                  {editingContent ? "Update Content" : "Add Content"}
-                </>
+                <>{editingContent ? <Save size={14} /> : <Plus size={14} />}{editingContent ? "Update Content" : "Add Content"}</>
               )}
-            </Button>
+            </button>
           </div>
         </form>
       </div>
