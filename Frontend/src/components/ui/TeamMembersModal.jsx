@@ -1,17 +1,16 @@
 // src/components/ui/TeamMembersModal.jsx
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Users, Crown, UserCheck, Mail, Calendar, Loader2, ChevronRight, MessageSquare } from 'lucide-react';
 import { getTeamMembers } from '../../services/teamApi';
 import { getEmployeeCourses } from '../../services/courseApi';
-import MemberProgressPanel from './MemberProgressPanel';
 import SendMessageModal from './SendMessageModal';
 
 const TeamMembersModal = ({ isOpen, onClose, team }) => {
+  const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedMember, setSelectedMember] = useState(null);
-  const [showProgressPanel, setShowProgressPanel] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageRecipient, setMessageRecipient] = useState(null);
   const [courses, setCourses] = useState([]);
@@ -65,13 +64,13 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
   };
 
   const handleMemberClick = (member) => {
-    setSelectedMember(member);
-    setShowProgressPanel(true);
-  };
-
-  const handleCloseProgressPanel = () => {
-    setShowProgressPanel(false);
-    setSelectedMember(null);
+    onClose();
+    navigate(`/employee/team/${team?.team_id}/member/${member.user_id}`, {
+      state: {
+        team,
+        member
+      }
+    });
   };
 
   const handleSendMessage = (e, member) => {
@@ -232,14 +231,6 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
           </button>
         </div>
       </div>
-
-      {/* Member Progress Panel */}
-      <MemberProgressPanel
-        isOpen={showProgressPanel}
-        onClose={handleCloseProgressPanel}
-        member={selectedMember}
-        teamId={team?.team_id}
-      />
 
       {/* Send Message Modal */}
       <SendMessageModal
