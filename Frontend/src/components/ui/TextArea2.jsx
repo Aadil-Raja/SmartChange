@@ -32,7 +32,7 @@ const TextArea2 = ({
         required={required}
         disabled={disabled}
         rows={rows}
-        className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220] disabled:bg-gray-100 disabled:cursor-not-allowed resize-y transition-all duration-200"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 focus:border-[#f7953f] disabled:bg-gray-100 disabled:cursor-not-allowed resize-y transition-all duration-200"
         {...props}
       />
       {helpText && (

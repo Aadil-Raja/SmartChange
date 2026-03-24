@@ -13,7 +13,7 @@ const ChatCard = ({
 }) => {
   const variants = {
     default: 'bg-white border border-gray-200',
-    primary: 'bg-gradient-to-br from-[#FDB913]/5 to-[#F58220]/5 border border-[#FDB913]/20',
+    primary: 'bg-gradient-to-br from-[#FDB913]/5 to-[#f7953f]/5 border border-[#FDB913]/20',
     secondary: 'bg-gray-50 border border-gray-200',
     success: 'bg-green-50 border border-green-200',
     warning: 'bg-yellow-50 border border-yellow-200',

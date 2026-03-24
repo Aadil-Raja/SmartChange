@@ -176,7 +176,7 @@ const CourseCard = ({ course, progress }) => {
       className="group overflow-hidden"
     >
       {/* Thumbnail or Placeholder */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
         {course.thumbnail_url ? (
           <img 
             src={course.thumbnail_url} 
@@ -299,7 +299,7 @@ const CourseCard = ({ course, progress }) => {
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
               <div 
-                className="h-full rounded-full bg-gradient-to-r from-[#FDB913] to-[#F58220] transition-all duration-300"
+                className="h-full rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] transition-all duration-300"
                 style={{ width: `${progress.percentage}%` }}
               />
             </div>

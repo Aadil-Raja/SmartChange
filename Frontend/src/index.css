@@ -6,7 +6,7 @@
 @layer utilities {
   /* Primary Orange */
   .bg-ke-orange {
-    background-color: #F58220;
+    background-color: #f7953f;
   }
   
   .bg-ke-orange-light {
@@ -18,7 +18,7 @@
   }
   
   .text-ke-orange {
-    color: #F58220;
+    color: #f7953f;
   }
   
   .text-ke-orange-light {
@@ -30,7 +30,7 @@
   }
   
   .border-ke-orange {
-    border-color: #F58220;
+    border-color: #f7953f;
   }
   
   .border-ke-orange-light {
@@ -131,19 +131,19 @@
   
   /* Brand Gradient Utilities */
   .bg-ke-gradient {
-    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+    background: linear-gradient(135deg, #FDB913 0%, #f7953f 100%);
   }
   
   .bg-ke-gradient-vertical {
-    background: linear-gradient(180deg, #FDB913 0%, #F58220 100%);
+    background: linear-gradient(180deg, #FDB913 0%, #f7953f 100%);
   }
   
   .bg-ke-gradient-horizontal {
-    background: linear-gradient(90deg, #FDB913 0%, #F58220 100%);
+    background: linear-gradient(90deg, #FDB913 0%, #f7953f 100%);
   }
   
   .text-ke-gradient {
-    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+    background: linear-gradient(135deg, #FDB913 0%, #f7953f 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -151,7 +151,7 @@
   
   /* Hover Gradient Utilities */
   .hover\:bg-ke-gradient:hover {
-    background: linear-gradient(135deg, #FDB913 0%, #F58220 100%);
+    background: linear-gradient(135deg, #FDB913 0%, #f7953f 100%);
   }
   
   /* Focus Ring Utilities with Orange Color */

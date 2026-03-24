@@ -39,7 +39,7 @@ const ContentForm = ({ onSubmit, editingItem, onCancel }) => {
   return (
     <Card className="p-6 shadow-lg">
       <div className="mb-6 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
           <FileText size={20} className="text-white" />
         </div>
         <h2 className="text-2xl font-bold text-[#333333]">
@@ -72,7 +72,7 @@ const ContentForm = ({ onSubmit, editingItem, onCancel }) => {
           <input
             type="file"
             onChange={handleFileChange}
-            className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-[#333333] transition-colors file:mr-4 file:rounded-md file:border-0 file:bg-gradient-to-r file:from-[#FDB913] file:to-[#F58220] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:opacity-90 focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
+            className="w-full rounded-md border border-gray-300 px-4 py-2.5 text-[#333333] transition-colors file:mr-4 file:rounded-md file:border-0 file:bg-gradient-to-r file:from-[#FDB913] file:to-[#f7953f] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:opacity-90 focus:border-[#FDB913] focus:outline-none focus:ring-2 focus:ring-[#FDB913] focus:ring-opacity-20"
           />
           {fileName && (
             <p className="mt-2 text-sm text-green-600">✓ Selected: {fileName}</p>

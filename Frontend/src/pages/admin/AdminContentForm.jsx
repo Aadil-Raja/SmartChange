@@ -18,13 +18,13 @@ const inputBase = {
   transition: "border-color 0.15s, box-shadow 0.15s",
 };
 
-const focusOn  = (e) => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
+const focusOn  = (e) => { e.target.style.borderColor = "#f7953f"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
 const focusOff = (e) => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; };
 
 const Field = ({ label, required, children }) => (
   <div>
     <label className="block text-sm font-semibold mb-1.5" style={{ color: "#3d3228" }}>
-      {label}{required && <span className="text-[#F58220] ml-0.5">*</span>}
+      {label}{required && <span className="text-[#f7953f] ml-0.5">*</span>}
     </label>
     {children}
   </div>
@@ -128,7 +128,7 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
             disabled={submitting}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
             style={{ background: "#f3ede4", color: "#6b5e4e" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#fee2c8"; e.currentTarget.style.color = "#F58220"; }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fee2c8"; e.currentTarget.style.color = "#f7953f"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "#f3ede4"; e.currentTarget.style.color = "#6b5e4e"; }}
           >
             <X size={16} />
@@ -233,9 +233,9 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
               type="button"
               onClick={() => window.open(uploadHintTarget)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={{ border: "1.5px solid #F58220", color: "#F58220", background: "white" }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#F58220"; e.currentTarget.style.color = "white"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#F58220"; }}
+              style={{ border: "1.5px solid #f7953f", color: "#f7953f", background: "white" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#f7953f"; e.currentTarget.style.color = "white"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "white"; e.currentTarget.style.color = "#f7953f"; }}
             >
               <Upload size={12} /> {uploadHintLabel}
             </button>
@@ -249,7 +249,7 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
               disabled={submitting}
               className="px-5 py-2.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50"
               style={{ borderColor: "#d0c8be", color: "#6b5e4e", background: "white" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#F58220"}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#f7953f"}
               onMouseLeave={e => e.currentTarget.style.borderColor = "#d0c8be"}
             >
               Cancel
@@ -258,9 +258,9 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
               type="submit"
               disabled={submitting}
               className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
-              style={{ background: "#F58220" }}
+              style={{ background: "#f7953f" }}
               onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = "#d96e10"; }}
-              onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = "#F58220"; }}
+              onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = "#f7953f"; }}
             >
               {submitting ? (
                 <><LoadingSpinner size="small" />{editingContent ? "Updating…" : "Adding…"}</>

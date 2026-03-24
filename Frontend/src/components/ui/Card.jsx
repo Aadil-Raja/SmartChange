@@ -12,7 +12,7 @@ const Card = ({
 }) => {
   const variants = {
     default: 'bg-white border border-gray-200',
-    primary: 'bg-[rgba(245,130,32,0.05)] border border-[#F58220]/20',
+    primary: 'bg-[rgba(245,130,32,0.05)] border border-[#f7953f]/20',
     secondary: 'bg-gray-50 border border-gray-200',
     success: 'bg-green-50 border border-green-200',
     warning: 'bg-yellow-50 border border-yellow-200',

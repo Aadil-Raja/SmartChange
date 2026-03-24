@@ -32,6 +32,7 @@ const AdminTrainingList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const hasFetched = useRef(false);
 
+
   useEffect(() => {
     if (!hasFetched.current) {
       hasFetched.current = true;
@@ -74,6 +75,8 @@ const AdminTrainingList = () => {
     if (result.success) setShowDeleteConfirm(null);
   };
 
+
+
   const totalCount = courses.length;
   const activeCount = courses.filter((c) => c.is_active).length;
   const inactiveCount = courses.filter((c) => !c.is_active).length;
@@ -89,24 +92,32 @@ const AdminTrainingList = () => {
     );
   }
 
+
+
+
+
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#faf6ef" }}>
       <AdminSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
 
       <div className="flex-1 overflow-auto">
         {/* Hero Banner */}
-        <div
-          className="w-full px-8 py-7 flex items-center justify-between"
-          style={{ background: "#1a1209" }}
-        >
-          <h1
-            className="text-3xl font-extrabold tracking-tight"
-            style={{ color: "#faf6ef", fontFamily: "Georgia, serif" }}
-          >
-            Your Courses
-          </h1>
-          <div className="flex items-center gap-3">
-            <StatPill label="Total" count={totalCount} dotColor="#faf6ef" />
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF', borderBottom: '0.5px solid #63472d' }}>
+          <div>
+            <h1
+              className="text-3xl font-extrabold tracking-tight"
+              style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}
+            >
+              Training Dashboard
+            </h1>
+            <p style={{ color: 'rgba(65, 50, 24, 0.45)', fontSize: 13, marginTop: 4 }}>
+              Manage course catalog and training availability
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <StatPill label="Total" count={totalCount} dotColor="#1a1918" />
             <StatPill label="Active" count={activeCount} dotColor="#4ade80" />
             <StatPill label="Inactive" count={inactiveCount} dotColor="#9ca3af" />
           </div>
@@ -155,7 +166,7 @@ const AdminTrainingList = () => {
                     className="px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all duration-200"
                     style={
                       filter === f
-                        ? { background: "#1a1209", color: "#faf6ef" }
+                        ? { background: "#705536", color: "#faf6ef" }
                         : { color: "#6b5e4e", background: "transparent" }
                     }
                   >
@@ -183,7 +194,7 @@ const AdminTrainingList = () => {
                 onClick={() => navigate("/admin/training/create")}
                 className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white transition-all"
                 style={{ background: "#1a1209" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#F58220")}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f7953f")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1209")}
               >
                 <Plus size={15} />
@@ -261,10 +272,10 @@ const AdminTrainingList = () => {
 const StatPill = ({ label, count, dotColor }) => (
   <div
     className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"
-    style={{ background: "rgba(255,255,255,0.08)", color: "#faf6ef" }}
+    style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}
   >
     <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dotColor }} />
-    {label}: {count}
+    {label}: <span className="font-bold ml-0.5">{count}</span>
   </div>
 );
 
@@ -359,7 +370,7 @@ const CourseCardNew = ({ course, onNavigate, onEdit, onToggle, onDelete, formatD
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
             style={{
-              background: arrowHovered ? "#F58220" : "#1a1209",
+              background: arrowHovered ? "#f7953f" : "#1a1209",
               transform: "rotate(0deg)",
             }}
             onMouseEnter={() => setArrowHovered(true)}
@@ -431,9 +442,8 @@ const CardMenu = ({ onEdit, onToggle, onDelete, isActive }) => {
 const MenuItem = ({ onClick, icon, label, danger }) => (
   <button
     onClick={(e) => { e.stopPropagation(); onClick(); }}
-    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-      danger ? "text-red-500 hover:bg-red-50" : "text-gray-700 hover:bg-gray-50"
-    }`}
+    className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${danger ? "text-red-500 hover:bg-red-50" : "text-gray-700 hover:bg-gray-50"
+      }`}
   >
     {icon}
     {label}

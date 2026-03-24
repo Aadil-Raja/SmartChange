@@ -10,7 +10,7 @@ const ContentList = ({ items, onEdit, onDelete, onPreview }) => {
     <Card className="p-6 shadow-lg">
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
             <FileText size={20} className="text-white" />
           </div>
           <h2 className="text-2xl font-bold text-[#333333]">Uploaded Documents</h2>
@@ -56,7 +56,7 @@ const ContentList = ({ items, onEdit, onDelete, onPreview }) => {
                       </button>
                       <button
                         onClick={() => onEdit(item)}
-                        className="rounded-md p-2 text-[#F58220] transition-colors hover:bg-[#F58220]/10"
+                        className="rounded-md p-2 text-[#f7953f] transition-colors hover:bg-[#f7953f]/10"
                         title="Edit"
                       >
                         <Edit2 size={18} />

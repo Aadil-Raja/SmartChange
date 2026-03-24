@@ -85,9 +85,9 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl mx-4 bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#F58220]/5 to-[#E0741C]/5">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#f7953f]/5 to-[#E0741C]/5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#f7953f] shadow-md">
               <Users size={20} className="text-white" />
             </div>
             <div>
@@ -108,7 +108,7 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
-                <Loader2 size={32} className="animate-spin text-[#F58220] mx-auto mb-4" />
+                <Loader2 size={32} className="animate-spin text-[#f7953f] mx-auto mb-4" />
                 <p className="text-gray-600">Loading team members...</p>
               </div>
             </div>
@@ -121,7 +121,7 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
               <p className="text-red-600 mb-4">{error}</p>
               <button
                 onClick={fetchTeamMembers}
-                className="px-4 py-2 bg-[#F58220] text-white rounded-lg hover:bg-[#E0741C] transition-colors"
+                className="px-4 py-2 bg-[#f7953f] text-white rounded-lg hover:bg-[#E0741C] transition-colors"
               >
                 Try Again
               </button>
@@ -150,11 +150,11 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
                   <div
                     key={member.id || member.user_id}
                     onClick={() => handleMemberClick(member)}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#F58220]/30 hover:bg-[#F58220]/5 transition-all cursor-pointer group"
+                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 hover:border-[#f7953f]/30 hover:bg-[#f7953f]/5 transition-all cursor-pointer group"
                   >
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
                         {member.user_profile_picture ? (
                           <img
                             src={member.user_profile_picture}
@@ -212,7 +212,7 @@ const TeamMembersModal = ({ isOpen, onClose, team }) => {
                       >
                         <MessageSquare size={18} />
                       </button>
-                      <ChevronRight size={20} className="text-gray-400 group-hover:text-[#F58220] transition-colors" />
+                      <ChevronRight size={20} className="text-gray-400 group-hover:text-[#f7953f] transition-colors" />
                     </div>
                   </div>
                 ))}

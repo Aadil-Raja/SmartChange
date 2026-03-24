@@ -34,7 +34,7 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
       <div className={`flex items-center border-b border-gray-100 ${collapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'}`}>
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
               <span className="text-white font-bold text-sm">K</span>
             </div>
             <div>
@@ -44,14 +44,14 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
             <span className="text-white font-bold text-sm">K</span>
           </div>
         )}
         {onToggle && !collapsed && (
           <button
             onClick={onToggle}
-            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#F58220] rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#f7953f] rounded-lg transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
@@ -63,7 +63,7 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
         <div className="flex justify-center py-2 border-b border-gray-100">
           <button
             onClick={onToggle}
-            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#F58220] rounded-lg transition-colors"
+            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#f7953f] rounded-lg transition-colors"
           >
             <ChevronRight size={16} />
           </button>
@@ -92,11 +92,11 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 ${
                 isActive
-                  ? 'bg-gradient-to-r from-[#F58220]/12 to-[#F58220]/6 text-[#F58220] font-semibold'
+                  ? 'bg-gradient-to-r from-[#f7953f]/12 to-[#f7953f]/6 text-[#f7953f] font-semibold'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
               }`}
               title={collapsed ? item.label : undefined}
-              style={isActive ? { boxShadow: 'inset 3px 0 0 #F58220' } : {}}
+              style={isActive ? { boxShadow: 'inset 3px 0 0 #f7953f' } : {}}
             >
               <item.icon
                 size={18}
@@ -107,7 +107,7 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
                 <span className="text-sm">{item.label}</span>
               )}
               {isActive && !collapsed && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#F58220]" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#f7953f]" />
               )}
             </button>
           );

@@ -20,7 +20,7 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
       >
         {/* Logo */}
         <div className="flex h-16 items-center justify-center border-b border-gray-700">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
             <span className="text-xl font-bold">KE</span>
           </div>
           {!isCollapsed && <span className="ml-3 text-xl font-bold">Admin Panel</span>}
@@ -35,7 +35,7 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
                 key={index}
                 href={item.path}
                 className={`mb-2 flex items-center rounded-lg px-4 py-3 transition-all duration-200 ${isActive
-                    ? 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white shadow-lg'
+                    ? 'bg-gradient-to-r from-[#FDB913] to-[#f7953f] text-white shadow-lg'
                     : 'text-gray-300 hover:bg-gray-700 hover:text-white hover:shadow-md'
                   }`}
                 title={isCollapsed ? item.label : ''}
@@ -56,7 +56,7 @@ const Sidebar = ({ isOpen, isCollapsed, onToggle, onCollapse, navItems, currentP
         {onCollapse && (
           <button
             onClick={onCollapse}
-            className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 transform rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] p-2 text-white transition-all hover:shadow-lg lg:block"
+            className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 transform rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] p-2 text-white transition-all hover:shadow-lg lg:block"
           >
             {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>

@@ -97,7 +97,7 @@ const CourseContent = () => {
       case "document":
         return <FileText size={16} className="text-[#00ADEF]" />;
       case "video":
-        return <Video size={16} className="text-[#F58220]" />;
+        return <Video size={16} className="text-[#f7953f]" />;
       case "link":
         return <LinkIcon size={16} className="text-[#78BE20]" />;
       default:
@@ -178,7 +178,7 @@ const CourseContent = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-center py-20">
-            <Loader2 size={48} className="animate-spin text-[#F58220]" />
+            <Loader2 size={48} className="animate-spin text-[#f7953f]" />
           </div>
         </div>
       </div>
@@ -216,7 +216,7 @@ const CourseContent = () => {
       {showLoadingOverlay && (
         <div className="fixed inset-0 bg-white/100 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="text-center">
-            <Loader2 size={48} className="animate-spin text-[#F58220] mx-auto mb-4" />
+            <Loader2 size={48} className="animate-spin text-[#f7953f] mx-auto mb-4" />
             <p className="text-gray-600 font-medium">Loading course...</p>
           </div>
         </div>
@@ -228,14 +228,14 @@ const CourseContent = () => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate('/employee/mycourses')}
-              className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
+              className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
             >
               <ArrowLeft size={20} />
               <span className="font-medium">Back to Courses</span>
             </button>
             <div className="flex items-center gap-3">
               {selectedCourse.department && (
-                <span className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-1.5 text-sm font-medium text-[#F58220]">
+                <span className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-1.5 text-sm font-medium text-[#f7953f]">
                   {selectedCourse.department}
                 </span>
               )}
@@ -318,7 +318,7 @@ const CourseContent = () => {
               )}
               {selectedCourse.items && (
                 <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg px-5 py-3 shadow-lg">
-                  <span className="text-2xl font-bold text-[#F58220]">
+                  <span className="text-2xl font-bold text-[#f7953f]">
                     {
                       selectedCourse.items.filter((_, idx) =>
                         isItemCompleted(selectedCourse.items[idx].id)
@@ -356,7 +356,7 @@ const CourseContent = () => {
                     onClick={() => setActiveTab('content')}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       activeTab === 'content'
-                        ? 'text-[#F58220] border-b-2 border-[#F58220] bg-orange-50'
+                        ? 'text-[#f7953f] border-b-2 border-[#f7953f] bg-orange-50'
                         : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
@@ -366,7 +366,7 @@ const CourseContent = () => {
                     onClick={() => setActiveTab('quizzes')}
                     className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                       activeTab === 'quizzes'
-                        ? 'text-[#F58220] border-b-2 border-[#F58220] bg-orange-50'
+                        ? 'text-[#f7953f] border-b-2 border-[#f7953f] bg-orange-50'
                         : 'text-gray-600 hover:text-gray-800'
                     }`}
                   >
@@ -391,8 +391,8 @@ const CourseContent = () => {
                             onClick={() => scrollToItem(item.id)}
                             className={`p-4 transition-all cursor-pointer group border-l-4 ${
                               activeItemId === item.id 
-                                ? 'bg-gradient-to-r from-[#F58220]/20 to-transparent border-[#F58220]' 
-                                : 'border-transparent hover:bg-gradient-to-r hover:from-[#F58220]/10 hover:to-transparent hover:border-[#F58220]'
+                                ? 'bg-gradient-to-r from-[#f7953f]/20 to-transparent border-[#f7953f]' 
+                                : 'border-transparent hover:bg-gradient-to-r hover:from-[#f7953f]/10 hover:to-transparent hover:border-[#f7953f]'
                             }`}
                           >
                             <div className="flex items-start gap-3">
@@ -415,7 +415,7 @@ const CourseContent = () => {
                               
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className="text-sm font-semibold text-[#333333] line-clamp-2 group-hover:text-[#F58220] transition-colors">
+                                  <p className="text-sm font-semibold text-[#333333] line-clamp-2 group-hover:text-[#f7953f] transition-colors">
                                     {item.title}
                                   </p>
                                   {isCompleted && (
@@ -423,11 +423,11 @@ const CourseContent = () => {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-gray-500 uppercase group-hover:text-[#F58220] transition-colors">
+                                  <span className="text-xs text-gray-500 uppercase group-hover:text-[#f7953f] transition-colors">
                                     {item.type}
                                   </span>
                                   {progressPercent > 0 && progressPercent < 100 && (
-                                    <span className="text-xs text-[#F58220] font-medium">
+                                    <span className="text-xs text-[#f7953f] font-medium">
                                       {Math.round(progressPercent)}%
                                     </span>
                                   )}
@@ -521,7 +521,7 @@ const CourseContent = () => {
             {selectedCourse.items && selectedCourse.items.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-lg bg-[#F58220] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-[#f7953f] flex items-center justify-center">
                     <FileText size={18} className="text-white" />
                   </div>
                   <h2 className="text-2xl font-bold text-[#333333]">Content Items</h2>
@@ -538,7 +538,7 @@ const CourseContent = () => {
                         key={item.id}
                         ref={(el) => (contentRefs.current[item.id] = el)}
                         className={`transition-all duration-500 ${
-                          activeItemId === item.id ? 'ring-4 ring-[#F58220]/30 rounded-xl' : ''
+                          activeItemId === item.id ? 'ring-4 ring-[#f7953f]/30 rounded-xl' : ''
                         }`}
                       >
                         <Card className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
@@ -596,13 +596,13 @@ const CourseContent = () => {
                               <div className="mb-4">
                                 <div className="flex items-center justify-between mb-1">
                                   <span className="text-xs font-medium text-gray-600">Progress</span>
-                                  <span className="text-xs font-semibold text-[#F58220]">
+                                  <span className="text-xs font-semibold text-[#f7953f]">
                                     {Math.round(progressPercent)}%
                                   </span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                   <div
-                                    className="bg-[#F58220] h-2 rounded-full transition-all duration-300"
+                                    className="bg-[#f7953f] h-2 rounded-full transition-all duration-300"
                                     style={{ width: `${progressPercent}%` }}
                                   />
                                 </div>

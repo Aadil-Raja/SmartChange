@@ -7,7 +7,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import * as quizApi from "../../services/quizApi";
 
 const C = {
-  bg: "#faf6ef", ink: "#1a1209", orange: "#F58220", teal: "#0d9488",
+  bg: "#faf6ef", ink: "#1a1209", orange: "#f7953f", teal: "#0d9488",
   muted: "#9c8e80", border: "#e8e0d5", card: "#ffffff",
 };
 

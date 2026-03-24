@@ -122,7 +122,7 @@ const NotificationBell = ({ collapsed = false }) => {
           transition:background 0.15s, color 0.15s; font-family:inherit; text-align:left;
         }
         .nb-btn.c { justify-content:center; padding:9px; }
-        .nb-btn:hover, .nb-btn.on { background:#fff7ed; color:#F58220; }
+        .nb-btn:hover, .nb-btn.on { background:#fff7ed; color:#f7953f; }
         .nb-btn:hover .nb-bi      { animation:nb-ring 0.65s ease; }
 
         .nb-badge {
@@ -147,7 +147,7 @@ const NotificationBell = ({ collapsed = false }) => {
         .nb-hd {
           display:flex; align-items:center; justify-content:space-between;
           padding:16px 18px 14px;
-          background:linear-gradient(135deg,#F58220 0%,#E0741C 100%);
+          background:linear-gradient(135deg,#f7953f 0%,#E0741C 100%);
           flex-shrink:0;
         }
         .nb-hl { display:flex; align-items:center; gap:10px; }
@@ -210,7 +210,7 @@ const NotificationBell = ({ collapsed = false }) => {
           align-items:center; justify-content:center;
           padding:44px 24px; gap:10px;
         }
-        .nb-sp{ animation:nb-spin .9s linear infinite; color:#F58220; }
+        .nb-sp{ animation:nb-spin .9s linear infinite; color:#f7953f; }
         .nb-lt{ font-size:13px; color:#9ca3af; }
 
         .nb-ft{

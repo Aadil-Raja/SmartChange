@@ -65,9 +65,9 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
       {/* Slide Panel */}
       <div className={`fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#F58220]/5 to-[#E0741C]/5">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-[#f7953f]/5 to-[#E0741C]/5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#F58220] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-full flex items-center justify-center overflow-hidden">
               {progressData?.member?.user_profile_picture || member?.user_profile_picture ? (
                 <img
                   src={progressData?.member?.user_profile_picture || member?.user_profile_picture}
@@ -99,7 +99,7 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F58220] mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading progress...</p>
               </div>
             </div>
@@ -112,7 +112,7 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
               <p className="text-red-600 mb-4">{error}</p>
               <button
                 onClick={fetchMemberProgress}
-                className="px-4 py-2 bg-[#F58220] text-white rounded-lg hover:bg-[#E0741C] transition-colors"
+                className="px-4 py-2 bg-[#f7953f] text-white rounded-lg hover:bg-[#E0741C] transition-colors"
               >
                 Try Again
               </button>
@@ -122,7 +122,7 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
               {/* Member Info */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <User size={20} className="text-[#F58220]" />
+                  <User size={20} className="text-[#f7953f]" />
                   <h3 className="font-semibold text-[#333333]">Member Information</h3>
                 </div>
                 <div className="space-y-2">
@@ -158,13 +158,13 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
               </div>
 
               {/* Overall Progress */}
-              <div className="bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-xl p-4 border border-[#F58220]/20">
+              <div className="bg-gradient-to-br from-[#f7953f]/5 to-[#E0741C]/5 rounded-xl p-4 border border-[#f7953f]/20">
                 <div className="flex items-center gap-3 mb-4">
-                  <TrendingUp size={20} className="text-[#F58220]" />
+                  <TrendingUp size={20} className="text-[#f7953f]" />
                   <h3 className="font-semibold text-[#333333]">Overall Progress</h3>
                 </div>
                 <div className="text-center mb-4">
-                  <div className="text-3xl font-bold text-[#F58220] mb-1">
+                  <div className="text-3xl font-bold text-[#f7953f] mb-1">
                     {progressData.stats.overall_progress}%
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
@@ -206,7 +206,7 @@ const MemberProgressPanel = ({ isOpen, onClose, member, teamId }) => {
                 </div>
                 
                 <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
-                  <Award size={24} className="text-[#F58220] mx-auto mb-2" />
+                  <Award size={24} className="text-[#f7953f] mx-auto mb-2" />
                   <div className="text-2xl font-bold text-[#333333] mb-1">
                     {progressData.stats.total_items_completed}
                   </div>

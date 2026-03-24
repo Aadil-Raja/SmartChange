@@ -84,7 +84,7 @@ const AdminTrainingForm = () => {
             onClick={() => navigate("/admin/training")}
             className="flex items-center gap-1.5 text-sm font-medium mb-8 transition-colors"
             style={{ color: "#9c8e80" }}
-            onMouseEnter={e => e.currentTarget.style.color = "#F58220"}
+            onMouseEnter={e => e.currentTarget.style.color = "#f7953f"}
             onMouseLeave={e => e.currentTarget.style.color = "#9c8e80"}
           >
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border" style={{ borderColor: "#e0d8ce", background: "white" }}>
@@ -149,7 +149,7 @@ const AdminTrainingForm = () => {
                   disabled={submitting}
                   className="px-5 py-2.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50"
                   style={{ borderColor: "#d0c8be", color: "#6b5e4e", background: "white" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = "#F58220"}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#f7953f"}
                   onMouseLeave={e => e.currentTarget.style.borderColor = "#d0c8be"}
                 >
                   Cancel
@@ -158,9 +158,9 @@ const AdminTrainingForm = () => {
                   type="submit"
                   disabled={submitting}
                   className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
-                  style={{ background: "#F58220" }}
+                  style={{ background: "#f7953f" }}
                   onMouseEnter={e => { if (!submitting) e.currentTarget.style.background = "#d96e10"; }}
-                  onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = "#F58220"; }}
+                  onMouseLeave={e => { if (!submitting) e.currentTarget.style.background = "#f7953f"; }}
                 >
                   {submitting ? (
                     <><LoadingSpinner size="small" />{isEditMode ? "Updating…" : "Creating…"}</>
@@ -182,7 +182,7 @@ const FormField = ({ label, hint, required, children }) => (
   <div>
     <label className="block text-sm font-semibold mb-1.5" style={{ color: "#3d3228" }}>
       {label}
-      {required && <span className="text-[#F58220] ml-0.5">*</span>}
+      {required && <span className="text-[#f7953f] ml-0.5">*</span>}
       {hint && <span className="ml-2 text-xs font-normal" style={{ color: "#9c8e80" }}>{hint}</span>}
     </label>
     {children}
@@ -205,7 +205,7 @@ const StyledInput = (props) => (
   <input
     {...props}
     style={inputBase}
-    onFocus={e => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; }}
+    onFocus={e => { e.target.style.borderColor = "#f7953f"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; }}
     onBlur={e => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; }}
   />
 );
@@ -215,7 +215,7 @@ const StyledTextarea = (props) => (
     {...props}
     rows={5}
     style={{ ...inputBase, resize: "vertical", minHeight: "120px" }}
-    onFocus={e => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; }}
+    onFocus={e => { e.target.style.borderColor = "#f7953f"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; }}
     onBlur={e => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; }}
   />
 );

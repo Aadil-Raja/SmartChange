@@ -25,7 +25,7 @@ const Input = forwardRef(({
   };
 
   const variants = {
-    default: 'border-gray-300 focus:border-[#F58220] focus:ring-[#F58220]/20',
+    default: 'border-gray-300 focus:border-[#f7953f] focus:ring-[#f7953f]/20',
     error: 'border-red-300 focus:border-red-500 focus:ring-red-500/20',
     success: 'border-green-300 focus:border-green-500 focus:ring-green-500/20'
   };

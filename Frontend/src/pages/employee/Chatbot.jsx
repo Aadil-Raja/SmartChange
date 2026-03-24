@@ -47,13 +47,13 @@ const Chatbot = () => {
         <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-2 bg-gradient-to-r from-[#F58220]/10 to-[#E0741C]/10 rounded-xl">
-                <MessageSquare size={20} className="text-[#F58220]" />
+              <div className="p-2 bg-gradient-to-r from-[#f7953f]/10 to-[#E0741C]/10 rounded-xl">
+                <MessageSquare size={20} className="text-[#f7953f]" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold text-[#333333] flex items-center gap-2">
                   AI Assistant
-                  <Sparkles size={16} className="text-[#F58220]" />
+                  <Sparkles size={16} className="text-[#f7953f]" />
                 </h1>
                 <p className="text-sm text-gray-600">
                   {selectedDocumentIds.length > 0 

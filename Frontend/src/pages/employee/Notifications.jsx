@@ -158,7 +158,7 @@ const Notifications = () => {
         .np-hero-left  { display:flex; align-items:center; gap:14px; }
         .np-hero-icon  {
           width:44px; height:44px; border-radius:13px;
-          background: linear-gradient(135deg, #F58220 0%, #E0741C 100%);
+          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
           display:flex; align-items:center; justify-content:center;
           box-shadow: 0 4px 12px rgba(245,130,32,0.2);
         }
@@ -169,7 +169,7 @@ const Notifications = () => {
         .np-hero-pill {
           display:inline-flex; align-items:center; gap:5px;
           padding:4px 12px; border-radius:999px;
-          background: linear-gradient(135deg, #F58220 0%, #E0741C 100%);
+          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
           color:#fff; font-size:12px; font-weight:700;
           box-shadow: 0 2px 8px rgba(245,130,32,0.25);
         }
@@ -187,9 +187,9 @@ const Notifications = () => {
           box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         .np-mark-btn:hover:not(:disabled) { 
-          background:#F58220; 
+          background:#f7953f; 
           color:#fff;
-          border-color:#F58220;
+          border-color:#f7953f;
           box-shadow: 0 4px 12px rgba(245,130,32,0.25);
         }
         .np-mark-btn:disabled { opacity:.5; cursor:not-allowed; }
@@ -221,7 +221,7 @@ const Notifications = () => {
           font-family:inherit;
         }
         .np-ftab:hover { color:#E0741C; }
-        .np-ftab.active { color:#E0741C; border-bottom-color:#F58220; font-weight:700; }
+        .np-ftab.active { color:#E0741C; border-bottom-color:#f7953f; font-weight:700; }
         .np-fcount {
           display:inline-flex; align-items:center; justify-content:center;
           min-width:20px; height:20px; padding:0 5px; border-radius:999px;
@@ -295,7 +295,7 @@ const Notifications = () => {
         .np-retry-btn {
           display:flex; align-items:center; gap:7px;
           padding:10px 20px; border-radius:11px; border:none;
-          background:#F58220; color:#fff;
+          background:#f7953f; color:#fff;
           font-size:14px; font-weight:600; cursor:pointer;
           font-family:inherit; margin-top:4px;
           transition:background 0.15s, box-shadow 0.15s;
@@ -341,7 +341,7 @@ const Notifications = () => {
         }
 
         .msg-header {
-          background: linear-gradient(135deg, #F58220 0%, #E0741C 100%);
+          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
           padding: 24px 28px;
           position: relative;
           overflow: hidden;
@@ -434,7 +434,7 @@ const Notifications = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #F58220;
+          color: #f7953f;
           flex-shrink: 0;
         }
         .msg-meta-content {
@@ -469,14 +469,14 @@ const Notifications = () => {
           left: 0;
           width: 4px;
           height: 100%;
-          background: linear-gradient(180deg, #F58220 0%, #E0741C 100%);
+          background: linear-gradient(180deg, #f7953f 0%, #E0741C 100%);
         }
         .msg-content-label {
           font-size: 12px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          color: #F58220;
+          color: #f7953f;
           margin-bottom: 12px;
           display: flex;
           align-items: center;
@@ -513,7 +513,7 @@ const Notifications = () => {
           gap: 8px;
         }
         .msg-btn-primary {
-          background: linear-gradient(135deg, #F58220 0%, #E0741C 100%);
+          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
           color: #fff;
           box-shadow: 0 4px 12px rgba(245, 130, 32, 0.3);
         }
@@ -598,7 +598,7 @@ const Notifications = () => {
               {loading && notifications.length === 0 ? (
                 <div className="np-state">
                   <div className="np-state-icon">
-                    <Loader2 size={32} className="np-spin" style={{ color: '#F58220' }} />
+                    <Loader2 size={32} className="np-spin" style={{ color: '#f7953f' }} />
                   </div>
                   <div className="np-state-title">Loading notifications</div>
                   <div className="np-state-sub">Just a moment…</div>

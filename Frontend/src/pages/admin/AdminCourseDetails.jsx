@@ -20,7 +20,7 @@ const quizInputBase = {
   fontSize: "14px", color: "#1a1209", outline: "none",
   transition: "border-color 0.15s, box-shadow 0.15s",
 };
-const qFocusOn  = (e) => { e.target.style.borderColor = "#F58220"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
+const qFocusOn  = (e) => { e.target.style.borderColor = "#f7953f"; e.target.style.boxShadow = "0 0 0 3px rgba(245,130,32,0.12)"; };
 const qFocusOff = (e) => { e.target.style.borderColor = "#e0d8ce"; e.target.style.boxShadow = "none"; };
 
 const COURSE_EMOJIS = ["📚","🎯","💡","🔬","🛠️","📊","🌐","🧠","⚡","🚀"];
@@ -158,7 +158,7 @@ const AdminCourseDetails = () => {
   const getContentIcon = (type) => {
     switch (type) {
       case 'document': return <FileText size={18} className="text-[#00ADEF]" />;
-      case 'video':    return <Video    size={18} className="text-[#F58220]" />;
+      case 'video':    return <Video    size={18} className="text-[#f7953f]" />;
       case 'link':     return <LinkIcon size={18} className="text-[#78BE20]" />;
       default:         return <FileText size={18} className="text-gray-400"  />;
     }
@@ -197,7 +197,7 @@ const AdminCourseDetails = () => {
                 onClick={() => navigate('/admin/training')}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full border font-medium transition-all"
                 style={{ borderColor: '#e0d8ce', color: '#6b5e4e', background: 'white' }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#F58220'; e.currentTarget.style.color = '#F58220'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#f7953f'; e.currentTarget.style.color = '#f7953f'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; }}
               >
                 <ArrowLeft size={13} /> Courses
@@ -210,7 +210,7 @@ const AdminCourseDetails = () => {
                 onClick={() => navigate(`/admin/training/edit/${id}`)}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all"
                 style={{ borderColor: '#e0d8ce', color: '#3d3228', background: 'white' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F58220'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#F58220'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f7953f'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#f7953f'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#3d3228'; e.currentTarget.style.borderColor = '#e0d8ce'; }}
               >
                 <Edit size={13} /> Edit
@@ -237,7 +237,7 @@ const AdminCourseDetails = () => {
               <div className="relative h-52 flex items-center justify-center overflow-hidden" style={{ background: '#1a1209' }}>
                 <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
                 <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
-                <div className="absolute top-8 right-24 w-20 h-20 rounded-full border opacity-10" style={{ borderColor: '#F58220' }} />
+                <div className="absolute top-8 right-24 w-20 h-20 rounded-full border opacity-10" style={{ borderColor: '#f7953f' }} />
                 {currentCourse.thumbnail_url
                   ? <img src={currentCourse.thumbnail_url} alt={currentCourse.title} className="w-full h-full object-cover absolute inset-0" />
                   : <span className="text-7xl select-none z-10">{getEmoji(currentCourse.id)}</span>}
@@ -277,7 +277,7 @@ const AdminCourseDetails = () => {
                 </div>
               )}
               {contentItems.length === 0
-                ? <EmptyState icon={<FileText size={40} className="text-[#F58220]" />} title="No content yet" sub="Add lessons, videos, documents, or links">
+                ? <EmptyState icon={<FileText size={40} className="text-[#f7953f]" />} title="No content yet" sub="Add lessons, videos, documents, or links">
                     <PillBtn primary onClick={handleAddContent}><Plus size={13} /> Add First Content</PillBtn>
                   </EmptyState>
                 : <div className="space-y-2">
@@ -286,7 +286,7 @@ const AdminCourseDetails = () => {
                         onDragStart={e => handleDragStart(e, item, index)} onDragOver={e => handleDragOver(e, index)}
                         onDragLeave={handleDragLeave} onDrop={e => handleDrop(e, index)}
                         className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all
-                          ${dragOverIndex===index ? 'border-[#F58220] bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}
+                          ${dragOverIndex===index ? 'border-[#f7953f] bg-orange-50' : 'border-gray-100 bg-white hover:border-gray-200'}
                           ${isReordering ? 'pointer-events-none opacity-60' : ''}
                           ${draggedItem?.index===index ? 'opacity-40' : ''}`}
                         style={{ boxShadow: '0 1px 4px rgba(26,18,9,0.05)' }}>
@@ -301,7 +301,7 @@ const AdminCourseDetails = () => {
                         </div>
                         <TypeBadge type={item.type} />
                         <div className="flex gap-1 flex-shrink-0">
-                          <IconAction onClick={() => handleEditContent(item)} title="Edit" hoverClass="hover:text-[#F58220] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => handleEditContent(item)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
                           <IconAction onClick={() => setDeleteConfirm(item)} title="Delete" danger><Trash2 size={15} /></IconAction>
                         </div>
                       </div>
@@ -331,7 +331,7 @@ const AdminCourseDetails = () => {
                         <div className="flex gap-1 flex-shrink-0">
                           {quiz.status==='DRAFT' && <IconAction onClick={() => handlePublishQuiz(quiz.id)} title="Publish" hoverClass="hover:text-teal-600 hover:bg-teal-50"><CheckCircle size={15} /></IconAction>}
                           <IconAction onClick={() => handleViewQuiz(quiz)} title="View" hoverClass="hover:text-teal-600 hover:bg-teal-50"><Eye size={15} /></IconAction>
-                          <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#F58220] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
                           <IconAction onClick={() => setDeleteQuizConfirm(quiz)} title={quiz.status==='PUBLISHED'?'Cannot delete a published quiz':'Delete'} danger disabled={quiz.status==='PUBLISHED'}><Trash2 size={15} /></IconAction>
                         </div>
                       </div>
@@ -387,7 +387,7 @@ const AdminCourseDetails = () => {
                         return (
                           <label key={item.id} className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all"
                             style={{ background: checked ? '#fff0e8' : 'white', border: `1px solid ${checked ? '#fcd9b8' : 'transparent'}` }}>
-                            <input type="checkbox" checked={checked} disabled={submittingQuiz} style={{ accentColor: '#F58220' }}
+                            <input type="checkbox" checked={checked} disabled={submittingQuiz} style={{ accentColor: '#f7953f' }}
                               onChange={e => {
                                 const p = e.target.checked
                                   ? [...quizForm.prerequisite_content_ids, item.id]
@@ -483,15 +483,15 @@ const AdminCourseDetails = () => {
 
             {/* Manage questions hint */}
             <div className="flex items-start gap-3 px-4 py-4 rounded-2xl" style={{ background: '#fff8f2', border: '1.5px solid #fcd9b8' }}>
-              <HelpCircle size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#F58220' }} />
+              <HelpCircle size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#f7953f' }} />
               <div className="flex-1">
                 <p className="text-sm font-semibold mb-0.5" style={{ color: '#1a1209' }}>Manage Quiz Questions</p>
                 <p className="text-xs mb-3" style={{ color: '#9c6a3a' }}>To add, edit, or remove questions use the dedicated Quiz Management page.</p>
                 <button onClick={() => navigate('/admin/quiz')}
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-                  style={{ border: '1.5px solid #F58220', color: '#F58220', background: 'white' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#F58220'; e.currentTarget.style.color = 'white'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#F58220'; }}>
+                  style={{ border: '1.5px solid #f7953f', color: '#f7953f', background: 'white' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f7953f'; e.currentTarget.style.color = 'white'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#f7953f'; }}>
                   Go to Quiz Management
                 </button>
               </div>
@@ -512,7 +512,7 @@ const CustomModal = ({ onClose, title, children }) => (
         <h2 className="text-xl font-extrabold" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>{title}</h2>
         <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
           style={{ background: '#f3ede4', color: '#6b5e4e' }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#fee2c8'; e.currentTarget.style.color = '#F58220'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#fee2c8'; e.currentTarget.style.color = '#f7953f'; }}
           onMouseLeave={e => { e.currentTarget.style.background = '#f3ede4'; e.currentTarget.style.color = '#6b5e4e'; }}>
           <X size={16} />
         </button>
@@ -525,7 +525,7 @@ const CustomModal = ({ onClose, title, children }) => (
 const ModalField = ({ label, hint, required, children }) => (
   <div>
     <label className="block text-sm font-semibold mb-1.5" style={{ color: '#3d3228' }}>
-      {label}{required && <span className="text-[#F58220] ml-0.5">*</span>}
+      {label}{required && <span className="text-[#f7953f] ml-0.5">*</span>}
       {hint && <span className="ml-2 text-xs font-normal" style={{ color: '#9c8e80' }}>{hint}</span>}
     </label>
     {children}
@@ -540,7 +540,7 @@ const ModalCancelBtn = ({ onClick, disabled, children }) => (
   <button type="button" onClick={onClick} disabled={disabled}
     className="px-5 py-2.5 rounded-full text-sm font-semibold border transition-all disabled:opacity-50"
     style={{ borderColor: '#d0c8be', color: '#6b5e4e', background: 'white' }}
-    onMouseEnter={e => e.currentTarget.style.borderColor = '#F58220'}
+    onMouseEnter={e => e.currentTarget.style.borderColor = '#f7953f'}
     onMouseLeave={e => e.currentTarget.style.borderColor = '#d0c8be'}>
     {children}
   </button>
@@ -549,9 +549,9 @@ const ModalCancelBtn = ({ onClick, disabled, children }) => (
 const ModalSubmitBtn = ({ disabled, children }) => (
   <button type="submit" disabled={disabled}
     className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
-    style={{ background: '#F58220' }}
+    style={{ background: '#f7953f' }}
     onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = '#d96e10'; }}
-    onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = '#F58220'; }}>
+    onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = '#f7953f'; }}>
     {children}
   </button>
 );
@@ -582,7 +582,7 @@ const PillBtn = ({ children, primary, onClick, disabled }) => (
   <button onClick={onClick} disabled={disabled}
     className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
     style={primary ? { background: '#1a1209', color: '#faf6ef' } : { background: 'white', color: '#4b4540', border: '1px solid #e0d8ce' }}
-    onMouseEnter={e => { if (!disabled && primary) e.currentTarget.style.background = '#F58220'; }}
+    onMouseEnter={e => { if (!disabled && primary) e.currentTarget.style.background = '#f7953f'; }}
     onMouseLeave={e => { if (!disabled && primary) e.currentTarget.style.background = '#1a1209'; }}>
     {children}
   </button>

@@ -143,7 +143,7 @@ const EmployeeProfile = () => {
         <div className="flex-1 overflow-auto">
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F58220] mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4"></div>
               <p className="text-gray-600">Loading your profile...</p>
             </div>
           </div>
@@ -187,7 +187,7 @@ const EmployeeProfile = () => {
       
       <div className="flex-1 overflow-auto">
         {/* Profile Header */}
-        <div className="bg-gradient-to-br from-[#F58220] to-[#E0741C] border-b border-orange-300">
+        <div className="bg-gradient-to-br from-[#f7953f] to-[#E0741C] border-b border-orange-300">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               {/* Avatar + Info */}
@@ -301,7 +301,7 @@ const EmployeeProfile = () => {
             <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
               <div className="flex items-center justify-center mb-3">
                 <div className="p-3 bg-orange-50 rounded-full">
-                  <Clock size={24} className="text-[#F58220]" />
+                  <Clock size={24} className="text-[#f7953f]" />
                 </div>
               </div>
               <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_in_progress || 0}</div>
@@ -333,11 +333,11 @@ const EmployeeProfile = () => {
           <Card className="p-6 mb-8 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-[#333333]">Overall Learning Progress</h3>
-              <span className="text-2xl font-bold text-[#F58220]">{stats.overall_progress || 0}%</span>
+              <span className="text-2xl font-bold text-[#f7953f]">{stats.overall_progress || 0}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
               <div
-                className="bg-gradient-to-r from-[#FDB913] to-[#F58220] h-4 rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-[#FDB913] to-[#f7953f] h-4 rounded-full transition-all duration-500"
                 style={{ width: `${stats.overall_progress || 0}%` }}
               />
             </div>
@@ -358,7 +358,7 @@ const EmployeeProfile = () => {
                   onClick={() => setActiveTab('starred')}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     activeTab === 'starred'
-                      ? 'bg-[#F58220] text-white shadow-md'
+                      ? 'bg-[#f7953f] text-white shadow-md'
                       : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
                   }`}
                 >
@@ -377,7 +377,7 @@ const EmployeeProfile = () => {
                   onClick={() => setActiveTab('in_progress')}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     activeTab === 'in_progress'
-                      ? 'bg-[#F58220] text-white shadow-md'
+                      ? 'bg-[#f7953f] text-white shadow-md'
                       : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
                   }`}
                 >
@@ -396,7 +396,7 @@ const EmployeeProfile = () => {
                   onClick={() => setActiveTab('completed')}
                   className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
                     activeTab === 'completed'
-                      ? 'bg-[#F58220] text-white shadow-md'
+                      ? 'bg-[#f7953f] text-white shadow-md'
                       : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
                   }`}
                 >

@@ -11,7 +11,7 @@ import { fetchProcessingJobs, fetchDocumentSections } from '../../services/admin
 const C = {
   bg: '#faf6ef',
   card: '#ffffff',
-  orange: '#F58220',
+  orange: '#f7953f',
   orangeLight: 'rgba(245,130,32,0.10)',
   orangeBorder: 'rgba(245,130,32,0.25)',
   ink: '#1a1209',
@@ -45,8 +45,8 @@ const formatDuration = (s) => {
 const getStatusBadge = (status) => {
   switch (status) {
     case 'STORED':     return { color: '#00ADEF', bg: 'rgba(0,173,239,0.10)',  label: 'Stored' };
-    case 'QUEUED':     return { color: '#F58220', bg: 'rgba(245,130,32,0.10)', label: 'Queued' };
-    case 'PROCESSING': return { color: '#F58220', bg: 'rgba(245,130,32,0.10)', label: 'Processing' };
+    case 'QUEUED':     return { color: '#f7953f', bg: 'rgba(245,130,32,0.10)', label: 'Queued' };
+    case 'PROCESSING': return { color: '#f7953f', bg: 'rgba(245,130,32,0.10)', label: 'Processing' };
     case 'PROCESSED':  return { color: '#78BE20', bg: 'rgba(120,190,32,0.10)', label: 'Processed' };
     case 'FAILED':     return { color: '#ef4444', bg: 'rgba(239,68,68,0.10)',  label: 'Failed' };
     default:           return { color: C.muted,   bg: C.cream,                 label: status };
@@ -65,7 +65,7 @@ const auditStatusColor = (s) => {
 
 // ─── shared input style ───────────────────────────────────────────────────────
 const inputCls = `w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all
-  focus:ring-2 focus:ring-[#F58220]/20 focus:border-[#F58220]`;
+  focus:ring-2 focus:ring-[#f7953f]/20 focus:border-[#f7953f]`;
 
 
 const AdminDashboard = () => {
@@ -177,24 +177,24 @@ const AdminDashboard = () => {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ── Hero Banner ── */}
-        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#1a1209' }}>
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF',borderBottom: '0.5px solid #63472d' }}>
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#faf6ef', fontFamily: 'Georgia, serif' }}>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}>
               Document Dashboard
             </h1>
-            <p style={{ color: 'rgba(250,246,239,0.45)', fontSize: 13, marginTop: 4 }}>
+            <p style={{ color: 'rgba(65, 50, 24, 0.45)', fontSize: 13, marginTop: 4 }}>
               Manage documents and monitor system activity
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {[
-              { label: 'Total',      value: docStats.total,      dot: '#faf6ef' },
+              { label: 'Total',      value: docStats.total,      dot: '#1a1918' },
               { label: 'Ready',      value: docStats.ready,      dot: C.blue },
               { label: 'Processing', value: docStats.processing, dot: C.orange },
               { label: 'Completed',  value: docStats.completed,  dot: C.green },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"
-                style={{ background: 'rgba(255,255,255,0.08)', color: '#faf6ef' }}>
+                style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
                 {s.label}: <span className="font-bold ml-0.5">{s.value}</span>
               </div>

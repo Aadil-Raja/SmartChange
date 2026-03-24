@@ -205,7 +205,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F58220] focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f7953f] focus:border-transparent"
               />
             </div>
             <div>
@@ -253,7 +253,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                         className="w-8 h-8 rounded-full object-cover border-2 border-gray-300"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FDB913] to-[#F58220] flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FDB913] to-[#f7953f] flex items-center justify-center">
                         <User size={18} className="text-white" />
                       </div>
                     )}
@@ -313,9 +313,9 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                   {loadingDetails ? (
                     <LoadingSpinner size="small" />
                   ) : isExpanded ? (
-                    <ChevronUp size={24} className="text-gray-400 group-hover:text-[#F58220]" />
+                    <ChevronUp size={24} className="text-gray-400 group-hover:text-[#f7953f]" />
                   ) : (
-                    <ChevronDown size={24} className="text-gray-400 group-hover:text-[#F58220]" />
+                    <ChevronDown size={24} className="text-gray-400 group-hover:text-[#f7953f]" />
                   )}
                 </button>
               </div>
@@ -348,7 +348,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                   {attachments.map((attachment) => (
                     <div
                       key={attachment.id}
-                      className="relative group border border-gray-200 rounded-lg overflow-hidden hover:border-[#F58220] transition-all"
+                      className="relative group border border-gray-200 rounded-lg overflow-hidden hover:border-[#f7953f] transition-all"
                     >
                       {attachment.attachment_type === "image" ? (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
@@ -415,7 +415,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
               <button
                 onClick={handleToggleExpand}
                 disabled={loadingDetails}
-                className="flex items-center gap-2 text-[#F58220] hover:text-[#E0741C] font-medium transition-colors group disabled:opacity-50"
+                className="flex items-center gap-2 text-[#f7953f] hover:text-[#E0741C] font-medium transition-colors group disabled:opacity-50"
               >
                 {loadingDetails ? (
                   <>
@@ -489,7 +489,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
           <div className="p-6 lg:p-8">
             <div className="flex items-center gap-2 mb-6">
               <div className="p-2 bg-[rgba(245,130,32,0.1)] rounded-md">
-                <MessageSquare size={20} className="text-[#F58220]" />
+                <MessageSquare size={20} className="text-[#f7953f]" />
               </div>
               <h3 className="text-lg font-bold text-[#333333]">
                 {isManager ? "Team Discussion" : "Comments"}
@@ -513,7 +513,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                   >
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
+                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#f7953f] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
                         {comment.user_profile_picture ? (
                           <img
                             src={comment.user_profile_picture}
@@ -582,7 +582,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
             {/* Add Comment Form */}
             <Card variant="default" padding="md" shadow="sm" className="hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={18} className="text-[#F58220]" />
+                <Sparkles size={18} className="text-[#f7953f]" />
                 <span className="font-semibold text-[#333333]">Add your comment</span>
               </div>
               <Textarea

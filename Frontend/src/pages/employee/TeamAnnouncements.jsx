@@ -136,7 +136,7 @@ const TeamAnnouncements = () => {
           {/* Top Section - Team Info */}
           <div className="flex items-start justify-between mb-6">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F58220] to-[#E0741C] shadow-lg">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f7953f] to-[#E0741C] shadow-lg">
                 <Megaphone size={32} className="text-white" />
               </div>
               <div>
@@ -193,12 +193,12 @@ const TeamAnnouncements = () => {
             <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#F58220]/10 rounded-lg">
-                    <Key size={20} className="text-[#F58220]" />
+                  <div className="p-2 bg-[#f7953f]/10 rounded-lg">
+                    <Key size={20} className="text-[#f7953f]" />
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Team Join Code</p>
-                    <code className="text-lg font-bold text-[#F58220] font-mono">
+                    <code className="text-lg font-bold text-[#f7953f] font-mono">
                       {currentTeam.join_code}
                     </code>
                   </div>

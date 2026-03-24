@@ -29,7 +29,7 @@ const ConfirmDialog = ({
         <div className="flex items-center justify-end gap-3 px-6 py-4">
           <button
             onClick={onCancel}
-            className="px-5 py-2 rounded-full border border-[#F58220] text-[#F58220] text-sm font-semibold hover:bg-orange-50 transition-colors"
+            className="px-5 py-2 rounded-full border border-[#f7953f] text-[#f7953f] text-sm font-semibold hover:bg-orange-50 transition-colors"
           >
             {cancelText}
           </button>
@@ -38,7 +38,7 @@ const ConfirmDialog = ({
             className={`px-5 py-2 rounded-full text-sm font-bold text-white transition-colors ${
               variant === "danger"
                 ? "bg-red-600 hover:bg-red-700"
-                : "bg-[#F58220] hover:bg-[#E0741C]"
+                : "bg-[#f7953f] hover:bg-[#E0741C]"
             }`}
           >
             {confirmText}

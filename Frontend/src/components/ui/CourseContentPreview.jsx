@@ -87,7 +87,7 @@ const CourseContentPreview = ({ item }) => {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-[#F58220] hover:bg-gray-50 transition-all shadow-lg"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-[#f7953f] hover:bg-gray-50 transition-all shadow-lg"
                   >
                     <ExternalLink size={16} />
                     Open Document
@@ -96,7 +96,7 @@ const CourseContentPreview = ({ item }) => {
               </div>
             ) : (
               <div className="aspect-video w-full bg-gradient-to-br from-orange-50 to-yellow-50 flex items-center justify-center">
-                <FileText size={64} className="text-[#F58220]/30" />
+                <FileText size={64} className="text-[#f7953f]/30" />
               </div>
             )}
             <div className="p-4 bg-gray-50 border-t border-gray-200">
@@ -108,7 +108,7 @@ const CourseContentPreview = ({ item }) => {
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm font-medium text-[#F58220] hover:text-[#E0741C] transition-colors"
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#f7953f] hover:text-[#E0741C] transition-colors"
               >
                 <ExternalLink size={14} />
                 Open Document
@@ -121,7 +121,7 @@ const CourseContentPreview = ({ item }) => {
         return (
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8">
             <div className="text-center">
-              <ExternalLink size={48} className="mx-auto mb-4 text-[#F58220]" />
+              <ExternalLink size={48} className="mx-auto mb-4 text-[#f7953f]" />
               <h4 className="mb-2 font-semibold text-gray-900">{title}</h4>
               {description && (
                 <p className="mb-4 text-sm text-gray-600">{description}</p>
@@ -130,7 +130,7 @@ const CourseContentPreview = ({ item }) => {
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2 font-medium text-white transition-all hover:shadow-lg"
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-4 py-2 font-medium text-white transition-all hover:shadow-lg"
               >
                 <ExternalLink size={16} />
                 Visit Link

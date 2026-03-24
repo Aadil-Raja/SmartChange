@@ -22,7 +22,7 @@ import * as quizApi from "../../services/quizApi";
 const C = {
   bg: "#faf6ef",
   ink: "#1a1209",
-  orange: "#F58220",
+ orange: '#f7953f',
   teal: "#0d9488",
   muted: "#9c8e80",
   border: "#e8e0d5",
@@ -244,9 +244,9 @@ const AdminQuizManagement = () => {
 
       <div style={{ flex: 1, overflowY: "auto" }}>
         {/* Page Header */}
-        <div style={{ background: C.ink, padding: "28px 36px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+       <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF',borderBottom: '0.5px solid #63472d' }}>
           <div>
-            <h1 style={{ fontFamily: "Georgia, serif", fontSize: 28, fontWeight: 700, color: "#fff", margin: 0 }}>Quiz Management</h1>
+            <h1 style={{ fontFamily: "Georgia, serif", fontSize: 28, fontWeight: 700, color: "#3D2C1C", margin: 0 }}>Quiz Management</h1>
             <p style={{ color: "#b8a898", fontSize: 13, marginTop: 4 }}>Generate and manage quizzes from documents and courses</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -254,9 +254,9 @@ const AdminQuizManagement = () => {
               { label: "Documents",     value: documents.length,                                          dot: "#faf6ef" },
               { label: "Doc Quizzes",   value: Object.values(docQuizCounts).reduce((a, b) => a + b, 0),  dot: "#4ade80" },
               { label: "Courses",       value: (courses || []).length,                                    dot: "#c084fc" },
-              { label: "Course Quizzes",value: Object.values(courseQuizCounts).reduce((a, b) => a + b, 0),dot: "#fb923c" },
+              { label: "Course Quizzes",value: Object.values(courseQuizCounts).reduce((a, b) => a + b, 0),dot: "#fc801b" },
             ].map(s => (
-              <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.08)", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 500, color: "#faf6ef" }}>
+              <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7, background: "#e8e0d4", borderRadius: 999, padding: "6px 14px", fontSize: 13, fontWeight: 500, color: "#3D2C1C" }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
                 {s.label}: {s.value}
               </div>

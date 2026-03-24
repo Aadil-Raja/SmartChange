@@ -12,7 +12,7 @@ const PrimaryButton = ({
   ...props 
 }) => {
   const variants = {
-    primary: 'bg-gradient-to-r from-[#FDB913] to-[#F58220] text-white hover:from-[#E5A50F] hover:to-[#E0741C] shadow-lg hover:shadow-xl',
+    primary: 'bg-gradient-to-r from-[#FDB913] to-[#f7953f] text-white hover:from-[#E5A50F] hover:to-[#E0741C] shadow-lg hover:shadow-xl',
     secondary: 'bg-white text-[#FDB913] border-2 border-[#FDB913] hover:bg-[#FDB913] hover:text-white',
     outline: 'bg-transparent text-[#FDB913] border-2 border-[#FDB913] hover:bg-[#FDB913] hover:text-white',
     ghost: 'bg-transparent text-[#FDB913] hover:bg-[#FDB913]/10',

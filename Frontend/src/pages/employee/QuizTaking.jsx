@@ -220,7 +220,7 @@ const QuizTaking = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
                 disabled={quizStarted}
               >
                 <ArrowLeft size={20} />
@@ -323,7 +323,7 @@ const QuizTaking = () => {
                         onClick={() => goToQuestion(index)}
                         className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
                           index === currentQuestionIndex
-                            ? 'bg-[#F58220] text-white'
+                            ? 'bg-[#f7953f] text-white'
                             : answers[question.id] !== null && answers[question.id] !== undefined
                             ? 'bg-[#78BE20] text-white'
                             : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -336,7 +336,7 @@ const QuizTaking = () => {
                   
                   <div className="mt-4 space-y-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-[#F58220] rounded"></div>
+                      <div className="w-3 h-3 bg-[#f7953f] rounded"></div>
                       <span>Current</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ const QuizTaking = () => {
                 {/* Question Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 bg-[#F58220] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    <span className="w-8 h-8 bg-[#f7953f] text-white rounded-full flex items-center justify-center text-sm font-bold">
                       {currentQuestionIndex + 1}
                     </span>
                     <span className="text-sm text-gray-600">
@@ -381,9 +381,9 @@ const QuizTaking = () => {
                     .map((option) => (
                     <label
                       key={option.id}
-                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-[#F58220] ${
+                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-[#f7953f] ${
                         answers[currentQuestion.id] === option.option_order
-                          ? 'border-[#F58220] bg-orange-50'
+                          ? 'border-[#f7953f] bg-orange-50'
                           : 'border-gray-200 hover:bg-gray-50'
                       }`}
                     >
@@ -394,7 +394,7 @@ const QuizTaking = () => {
                           value={option.id}
                           checked={answers[currentQuestion.id] === option.option_order}
                           onChange={() => handleAnswerSelect(currentQuestion.id, option.id)}
-                          className="w-4 h-4 text-[#F58220] focus:ring-[#F58220]"
+                          className="w-4 h-4 text-[#f7953f] focus:ring-[#f7953f]"
                         />
                         <span className="text-[#333333]">{option.option_text}</span>
                       </div>
@@ -416,7 +416,7 @@ const QuizTaking = () => {
                     {!isLastQuestion ? (
                       <Button
                         onClick={goToNextQuestion}
-                        className="bg-[#F58220] hover:bg-[#E0741C]"
+                        className="bg-[#f7953f] hover:bg-[#E0741C]"
                       >
                         Next Question
                       </Button>

@@ -11,7 +11,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 const C = {
   bg: "#faf6ef",
   card: "#ffffff",
-  orange: "#F58220",
+  orange: '#f7953f',
   orangeLight: "rgba(245,130,32,0.10)",
   orangeBorder: "rgba(245,130,32,0.25)",
   ink: "#1a1209",
@@ -529,19 +529,24 @@ const AdminContentLibrary = () => {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ── Hero Banner ── */}
-        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: "#1a1209" }}>
-          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "#faf6ef", fontFamily: "Georgia, serif" }}>
-            Content Library
-          </h1>
-          <div className="flex items-center gap-3">
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF', borderBottom: '0.5px solid #63472d' }}>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}>
+              Content Library
+            </h1>
+            <p style={{ color: 'rgba(65, 50, 24, 0.45)', fontSize: 13, marginTop: 4 }}>
+              Manage videos, links, and processed documents
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
             {[
               { label: "Videos",    value: videos.length,        dot: C.orange },
               { label: "Links",     value: externalLinks.length, dot: C.blue   },
               { label: "Documents", value: documents.length,     dot: C.green  },
             ].map(s => (
-              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#faf6ef" }}>
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
-                {s.label}: {s.value}
+                {s.label}: <span className="font-bold ml-0.5">{s.value}</span>
               </div>
             ))}
           </div>
@@ -551,49 +556,50 @@ const AdminContentLibrary = () => {
         <div className="flex-1 overflow-auto px-8 py-6">
           <div className="rounded-2xl overflow-hidden" style={{ background: C.card, border: `1px solid ${C.border}`, boxShadow: "0 2px 12px rgba(26,18,9,0.06)" }}>
 
-            {/* Tab bar */}
-            <div className="px-5 pt-4 pb-0 flex items-center gap-1" style={{ borderBottom: `1px solid ${C.border}` }}>
-              <TabBtn active={activeTab === "videos"}    onClick={() => setActiveTab("videos")}    label="Videos"    count={videos.length} />
-              <TabBtn active={activeTab === "links"}     onClick={() => setActiveTab("links")}     label="Links"     count={externalLinks.length} />
-              <TabBtn active={activeTab === "documents"} onClick={() => setActiveTab("documents")} label="Documents" count={documents.length} />
-            </div>
-
-            {/* Search + Action row */}
-            <div className="px-5 py-4 flex items-center justify-between gap-4" style={{ borderBottom: `1px solid ${C.border}` }}>
-              {/* Search pill */}
-              <div className="relative flex-1 max-w-xs">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search…"
-                  className="w-full pl-9 pr-4 py-2 text-sm rounded-full outline-none transition-all"
-                  style={{ background: C.bg, border: `1.5px solid ${C.border}`, color: C.ink }}
-                  onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
-                  onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
-                />
+            {/* ── Unified Toolbar ── */}
+            <div className="px-6 py-4 flex items-center justify-between gap-6" style={{ borderBottom: `1px solid ${C.border}` }}>
+              {/* Tabs (left) */}
+              <div className="flex items-center gap-1">
+                <TabBtn active={activeTab === "videos"}    onClick={() => setActiveTab("videos")}    label="Videos"    count={videos.length} />
+                <TabBtn active={activeTab === "links"}     onClick={() => setActiveTab("links")}     label="Links"     count={externalLinks.length} />
+                <TabBtn active={activeTab === "documents"} onClick={() => setActiveTab("documents")} label="Documents" count={documents.length} />
               </div>
 
-              {/* Action button */}
-              {activeTab === "videos" && (
-                <button
-                  onClick={() => setShowVideoModal(true)}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ background: C.orange }}
-                >
-                  <Upload size={14} /> Upload Video
-                </button>
-              )}
-              {activeTab === "links" && (
-                <button
-                  onClick={() => { setEditingLink(null); setShowLinkModal(true); }}
-                  className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  style={{ background: C.orange }}
-                >
-                  <Plus size={14} /> Add Link
-                </button>
-              )}
+              {/* Search + Action button (right) */}
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Search…"
+                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg outline-none transition-all"
+                    style={{ background: C.bg, border: `1.5px solid ${C.border}`, color: C.ink }}
+                    onFocus={e => { e.target.style.borderColor = C.orange; e.target.style.boxShadow = `0 0 0 3px ${C.orangeLight}`; }}
+                    onBlur={e => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
+                  />
+                </div>
+
+                {activeTab === "videos" && (
+                  <button
+                    onClick={() => setShowVideoModal(true)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 flex-shrink-0"
+                    style={{ background: C.orange }}
+                  >
+                    <Upload size={14} /> Upload Video
+                  </button>
+                )}
+                {activeTab === "links" && (
+                  <button
+                    onClick={() => { setEditingLink(null); setShowLinkModal(true); }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 flex-shrink-0"
+                    style={{ background: C.orange }}
+                  >
+                    <Plus size={14} /> Add Link
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* ── Grid ── */}

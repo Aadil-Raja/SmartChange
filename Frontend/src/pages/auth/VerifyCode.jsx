@@ -37,7 +37,7 @@ export default function VerifyCode() {
       <Card className="w-full max-w-md p-8 shadow-md border-0 bg-white">
         {/* Logo */}
         <div className="mb-8 flex justify-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220] shadow-lg">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#f7953f] shadow-lg">
             <span className="text-2xl font-bold text-white">KE</span>
           </div>
         </div>
@@ -48,7 +48,7 @@ export default function VerifyCode() {
           <p className="text-sm text-gray-600 font-medium">
             We sent a verification code to
           </p>
-          <p className="mt-1 font-semibold text-[#F58220]">{email}</p>
+          <p className="mt-1 font-semibold text-[#f7953f]">{email}</p>
         </div>
 
         {/* Message Display */}
@@ -87,7 +87,7 @@ export default function VerifyCode() {
         <div className="mt-6 text-center">
           <a
             href="/login"
-            className="text-sm font-semibold text-[#F58220] transition-colors hover:text-[#E0741C] hover:underline"
+            className="text-sm font-semibold text-[#f7953f] transition-colors hover:text-[#E0741C] hover:underline"
           >
             Back to Login
           </a>

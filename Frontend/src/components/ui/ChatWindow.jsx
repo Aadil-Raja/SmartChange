@@ -75,8 +75,8 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
     return (
       <div className="h-full flex items-center justify-center p-8">
         <div className="text-center max-w-lg">
-          <div className="inline-flex p-8 bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-full mb-8">
-            <Sparkles size={64} className="text-[#F58220]/60" />
+          <div className="inline-flex p-8 bg-gradient-to-br from-[#f7953f]/5 to-[#E0741C]/5 rounded-full mb-8">
+            <Sparkles size={64} className="text-[#f7953f]/60" />
           </div>
           <h2 className="text-2xl font-semibold text-[#333333] mb-4">
             Ready to assist you
@@ -118,8 +118,8 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
         {currentMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-2xl">
-              <div className="inline-flex p-6 bg-gradient-to-br from-[#F58220]/5 to-[#E0741C]/5 rounded-full mb-8">
-                <Bot size={48} className="text-[#F58220]/60" />
+              <div className="inline-flex p-6 bg-gradient-to-br from-[#f7953f]/5 to-[#E0741C]/5 rounded-full mb-8">
+                <Bot size={48} className="text-[#f7953f]/60" />
               </div>
               <h2 className="text-xl font-semibold text-[#333333] mb-4">
                 How can I help you today?
@@ -130,13 +130,13 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
               <div className="grid gap-3 max-w-md mx-auto">
                 <button
                   onClick={() => setInputMessage("Summarize the key points from this document")}
-                  className="p-4 text-left border border-gray-200 hover:border-[#F58220]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
+                  className="p-4 text-left border border-gray-200 hover:border-[#f7953f]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#F58220]/10 rounded-lg group-hover:bg-[#F58220]/20 transition-colors">
-                      <Sparkles size={16} className="text-[#F58220]" />
+                    <div className="p-2 bg-[#f7953f]/10 rounded-lg group-hover:bg-[#f7953f]/20 transition-colors">
+                      <Sparkles size={16} className="text-[#f7953f]" />
                     </div>
-                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#F58220]">
+                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#f7953f]">
                       Summarize the key points
                     </span>
                   </div>
@@ -174,7 +174,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                 <div
                   className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
                     message.role === "user"
-                      ? "bg-gradient-to-br from-[#F58220] to-[#E0741C]"
+                      ? "bg-gradient-to-br from-[#f7953f] to-[#E0741C]"
                       : "bg-gradient-to-br from-[#333333] to-[#555555]"
                   }`}
                 >
@@ -189,7 +189,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                 <div
                   className={`flex-1 px-4 py-3 rounded-2xl ${
                     message.role === "user"
-                      ? "bg-gradient-to-br from-[#F58220] to-[#E0741C] text-white"
+                      ? "bg-gradient-to-br from-[#f7953f] to-[#E0741C] text-white"
                       : "bg-white border border-gray-200 text-gray-800"
                   }`}
                 >
@@ -225,9 +225,9 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                   <LoadingSpinner size="small" />
                   <span className="text-sm text-gray-600">AI is thinking...</span>
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce"></div>
-                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-1 h-1 bg-[#F58220] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce"></div>
+                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                   </div>
                 </div>
               </div>
@@ -280,7 +280,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                     placeholder="Ask me anything about your documents..."
                     disabled={sending || !hasDocuments}
                     maxRows={4}
-                    className="w-full border border-gray-300 focus:border-[#F58220] focus:ring-2 focus:ring-[#F58220]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
+                    className="w-full border border-gray-300 focus:border-[#f7953f] focus:ring-2 focus:ring-[#f7953f]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
                   />
                 </div>
                 <IconButton
@@ -289,7 +289,7 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
                   variant="primary"
                   size="lg"
                   tooltip={sending ? "Sending..." : "Send message"}
-                  className="bg-gradient-to-r from-[#F58220] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
+                  className="bg-gradient-to-r from-[#f7953f] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
                 >
                   {sending ? (
                     <LoadingSpinner size="small" />

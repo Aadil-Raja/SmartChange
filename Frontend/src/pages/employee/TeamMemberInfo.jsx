@@ -93,7 +93,7 @@ const TeamMemberInfo = () => {
 
 	const getProgressTone = (progress) => {
 		if (progress >= 80) return 'from-[#78BE20] to-[#6AAD1C]';
-		if (progress >= 50) return 'from-[#FDB913] to-[#F58220]';
+		if (progress >= 50) return 'from-[#FDB913] to-[#f7953f]';
 		return 'from-[#00ADEF] to-[#0094CE]';
 	};
 
@@ -116,7 +116,7 @@ const TeamMemberInfo = () => {
 			/>
 
 			<div className="flex-1 overflow-auto">
-				<div className="bg-gradient-to-br from-[#F58220] to-[#E0741C] border-b border-orange-300">
+				<div className="bg-gradient-to-br from-[#f7953f] to-[#E0741C] border-b border-orange-300">
 					<div className="max-w-7xl mx-auto px-6 py-8">
 						<div className="mb-6">
 							<button
@@ -186,7 +186,7 @@ const TeamMemberInfo = () => {
 				<div className="max-w-7xl mx-auto px-6 py-8">
 					{loading ? (
 						<Card className="p-10 text-center border border-gray-200">
-							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F58220] mx-auto mb-4"></div>
+							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4"></div>
 							<p className="text-gray-600">Loading member analytics...</p>
 						</Card>
 					) : error ? (
@@ -229,7 +229,7 @@ const TeamMemberInfo = () => {
 								</Card>
 
 								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<Award size={22} className="text-[#F58220] mx-auto mb-2" />
+									<Award size={22} className="text-[#f7953f] mx-auto mb-2" />
 									<div className="text-2xl font-bold text-[#333333]">{stats.total_quizzes_completed || 0}/{stats.total_quizzes || 0}</div>
 									<div className="text-xs text-gray-600">Quizzes Done</div>
 								</Card>
@@ -238,10 +238,10 @@ const TeamMemberInfo = () => {
 							<Card className="p-6 mb-8 border border-gray-200">
 								<div className="flex items-center justify-between mb-4">
 									<h3 className="text-xl font-bold text-[#333333] inline-flex items-center gap-2">
-										<TrendingUp size={20} className="text-[#F58220]" />
+										<TrendingUp size={20} className="text-[#f7953f]" />
 										Overall Learning Progress
 									</h3>
-									<span className="text-2xl font-bold text-[#F58220]">{safeProgress.toFixed(2)}%</span>
+									<span className="text-2xl font-bold text-[#f7953f]">{safeProgress.toFixed(2)}%</span>
 								</div>
 								<div className="w-full bg-gray-200 rounded-full h-4 mb-2">
 									<div
@@ -264,7 +264,7 @@ const TeamMemberInfo = () => {
 											onClick={() => setActiveTab('in_progress')}
 											className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
 												activeTab === 'in_progress'
-													? 'bg-[#F58220] text-white shadow-md'
+													? 'bg-[#f7953f] text-white shadow-md'
 													: 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
 											}`}
 										>

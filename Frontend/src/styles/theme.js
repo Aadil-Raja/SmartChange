@@ -5,10 +5,10 @@
 
 export const colors = {
   primary: {
-    main: '#F58220',      // K-Electric Orange
+    main: '#f7953f',      // K-Electric Orange
     light: '#FF9A4D',
     dark: '#E0741C',
-    gradient: 'linear-gradient(135deg, #FDB913 0%, #F58220 100%)'
+    gradient: 'linear-gradient(135deg, #FDB913 0%, #f7953f 100%)'
   },
   secondary: {
     main: '#FDB913',      // K-Electric Yellow

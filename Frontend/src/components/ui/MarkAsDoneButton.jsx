@@ -43,7 +43,7 @@ const MarkAsDoneButton = ({
           <button
             onClick={handleMarkAsDone}
             disabled={isMarking}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isMarking ? (
               <>
@@ -102,7 +102,7 @@ const MarkAsDoneButton = ({
     <button
       onClick={handleMarkAsDone}
       disabled={isMarking}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#F58220] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isMarking ? (
         <>

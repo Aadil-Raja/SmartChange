@@ -56,7 +56,7 @@ const QuizResults = () => {
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-[#F58220] transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
               >
                 <ArrowLeft size={20} />
                 <span className="font-medium">Back to Course</span>
@@ -127,7 +127,7 @@ const QuizResults = () => {
               {can_retake && attempts_remaining > 0 && (
                 <Button
                   onClick={() => navigate(`/employee/quiz/${quizId}`)}
-                  className="bg-[#F58220] hover:bg-[#E0741C] flex items-center gap-2"
+                  className="bg-[#f7953f] hover:bg-[#E0741C] flex items-center gap-2"
                 >
                   <RotateCcw size={18} />
                   Retake Quiz

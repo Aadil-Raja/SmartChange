@@ -38,7 +38,7 @@ const JoinTeamModal = ({ isOpen, onClose, onJoin, loading }) => {
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#F58220]"
+          className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#f7953f]"
           aria-label="Close modal"
         >
           <X size={20} />
@@ -46,7 +46,7 @@ const JoinTeamModal = ({ isOpen, onClose, onJoin, loading }) => {
 
         {/* Header */}
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#F58220]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
             <UserPlus size={24} className="text-white" />
           </div>
           <div>
@@ -75,7 +75,7 @@ const JoinTeamModal = ({ isOpen, onClose, onJoin, loading }) => {
               onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="000000"
               maxLength={6}
-              className="w-full rounded-md border border-gray-300 px-4 py-3 text-center text-2xl font-bold tracking-widest transition-colors focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20"
+              className="w-full rounded-md border border-gray-300 px-4 py-3 text-center text-2xl font-bold tracking-widest transition-colors focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20"
               required
             />
             <p className="mt-2 text-xs text-gray-500">
@@ -88,14 +88,14 @@ const JoinTeamModal = ({ isOpen, onClose, onJoin, loading }) => {
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 h-10 rounded-md border border-[#F58220] px-4 font-medium text-[#F58220] transition-colors hover:bg-[#F58220] hover:text-white"
+              className="flex-1 h-10 rounded-md border border-[#f7953f] px-4 font-medium text-[#f7953f] transition-colors hover:bg-[#f7953f] hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || joinCode.length !== 6}
-              className="flex-1 h-10 rounded-md bg-[#F58220] px-4 font-medium text-white transition-all hover:bg-[#E0741C] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 h-10 rounded-md bg-[#f7953f] px-4 font-medium text-white transition-all hover:bg-[#E0741C] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Joining...' : 'Join Team'}
             </button>

@@ -22,9 +22,9 @@ const LoadMoreButton = ({
   const baseClasses = "w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variantClasses = {
-    primary: "bg-[#F58220] text-white hover:bg-[#E0741C] shadow-sm hover:shadow-md",
+    primary: "bg-[#f7953f] text-white hover:bg-[#E0741C] shadow-sm hover:shadow-md",
     secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300",
-    outline: "bg-white text-[#F58220] border-2 border-[#F58220] hover:bg-[#F58220] hover:text-white"
+    outline: "bg-white text-[#f7953f] border-2 border-[#f7953f] hover:bg-[#f7953f] hover:text-white"
   };
 
   return (

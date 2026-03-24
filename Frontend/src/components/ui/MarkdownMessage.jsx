@@ -62,7 +62,7 @@ const MarkdownMessage = ({ content, isUser = false }) => {
                 className={`px-1.5 py-0.5 rounded text-xs font-mono ${
                   isUser
                     ? 'bg-white/20 text-white'
-                    : 'bg-gray-100 text-[#F58220] border border-gray-200'
+                    : 'bg-gray-100 text-[#f7953f] border border-gray-200'
                 }`}
                 {...props}
               >
@@ -93,7 +93,7 @@ const MarkdownMessage = ({ content, isUser = false }) => {
             className={`border-l-4 pl-4 py-2 my-3 italic ${
               isUser
                 ? 'border-white/40 text-white/90'
-                : 'border-[#F58220] text-gray-700 bg-gray-50 rounded-r-lg'
+                : 'border-[#f7953f] text-gray-700 bg-gray-50 rounded-r-lg'
             }`}
             {...props}
           />

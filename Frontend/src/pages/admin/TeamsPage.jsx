@@ -104,7 +104,7 @@ const TeamsPage = () => {
   const totalMembers = teams.reduce((sum, t) => sum + getTeamMembers(t.id).length, 0);
 
   const stats = [
-    { label: 'Total Teams',   value: teams.length,           dot: '#faf6ef' },
+    { label: 'Total Teams',   value: teams.length,           dot: '#1a1918' },
     { label: 'Total Members', value: totalMembers,            dot: '#4ade80' },
     { label: 'Employees',     value: groupedEmployees.length, dot: '#c084fc' },
   ];
@@ -116,15 +116,20 @@ const TeamsPage = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* ── Hero Banner ── */}
-        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#1a1209' }}>
-          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#faf6ef', fontFamily: 'Georgia, serif' }}>
-            Team Management
-          </h1>
-          <div className="flex items-center gap-3">
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF', borderBottom: '0.5px solid #63472d' }}>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}>
+              Team Management
+            </h1>
+            <p style={{ color: 'rgba(65, 50, 24, 0.45)', fontSize: 13, marginTop: 4 }}>
+              Organize teams, memberships, and role access
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
             {stats.map(s => (
-              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: 'rgba(255,255,255,0.08)', color: '#faf6ef' }}>
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
-                {s.label}: {s.value}
+                {s.label}: <span className="font-bold ml-0.5">{s.value}</span>
               </div>
             ))}
           </div>
@@ -137,13 +142,13 @@ const TeamsPage = () => {
             {/* Create Team CTA */}
             <button
               onClick={() => setShowCreateModal(true)}
-              className="group w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white px-6 py-5 flex items-center gap-4 transition-all hover:border-[#F58220] hover:shadow-md text-left"
+              className="group w-full rounded-2xl border-2 border-dashed border-gray-300 bg-white px-6 py-5 flex items-center gap-4 transition-all hover:border-[#f7953f] hover:shadow-md text-left"
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors" style={{ background: '#f3ede4' }}>
-                <Plus size={20} className="text-gray-500 group-hover:text-[#F58220] transition-colors" />
+                <Plus size={20} className="text-gray-500 group-hover:text-[#f7953f] transition-colors" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#1a1209] group-hover:text-[#F58220] transition-colors">Create New Team</p>
+                <p className="text-sm font-semibold text-[#1a1209] group-hover:text-[#f7953f] transition-colors">Create New Team</p>
                 <p className="text-xs text-gray-400">Add a new team and organize your employees</p>
               </div>
             </button>
@@ -178,7 +183,7 @@ const TeamsPage = () => {
                     onClick={() => setShowCreateModal(true)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-colors"
                     style={{ background: '#1a1209' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#F58220'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f7953f'}
                     onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
                   >
                     <Plus size={15} /> Create First Team
@@ -227,7 +232,7 @@ const TeamsPage = () => {
                           <div className="col-span-4 flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => { setSelectedTeam(team); setShowAddMemberModal(true); }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 text-[#1a1209] hover:border-[#F58220] hover:text-[#F58220] transition-colors bg-white"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 text-[#1a1209] hover:border-[#f7953f] hover:text-[#f7953f] transition-colors bg-white"
                             >
                               <UserPlus size={13} /> Add Member
                             </button>
@@ -286,7 +291,7 @@ const TeamsPage = () => {
                                         ) : (
                                           <button
                                             onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
-                                            className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#F58220] hover:text-[#F58220]"
+                                            className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#f7953f] hover:text-[#f7953f]"
                                             style={{ color: '#1a1209' }}
                                           >
                                             {member.role_in_team}
@@ -332,7 +337,7 @@ const TeamsPage = () => {
             value={newTeamName}
             onChange={e => setNewTeamName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleCreateTeam()}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-5"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all mb-5"
             autoFocus
           />
           <div className="flex gap-3">
@@ -341,14 +346,14 @@ const TeamsPage = () => {
               disabled={!newTeamName.trim()}
               className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40"
               style={{ background: '#1a1209' }}
-              onMouseEnter={e => { if (newTeamName.trim()) e.currentTarget.style.background = '#F58220'; }}
+              onMouseEnter={e => { if (newTeamName.trim()) e.currentTarget.style.background = '#f7953f'; }}
               onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
             >
               Create Team
             </button>
             <button
               onClick={() => { setShowCreateModal(false); setNewTeamName(''); }}
-              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#F58220] text-[#F58220] hover:bg-orange-50 transition-colors"
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#f7953f] text-[#f7953f] hover:bg-orange-50 transition-colors"
             >
               Cancel
             </button>
@@ -366,7 +371,7 @@ const TeamsPage = () => {
           <select
             value={selectedUserId}
             onChange={e => setSelectedUserId(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-4"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all mb-4"
           >
             <option value="">Choose an employee...</option>
             {availableEmployeesForTeam.map(emp => (
@@ -383,7 +388,7 @@ const TeamsPage = () => {
           <select
             value={selectedRole}
             onChange={e => setSelectedRole(e.target.value)}
-            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all mb-5"
+            className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all mb-5"
           >
             <option value="">Choose a role...</option>
             {TEAM_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
@@ -395,14 +400,14 @@ const TeamsPage = () => {
               disabled={!selectedUserId || !selectedRole || availableEmployeesForTeam.length === 0}
               className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40"
               style={{ background: '#1a1209' }}
-              onMouseEnter={e => { if (selectedUserId && selectedRole) e.currentTarget.style.background = '#F58220'; }}
+              onMouseEnter={e => { if (selectedUserId && selectedRole) e.currentTarget.style.background = '#f7953f'; }}
               onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
             >
               Add Member
             </button>
             <button
               onClick={() => { setShowAddMemberModal(false); setSelectedUserId(''); setSelectedRole(''); setSelectedTeam(null); }}
-              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#F58220] text-[#F58220] hover:bg-orange-50 transition-colors"
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#f7953f] text-[#f7953f] hover:bg-orange-50 transition-colors"
             >
               Cancel
             </button>
@@ -482,7 +487,7 @@ const RoleDropdown = ({ value, roles, onChange, onClose }) => {
     <div className="relative" ref={ref}>
       <button
         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); setOpen(v => !v); }}
-        className="text-xs font-semibold border border-[#F58220] text-[#F58220] px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-orange-50"
+        className="text-xs font-semibold border border-[#f7953f] text-[#f7953f] px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-orange-50"
       >
         {selected}
         <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -501,7 +506,7 @@ const RoleDropdown = ({ value, roles, onChange, onClose }) => {
                 key={role}
                 onClick={e => { e.stopPropagation(); handleSelect(role); }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
-                style={role === selected ? { background: '#F58220', color: '#fff', fontWeight: 600 } : { color: '#1a1209' }}
+                style={role === selected ? { background: '#f7953f', color: '#fff', fontWeight: 600 } : { color: '#1a1209' }}
                 onMouseEnter={e => { if (role !== selected) e.currentTarget.style.background = '#faf6ef'; }}
                 onMouseLeave={e => { if (role !== selected) e.currentTarget.style.background = 'transparent'; }}
               >

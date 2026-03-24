@@ -163,8 +163,8 @@ const MyCourses = () => {
                                             onClick={() => setStatusFilter('all')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'all'
-                                                    ? 'bg-[#F58220] text-white shadow-md'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                                    ? 'bg-[#f7953f] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#f7953f]'
                                             }`}
                                         >
                                             All
@@ -173,8 +173,8 @@ const MyCourses = () => {
                                             onClick={() => setStatusFilter('not-enrolled')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'not-enrolled'
-                                                    ? 'bg-[#F58220] text-white shadow-md'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                                    ? 'bg-[#f7953f] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#f7953f]'
                                             }`}
                                         >
                                             Not Enrolled
@@ -183,8 +183,8 @@ const MyCourses = () => {
                                             onClick={() => setStatusFilter('in-progress')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'in-progress'
-                                                    ? 'bg-[#F58220] text-white shadow-md'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                                    ? 'bg-[#f7953f] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#f7953f]'
                                             }`}
                                         >
                                             In Progress
@@ -193,8 +193,8 @@ const MyCourses = () => {
                                             onClick={() => setStatusFilter('completed')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'completed'
-                                                    ? 'bg-[#F58220] text-white shadow-md'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                                    ? 'bg-[#f7953f] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#f7953f]'
                                             }`}
                                         >
                                             Completed
@@ -203,8 +203,8 @@ const MyCourses = () => {
                                             onClick={() => setStatusFilter('starred')}
                                             className={`px-4 h-10 rounded-md text-sm font-medium transition-all ${
                                                 statusFilter === 'starred'
-                                                    ? 'bg-[#F58220] text-white shadow-md'
-                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#F58220]'
+                                                    ? 'bg-[#f7953f] text-white shadow-md'
+                                                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#f7953f]'
                                             }`}
                                         >
                                             Starred

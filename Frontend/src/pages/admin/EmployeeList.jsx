@@ -75,7 +75,7 @@ const EmployeeList = () => {
   const AVATAR_COLORS = ['bg-blue-400', 'bg-emerald-400', 'bg-violet-400', 'bg-pink-400', 'bg-amber-400', 'bg-teal-400'];
 
   const stats = [
-    { label: 'Total Employees', value: groupedEmployees.length,                                    dot: '#faf6ef' },
+    { label: 'Total Employees', value: groupedEmployees.length,                                    dot: '#1a1918' },
     { label: 'In Teams',        value: groupedEmployees.filter(e => e.teams.length > 0).length,    dot: '#4ade80' },
     { label: 'Unassigned',      value: groupedEmployees.filter(e => e.teams.length === 0).length,  dot: '#fb923c' },
     { label: 'Active Teams',    value: uniqueTeams.length,                                          dot: '#c084fc' },
@@ -88,15 +88,20 @@ const EmployeeList = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* ── Hero Banner (matches course list) ── */}
-        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#1a1209' }}>
-          <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#faf6ef', fontFamily: 'Georgia, serif' }}>
-            Employee Management
-          </h1>
-          <div className="flex items-center gap-3">
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF', borderBottom: '0.5px solid #63472d' }}>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}>
+              Employee Management
+            </h1>
+            <p style={{ color: 'rgba(65, 50, 24, 0.45)', fontSize: 13, marginTop: 4 }}>
+              Review employee directory and team role assignments
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
             {stats.map(s => (
-              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium" style={{ background: 'rgba(255,255,255,0.08)', color: '#faf6ef' }}>
+              <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"  style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.dot }} />
-                {s.label}: {s.value}
+                {s.label}: <span className="font-bold ml-0.5">{s.value}</span>
               </div>
             ))}
           </div>
@@ -120,13 +125,13 @@ const EmployeeList = () => {
                     placeholder="Search by name or email..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all"
+                    className="w-full rounded-full border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all"
                   />
                 </div>
                 <select
                   value={filterRole}
                   onChange={e => setFilterRole(e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all min-w-[140px]"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all min-w-[140px]"
                 >
                   <option value="">All Roles</option>
                   {teamRoles.map(r => <option key={r} value={r}>{r}</option>)}
@@ -134,7 +139,7 @@ const EmployeeList = () => {
                 <select
                   value={filterTeam}
                   onChange={e => setFilterTeam(e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:border-[#F58220] focus:outline-none focus:ring-2 focus:ring-[#F58220]/20 transition-all min-w-[140px]"
+                  className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:bg-white focus:border-[#f7953f] focus:outline-none focus:ring-2 focus:ring-[#f7953f]/20 transition-all min-w-[140px]"
                 >
                   <option value="">All Teams</option>
                   {uniqueTeams.map(t => <option key={t} value={t}>{t}</option>)}
@@ -145,7 +150,7 @@ const EmployeeList = () => {
                   <p className="text-xs text-gray-600">
                     Showing <span className="font-semibold">{filteredEmployees.length}</span> of <span className="font-semibold">{groupedEmployees.length}</span> employees
                   </p>
-                  <button onClick={() => { setSearchQuery(''); setFilterRole(''); setFilterTeam(''); }} className="text-xs font-semibold text-[#F58220] hover:text-[#E0741C] transition-colors">
+                  <button onClick={() => { setSearchQuery(''); setFilterRole(''); setFilterTeam(''); }} className="text-xs font-semibold text-[#f7953f] hover:text-[#E0741C] transition-colors">
                     Clear Filters
                   </button>
                 </div>
@@ -264,7 +269,7 @@ const EmployeeList = () => {
                                     ) : (
                                       <button
                                         onClick={e => { e.stopPropagation(); setEditingRole(`${employee.id}-${team.team_id}`); }}
-                                        className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#F58220] hover:text-[#F58220]"
+                                        className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#f7953f] hover:text-[#f7953f]"
                                         style={{ color: '#1a1209' }}
                                       >
                                         {team.team_role}
@@ -318,7 +323,7 @@ const RoleDropdown = ({ value, roles, onChange, onClose }) => {
       {/* Trigger */}
       <button
         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); setOpen(v => !v); }}
-        className="text-xs font-semibold border border-[#F58220] text-[#F58220] px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-orange-50"
+        className="text-xs font-semibold border border-[#f7953f] text-[#f7953f] px-3 py-1.5 rounded-full flex items-center gap-1.5 bg-orange-50"
       >
         {selected}
         <ChevronDown size={11} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -340,7 +345,7 @@ const RoleDropdown = ({ value, roles, onChange, onClose }) => {
                 onClick={e => { e.stopPropagation(); handleSelect(role); }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors"
                 style={role === selected
-                  ? { background: '#F58220', color: '#fff', fontWeight: 600 }
+                  ? { background: '#f7953f', color: '#fff', fontWeight: 600 }
                   : { color: '#1a1209', fontWeight: 400 }
                 }
                 onMouseEnter={e => { if (role !== selected) e.currentTarget.style.background = '#faf6ef'; }}

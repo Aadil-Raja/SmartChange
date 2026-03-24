@@ -74,7 +74,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-[#FDB913] to-[#F58220] rounded-lg">
+            <div className="p-2 bg-gradient-to-br from-[#FDB913] to-[#f7953f] rounded-lg">
               <Sparkles size={24} className="text-white" />
             </div>
             <div>
@@ -84,7 +84,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-[#F58220] hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-400 hover:text-[#f7953f] hover:bg-gray-100 rounded-lg transition-colors"
             disabled={submitting}
             aria-label="Close modal"
           >
@@ -113,7 +113,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
           {/* Title */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
-              <Type size={18} className="text-[#F58220]" />
+              <Type size={18} className="text-[#f7953f]" />
               Announcement Title
               <span className="text-red-500">*</span>
             </label>
@@ -132,7 +132,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
           {/* Body */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
-              <MessageSquare size={18} className="text-[#F58220]" />
+              <MessageSquare size={18} className="text-[#f7953f]" />
               Message
               <span className="text-red-500">*</span>
             </label>
@@ -155,7 +155,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
           {/* Related Course (Optional) */}
           <div>
             <label className="flex items-center gap-2 text-sm font-semibold text-[#333333] mb-2">
-              <BookOpen size={18} className="text-[#F58220]" />
+              <BookOpen size={18} className="text-[#f7953f]" />
               Related Course (Optional)
             </label>
             <select
@@ -163,7 +163,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
               value={formData.related_course_id}
               onChange={handleChange}
               disabled={submitting}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F58220] focus:border-transparent bg-white text-gray-900"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f7953f] focus:border-transparent bg-white text-gray-900"
             >
               <option value="">None - General announcement</option>
               {Array.isArray(courses) && courses.map((course) => (
@@ -178,7 +178,7 @@ const CreateAnnouncementModal = ({ teamId, onClose, onSuccess, courses = [] }) =
           {/* Preview Box */}
           {formData.title && formData.body && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-              <p className="text-xs font-semibold text-[#F58220] mb-2 flex items-center gap-1">
+              <p className="text-xs font-semibold text-[#f7953f] mb-2 flex items-center gap-1">
                 <Sparkles size={14} />
                 PREVIEW
               </p>
