@@ -351,8 +351,6 @@ def delete_course_quiz_question(db: Session, question_id: int) -> bool:
 # ============ Helper Functions ============
 def get_available_document_questions(db: Session, course_id: int) -> List[QuizQuestion]:
     """Get all document quiz questions available for a course"""
-    # This would need to join through course content to find documents in the course
-    # For now, returning empty list - implement based on your course-document relationship
     from shared.models import ContentItem, ContentType
     
     # Get all documents in the course
@@ -379,6 +377,21 @@ def get_available_document_questions(db: Session, course_id: int) -> List[QuizQu
         .options(
             joinedload(QuizQuestion.options),
             joinedload(QuizQuestion.quiz).joinedload(Quiz.document)
+        )
+        .all()
+    )
+
+
+def get_available_prompt_questions(db: Session) -> List[QuizQuestion]:
+    """Get all questions from prompt-based quizzes (globally available)"""
+    from shared.models.quiz import QuizSourceType
+    return (
+        db.query(QuizQuestion)
+        .join(Quiz, QuizQuestion.quiz_id == Quiz.id)
+        .filter(Quiz.source_type == QuizSourceType.PROMPT)
+        .options(
+            joinedload(QuizQuestion.options),
+            joinedload(QuizQuestion.quiz)
         )
         .all()
     )

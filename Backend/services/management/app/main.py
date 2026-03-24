@@ -57,6 +57,7 @@ app.include_router(routers.announcements.router, prefix="/teams", tags=["announc
 app.include_router(routers.admin_training.router, prefix="/admin-training", tags=["Admin - Training"])
 app.include_router(routers.quiz.router, prefix="/admin-quizzes", tags=["quizzes"])
 app.include_router(routers.course_quiz.router,prefix="/admin-course-quizzes",tags=["course-quizzes"])
+app.include_router(routers.prompt_quiz.router, prefix="/admin-prompt-quizzes", tags=["prompt-quizzes"])
 app.include_router(routers.notifications.router, prefix="/employee", tags=["notifications"])
 @app.get("/")
 def root():

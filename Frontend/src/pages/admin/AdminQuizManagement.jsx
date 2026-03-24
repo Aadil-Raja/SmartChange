@@ -18,6 +18,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import * as quizApi from "../../services/quizApi";
+import AdminPromptQuizManagement from "./AdminPromptQuizManagement";
 
 const C = {
   bg: "#faf6ef",
@@ -282,7 +283,7 @@ const AdminQuizManagement = () => {
 
           {/* Tab Toggle */}
           <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            {["document", "course"].map((tab) => (
+            {["document", "course", "prompt"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setSearchTerm(""); }}
@@ -293,7 +294,7 @@ const AdminQuizManagement = () => {
                   border: activeTab === tab ? `1.5px solid ${C.orange}` : `1.5px solid ${C.border}`,
                 }}
               >
-                {tab === "document" ? "Document Quizzes" : "Course Quizzes"}
+                {tab === "document" ? "Document Quizzes" : tab === "course" ? "Course Quizzes" : "Prompt Quizzes"}
               </button>
             ))}
           </div>
@@ -376,8 +377,7 @@ const AdminQuizManagement = () => {
           )}
 
           {/* Course Tab */}
-          {activeTab === "course" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {activeTab === "course" && (            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {coursesLoading && !courses?.length ? (
                 <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><LoadingSpinner size="lg" /></div>
               ) : filteredCourses.length === 0 ? (
@@ -450,6 +450,9 @@ const AdminQuizManagement = () => {
               ))}
             </div>
           )}
+
+          {/* Prompt Quizzes Tab */}
+          {activeTab === "prompt" && <AdminPromptQuizManagement />}
         </div>
       </div>
 

@@ -2,24 +2,29 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from typing import List, Optional
 from shared.models import Quiz, QuizQuestion, QuizOption, QuizStatus
+from shared.models.quiz import QuizSourceType
 
 
 # ============ Quiz CRUD ============
 def create_quiz(
     db: Session,
-    document_id: int,
     title: str,
     created_by: int,
+    document_id: Optional[int] = None,
     description: Optional[str] = None,
-    status: QuizStatus = QuizStatus.DRAFT
+    status: QuizStatus = QuizStatus.DRAFT,
+    source_type: QuizSourceType = QuizSourceType.DOCUMENT,
+    prompt_text: Optional[str] = None,
 ) -> Quiz:
-    """Create a new quiz"""
+    """Create a new quiz (document-based or prompt-based)"""
     quiz = Quiz(
         document_id=document_id,
         title=title,
         description=description,
         created_by=created_by,
         status=status,
+        source_type=source_type,
+        prompt_text=prompt_text,
         total_questions=0
     )
     db.add(quiz)
@@ -60,6 +65,26 @@ def get_quizzes_by_document(
 def get_all_quizzes_by_user(db: Session, user_id: int) -> List[Quiz]:
     """Get all quizzes created by a user"""
     return db.query(Quiz).filter(Quiz.created_by == user_id).order_by(Quiz.created_at.desc()).all()
+
+
+def get_all_prompt_quizzes(db: Session) -> List[Quiz]:
+    """Get all prompt-based quizzes"""
+    return (
+        db.query(Quiz)
+        .filter(Quiz.source_type == QuizSourceType.PROMPT)
+        .order_by(Quiz.created_at.desc())
+        .all()
+    )
+
+
+def get_prompt_quiz_with_questions(db: Session, quiz_id: int) -> Optional[Quiz]:
+    """Get a prompt quiz with all questions and options"""
+    return (
+        db.query(Quiz)
+        .options(joinedload(Quiz.questions).joinedload(QuizQuestion.options))
+        .filter(Quiz.id == quiz_id, Quiz.source_type == QuizSourceType.PROMPT)
+        .first()
+    )
 
 
 def update_quiz(

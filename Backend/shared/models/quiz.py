@@ -11,6 +11,11 @@ class QuizStatus(enum.Enum):
     ARCHIVED = "ARCHIVED"      # Hidden from employees
 
 
+class QuizSourceType(enum.Enum):
+    DOCUMENT = "DOCUMENT"  # Generated from document chunks
+    PROMPT = "PROMPT"      # Generated from a free-text prompt
+
+
 class Quiz(Base):
     __tablename__ = "quizzes"
 
@@ -18,13 +23,20 @@ class Quiz(Base):
     document_id = Column(
         Integer,
         ForeignKey("documents.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,   # nullable — prompt quizzes have no document
         index=True
     )
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     total_questions = Column(Integer, nullable=False, default=0)
-    
+
+    source_type = Column(
+        Enum(QuizSourceType, name="quiz_source_type", create_type=True),
+        nullable=False,
+        server_default=QuizSourceType.DOCUMENT.value
+    )
+    prompt_text = Column(Text, nullable=True)  # stored prompt for PROMPT quizzes
+
     status = Column(
         Enum(QuizStatus, name="quiz_status", create_type=True),
         nullable=False,

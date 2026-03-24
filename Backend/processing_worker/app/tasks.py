@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from shared.models import Document, DocStatus, Quiz, QuizStatus, DocumentProcessingAudit, ProcessingStatus, ProcessingStage
 from shared.repos import audit_repo
 from pipeline.run_document import process_document_task
-from pipeline.quiz_generation import generate_quiz_task
+from pipeline.quiz_generation import generate_quiz_task, generate_prompt_quiz_task
 from core.config import get_settings
 
 # Setup logging
@@ -334,4 +334,58 @@ def generate_quiz(quiz_id: int, document_id: int, num_questions: int) -> dict:
         db.close()
 
 
-process_document(26)
+def generate_quiz_from_prompt(quiz_id: int, prompt_text: str, num_questions: int) -> dict:
+    """
+    Generate quiz questions from a free-text prompt using LLM.
+
+    Args:
+        quiz_id: ID of quiz to populate
+        prompt_text: Admin-written prompt (max 500 chars enforced in pipeline)
+        num_questions: Number of questions to generate (1-20)
+
+    Returns:
+        Dict with generation results
+    """
+    logger.info(f"Starting generate_quiz_from_prompt task for quiz_id={quiz_id}")
+
+    db = _SessionLocal()
+    try:
+        quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+        if not quiz:
+            logger.error(f"Quiz {quiz_id} not found")
+            return {"success": False, "error": "quiz_not_found"}
+
+        from shared.llm.utils import get_llm_api_key
+        api_key = get_llm_api_key(
+            llm_provider=settings.llm_provider,
+            google_api_key=settings.google_api_key,
+            openai_api_key=settings.openai_api_key,
+        )
+
+        result = generate_prompt_quiz_task(
+            quiz_id=quiz_id,
+            prompt_text=prompt_text,
+            num_questions=num_questions,
+            db_session=db,
+            llm_provider=settings.llm_provider,
+            llm_model=settings.llm_model,
+            api_key=api_key,
+        )
+
+        if result["success"]:
+            logger.info(f"✓ Prompt quiz generation done. Questions: {result['questions_created']}")
+        else:
+            logger.error(f"✗ Prompt quiz generation failed: {result['error']}")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Unexpected error in generate_quiz_from_prompt: {e}", exc_info=True)
+        try:
+            from shared.repos import quiz_repo
+            quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
+        except Exception:
+            pass
+        return {"success": False, "error": str(e), "quiz_id": quiz_id, "questions_created": 0}
+    finally:
+        db.close()

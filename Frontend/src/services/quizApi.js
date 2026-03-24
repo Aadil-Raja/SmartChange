@@ -425,3 +425,30 @@ export const listQuizAudits = async (limit = 50, status = null) => {
     throw error;
   }
 };
+
+
+// ==================== PROMPT QUIZZES ====================
+
+// Generate quiz from a free-text prompt
+export const generatePromptQuiz = async (data) => {
+  const response = await api.post('/admin-prompt-quizzes/generate', data);
+  return response.data.data || response.data;
+};
+
+// List all prompt quizzes
+export const listPromptQuizzes = async () => {
+  const response = await api.get('/admin-prompt-quizzes');
+  return response.data.data || response.data;
+};
+
+// Get a single prompt quiz with questions
+export const getPromptQuiz = async (quizId) => {
+  const response = await api.get(`/admin-prompt-quizzes/${quizId}`);
+  return response.data.data || response.data;
+};
+
+// Delete a prompt quiz
+export const deletePromptQuiz = async (quizId) => {
+  const response = await api.delete(`/admin-prompt-quizzes/${quizId}`);
+  return response.data.data || response.data;
+};

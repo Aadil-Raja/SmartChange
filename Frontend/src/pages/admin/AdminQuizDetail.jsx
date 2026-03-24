@@ -44,6 +44,7 @@ const AdminQuizDetail = () => {
   const [availableQuestions, setAvailableQuestions] = useState([]);
   const [loadingAvailable, setLoadingAvailable] = useState(false);
   const [addQuestionTab, setAddQuestionTab] = useState("custom");
+  const [referencedSubTab, setReferencedSubTab] = useState("document");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReferencedQuestion, setSelectedReferencedQuestion] = useState(null);
 
@@ -123,6 +124,7 @@ const AdminQuizDetail = () => {
     setQuestionForm({ question_text: "", correct_answer_index: 0, explanation: "", options: [{ option_text: "", option_order: 0 }, { option_text: "", option_order: 1 }, { option_text: "", option_order: 2 }, { option_text: "", option_order: 3 }] });
     setEditingQuestion(null);
     setAddQuestionTab("custom");
+    setReferencedSubTab("document");
     setSelectedReferencedQuestion(null);
     setShowAddQuestion(true);
     if (isCourseQuiz) loadAvailableQuestions();
@@ -226,7 +228,13 @@ const AdminQuizDetail = () => {
   };
 
   const filteredAvailableQuestions = Array.isArray(availableQuestions)
-    ? availableQuestions.filter((q) => q.question_text.toLowerCase().includes(searchTerm.toLowerCase()))
+    ? availableQuestions.filter((q) => {
+        const matchesSearch = q.question_text.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesTab = referencedSubTab === "prompt"
+          ? q.source_type === "PROMPT"
+          : q.source_type !== "PROMPT";
+        return matchesSearch && matchesTab;
+      })
     : [];
 
   if (loading) return (
@@ -447,7 +455,7 @@ const AdminQuizDetail = () => {
               <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
                 {["custom", "referenced"].map((tab) => (
                   <button key={tab} onClick={() => setAddQuestionTab(tab)} style={{ flex: 1, padding: "8px 0", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", background: addQuestionTab === tab ? C.orange : "transparent", color: addQuestionTab === tab ? "#fff" : C.muted, border: addQuestionTab === tab ? `1.5px solid ${C.orange}` : `1.5px solid ${C.border}` }}>
-                    {tab === "custom" ? "Create Custom" : "Add from Documents"}
+                    {tab === "custom" ? "Create Custom" : "Add from Question Banks"}
                   </button>
                 ))}
               </div>
@@ -496,6 +504,18 @@ const AdminQuizDetail = () => {
               </form>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Source sub-tabs */}
+                <div style={{ display: "flex", gap: 6, background: "#f5f0ea", borderRadius: 999, padding: 4 }}>
+                  {[{ key: "document", label: "Documents" }, { key: "prompt", label: "Prompt Quizzes" }].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); }}
+                      style={{ flex: 1, padding: "6px 0", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: referencedSubTab === key ? "#fff" : "transparent", color: referencedSubTab === key ? C.ink : C.muted, boxShadow: referencedSubTab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <div style={{ position: "relative" }}>
                   <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
                   <FocusInput type="text" placeholder="Search available questions..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ paddingLeft: 40 }} />
@@ -517,7 +537,9 @@ const AdminQuizDetail = () => {
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
                         <FileText size={11} color={C.muted} />
-                        <span style={{ fontSize: 11, color: C.muted }}>{q.document_title || "Unknown Document"}</span>
+                        <span style={{ fontSize: 11, color: C.muted }}>
+                          {q.source_type === "PROMPT" ? (q.quiz_title || "Prompt Quiz") : (q.document_title || "Unknown Document")}
+                        </span>
                       </div>
                     </div>
                   ))}

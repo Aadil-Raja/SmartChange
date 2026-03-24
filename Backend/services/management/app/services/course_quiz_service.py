@@ -498,28 +498,42 @@ def delete_course_question(db: Session, *, question_id: int, user_id: int):
 
 
 def get_available_questions(db: Session, *, course_id: int, user_id: int):
-    """Get available document questions for a course"""
-    questions = course_quiz_repo.get_available_document_questions(db, course_id)
-    
-    # Serialize questions
+    """Get available document + prompt questions for a course"""
+    doc_questions = course_quiz_repo.get_available_document_questions(db, course_id)
+    prompt_questions = course_quiz_repo.get_available_prompt_questions(db)
+
     question_list = []
-    for question in questions:
-        question_data = {
+
+    for question in doc_questions:
+        question_list.append({
             "id": question.id,
             "quiz_id": question.quiz_id,
+            "quiz_title": question.quiz.title if question.quiz else "Unknown",
+            "source_type": "DOCUMENT",
             "question_text": question.question_text,
             "correct_answer_index": question.correct_answer_index,
             "explanation": question.explanation,
             "document_title": question.quiz.document.title if question.quiz and question.quiz.document else None,
             "options": [
-                {
-                    "id": opt.id,
-                    "option_text": opt.option_text,
-                    "option_order": opt.option_order
-                }
+                {"id": opt.id, "option_text": opt.option_text, "option_order": opt.option_order}
                 for opt in question.options
             ]
-        }
-        question_list.append(question_data)
-    
+        })
+
+    for question in prompt_questions:
+        question_list.append({
+            "id": question.id,
+            "quiz_id": question.quiz_id,
+            "quiz_title": question.quiz.title if question.quiz else "Unknown",
+            "source_type": "PROMPT",
+            "question_text": question.question_text,
+            "correct_answer_index": question.correct_answer_index,
+            "explanation": question.explanation,
+            "document_title": None,
+            "options": [
+                {"id": opt.id, "option_text": opt.option_text, "option_order": opt.option_order}
+                for opt in question.options
+            ]
+        })
+
     return make_response(True, "Available questions retrieved", data={"questions": question_list, "total": len(question_list)})

@@ -482,20 +482,8 @@ const AdminCourseDetails = () => {
             )}
 
             {/* Manage questions hint */}
-            <div className="flex items-start gap-3 px-4 py-4 rounded-2xl" style={{ background: '#fff8f2', border: '1.5px solid #fcd9b8' }}>
-              <HelpCircle size={18} className="flex-shrink-0 mt-0.5" style={{ color: '#f7953f' }} />
-              <div className="flex-1">
-                <p className="text-sm font-semibold mb-0.5" style={{ color: '#1a1209' }}>Manage Quiz Questions</p>
-                <p className="text-xs mb-3" style={{ color: '#9c6a3a' }}>To add, edit, or remove questions use the dedicated Quiz Management page.</p>
-                <button onClick={() => navigate('/admin/quiz')}
-                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-                  style={{ border: '1.5px solid #f7953f', color: '#f7953f', background: 'white' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#f7953f'; e.currentTarget.style.color = 'white'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#f7953f'; }}>
-                  Go to Quiz Management
-                </button>
-              </div>
-            </div>
+            <AddQuestionsPanel courseId={parseInt(id)} quizId={selectedQuiz.id} quizStatus={selectedQuiz.status}
+              onAdded={async () => { await refreshQuizData(); setSelectedQuiz(prev => ({ ...prev })); }} />
           </div>
         </CustomModal>
       )}
@@ -617,5 +605,136 @@ const EmptyState = ({ icon, title, sub, children }) => (
     {children}
   </div>
 );
+
+// ── AddQuestionsPanel ─────────────────────────────────────────────────────────
+// Shows available document + prompt questions grouped by quiz title.
+// Admin checks questions and clicks "Add Selected" to add them as REFERENCED.
+
+const AddQuestionsPanel = ({ courseId, quizId, quizStatus, onAdded }) => {
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(new Set());
+  const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState("DOCUMENT"); // "DOCUMENT" | "PROMPT"
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (quizStatus === "PUBLISHED") return;
+    setLoading(true);
+    quizApi.getAvailableCourseQuestions(courseId)
+      .then(res => setQuestions(res.questions || []))
+      .catch(() => setError("Failed to load available questions"))
+      .finally(() => setLoading(false));
+  }, [courseId, quizStatus]);
+
+  const filtered = questions.filter(q => q.source_type === tab);
+
+  // Group by quiz_title
+  const grouped = filtered.reduce((acc, q) => {
+    const key = q.quiz_title || "Unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(q);
+    return acc;
+  }, {});
+
+  const toggle = (id) => {
+    const next = new Set(selected);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSelected(next);
+  };
+
+  const handleAdd = async () => {
+    if (selected.size === 0) return;
+    setAdding(true);
+    setError(null);
+    try {
+      await Promise.all(
+        [...selected].map(qId =>
+          quizApi.addCourseQuizQuestion(quizId, {
+            question_type: "REFERENCED",
+            source_document_question_id: qId,
+          })
+        )
+      );
+      setSelected(new Set());
+      await onAdded();
+    } catch (err) {
+      setError(err.response?.data?.message || err.response?.data?.detail || "Failed to add questions");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  if (quizStatus === "PUBLISHED") {
+    return (
+      <div className="px-4 py-3 rounded-xl text-sm" style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #86efac" }}>
+        Quiz is published — questions are locked.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold mb-2" style={{ color: "#9c8e80" }}>ADD QUESTIONS FROM</p>
+
+      {/* Source tab */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+        {["DOCUMENT", "PROMPT"].map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            style={{
+              padding: "5px 16px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              background: tab === t ? "#1a1209" : "white",
+              color: tab === t ? "#faf6ef" : "#9c8e80",
+              border: tab === t ? "1.5px solid #1a1209" : "1.5px solid #e0d8ce",
+            }}>
+            {t === "DOCUMENT" ? "Document Quizzes" : "Prompt Quizzes"}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="text-xs mb-2" style={{ color: "#dc2626" }}>{error}</p>}
+
+      {loading ? (
+        <div className="flex items-center gap-2 py-3">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400" />
+          <span className="text-xs" style={{ color: "#9c8e80" }}>Loading questions...</span>
+        </div>
+      ) : Object.keys(grouped).length === 0 ? (
+        <p className="text-xs italic py-2" style={{ color: "#9c8e80" }}>
+          {tab === "DOCUMENT" ? "No document quiz questions available for this course." : "No prompt quizzes found. Generate one in Quiz Management."}
+        </p>
+      ) : (
+        <div className="max-h-56 overflow-y-auto rounded-xl space-y-3 pr-1" style={{ border: "1.5px solid #e0d8ce", padding: "10px" }}>
+          {Object.entries(grouped).map(([quizTitle, qs]) => (
+            <div key={quizTitle}>
+              <p className="text-xs font-semibold mb-1.5" style={{ color: "#6b5e4e" }}>{quizTitle}</p>
+              <div className="space-y-1">
+                {qs.map(q => {
+                  const checked = selected.has(q.id);
+                  return (
+                    <label key={q.id} className="flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer transition-all"
+                      style={{ background: checked ? "#fff0e8" : "#faf6ef", border: `1px solid ${checked ? "#fcd9b8" : "transparent"}` }}>
+                      <input type="checkbox" checked={checked} onChange={() => toggle(q.id)}
+                        style={{ accentColor: "#f7953f", marginTop: 2, flexShrink: 0 }} />
+                      <span className="text-xs" style={{ color: "#1a1209", lineHeight: 1.5 }}>{q.question_text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <button onClick={handleAdd} disabled={adding}
+          className="mt-3 flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all disabled:opacity-60"
+          style={{ background: "#f7953f" }}>
+          {adding ? "Adding..." : `Add ${selected.size} Question${selected.size > 1 ? "s" : ""}`}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default AdminCourseDetails;

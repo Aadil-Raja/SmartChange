@@ -126,6 +126,8 @@ class CourseQuizListResponse(BaseModel):
 class AvailableQuestionResponse(BaseModel):
     id: int
     quiz_id: int
+    quiz_title: str
+    source_type: str  # "DOCUMENT" or "PROMPT"
     question_text: str
     correct_answer_index: int
     explanation: Optional[str]
