@@ -3,23 +3,78 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useCourses } from '../../hooks/useCourses';
 import CourseContentPreview from '../../components/ui/CourseContentPreview';
 import MarkAsDoneButton from '../../components/ui/MarkAsDoneButton';
-import Card from '../../components/ui/Card';
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  Loader2, 
-  HelpCircle, 
-  Lock, 
-  Clock, 
+import {
+  ArrowLeft,
+  ChevronRight,
+  CheckCircle,
+  Loader2,
+  HelpCircle,
+  Lock,
+  Clock,
   Trophy,
   AlertCircle,
   FileText,
   Video,
   Link as LinkIcon,
   MoreVertical,
-  LogOut
+  LogOut,
+  PlayCircle,
+  RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
-import Button from '../../components/ui/Button';
+
+const COURSE_EMOJIS = ['📚', '🎯', '💡', '🔬', '🛠️', '📊', '🌐', '🧠', '⚡', '🚀'];
+const getEmoji = (id) => COURSE_EMOJIS[(id || 0) % COURSE_EMOJIS.length];
+
+/* ─── Quiz status config ─── */
+const QUIZ_STATUS = {
+  can_take: {
+    icon: PlayCircle,
+    iconColor: '#fff',
+    label: 'Available',
+    pill: { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0' },
+    btn: { bg: '#1a1209', color: '#faf6ef', hover: '#2d1f0e', label: 'Take Quiz', icon: PlayCircle },
+    cardBorder: '#d1fae5',
+    cardAccent: '#f0fdf4',
+  },
+  locked: {
+    icon: Lock,
+    iconColor: '#9c8e80',
+    label: 'Locked',
+    pill: { bg: '#f3ede4', color: '#9c8e80', border: '#e0d8ce' },
+    btn: { bg: '#f3ede4', color: '#9c8e80', hover: '#e8e0d4', label: 'Locked', icon: Lock },
+    cardBorder: '#e8e0d4',
+    cardAccent: '#faf6ef',
+  },
+  completed: {
+    icon: ShieldCheck,
+    iconColor: '#d97706',
+    label: 'Passed',
+    pill: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+    btn: { bg: '#fffbeb', color: '#d97706', hover: '#fef3c7', label: 'Retake Quiz', icon: RotateCcw },
+    cardBorder: '#fde68a',
+    cardAccent: '#fffbeb',
+  },
+  cooldown: {
+    icon: Clock,
+    iconColor: '#2563eb',
+    label: 'Cooldown',
+    pill: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+    btn: { bg: '#eff6ff', color: '#2563eb', hover: '#dbeafe', label: 'On Cooldown', icon: Clock },
+    cardBorder: '#bfdbfe',
+    cardAccent: '#eff6ff',
+  },
+};
+
+const getQuizStatus = (status) => QUIZ_STATUS[status] || {
+  icon: AlertCircle,
+  iconColor: '#9c8e80',
+  label: 'Unknown',
+  pill: { bg: '#f3ede4', color: '#9c8e80', border: '#e0d8ce' },
+  btn: { bg: '#f3ede4', color: '#9c8e80', hover: '#e8e0d4', label: 'Unavailable', icon: AlertCircle },
+  cardBorder: '#e8e0d4',
+  cardAccent: '#faf6ef',
+};
 
 const CourseContent = () => {
   const { id } = useParams();
@@ -29,125 +84,54 @@ const CourseContent = () => {
     loading,
     error,
     fetchCourseDetails,
-    completedItems,
-    courseItemsProgress,
     getItemProgress,
     isItemCompleted,
-    unenrollFromCourse
+    unenrollFromCourse,
   } = useCourses();
 
-  // Create refs for each content item and quiz
   const contentRefs = useRef({});
   const [activeItemId, setActiveItemId] = useState(null);
-  const [activeTab, setActiveTab] = useState('content'); // 'content' or 'quizzes'
+  const [activeTab, setActiveTab] = useState('content');
   const [showMenu, setShowMenu] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
   const menuRef = useRef(null);
-  const hasFetchedCourse = useRef(null); // Track which course has been fetched
+  const hasFetchedCourse = useRef(null);
 
-  // Close menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false);
     };
-
     if (showMenu) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showMenu]);
 
-  // Handle unenroll
   const handleUnenroll = async () => {
     setShowMenu(false);
-    
-    if (!window.confirm('Are you sure you want to unenroll? This will delete all your progress and quiz attempts for this course.')) {
-      return;
-    }
-    
+    if (!window.confirm('Are you sure you want to unenroll? This will delete all your progress and quiz attempts for this course.')) return;
     setIsUnenrolling(true);
     const result = await unenrollFromCourse(parseInt(id));
     setIsUnenrolling(false);
-    
-    if (result.success) {
-      navigate('/employee/mycourses');
-    }
+    if (result.success) navigate('/employee/mycourses');
   };
 
-  // Function to scroll to a specific item
   const scrollToItem = (itemId) => {
-    const element = contentRefs.current[itemId];
-    if (element) {
-      const yOffset = -100; // Offset for sticky header
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      
+    const el = contentRefs.current[itemId];
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.pageYOffset - 100;
       window.scrollTo({ top: y, behavior: 'smooth' });
       setActiveItemId(itemId);
-      
-      // Reset active state after animation
       setTimeout(() => setActiveItemId(null), 2000);
     }
   };
 
-  // Helper function to get content type icon
   const getContentIcon = (type) => {
     switch (type) {
-      case "document":
-        return <FileText size={16} className="text-[#00ADEF]" />;
-      case "video":
-        return <Video size={16} className="text-[#f7953f]" />;
-      case "link":
-        return <LinkIcon size={16} className="text-[#78BE20]" />;
-      default:
-        return <FileText size={16} className="text-gray-500" />;
-    }
-  };
-
-  // Helper function to get quiz status info
-  const getQuizStatusInfo = (quiz) => {
-    switch (quiz.status) {
-      case 'can_take':
-        return {
-          icon: <HelpCircle size={16} className="text-[#78BE20]" />,
-          text: 'Available',
-          color: 'text-[#78BE20]',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200'
-        };
-      case 'locked':
-        return {
-          icon: <Lock size={16} className="text-gray-500" />,
-          text: 'Locked',
-          color: 'text-gray-500',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200'
-        };
-      case 'completed':
-        return {
-          icon: <Trophy size={16} className="text-yellow-600" />,
-          text: 'Completed',
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200'
-        };
-      case 'cooldown':
-        return {
-          icon: <Clock size={16} className="text-blue-600" />,
-          text: 'Cooldown',
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200'
-        };
-      default:
-        return {
-          icon: <AlertCircle size={16} className="text-gray-500" />,
-          text: 'Unknown',
-          color: 'text-gray-500',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200'
-        };
+      case 'document': return <FileText size={16} style={{ color: '#00ADEF' }} />;
+      case 'video':    return <Video     size={16} style={{ color: '#f7953f' }} />;
+      case 'link':     return <LinkIcon  size={16} style={{ color: '#78BE20' }} />;
+      default:         return <FileText  size={16} style={{ color: '#9c8e80' }} />;
     }
   };
 
@@ -158,47 +142,33 @@ const CourseContent = () => {
     }
   }, [id]);
 
-  // Refresh course data when returning from quiz (to update quiz status)
   useEffect(() => {
-    const handleFocus = () => {
-      if (id && selectedCourse) {
-        // Refresh course details when window regains focus (user returns from quiz)
-        fetchCourseDetails(parseInt(id));
-      }
-    };
-
+    const handleFocus = () => { if (id && selectedCourse) fetchCourseDetails(parseInt(id)); };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [id, selectedCourse, fetchCourseDetails]);
 
-
-  // Loading State
+  /* ─── Loading / Error states ─── */
   if (loading && !selectedCourse) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-center justify-center py-20">
-            <Loader2 size={48} className="animate-spin text-[#f7953f]" />
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf6ef' }}>
+        <Loader2 size={40} className="animate-spin" style={{ color: '#f7953f' }} />
       </div>
     );
   }
 
-  // Error State
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto max-w-5xl">
-          <Card variant="error" padding="lg" className="text-center">
-            <p className="text-lg font-semibold text-red-800">{error}</p>
-            <button
-              onClick={() => navigate('/employee/mycourses')}
-              className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-            >
-              Back to Courses
-            </button>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf6ef' }}>
+        <div className="rounded-2xl border px-8 py-10 text-center" style={{ background: '#fff5f5', borderColor: '#fecaca', maxWidth: 400 }}>
+          <p className="text-lg font-semibold" style={{ color: '#991b1b' }}>{error}</p>
+          <button
+            onClick={() => navigate('/employee/mycourses')}
+            className="mt-4 rounded-full px-5 py-2 text-sm font-semibold text-white"
+            style={{ background: '#dc2626' }}
+          >
+            Back to Courses
+          </button>
         </div>
       </div>
     );
@@ -206,578 +176,374 @@ const CourseContent = () => {
 
   if (!selectedCourse) return null;
 
-  // Check if the displayed course matches the requested ID
-  const isCorrectCourse = selectedCourse && selectedCourse.id === parseInt(id);
+  const isCorrectCourse = selectedCourse.id === parseInt(id);
   const showLoadingOverlay = loading || !isCorrectCourse;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Loading Overlay */}
+    <div className="min-h-screen" style={{ background: '#faf6ef' }}>
       {showLoadingOverlay && (
-        <div className="fixed inset-0 bg-white/100 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(250,246,239,0.92)' }}>
           <div className="text-center">
-            <Loader2 size={48} className="animate-spin text-[#f7953f] mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Loading course...</p>
+            <Loader2 size={44} className="animate-spin mx-auto mb-4" style={{ color: '#f7953f' }} />
+            <p style={{ color: '#6b5e4e', fontWeight: 600 }}>Loading course…</p>
           </div>
         </div>
       )}
 
-      {/* Top Header Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+      {/* ── Sticky top nav ── */}
+      <div className="bg-white sticky top-0 z-10" style={{ borderBottom: '1px solid #e8e0d4' }}>
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-sm">
             <button
               onClick={() => navigate('/employee/mycourses')}
-              className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full border font-medium transition-all"
+              style={{ borderColor: '#e0d8ce', color: '#6b5e4e', background: 'white' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = '#f7953f'; e.currentTarget.style.color = '#f7953f'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; }}
             >
-              <ArrowLeft size={20} />
-              <span className="font-medium">Back to Courses</span>
+              <ArrowLeft size={13} /> Courses
             </button>
-            <div className="flex items-center gap-3">
-              {selectedCourse.department && (
-                <span className="rounded-lg bg-orange-50 border border-orange-200 px-3 py-1.5 text-sm font-medium text-[#f7953f]">
-                  {selectedCourse.department}
-                </span>
+            <ChevronRight size={14} style={{ color: '#c4b8a8' }} />
+            <span className="font-semibold truncate max-w-xs" style={{ color: '#1a1209' }}>{selectedCourse.title}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedCourse.department && (
+              <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: '#fff0e8', color: '#E0741C', border: '1px solid #fcd9b8' }}>
+                {selectedCourse.department}
+              </span>
+            )}
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                style={{ background: '#f3ede4', color: '#6b5e4e' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fee2c8'; e.currentTarget.style.color = '#f7953f'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#f3ede4'; e.currentTarget.style.color = '#6b5e4e'; }}
+              >
+                <MoreVertical size={16} />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border bg-white py-1 z-20" style={{ borderColor: '#e8e0d4', boxShadow: '0 16px 28px rgba(26,18,9,0.14)' }}>
+                  <button
+                    onClick={handleUnenroll}
+                    disabled={isUnenrolling}
+                    className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+                    style={{ color: '#dc2626' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff5f5'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <LogOut size={16} />
+                    {isUnenrolling ? 'Unenrolling…' : 'Unenroll from Course'}
+                  </button>
+                </div>
               )}
-              
-              {/* Menu Button */}
-              <div className="relative" ref={menuRef}>
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                  title="More options"
-                >
-                  <MoreVertical size={20} />
-                </button>
-                
-                {/* Dropdown Menu */}
-                {showMenu && (
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
-                    <button
-                      onClick={handleUnenroll}
-                      disabled={isUnenrolling}
-                      className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <LogOut size={16} />
-                      {isUnenrolling ? 'Unenrolling...' : 'Unenroll from Course'}
-                    </button>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Course Hero Section */}
-      <div className="relative border-b border-gray-200 overflow-hidden">
-        {/* Background Image with Overlay */}
-        {selectedCourse.thumbnail_url ? (
-          <>
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${selectedCourse.thumbnail_url})` }}
-            />
-            <div className="absolute inset-0 bg-black/60" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white" />
-        )}
-        
-        {/* Content */}
-        <div className="relative max-w-7xl mx-auto px-6 py-16">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className={`text-4xl font-bold mb-4 ${selectedCourse.thumbnail_url ? 'text-white drop-shadow-lg' : 'text-[#333333]'}`}>
+      <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+        {/* ── Course Hero Card ── */}
+        <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 4px 24px rgba(26,18,9,0.08)' }}>
+          <div className="relative h-52 flex items-center justify-center overflow-hidden" style={{ background: '#1a1209' }}>
+            <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
+            <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full border-2 opacity-10" style={{ borderColor: '#faf6ef' }} />
+            <div className="absolute top-8 right-24 w-20 h-20 rounded-full border opacity-10" style={{ borderColor: '#f7953f' }} />
+            {selectedCourse.thumbnail_url
+              ? <img src={selectedCourse.thumbnail_url} alt={selectedCourse.title} className="w-full h-full object-cover absolute inset-0" />
+              : <span className="text-7xl select-none z-10">{getEmoji(selectedCourse.id)}</span>}
+          </div>
+          <div className="px-8 py-6">
+            <h1 className="text-3xl font-extrabold mb-3 leading-tight" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>
               {selectedCourse.title}
             </h1>
             {selectedCourse.description && (
-              <p className={`text-lg mb-8 leading-relaxed ${selectedCourse.thumbnail_url ? 'text-white/90 drop-shadow-md' : 'text-gray-600'}`}>
-                {selectedCourse.description}
-              </p>
+              <p className="text-sm mb-4" style={{ color: '#6b5e4e' }}>{selectedCourse.description}</p>
             )}
-            <div className="flex items-center justify-center gap-6">
-              {selectedCourse.items && (
-                <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg px-5 py-3 shadow-lg">
-                  <span className="text-2xl font-bold text-[#00ADEF]">
-                    {selectedCourse.items.length}
-                  </span>
-                  <span className="text-sm text-gray-700 font-medium">
-                    Content Items
-                  </span>
-                </div>
-              )}
-              {selectedCourse.quizzes && (
-                <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg px-5 py-3 shadow-lg">
-                  <span className="text-2xl font-bold text-[#78BE20]">
-                    {selectedCourse.quizzes.length}
-                  </span>
-                  <span className="text-sm text-gray-700 font-medium">
-                    Quizzes
-                  </span>
-                </div>
-              )}
-              {selectedCourse.items && (
-                <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg px-5 py-3 shadow-lg">
-                  <span className="text-2xl font-bold text-[#f7953f]">
-                    {
-                      selectedCourse.items.filter((_, idx) =>
-                        isItemCompleted(selectedCourse.items[idx].id)
-                      ).length
-                    }
-                  </span>
-                  <span className="text-sm text-gray-700 font-medium">
-                    Completed
-                  </span>
-                </div>
-              )}
+            <div className="flex flex-wrap gap-2">
+              <StatChip icon={<FileText size={14} />} value={selectedCourse.items?.length || 0} label="Content Items" tint="orange" />
+              <StatChip icon={<HelpCircle size={14} />} value={selectedCourse.quizzes?.length || 0} label="Quizzes" tint="teal" />
+              <StatChip icon={<CheckCircle size={14} />} value={selectedCourse.items ? selectedCourse.items.filter(i => isItemCompleted(i.id)).length : 0} label="Completed" tint="neutral" />
             </div>
           </div>
         </div>
-      </div>
 
+        {/* ── Content + Quizzes ── */}
+        <SectionCard
+          title="Course Journey"
+          subtitle="Complete content items to unlock and pass quizzes"
+          actions={
+            <div className="flex rounded-full p-1 gap-1" style={{ background: '#e8e0d4' }}>
+              {[
+                { key: 'content', label: `Content (${selectedCourse.items?.length || 0})` },
+                { key: 'quizzes', label: `Quizzes (${selectedCourse.quizzes?.length || 0})` },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
+                  style={activeTab === tab.key
+                    ? { background: '#705536', color: '#faf6ef' }
+                    : { color: '#6b5e4e', background: 'transparent' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          {/* ── Content Tab ── */}
+          {activeTab === 'content' ? (
+            selectedCourse.items?.length > 0 ? (
+              <div className="space-y-3">
+                {selectedCourse.items.map((item, index) => {
+                  const itemProgress = getItemProgress(selectedCourse.id, item.id);
+                  const isCompleted = isItemCompleted(item.id);
+                  const progressPercent = itemProgress?.progress || 0;
 
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sidebar - Course Curriculum */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24 border border-gray-200">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <h2 className="font-bold text-lg text-[#333333]">Course Overview</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {selectedCourse.items?.length || 0} content items • {selectedCourse.quizzes?.length || 0} quizzes
-                </p>
-              </div>
-              
-              {/* Tabs */}
-              <div className="border-b border-gray-200">
-                <div className="flex">
-                  <button
-                    onClick={() => setActiveTab('content')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                      activeTab === 'content'
-                        ? 'text-[#f7953f] border-b-2 border-[#f7953f] bg-orange-50'
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    Content ({selectedCourse.items?.length || 0})
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('quizzes')}
-                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-                      activeTab === 'quizzes'
-                        ? 'text-[#f7953f] border-b-2 border-[#f7953f] bg-orange-50'
-                        : 'text-gray-600 hover:text-gray-800'
-                    }`}
-                  >
-                    Quizzes ({selectedCourse.quizzes?.length || 0})
-                  </button>
-                </div>
-              </div>
-
-              <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
-                {activeTab === 'content' ? (
-                  // Content Items Tab
-                  selectedCourse.items && selectedCourse.items.length > 0 ? (
-                    <div className="divide-y divide-gray-200">
-                      {selectedCourse.items.map((item, index) => {
-                        const isCompleted = isItemCompleted(item.id);
-                        const itemProgress = getItemProgress(selectedCourse.id, item.id);
-                        const progressPercent = itemProgress?.progress || 0;
-
-                        return (
-                          <div
-                            key={item.id}
-                            onClick={() => scrollToItem(item.id)}
-                            className={`p-4 transition-all cursor-pointer group border-l-4 ${
-                              activeItemId === item.id 
-                                ? 'bg-gradient-to-r from-[#f7953f]/20 to-transparent border-[#f7953f]' 
-                                : 'border-transparent hover:bg-gradient-to-r hover:from-[#f7953f]/10 hover:to-transparent hover:border-[#f7953f]'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {/* Thumbnail */}
-                              <div className="flex-shrink-0">
-                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200">
-                                  {item.thumbnail_url ? (
-                                    <img
-                                      src={item.thumbnail_url}
-                                      alt={item.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      {getContentIcon(item.type)}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className="text-sm font-semibold text-[#333333] line-clamp-2 group-hover:text-[#f7953f] transition-colors">
-                                    {item.title}
-                                  </p>
-                                  {isCompleted && (
-                                    <CheckCircle size={16} className="text-[#78BE20] flex-shrink-0" />
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-gray-500 uppercase group-hover:text-[#f7953f] transition-colors">
-                                    {item.type}
-                                  </span>
-                                  {progressPercent > 0 && progressPercent < 100 && (
-                                    <span className="text-xs text-[#f7953f] font-medium">
-                                      {Math.round(progressPercent)}%
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <FileText size={48} className="mx-auto text-gray-300 mb-4" />
-                      <p>No content items available</p>
-                    </div>
-                  )
-                ) : (
-                  // Quizzes Tab
-                  selectedCourse.quizzes && selectedCourse.quizzes.length > 0 ? (
-                    <div className="divide-y divide-gray-200">
-                      {selectedCourse.quizzes.map((quiz, index) => {
-                        const statusInfo = getQuizStatusInfo(quiz);
-                        
-                        return (
-                          <div
-                            key={quiz.id}
-                            className="p-4 transition-all cursor-pointer group border-l-4 border-transparent hover:bg-gradient-to-r hover:from-[#78BE20]/10 hover:to-transparent hover:border-[#78BE20]"
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className="flex-shrink-0">
-                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center border border-gray-200">
-                                  <HelpCircle size={20} className="text-[#78BE20]" />
-                                </div>
-                              </div>
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-2">
-                                  <p className="text-sm font-semibold text-[#333333] line-clamp-2 group-hover:text-[#78BE20] transition-colors">
-                                    {quiz.title}
-                                  </p>
-                                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.borderColor} border`}>
-                                    {statusInfo.icon}
-                                    <span className={statusInfo.color}>{statusInfo.text}</span>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                                  <span>Attempts: {quiz.attempts_remaining}/3</span>
-                                  {quiz.best_score !== null && (
-                                    <span className="text-[#78BE20] font-medium">
-                                      Best: {quiz.best_score}%
-                                    </span>
-                                  )}
-                                </div>
-                                
-                                {quiz.missing_prerequisites && quiz.missing_prerequisites.length > 0 && (
-                                  <div className="mt-2">
-                                    <p className="text-xs text-amber-600">
-                                      Complete {quiz.missing_prerequisites.length} prerequisite{quiz.missing_prerequisites.length !== 1 ? 's' : ''} first
-                                    </p>
-                                  </div>
-                                )}
-                                
-                                {quiz.next_attempt_at && (
-                                  <div className="mt-2">
-                                    <p className="text-xs text-blue-600">
-                                      Next attempt: {new Date(quiz.next_attempt_at).toLocaleString()}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      <HelpCircle size={48} className="mx-auto text-gray-300 mb-4" />
-                      <p>No quizzes available</p>
-                    </div>
-                  )
-                )}
-              </div>
-            </Card>
-          </div>
-
-          {/* Main Content - Content Items and Quizzes */}
-          <div className="lg:col-span-2">
-            {/* Content Items Section */}
-            {selectedCourse.items && selectedCourse.items.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-lg bg-[#f7953f] flex items-center justify-center">
-                    <FileText size={18} className="text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#333333]">Content Items</h2>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6">
-                  {selectedCourse.items.map((item, index) => {
-                    const itemProgress = getItemProgress(selectedCourse.id, item.id);
-                    const isCompleted = isItemCompleted(item.id);
-                    const progressPercent = itemProgress?.progress || 0;
-
-                    return (
-                      <div
-                        key={item.id}
-                        ref={(el) => (contentRefs.current[item.id] = el)}
-                        className={`transition-all duration-500 ${
-                          activeItemId === item.id ? 'ring-4 ring-[#f7953f]/30 rounded-xl' : ''
-                        }`}
-                      >
-                        <Card className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
-                          {/* Card Header with Status */}
-                          <div className="p-4 bg-gray-50 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                {/* Thumbnail */}
-                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden border border-gray-200 flex-shrink-0">
-                                  {item.thumbnail_url ? (
-                                    <img
-                                      src={item.thumbnail_url}
-                                      alt={item.title}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      {getContentIcon(item.type)}
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                <div>
-                                  <h3 className="text-base font-bold text-[#333333]">{item.title}</h3>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 uppercase">{item.type}</span>
-                                    <span className="text-xs text-gray-400">•</span>
-                                    <span className="text-xs text-gray-500">Item {index + 1}</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {isCompleted && (
-                                <div className="flex items-center gap-1 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
-                                  <CheckCircle size={14} className="text-[#78BE20]" />
-                                  <span className="text-xs font-medium text-[#78BE20]">Completed</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Card Body */}
-                          <div className="p-4">
-                            {/* Description */}
-                            {item.description && (
-                              <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-                            )}
-
-                            {/* Content Preview */}
-                            <div className="mb-4">
-                              <CourseContentPreview item={item} />
-                            </div>
-
-                            {/* Progress Bar for Videos */}
-                            {item.type === 'video' && progressPercent > 0 && (
-                              <div className="mb-4">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-medium text-gray-600">Progress</span>
-                                  <span className="text-xs font-semibold text-[#f7953f]">
-                                    {Math.round(progressPercent)}%
-                                  </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className="bg-[#f7953f] h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${progressPercent}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Last Viewed */}
-                            {itemProgress?.last_viewed_at && (
-                              <p className="text-xs text-gray-500 mb-4">
-                                Last viewed: {new Date(itemProgress.last_viewed_at).toLocaleDateString()}
-                              </p>
-                            )}
-
-                            {/* Mark as Done Button */}
-                            <MarkAsDoneButton
-                              itemId={item.id}
-                              itemType={item.type}
-                              isCompleted={isCompleted}
-                              progress={progressPercent}
-                            />
-                          </div>
-                        </Card>
+                  return (
+                    <div
+                      key={item.id}
+                      ref={el => (contentRefs.current[item.id] = el)}
+                      className="rounded-2xl border overflow-hidden transition-all"
+                      style={{
+                        borderColor: activeItemId === item.id ? '#f7953f' : '#e8e0d4',
+                        boxShadow: activeItemId === item.id ? '0 0 0 3px rgba(247,149,63,0.15)' : '0 1px 4px rgba(26,18,9,0.05)',
+                      }}
+                    >
+                      <div className="flex items-center gap-3 px-4 py-3" style={{ background: '#faf6ef', borderBottom: '1px solid #ede8e0' }}>
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: '#fff0e8', color: '#E0741C' }}>
+                          {index + 1}
+                        </span>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#f5f0ea' }}>
+                          {item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover rounded-xl" /> : getContentIcon(item.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate" style={{ color: '#1a1209' }}>{item.title}</p>
+                          {item.description && <p className="text-xs truncate" style={{ color: '#9c8e80' }}>{item.description}</p>}
+                        </div>
+                        <TypeBadge type={item.type} />
+                        {isCompleted && <CheckCircle size={16} style={{ color: '#78BE20', flexShrink: 0 }} />}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Quizzes Section */}
-            {selectedCourse.quizzes && selectedCourse.quizzes.length > 0 && (
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-lg bg-[#78BE20] flex items-center justify-center">
-                    <HelpCircle size={18} className="text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#333333]">Course Quizzes</h2>
-                </div>
-                
-                <div className="grid grid-cols-1 gap-6">
-                  {selectedCourse.quizzes.map((quiz, index) => {
-                    const statusInfo = getQuizStatusInfo(quiz);
-                    
-                    return (
-                      <Card key={quiz.id} className="border border-gray-200 overflow-hidden hover:shadow-lg transition-all">
-                        {/* Quiz Header */}
-                        <div className="p-4 bg-gray-50 border-b border-gray-200">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center border border-gray-200">
-                                <HelpCircle size={20} className="text-[#78BE20]" />
-                              </div>
-                              <div>
-                                <h3 className="text-base font-bold text-[#333333]">{quiz.title}</h3>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">Quiz {index + 1}</span>
-                                  <span className="text-xs text-gray-400">•</span>
-                                  <span className="text-xs text-gray-500">
-                                    {quiz.attempts_remaining} attempt{quiz.attempts_remaining !== 1 ? 's' : ''} remaining
-                                  </span>
-                                </div>
-                              </div>
+                      <div className="p-4">
+                        <div className="mb-4">
+                          <CourseContentPreview item={item} />
+                        </div>
+                        {item.type === 'video' && progressPercent > 0 && (
+                          <div className="mb-4">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs" style={{ color: '#9c8e80' }}>Progress</span>
+                              <span className="text-xs font-semibold" style={{ color: '#f7953f' }}>{Math.round(progressPercent)}%</span>
                             </div>
-                            <div className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium ${statusInfo.bgColor} ${statusInfo.borderColor} border`}>
-                              {statusInfo.icon}
-                              <span className={statusInfo.color}>{statusInfo.text}</span>
+                            <div className="w-full rounded-full h-2" style={{ background: '#ede8e0' }}>
+                              <div className="h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%`, background: '#f7953f' }} />
                             </div>
                           </div>
+                        )}
+                        {itemProgress?.last_viewed_at && (
+                          <p className="text-xs mb-4" style={{ color: '#9c8e80' }}>
+                            Last viewed: {new Date(itemProgress.last_viewed_at).toLocaleDateString()}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between gap-3">
+                          <MarkAsDoneButton itemId={item.id} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} />
+                          <button
+                            onClick={() => scrollToItem(item.id)}
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                            style={{ borderColor: '#e0d8ce', color: '#6b5e4e', background: 'white' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#f7953f'; e.currentTarget.style.color = '#f7953f'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; }}
+                          >
+                            Focus Item
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState icon={<FileText size={40} style={{ color: '#f7953f' }} />} title="No content yet" sub="No content items available in this course." />
+            )
+
+          ) : (
+            /* ── Quizzes Tab ── */
+            selectedCourse.quizzes?.length > 0 ? (
+              <div className="space-y-3">
+                {selectedCourse.quizzes.map((quiz, index) => {
+                  const s = getQuizStatus(quiz.status);
+                  const StatusIcon = s.icon;
+                  const BtnIcon = s.btn.icon;
+                  const canTake = quiz.status === 'can_take';
+                  const isDisabled = !canTake && quiz.status !== 'completed';
+
+                  return (
+                    <div
+                      key={quiz.id}
+                      className="rounded-2xl border overflow-hidden transition-all"
+                      style={{
+                        borderColor: s.cardBorder,
+                        background: '#fff',
+                        boxShadow: canTake ? '0 2px 12px rgba(26,18,9,0.08)' : '0 1px 4px rgba(26,18,9,0.04)',
+                      }}
+                    >
+                      {/* Card header accent strip */}
+                      <div className="px-5 py-4 flex items-start gap-4" style={{ borderBottom: `1px solid ${s.cardBorder}`, background: s.cardAccent }}>
+                        {/* Index + icon */}
+                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                            style={{ background: s.pill.bg, color: s.pill.color, border: `1px solid ${s.pill.border}` }}>
+                            {index + 1}
+                          </span>
                         </div>
 
-                        {/* Quiz Body */}
-                        <div className="p-4">
-                          {/* Quiz Stats */}
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                              <div className="flex items-center gap-2">
-                                <Clock size={16} className="text-blue-600" />
-                                <span className="text-sm font-medium text-blue-900">Attempts</span>
-                              </div>
-                              <p className="text-lg font-bold text-blue-900 mt-1">
-                                {quiz.attempts_remaining}/3
-                              </p>
-                            </div>
-                            
-                            {quiz.best_score !== null ? (
-                              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                <div className="flex items-center gap-2">
-                                  <Trophy size={16} className="text-green-600" />
-                                  <span className="text-sm font-medium text-green-900">Best Score</span>
-                                </div>
-                                <p className="text-lg font-bold text-green-900 mt-1">
-                                  {quiz.best_score}%
-                                </p>
-                              </div>
-                            ) : (
-                              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                <div className="flex items-center gap-2">
-                                  <HelpCircle size={16} className="text-gray-600" />
-                                  <span className="text-sm font-medium text-gray-900">Best Score</span>
-                                </div>
-                                <p className="text-lg font-bold text-gray-900 mt-1">
-                                  Not taken
-                                </p>
-                              </div>
+                        {/* Quiz icon circle */}
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{ background: s.pill.bg, border: `1.5px solid ${s.pill.border}` }}>
+                          <StatusIcon size={18} style={{ color: s.pill.color }} />
+                        </div>
+
+                        {/* Title + meta */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{quiz.title}</p>
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                              style={{ background: s.pill.bg, color: s.pill.color, border: `1px solid ${s.pill.border}` }}>
+                              {s.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <span className="text-xs" style={{ color: '#9c8e80' }}>
+                              Attempts remaining: <span className="font-semibold" style={{ color: '#6b5e4e' }}>{quiz.attempts_remaining}/3</span>
+                            </span>
+                            {quiz.best_score !== null && quiz.best_score !== undefined && (
+                              <span className="text-xs" style={{ color: '#9c8e80' }}>
+                                Best score: <span className="font-semibold" style={{ color: '#d97706' }}>{quiz.best_score}%</span>
+                              </span>
                             )}
                           </div>
-
-                          {/* Prerequisites Warning */}
-                          {quiz.missing_prerequisites && quiz.missing_prerequisites.length > 0 && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                              <div className="flex items-start gap-2">
-                                <AlertCircle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium text-amber-900">Prerequisites Required</p>
-                                  <p className="text-sm text-amber-700 mt-1">
-                                    Complete {quiz.missing_prerequisites.length} content item{quiz.missing_prerequisites.length !== 1 ? 's' : ''} before taking this quiz.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Cooldown Notice */}
-                          {quiz.next_attempt_at && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                              <div className="flex items-start gap-2">
-                                <Clock size={16} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-sm font-medium text-blue-900">Cooldown Period</p>
-                                  <p className="text-sm text-blue-700 mt-1">
-                                    Next attempt available: {new Date(quiz.next_attempt_at).toLocaleString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Action Button */}
-                          <Button
-                            variant={quiz.status === 'can_take' ? 'primary' : 'secondary'}
-                            disabled={quiz.status !== 'can_take'}
-                            className="w-full"
-                            onClick={() => {
-                              if (quiz.status === 'can_take') {
-                                navigate(`/employee/quiz/${quiz.id}`);
-                              }
-                            }}
-                          >
-                            {quiz.status === 'can_take' && 'Take Quiz'}
-                            {quiz.status === 'locked' && 'Quiz Locked'}
-                            {quiz.status === 'completed' && 'Retake Quiz'}
-                            {quiz.status === 'cooldown' && 'On Cooldown'}
-                          </Button>
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                      </div>
 
-            {/* Empty State */}
-            {(!selectedCourse.items || selectedCourse.items.length === 0) && 
-             (!selectedCourse.quizzes || selectedCourse.quizzes.length === 0) && (
-              <Card className="text-center border border-gray-200 p-12">
-                <FileText size={64} className="mx-auto text-gray-300 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Content Available</h3>
-                <p className="text-gray-500">This course doesn't have any content items or quizzes yet.</p>
-              </Card>
-            )}
-          </div>
-        </div>
+                      {/* Card body */}
+                      <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+                        {/* Left: prerequisite / cooldown info */}
+                        <div className="flex-1 min-w-0">
+                          {quiz.status === 'locked' && quiz.missing_prerequisites?.length > 0 && (
+                            <div className="flex items-start gap-2">
+                              <Lock size={13} style={{ color: '#9c8e80', marginTop: 2, flexShrink: 0 }} />
+                              <p className="text-xs" style={{ color: '#9c6a3a' }}>
+                                Complete {quiz.missing_prerequisites.length} prerequisite{quiz.missing_prerequisites.length !== 1 ? 's' : ''} to unlock this quiz
+                              </p>
+                            </div>
+                          )}
+                          {quiz.status === 'cooldown' && quiz.next_attempt_at && (
+                            <div className="flex items-start gap-2">
+                              <Clock size={13} style={{ color: '#2563eb', marginTop: 2, flexShrink: 0 }} />
+                              <p className="text-xs" style={{ color: '#2563eb' }}>
+                                Next attempt available: <span className="font-semibold">{new Date(quiz.next_attempt_at).toLocaleString()}</span>
+                              </p>
+                            </div>
+                          )}
+                          {quiz.status === 'completed' && (
+                            <div className="flex items-center gap-2">
+                              <Trophy size={13} style={{ color: '#d97706' }} />
+                              <p className="text-xs font-medium" style={{ color: '#d97706' }}>Quiz passed — you can retake to improve your score</p>
+                            </div>
+                          )}
+                          {quiz.status === 'can_take' && (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle size={13} style={{ color: '#15803d' }} />
+                              <p className="text-xs font-medium" style={{ color: '#15803d' }}>All prerequisites met — you're ready to attempt</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: CTA button */}
+                        <button
+                          disabled={isDisabled}
+                          onClick={() => { if (canTake || quiz.status === 'completed') navigate(`/employee/quiz/${quiz.id}`); }}
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all flex-shrink-0"
+                          style={{
+                            background: isDisabled ? '#f3ede4' : s.btn.bg,
+                            color: isDisabled ? '#b0a090' : s.btn.color,
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            border: canTake ? 'none' : `1px solid ${s.cardBorder}`,
+                            opacity: isDisabled ? 0.7 : 1,
+                            minWidth: 130,
+                            justifyContent: 'center',
+                          }}
+                          onMouseEnter={e => { if (!isDisabled) e.currentTarget.style.opacity = '0.88'; }}
+                          onMouseLeave={e => { if (!isDisabled) e.currentTarget.style.opacity = '1'; }}
+                        >
+                          <BtnIcon size={15} />
+                          {s.btn.label}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState icon={<HelpCircle size={40} style={{ color: '#78BE20' }} />} title="No quizzes yet" sub="Quizzes will appear here once assigned." />
+            )
+          )}
+        </SectionCard>
       </div>
     </div>
   );
 };
+
+/* ─── Sub-components ─── */
+
+const StatChip = ({ icon, value, label, tint }) => {
+  const styles = {
+    teal:    { background: '#e6f4f1', color: '#0d9488' },
+    orange:  { background: '#fff0e8', color: '#E0741C' },
+    neutral: { background: '#f3ede4', color: '#78716c' },
+  };
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={styles[tint] || styles.neutral}>
+      {icon}
+      <span className="font-bold">{value}</span>
+      <span className="font-normal opacity-75">{label}</span>
+    </div>
+  );
+};
+
+const SectionCard = ({ title, subtitle, actions, children }) => (
+  <div className="bg-white rounded-[20px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 2px 12px rgba(26,18,9,0.06)' }}>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4" style={{ background: '#faf6ef', borderBottom: '1px solid #ede8e0' }}>
+      <div>
+        <h2 className="text-lg font-bold" style={{ color: '#1a1209' }}>{title}</h2>
+        {subtitle && <p className="text-xs mt-0.5" style={{ color: '#9c8e80' }}>{subtitle}</p>}
+      </div>
+      <div className="flex gap-2">{actions}</div>
+    </div>
+    <div className="p-5">{children}</div>
+  </div>
+);
+
+const TypeBadge = ({ type }) => {
+  const map = {
+    document: { label: 'Document', style: { background: '#fff0e8', color: '#E0741C',  border: '1px solid #fcd9b8' } },
+    video:    { label: 'Video',    style: { background: '#fef9e7', color: '#b45309',  border: '1px solid #fde68a' } },
+    link:     { label: 'Link',     style: { background: '#f0fdf4', color: '#15803d',  border: '1px solid #bbf7d0' } },
+  };
+  const c = map[type] || { label: type, style: { background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' } };
+  return (
+    <span className="px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 capitalize" style={c.style}>{c.label}</span>
+  );
+};
+
+const EmptyState = ({ icon, title, sub }) => (
+  <div className="flex flex-col items-center justify-center py-12 text-center">
+    <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4" style={{ background: '#f3ede4' }}>{icon}</div>
+    <h3 className="text-lg font-bold mb-1" style={{ color: '#1a1209' }}>{title}</h3>
+    <p className="text-sm max-w-xs" style={{ color: '#9c8e80' }}>{sub}</p>
+  </div>
+);
 
 export default CourseContent;

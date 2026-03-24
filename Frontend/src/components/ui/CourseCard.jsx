@@ -1,315 +1,157 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, CheckCircle, Star, XCircle, PlayCircle, MoreVertical, LogOut } from 'lucide-react';
-import { useCourses } from '../../hooks/useCourses';
-import Card from './Card';
-import Button from './Button';
+import { ArrowUpRight } from 'lucide-react';
+
+const COURSE_EMOJIS = ['BOOK', 'TARGET', 'IDEA', 'SCIENCE', 'TOOLS', 'CHART', 'GLOBE', 'BRAIN', 'BOLT', 'ROCKET'];
+const getEmoji = (id) => {
+  const map = {
+    BOOK: '📚',
+    TARGET: '🎯',
+    IDEA: '💡',
+    SCIENCE: '🔬',
+    TOOLS: '🛠️',
+    CHART: '📊',
+    GLOBE: '🌐',
+    BRAIN: '🧠',
+    BOLT: '⚡',
+    ROCKET: '🚀',
+  };
+  const key = COURSE_EMOJIS[(id || 0) % COURSE_EMOJIS.length];
+  return map[key] || '📚';
+};
 
 const CourseCard = ({ course, progress }) => {
   const navigate = useNavigate();
-  const { toggleCourseStar, enrollInCourse, unenrollFromCourse } = useCourses();
-  const [isStarring, setIsStarring] = useState(false);
-  const [isEnrolling, setIsEnrolling] = useState(false);
-  const [isUnenrolling, setIsUnenrolling] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef(null);
-  
-  const isCompleted = course.category === 'completed';
-  const isExpired = course.category === 'expired';
-  const isNotEnrolled = course.category === 'not_enrolled';
-  const isInProgress = course.category === 'in_progress';
+  const [hovered, setHovered] = useState(false);
+  const [arrowHovered, setArrowHovered] = useState(false);
 
-  // Close menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showMenu]);
-
-  const handleStarToggle = async (e) => {
-    e.stopPropagation(); // Prevent card click
-    setIsStarring(true);
-    await toggleCourseStar(course.id);
-    setIsStarring(false);
+  const formatDate = (dateValue) => {
+    if (!dateValue) return 'Recently added';
+    return new Date(dateValue).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   };
 
-  const handleEnroll = async (e) => {
-    e.stopPropagation(); // Prevent card click
-    setIsEnrolling(true);
-    const result = await enrollInCourse(course.id);
-    setIsEnrolling(false);
-    
-    if (result.success) {
-      // Navigate to course after enrollment
-      navigate(`/employee/course/${course.id}`);
+  const getStatusMeta = () => {
+    if (course.category === 'completed') {
+      return { label: 'Completed', style: { background: '#e6f4f1', color: '#0d9488' }, dot: '#0d9488' };
     }
+    if (course.category === 'in_progress') {
+      return { label: 'In Progress', style: { background: '#fff4e8', color: '#b45309' }, dot: '#f59e0b' };
+    }
+    if (course.category === 'expired') {
+      return { label: 'Expired', style: { background: '#fee2e2', color: '#b91c1c' }, dot: '#ef4444' };
+    }
+    if (course.category === 'not_enrolled') {
+      return { label: 'Not Enrolled', style: { background: '#f0ede8', color: '#78716c' }, dot: '#9ca3af' };
+    }
+    return { label: 'Active', style: { background: '#e6f4f1', color: '#0d9488' }, dot: '#0d9488' };
   };
 
-  const handleUnenroll = async (e) => {
-    e.stopPropagation(); // Prevent card click
-    setShowMenu(false);
-    
-    // Confirm before unenrolling
-    if (!window.confirm('Are you sure you want to unenroll? This will delete all your progress and quiz attempts for this course.')) {
-      return;
-    }
-    
-    setIsUnenrolling(true);
-    const result = await unenrollFromCourse(course.id);
-    setIsUnenrolling(false);
-    
-    if (result.success) {
-      // Course list will be automatically refreshed by the context
-    }
-  };
+  const status = getStatusMeta();
 
-  const handleCardClick = () => {
-    if (isNotEnrolled) {
-      // Don't navigate if not enrolled, let them click the enroll button
-      return;
-    }
+  const handleNavigate = () => {
     navigate(`/employee/course/${course.id}`);
   };
 
-  const getStatusBadge = () => {
-    if (isCompleted) {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#78BE20] px-3 py-1 text-xs font-semibold text-white shadow-md">
-          <CheckCircle size={14} />
-          Completed
-        </span>
-      );
-    }
-    if (isExpired) {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
-          <XCircle size={14} />
-          Expired
-        </span>
-      );
-    }
-    if (isInProgress) {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#00ADEF] px-3 py-1 text-xs font-semibold text-white shadow-md">
-          <Clock size={14} />
-          In Progress
-        </span>
-      );
-    }
-    return null;
-  };
-
-  const getActionButton = () => {
-    if (isNotEnrolled) {
-      return (
-        <Button
-          onClick={handleEnroll}
-          variant="primary"
-          size="md"
-          fullWidth={true}
-          disabled={isEnrolling}
-        >
-          {isEnrolling ? 'Enrolling...' : (
-            <>
-              <PlayCircle size={16} className="mr-1" />
-              Start Course
-            </>
-          )}
-        </Button>
-      );
-    }
-    if (isExpired) {
-      return (
-        <Button
-          onClick={(e) => e.stopPropagation()}
-          variant="secondary"
-          size="md"
-          fullWidth={true}
-          disabled={true}
-        >
-          Deadline Expired
-        </Button>
-      );
-    }
-    if (isCompleted) {
-      return (
-        <Button
-          onClick={(e) => e.stopPropagation()}
-          variant="secondary"
-          size="md"
-          fullWidth={true}
-        >
-          <CheckCircle size={16} className="mr-1" />
-          View Certificate
-        </Button>
-      );
-    }
-    // In progress - show continue button
-    return (
-      <Button
-        onClick={(e) => {
-          e.stopPropagation();
-          navigate(`/employee/course/${course.id}`);
-        }}
-        variant="primary"
-        size="md"
-        fullWidth={true}
-      >
-        {progress?.percentage > 0 ? 'Continue Learning' : 'Start Learning'}
-      </Button>
-    );
-  };
-
   return (
-    <Card 
-      onClick={handleCardClick}
-      padding="none" 
-      shadow="md" 
-      hover={!isNotEnrolled}
-      className="group overflow-hidden"
+    <div
+      className="rounded-[20px] border border-gray-200 bg-white overflow-hidden cursor-pointer transition-all duration-200"
+      style={{
+        boxShadow: hovered
+          ? '0 12px 32px rgba(26,18,9,0.13)'
+          : '0 2px 8px rgba(26,18,9,0.06)',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={handleNavigate}
     >
-      {/* Thumbnail or Placeholder */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[#FDB913] to-[#f7953f]">
+      {/* Cover Area */}
+      <div
+        className="relative h-44 flex items-center justify-center overflow-hidden"
+        style={{ background: '#fff0e8' }}
+      >
+        <div
+          className="absolute -top-6 -left-6 w-24 h-24 rounded-full"
+          style={{ background: 'rgba(245,130,32,0.08)' }}
+        />
+        <div
+          className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full"
+          style={{ background: 'rgba(245,130,32,0.06)' }}
+        />
+
         {course.thumbnail_url ? (
-          <img 
-            src={course.thumbnail_url} 
+          <img
+            src={course.thumbnail_url}
             alt={course.title}
-            className="h-full w-full object-cover"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center">
-            <BookOpen size={64} className="text-white opacity-50" />
-          </div>
-        )}
-        
-        {/* Status Badge */}
-        {getStatusBadge() && (
-          <div className="absolute right-3 top-3">
-            {getStatusBadge()}
-          </div>
-        )}
-
-        {/* Star Button */}
-        <div className="absolute left-3 top-3">
-          <button
-            onClick={handleStarToggle}
-            disabled={isStarring}
-            className={`p-2 rounded-full shadow-md transition-all duration-200 ${
-              course.is_starred
-                ? 'bg-yellow-400 text-white hover:bg-yellow-500'
-                : 'bg-white/90 text-gray-600 hover:bg-white hover:text-yellow-500'
-            } ${isStarring ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'}`}
-            title={course.is_starred ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <Star 
-              size={16} 
-              className={course.is_starred ? 'fill-current' : ''} 
-            />
-          </button>
-        </div>
-
-        {/* Menu Button (for enrolled courses only) */}
-        {!isNotEnrolled && (
-          <div className="absolute left-3 bottom-3" ref={menuRef}>
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMenu(!showMenu);
-                }}
-                className="p-2 rounded-full bg-white/90 text-gray-600 hover:bg-white hover:text-gray-800 shadow-md transition-all duration-200 hover:scale-110"
-                title="More options"
-              >
-                <MoreVertical size={16} />
-              </button>
-              
-              {/* Dropdown Menu */}
-              {showMenu && (
-                <div className="absolute left-0 bottom-full mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={handleUnenroll}
-                    disabled={isUnenrolling}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <LogOut size={14} />
-                    {isUnenrolling ? 'Unenrolling...' : 'Unenroll from Course'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <span className="text-5xl select-none z-10">{getEmoji(course.id)}</span>
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-6">
-        <h3 className="mb-2 text-xl font-bold text-[#333333]">{course.title}</h3>
-        
+      {/* Body */}
+      <div className="px-5 pt-4 pb-5">
+        <div className="mb-2">
+          <span
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+            style={status.style}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.dot }} />
+            {status.label}
+          </span>
+        </div>
+
+        <h3
+          className="text-xl font-bold leading-snug mb-2 line-clamp-2"
+          style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}
+        >
+          {course.title}
+        </h3>
+
         {course.description && (
-          <p className="mb-4 line-clamp-2 text-sm text-gray-600">
-            {course.description}
-          </p>
+          <p className="text-sm text-gray-500 line-clamp-2 mb-4">{course.description}</p>
         )}
 
-        {course.department && (
+        {progress && (
           <div className="mb-4">
-            <span className="inline-block rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
-              {course.department}
-            </span>
-          </div>
-        )}
-
-        {/* Deadline Warning */}
-        {course.deadline_at && course.category === 'in_progress' && (
-          <div className={`mb-4 rounded-md px-3 py-2 text-xs ${
-            course.days_remaining !== null && course.days_remaining <= 7 && course.days_remaining > 0
-              ? 'bg-red-50 border border-red-200 text-red-800'
-              : course.days_remaining !== null && course.days_remaining <= 14 && course.days_remaining > 7
-              ? 'bg-yellow-50 border border-yellow-200 text-yellow-800'
-              : 'bg-blue-50 border border-blue-200 text-blue-800'
-          }`}>
-            <Clock size={12} className="inline mr-1" />
-            {course.days_remaining !== null && course.days_remaining >= 0 ? (
-              <>
-                {course.days_remaining === 0 ? 'Due today' : 
-                 course.days_remaining === 1 ? '1 day remaining' :
-                 `${course.days_remaining} days remaining`}
-              </>
-            ) : (
-              <>Deadline: {new Date(course.deadline_at).toLocaleDateString()}</>
-            )}
-          </div>
-        )}
-
-        {/* Progress Bar */}
-        {progress && !isNotEnrolled && (
-          <div className="mb-4">
-            <div className="mb-1 flex items-center justify-between text-sm">
-              <span className="font-medium text-gray-700">Progress</span>
-              <span className="text-gray-600">
-                {progress.completed}/{progress.total} modules • {progress.percentage}%
-              </span>
+            <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+              <span>Progress</span>
+              <span>{progress.percentage}%</span>
             </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] transition-all duration-300"
-                style={{ width: `${progress.percentage}%` }}
+            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${progress.percentage}%`, background: '#f7953f' }}
               />
             </div>
           </div>
         )}
 
-        {/* Action Button */}
-        {getActionButton()}
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400">{formatDate(course.created_at || course.enrolled_at)}</span>
+          <button
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
+            style={{
+              background: arrowHovered ? '#f7953f' : '#1a1209',
+            }}
+            onMouseEnter={() => setArrowHovered(true)}
+            onMouseLeave={() => setArrowHovered(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigate();
+            }}
+            title="View course"
+          >
+            <ArrowUpRight size={14} color="#fff" />
+          </button>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 };
 

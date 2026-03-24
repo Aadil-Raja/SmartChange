@@ -23,35 +23,56 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
   };
 
   return (
-    <div className={`
-      ${collapsed ? 'w-16' : 'w-60'} 
-      transition-all duration-300 ease-in-out
-      bg-white border-r border-gray-100 flex flex-col h-full
-    `}
-    style={{ boxShadow: '2px 0 12px rgba(0,0,0,0.06)' }}
+    <div
+      className={`${collapsed ? "w-16" : "w-60"} transition-all duration-300 ease-in-out flex flex-col h-full relative`}
+      style={{
+        background: "#2b1e13",
+        borderRight: "1px solid rgba(245,130,32,0.25)",
+      }}
     >
       {/* Header */}
-      <div className={`flex items-center border-b border-gray-100 ${collapsed ? 'justify-center p-3' : 'justify-between px-4 py-3'}`}>
+      <div className={`flex items-center ${collapsed ? "justify-center p-3" : "justify-between px-4 py-4"}`}
+        style={{ borderBottom: "1px solid rgba(245,130,32,0.18)" }}
+      >
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-sm">K</span>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{
+                background: "rgba(245,130,32,0.12)",
+                border: "1.5px solid rgba(245,130,32,0.4)",
+              }}
+            >
+              <span style={{ color: "#f7953f", fontWeight: 700, fontSize: 14 }}>K</span>
             </div>
             <div>
-              <h2 className="font-bold text-gray-800 text-sm leading-tight">K-Electric</h2>
-              <p className="text-[11px] text-gray-400 leading-tight">Employee Portal</p>
+              <h2 style={{ color: "#faf6ef", fontWeight: 700, fontSize: 13, letterSpacing: "0.02em" }}>
+                K-Electric
+              </h2>
+              <p style={{ color: "rgba(250,246,239,0.45)", fontSize: 10, marginTop: 1, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Employee Portal
+              </p>
             </div>
           </div>
         )}
         {collapsed && (
-          <div className="w-8 h-8 bg-gradient-to-br from-[#f7953f] to-[#E0741C] rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">K</span>
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{
+              background: "rgba(245,130,32,0.12)",
+              border: "1.5px solid rgba(245,130,32,0.4)",
+            }}
+          >
+            <span style={{ color: "#f7953f", fontWeight: 700, fontSize: 14 }}>K</span>
           </div>
         )}
         {onToggle && !collapsed && (
           <button
             onClick={onToggle}
-            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#f7953f] rounded-lg transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "rgba(250,246,239,0.35)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,130,32,0.12)"; e.currentTarget.style.color = "#f7953f"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(250,246,239,0.35)"; }}
           >
             <ChevronLeft size={16} />
           </button>
@@ -60,10 +81,13 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
 
       {/* Collapse toggle when collapsed */}
       {onToggle && collapsed && (
-        <div className="flex justify-center py-2 border-b border-gray-100">
+        <div className="flex justify-center py-2" style={{ borderBottom: "1px solid rgba(245,130,32,0.18)" }}>
           <button
             onClick={onToggle}
-            className="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-[#f7953f] rounded-lg transition-colors"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ color: "rgba(250,246,239,0.35)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(245,130,32,0.12)"; e.currentTarget.style.color = "#f7953f"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(250,246,239,0.35)"; }}
           >
             <ChevronRight size={16} />
           </button>
@@ -71,14 +95,16 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
       )}
 
       {/* Notification Bell */}
-      <div className={`px-2 pt-3 pb-2 border-b border-gray-100`}>
+      <div className="px-2 pt-2 pb-2" style={{ borderBottom: "1px solid rgba(245,130,32,0.15)" }}>
         <NotificationBell collapsed={collapsed} />
       </div>
 
       {/* Divider label */}
       {!collapsed && (
-        <div className="px-4 pt-3 pb-1">
-          <span className="text-[10px] font-700 uppercase tracking-widest text-gray-400">Menu</span>
+        <div className="px-4 pt-4 pb-1">
+          <span style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: "rgba(250,246,239,0.25)" }}>
+            Menu
+          </span>
         </div>
       )}
 
@@ -90,24 +116,39 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 ${
-                isActive
-                  ? 'bg-gradient-to-r from-[#f7953f]/12 to-[#f7953f]/6 text-[#f7953f] font-semibold'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
-              }`}
               title={collapsed ? item.label : undefined}
-              style={isActive ? { boxShadow: 'inset 3px 0 0 #f7953f' } : {}}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
+              style={
+                isActive
+                  ? {
+                      background: "rgba(245,130,32,0.13)",
+                      color: "#f7953f",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      boxShadow: "inset 3px 0 0 #f7953f",
+                    }
+                  : {
+                      color: "rgba(250,246,239,0.5)",
+                      fontSize: 13,
+                    }
+              }
+              onMouseEnter={e => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "rgba(245,130,32,0.07)";
+                  e.currentTarget.style.color = "rgba(250,246,239,0.88)";
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = "rgba(250,246,239,0.5)";
+                }
+              }}
             >
-              <item.icon
-                size={18}
-                className="flex-shrink-0"
-                strokeWidth={isActive ? 2.2 : 1.8}
-              />
-              {!collapsed && (
-                <span className="text-sm">{item.label}</span>
-              )}
+              <item.icon size={17} className="flex-shrink-0" strokeWidth={isActive ? 2.2 : 1.8} />
+              {!collapsed && <span>{item.label}</span>}
               {isActive && !collapsed && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#f7953f]" />
+                <span className="ml-auto w-1.5 h-1.5 rounded-full" style={{ background: "#f7953f" }} />
               )}
             </button>
           );
@@ -115,14 +156,17 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
       </nav>
 
       {/* Logout */}
-      <div className="px-2 pb-3 border-t border-gray-100 pt-2">
+      <div className="px-2 pb-4 pt-2" style={{ borderTop: "1px solid rgba(245,130,32,0.15)" }}>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all text-gray-400 hover:bg-red-50 hover:text-red-500"
-          title={collapsed ? 'Logout' : undefined}
+          title={collapsed ? "Logout" : undefined}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all"
+          style={{ color: "rgba(250,246,239,0.3)", fontSize: 13 }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#f87171"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(250,246,239,0.3)"; }}
         >
-          <LogOut size={18} className="flex-shrink-0" strokeWidth={1.8} />
-          {!collapsed && <span className="text-sm font-medium">Logout</span>}
+          <LogOut size={17} className="flex-shrink-0" strokeWidth={1.8} />
+          {!collapsed && <span className="font-medium">Logout</span>}
         </button>
       </div>
     </div>

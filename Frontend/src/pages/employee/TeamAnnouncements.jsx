@@ -1,4 +1,3 @@
-// src/pages/employee/TeamAnnouncements.jsx
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
@@ -14,9 +13,8 @@ import {
   Crown,
   UserCheck,
   Key,
+  ChevronRight,
 } from "lucide-react";
-import Button from "../../components/ui/Button";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import Alert from "../../components/ui/Alert";
 import CreateAnnouncementModal from "../../components/ui/CreateAnnouncementModal";
 import AnnouncementCard from "../../components/ui/AnnouncementCard";
@@ -34,7 +32,6 @@ const TeamAnnouncements = () => {
     error,
     success,
     fetchAnnouncements,
-    loadAnnouncementDetails,
     loadMoreComments,
     clearMessages,
     announcementsPagination,
@@ -46,10 +43,9 @@ const TeamAnnouncements = () => {
   const [loadingMoreAnnouncements, setLoadingMoreAnnouncements] = useState(false);
   const [loadingMoreComments, setLoadingMoreComments] = useState({});
   const [courses, setCourses] = useState([]);
-  const hasFetchedTeam = useRef(null); // Track which team has been fetched
+  const hasFetchedTeam = useRef(null);
 
-  // Find current team and check if user is manager
-  const currentTeam = teams.find(t => t.team_id === parseInt(teamId));
+  const currentTeam = teams.find((t) => t.team_id === parseInt(teamId));
   const isManager = currentTeam?.role_in_team === "manager";
 
   const fetchCourses = async () => {
@@ -59,8 +55,7 @@ const TeamAnnouncements = () => {
         setCourses(response.data.courses || response.data || []);
       }
     } catch (err) {
-      console.error('Failed to fetch courses:', err);
-      // Don't show error, just leave courses empty
+      console.error("Failed to fetch courses:", err);
     }
   };
 
@@ -71,225 +66,225 @@ const TeamAnnouncements = () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        console.error('Failed to copy:', err);
+        console.error("Failed to copy:", err);
       }
     }
   };
 
   const handleLoadMoreAnnouncements = async () => {
     setLoadingMoreAnnouncements(true);
-    await fetchAnnouncements(teamId, true); // loadMore = true
+    await fetchAnnouncements(teamId, true);
     setLoadingMoreAnnouncements(false);
   };
 
   const handleLoadMoreComments = async (announcementId) => {
-    setLoadingMoreComments(prev => ({ ...prev, [announcementId]: true }));
+    setLoadingMoreComments((prev) => ({ ...prev, [announcementId]: true }));
     await loadMoreComments(teamId, announcementId);
-    setLoadingMoreComments(prev => ({ ...prev, [announcementId]: false }));
+    setLoadingMoreComments((prev) => ({ ...prev, [announcementId]: false }));
   };
-  
+
   useEffect(() => {
-    // Load teams data if not already loaded (for page refresh)
     if (teams.length === 0) {
       loadTeams();
     }
-    
+
     if (teamId && hasFetchedTeam.current !== teamId) {
       hasFetchedTeam.current = teamId;
       fetchAnnouncements(teamId);
       fetchCourses();
     }
+
     return () => clearMessages();
   }, [teamId]);
 
   if (loading && announcements.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-600">Loading announcements...</p>
+      <div className="min-h-screen" style={{ background: "#faf6ef" }}>
+        <div className="max-w-6xl mx-auto px-6 py-20">
+          <div
+            className="rounded-2xl border border-gray-100 bg-white py-20 flex items-center justify-center"
+            style={{ boxShadow: "0 4px 24px rgba(26,18,9,0.08)" }}
+          >
+            <div className="text-center">
+              <div className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin mx-auto" style={{ borderColor: "#f7953f transparent #f7953f #f7953f" }} />
+              <p className="mt-3" style={{ color: "#6b5e4e" }}>Loading announcements...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="container mx-auto max-w-6xl px-4 py-4">
-          <Button
-            variant="ghost"
+    <div className="min-h-screen" style={{ background: "#faf6ef" }}>
+      <div className="bg-white sticky top-0 z-10" style={{ borderBottom: "1px solid #e8e0d4" }}>
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-1.5 text-sm">
+          <button
             onClick={() => navigate("/employee/myteams")}
-            className="text-gray-600 hover:!text-black hover:!bg-transparent !bg-transparent !border-none"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full border font-medium transition-all"
+            style={{ borderColor: "#e0d8ce", color: "#6b5e4e", background: "white" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#f7953f";
+              e.currentTarget.style.color = "#f7953f";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#e0d8ce";
+              e.currentTarget.style.color = "#6b5e4e";
+            }}
           >
-            <ArrowLeft size={20} />
-            <span className="ml-2">Back to My Teams</span>
-          </Button>
-
+            <ArrowLeft size={13} /> My Teams
+          </button>
+          <ChevronRight size={14} style={{ color: "#c4b8a8" }} />
+          <span className="font-semibold truncate max-w-xs" style={{ color: "#1a1209" }}>
+            {currentTeam?.team_name || "Team Announcements"}
+          </span>
         </div>
       </div>
 
-      {/* Hero Header Section - Redesigned */}
-      <div className="bg-gradient-to-br from-gray-50 to-white border-b border-gray-200">
-        <div className="container mx-auto max-w-6xl px-4 py-8">
-          {/* Top Section - Team Info */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f7953f] to-[#E0741C] shadow-lg">
-                <Megaphone size={32} className="text-white" />
-              </div>
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+        <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100" style={{ boxShadow: "0 4px 24px rgba(26,18,9,0.08)" }}>
+          <div className="relative h-44 flex items-center justify-center overflow-hidden" style={{ background: "#1a1209" }}>
+            <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full border-2 opacity-10" style={{ borderColor: "#faf6ef" }} />
+            <div className="absolute -bottom-16 -right-16 w-64 h-64 rounded-full border-2 opacity-10" style={{ borderColor: "#faf6ef" }} />
+            <div className="absolute top-8 right-24 w-20 h-20 rounded-full border opacity-10" style={{ borderColor: "#f7953f" }} />
+            <Megaphone size={58} className="text-[#faf6ef] z-10" />
+          </div>
+
+          <div className="px-8 py-6">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
               <div>
-                <h1 className="text-3xl font-bold text-[#333333] mb-1">
-                  {currentTeam?.team_name || "Team"}
+                <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "#1a1209", fontFamily: "Georgia, serif" }}>
+                  {currentTeam?.team_name || "Team Announcements"}
                 </h1>
-                <div className="flex items-center gap-2">
-                  {isManager ? (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 rounded-full">
-                      <Crown size={14} className="text-amber-600" />
-                      <span className="text-xs font-medium text-amber-700">Manager</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 rounded-full">
-                      <UserCheck size={14} className="text-blue-600" />
-                      <span className="text-xs font-medium text-blue-700">Member</span>
-                    </div>
-                  )}
-                  <span className="text-sm text-gray-600">•</span>
-                  <span className="text-sm text-gray-600">{announcements.length} {announcements.length === 1 ? "announcement" : "announcements"}</span>
-                </div>
+                <p style={{ color: "#6b5e4e", fontSize: 14, marginTop: 4 }}>
+                  Share updates, discussion points, and important team communication
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <StatChip
+                  icon={isManager ? <Crown size={14} /> : <UserCheck size={14} />}
+                  value={isManager ? "Manager" : "Member"}
+                  label="Role"
+                  tint={isManager ? "orange" : "teal"}
+                />
+                <StatChip
+                  icon={<Megaphone size={14} />}
+                  value={announcements.length}
+                  label="Posts"
+                  tint="neutral"
+                />
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
               {isManager && (
-                <Button
-                  onClick={() => setShowMembersModal(true)}
-                  variant="secondary"
-                  size="sm"
-                  className="shadow-sm"
-                >
-                  <Users size={16} />
-                  <span>Members</span>
-                </Button>
-              )}
-              {isManager && (
-                <Button
-                  onClick={() => setShowCreateModal(true)}
-                  variant="primary"
-                  size="sm"
-                  className="shadow-sm"
-                >
-                  <Plus size={16} />
-                  <span>New Post</span>
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom Section - Team Code (Manager Only) */}
-          {isManager && currentTeam?.join_code && (
-            <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#f7953f]/10 rounded-lg">
-                    <Key size={20} className="text-[#f7953f]" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Team Join Code</p>
-                    <code className="text-lg font-bold text-[#f7953f] font-mono">
-                      {currentTeam.join_code}
-                    </code>
-                  </div>
-                </div>
                 <button
-                  onClick={handleCopyCode}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  onClick={() => setShowMembersModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all"
+                  style={{ border: "1px solid #e0d8ce", color: "#4b4540", background: "white" }}
                 >
-                  {copied ? (
-                    <>
-                      <Check size={16} className="text-green-600" />
-                      <span className="text-sm font-medium text-green-600">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={16} className="text-gray-600" />
-                      <span className="text-sm font-medium text-gray-700">Copy Code</span>
-                    </>
-                  )}
+                  <Users size={15} /> Members
                 </button>
-              </div>
+              )}
+              {isManager && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white transition-all"
+                  style={{ background: "#1a1209" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f7953f")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "#1a1209")}
+                >
+                  <Plus size={15} /> New Post
+                </button>
+              )}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto max-w-6xl px-4 py-8">
-        {/* Success Alert */}
-        {success && (
-          <div className="mb-6 animate-in slide-in-from-top duration-300">
-            <Alert variant="success" onClose={clearMessages}>
-              {success}
-            </Alert>
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 animate-in slide-in-from-top duration-300">
-            <Alert variant="error" onClose={clearMessages}>
-              {error}
-            </Alert>
-          </div>
-        )}
-
-        {/* Announcements List */}
-        {announcements.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-16 text-center">
-            <div className="max-w-md mx-auto">
-              <div className="mb-6 inline-flex p-6 bg-gray-50 rounded-full">
-                <Megaphone size={64} className="text-gray-300" />
+            {isManager && currentTeam?.join_code && (
+              <div className="mt-5 rounded-xl p-4" style={{ background: "#faf6ef", border: "1px solid #ede8e0" }}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg" style={{ background: "#fff0e8" }}>
+                      <Key size={18} className="text-[#f7953f]" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "#9c8e80" }}>Team Join Code</p>
+                      <code className="text-base font-bold" style={{ color: "#f7953f" }}>{currentTeam.join_code}</code>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleCopyCode}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
+                    style={{ background: "white", border: "1px solid #e0d8ce" }}
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={14} className="text-[#0d9488]" />
+                        <span className="text-sm font-medium text-[#0d9488]">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} className="text-[#6b5e4e]" />
+                        <span className="text-sm font-medium" style={{ color: "#6b5e4e" }}>Copy Code</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-[#333333] mb-3">
+            )}
+          </div>
+        </div>
+
+        {success && (
+          <Alert variant="success" onClose={clearMessages}>
+            {success}
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="error" onClose={clearMessages}>
+            {error}
+          </Alert>
+        )}
+
+        {announcements.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-white p-16 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="mb-6 inline-flex w-20 h-20 rounded-full items-center justify-center" style={{ background: "#f3ede4" }}>
+                <Megaphone size={36} className="text-[#9c8e80]" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2" style={{ color: "#1a1209" }}>
                 No announcements yet
               </h3>
-              <p className="text-gray-600 mb-8">
+              <p style={{ color: "#6b5e4e" }} className="mb-8">
                 {isManager
                   ? "Create your first announcement to keep your team informed and engaged."
                   : "Your team manager will share important updates and news here. Check back soon!"}
               </p>
               {isManager && (
-                <Button
+                <button
                   onClick={() => setShowCreateModal(true)}
-                  variant="primary"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold text-white transition-all"
+                  style={{ background: "#f7953f" }}
                 >
-                  <Plus size={18} />
-                  <span className="ml-2">Create First Announcement</span>
-                </Button>
+                  <Plus size={16} /> Create First Announcement
+                </button>
               )}
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            {announcements.map((announcement, index) => (
-              <div
+          <div className="space-y-5">
+            {announcements.map((announcement) => (
+              <AnnouncementCard
                 key={announcement.id}
-                className="animate-in slide-in-from-bottom duration-500"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <AnnouncementCard
-                  announcement={announcement}
-                  isManager={isManager}
-                  teamId={teamId}
-                  onLoadMoreComments={() => handleLoadMoreComments(announcement.id)}
-                  loadingMoreComments={loadingMoreComments[announcement.id] || false}
-                />
-              </div>
+                announcement={announcement}
+                isManager={isManager}
+                teamId={teamId}
+                onLoadMoreComments={() => handleLoadMoreComments(announcement.id)}
+                loadingMoreComments={loadingMoreComments[announcement.id] || false}
+              />
             ))}
-            
-            {/* Load More Announcements Button */}
+
             {announcementsPagination.hasMore && (
               <LoadMoreButton
                 onClick={handleLoadMoreAnnouncements}
@@ -298,14 +293,13 @@ const TeamAnnouncements = () => {
                 text="Load More Announcements"
                 loadingText="Loading announcements..."
                 variant="outline"
-                className="mt-8"
+                className="mt-6"
               />
             )}
           </div>
         )}
       </div>
 
-      {/* Create Announcement Modal */}
       {isManager && showCreateModal && (
         <CreateAnnouncementModal
           teamId={teamId}
@@ -318,7 +312,6 @@ const TeamAnnouncements = () => {
         />
       )}
 
-      {/* Team Members Modal */}
       {isManager && showMembersModal && (
         <TeamMembersModal
           isOpen={showMembersModal}
@@ -326,6 +319,21 @@ const TeamAnnouncements = () => {
           team={currentTeam}
         />
       )}
+    </div>
+  );
+};
+
+const StatChip = ({ icon, value, label, tint }) => {
+  const s = {
+    teal: { background: "#e6f4f1", color: "#0d9488" },
+    orange: { background: "#fff0e8", color: "#E0741C" },
+    neutral: { background: "#f3ede4", color: "#78716c" },
+  };
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm" style={s[tint] || s.neutral}>
+      {icon}
+      <span className="font-bold">{value}</span>
+      <span className="font-normal opacity-75">{label}</span>
     </div>
   );
 };

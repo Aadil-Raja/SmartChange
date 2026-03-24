@@ -1,4 +1,3 @@
-// src/components/announcements/AnnouncementCard.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAnnouncements } from "../../hooks/useAnnouncements";
@@ -9,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Sparkles,
   Edit2,
   Trash2,
   Paperclip,
@@ -17,28 +15,27 @@ import {
   FileText,
   Image as ImageIcon,
   Video,
-  Download,
   Upload,
   BookOpen,
+  ArrowUpRight,
 } from "lucide-react";
 import Button from "../ui/Button";
 import Textarea from "../ui/Textarea";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import Card from "../ui/Card";
 import LoadMoreButton from "../ui/LoadMoreButton";
 
 const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments, loadingMoreComments = false }) => {
   const navigate = useNavigate();
-  const { 
-    addNewComment, 
-    deleteExistingComment, 
-    updateExistingAnnouncement, 
+  const {
+    addNewComment,
+    deleteExistingComment,
+    updateExistingAnnouncement,
     deleteExistingAnnouncement,
     uploadAnnouncementAttachment,
     deleteAnnouncementAttachment,
     loadAnnouncementDetails,
   } = useAnnouncements();
-  
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -48,17 +45,15 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
   const [showAttachmentUpload, setShowAttachmentUpload] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [hovered, setHovered] = useState(false);
 
   const commentCount = announcement.comments?.length || 0;
-  const commentsTotal = announcement.commentsTotal || 0;
   const attachments = announcement.attachments || [];
   const canEdit = announcement.can_edit;
   const canDelete = announcement.can_delete;
 
-  // Handle expand/collapse with lazy loading
   const handleToggleExpand = async () => {
     if (!isExpanded && !announcement.detailsLoaded) {
-      // Load details when expanding for the first time
       setLoadingDetails(true);
       await loadAnnouncementDetails(teamId, announcement.id);
       setLoadingDetails(false);
@@ -78,7 +73,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
+
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -102,15 +97,12 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
 
     if (result.success) {
       setCommentText("");
-      // State is already updated by addNewComment in context
     }
   };
 
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm("Are you sure you want to delete this comment?")) return;
-    
-    const result = await deleteExistingComment(teamId, announcement.id, commentId);
-    // State is already updated by deleteExistingComment in context
+    await deleteExistingComment(teamId, announcement.id, commentId);
   };
 
   const handleUpdateAnnouncement = async () => {
@@ -126,24 +118,18 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
 
     if (result.success) {
       setIsEditing(false);
-      // State is already updated by updateExistingAnnouncement in context
     }
   };
 
   const handleDeleteAnnouncement = async () => {
     if (!window.confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) return;
-    
-    const result = await deleteExistingAnnouncement(teamId, announcement.id);
-    if (result.success) {
-      // The announcement will be removed from the list by the context
-    }
+    await deleteExistingAnnouncement(teamId, announcement.id);
   };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Determine attachment type based on file type
     let attachmentType;
     if (file.type.startsWith("image/")) {
       attachmentType = "image";
@@ -156,7 +142,6 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
       return;
     }
 
-    // Check file size (max 50MB)
     if (file.size > 50 * 1024 * 1024) {
       alert("File size must be less than 50MB");
       return;
@@ -168,15 +153,12 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
 
     if (result.success) {
       setShowAttachmentUpload(false);
-      // State is already updated by uploadAnnouncementAttachment in context
     }
   };
 
   const handleDeleteAttachment = async (attachmentId) => {
     if (!window.confirm("Are you sure you want to delete this attachment?")) return;
-    
-    const result = await deleteAnnouncementAttachment(teamId, announcement.id, attachmentId);
-    // State is already updated by deleteAnnouncementAttachment in context
+    await deleteAnnouncementAttachment(teamId, announcement.id, attachmentId);
   };
 
   const getAttachmentIcon = (type) => {
@@ -193,23 +175,27 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
   };
 
   return (
-    <Card variant="default" padding="none" shadow="md" hover className="overflow-hidden">
-      {/* Announcement Header */}
-      <div className="p-6 lg:p-8">
+    <div
+      className="bg-white rounded-[20px] overflow-hidden border border-gray-100 transition-all duration-200"
+      style={{ boxShadow: hovered ? "0 12px 32px rgba(26,18,9,0.13)" : "0 2px 8px rgba(26,18,9,0.06)" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="p-6 lg:p-7">
         {isEditing ? (
-          // Edit Mode
           <div className="space-y-4 mb-4">
             <div>
-              <label className="block text-sm font-semibold text-[#333333] mb-2">Title</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#3d3228" }}>Title</label>
               <input
                 type="text"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f7953f] focus:border-transparent"
+                className="w-full px-4 py-2 rounded-xl"
+                style={{ border: "1.5px solid #e0d8ce", outline: "none" }}
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#333333] mb-2">Body</label>
+              <label className="block text-sm font-semibold mb-2" style={{ color: "#3d3228" }}>Body</label>
               <Textarea
                 value={editBody}
                 onChange={(e) => setEditBody(e.target.value)}
@@ -218,190 +204,150 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
               />
             </div>
             <div className="flex gap-3">
-              <Button onClick={handleUpdateAnnouncement} variant="primary" size="sm">
+              <button onClick={handleUpdateAnnouncement} className="px-4 py-2 rounded-full text-sm font-semibold text-white" style={{ background: "#f7953f" }}>
                 Save Changes
-              </Button>
-              <Button 
+              </button>
+              <button
                 onClick={() => {
                   setIsEditing(false);
                   setEditTitle(announcement.title);
                   setEditBody(announcement.body);
-                }} 
-                variant="secondary" 
-                size="sm"
+                }}
+                className="px-4 py-2 rounded-full text-sm font-semibold border"
+                style={{ borderColor: "#d0c8be", color: "#6b5e4e", background: "white" }}
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         ) : (
           <>
-            {/* Title & Actions */}
             <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex-1">
-                <h2 className="text-2xl font-bold text-[#333333] mb-3 leading-tight">
+                <h2 className="text-2xl font-bold mb-3 leading-tight" style={{ color: "#1a1209", fontFamily: "Georgia, serif" }}>
                   {announcement.title}
                 </h2>
-                
-                {/* Meta Info */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                  <div className="flex items-center gap-3 bg-gray-100 text-gray-700 px-3 py-2 rounded-md">
+
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "#f3ede4", color: "#6b5e4e" }}>
                     {announcement.author_profile_picture ? (
                       <img
                         src={announcement.author_profile_picture}
                         alt={announcement.author_name || "Author"}
-                        className="w-8 h-8 rounded-full object-cover border-2 border-gray-300"
+                        className="w-6 h-6 rounded-full object-cover border"
+                        style={{ borderColor: "#d0c8be" }}
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FDB913] to-[#f7953f] flex items-center justify-center">
-                        <User size={18} className="text-white" />
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "#1a1209" }}>
+                        <User size={13} className="text-[#faf6ef]" />
                       </div>
                     )}
                     <span className="font-medium">{announcement.author_name || "Manager"}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-gray-400" />
+
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: "#faf6ef", color: "#6b5e4e" }}>
+                    <Clock size={13} />
                     <span>{formatRelativeTime(announcement.created_at)}</span>
                   </div>
+
                   {announcement.related_course_id && announcement.related_course_title && (
-                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md border border-blue-200">
-                      <BookOpen size={16} />
-                      <span className="font-medium">{announcement.related_course_title}</span>
-                    </div>
+                    <button
+                      onClick={() => navigate(`/employee/course/${announcement.related_course_id}`)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
+                      style={{ background: "#e8f4fd", color: "#0369a1", borderColor: "#bfdbfe" }}
+                    >
+                      <BookOpen size={13} />
+                      {announcement.related_course_title}
+                    </button>
                   )}
-                  {/* <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
-                    <MessageSquare size={16} /> */}
-                    {/* <span className="font-medium">
-                      {commentCount} {commentCount === 1 ? "comment" : "comments"}
-                    </span> */}
-                  {/* </div> */}
-                  {/* {attachments.length > 0 && (
-                    <div className="flex items-center gap-2 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-md">
-                      <Paperclip size={16} /> */}
-                      {/* <span className="font-medium">
-                        {attachments.length} {attachments.length === 1 ? "attachment" : "attachments"}
-                      </span> */}
-                    {/* </div> */}
-                  {/* )} */}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {canEdit && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                    style={{ color: "#0369a1", background: "#e8f4fd" }}
                     title="Edit announcement"
                   >
-                    <Edit2 size={18} />
+                    <Edit2 size={15} />
                   </button>
                 )}
                 {canDelete && (
                   <button
                     onClick={handleDeleteAnnouncement}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                    style={{ color: "#dc2626", background: "#fff1f2" }}
                     title="Delete announcement"
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={15} />
                   </button>
                 )}
                 <button
                   onClick={handleToggleExpand}
                   disabled={loadingDetails}
-                  className="p-3 hover:bg-gray-100 rounded-md transition-colors group disabled:opacity-50"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
+                  style={{ color: "#6b5e4e", background: "#f3ede4" }}
                 >
-                  {loadingDetails ? (
-                    <LoadingSpinner size="small" />
-                  ) : isExpanded ? (
-                    <ChevronUp size={24} className="text-gray-400 group-hover:text-[#f7953f]" />
-                  ) : (
-                    <ChevronDown size={24} className="text-gray-400 group-hover:text-[#f7953f]" />
-                  )}
+                  {loadingDetails ? <LoadingSpinner size="small" /> : isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </button>
               </div>
             </div>
 
-            {/* Announcement Body */}
-            <div className="prose prose-lg max-w-none mb-4">
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-base">
+            <div className="mb-4">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: "#3d3228" }}>
                 {announcement.body}
               </p>
             </div>
 
-            {/* Course Link Button */}
-            {announcement.related_course_id && announcement.related_course_title && (
-              <div className="mb-4">
-                <button
-                  onClick={() => navigate(`/employee/course/${announcement.related_course_id}`)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium rounded-lg border border-blue-200 transition-colors"
-                >
-                  <BookOpen size={18} />
-                  <span>View Course: {announcement.related_course_title}</span>
-                </button>
-              </div>
-            )}
-
-            {/* Attachments Preview */}
             {attachments.length > 0 && (
               <div className="mb-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {attachments.map((attachment) => (
                     <div
                       key={attachment.id}
-                      className="relative group border border-gray-200 rounded-lg overflow-hidden hover:border-[#f7953f] transition-all"
+                      className="relative group rounded-xl overflow-hidden"
+                      style={{ border: "1px solid #ede8e0", background: "#faf6ef" }}
                     >
                       {attachment.attachment_type === "image" ? (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <img
-                            src={attachment.url}
-                            alt={attachment.filename}
-                            className="w-full h-40 object-cover"
-                          />
+                          <img src={attachment.url} alt={attachment.filename} className="w-full h-36 object-cover" />
                         </a>
                       ) : attachment.attachment_type === "video" ? (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <div className="relative w-full h-40 bg-gray-100">
+                          <div className="relative w-full h-36" style={{ background: "#f3ede4" }}>
                             {attachment.thumbnail_url ? (
-                              <img
-                                src={attachment.thumbnail_url}
-                                alt={attachment.filename}
-                                className="w-full h-full object-cover"
-                              />
+                              <img src={attachment.thumbnail_url} alt={attachment.filename} className="w-full h-full object-cover" />
                             ) : (
                               <div className="flex items-center justify-center h-full">
-                                <Video size={48} className="text-gray-400" />
+                                <Video size={36} className="text-gray-500" />
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                              <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
-                                <Video size={24} className="text-gray-700" />
-                              </div>
-                            </div>
                           </div>
                         </a>
                       ) : (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <div className="flex items-center gap-3 p-4 bg-gray-50">
-                            <FileText size={32} className="text-red-500" />
+                          <div className="flex items-center gap-3 p-3">
+                            {getAttachmentIcon(attachment.attachment_type)}
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
+                              <p className="font-medium text-sm truncate" style={{ color: "#1a1209" }}>
                                 {attachment.filename}
                               </p>
-                              <p className="text-xs text-gray-500">
-                                {formatFileSize(attachment.size_bytes)}
-                              </p>
+                              <p className="text-xs text-gray-500">{formatFileSize(attachment.size_bytes)}</p>
                             </div>
                           </div>
                         </a>
                       )}
-                      
+
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteAttachment(attachment.id)}
-                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ background: "#dc2626", color: "white" }}
                           title="Delete attachment"
                         >
-                          <X size={14} />
+                          <X size={13} />
                         </button>
                       )}
                     </div>
@@ -410,12 +356,12 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
               </div>
             )}
 
-            {/* Quick Action Bar */}
-            <div className="mt-6 pt-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: "1px solid #ede8e0" }}>
               <button
                 onClick={handleToggleExpand}
                 disabled={loadingDetails}
-                className="flex items-center gap-2 text-[#f7953f] hover:text-[#E0741C] font-medium transition-colors group disabled:opacity-50"
+                className="flex items-center gap-2 text-sm font-semibold disabled:opacity-50"
+                style={{ color: "#f7953f" }}
               >
                 {loadingDetails ? (
                   <>
@@ -424,45 +370,48 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                   </>
                 ) : (
                   <>
-                    <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
-                    <span>
-                      {isExpanded ? "Hide" : "View"}  {"comments and attachments"}
-                    </span>
+                    <MessageSquare size={16} />
+                    <span>{isExpanded ? "Hide" : "View"} comments and attachments</span>
                   </>
                 )}
               </button>
 
-              {canEdit && (
+              <div className="flex items-center gap-2">
+                {canEdit && (
+                  <button
+                    onClick={() => setShowAttachmentUpload(!showAttachmentUpload)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                    style={{ borderColor: "#d0c8be", color: "#6b5e4e", background: "white" }}
+                  >
+                    <Paperclip size={14} /> Add Attachment
+                  </button>
+                )}
                 <button
-                  onClick={() => setShowAttachmentUpload(!showAttachmentUpload)}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  onClick={() => setIsExpanded((v) => !v)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                  style={{ background: "#1a1209" }}
+                  title="Open details"
                 >
-                  <Paperclip size={18} />
-                  <span>Add Attachment</span>
+                  <ArrowUpRight size={14} color="#fff" />
                 </button>
-              )}
+              </div>
             </div>
 
-            {/* Attachment Upload Section */}
             {showAttachmentUpload && canEdit && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="mt-4 p-4 rounded-xl" style={{ background: "#e8f4fd", border: "1px solid #bfdbfe" }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-[#333333]">Upload Attachment</h4>
-                  <button
-                    onClick={() => setShowAttachmentUpload(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X size={18} />
+                  <h4 className="font-semibold" style={{ color: "#1a1209" }}>Upload Attachment</h4>
+                  <button onClick={() => setShowAttachmentUpload(false)} style={{ color: "#6b5e4e" }}>
+                    <X size={16} />
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 mb-3">
+                <p className="text-sm mb-3" style={{ color: "#475569" }}>
                   Supported formats: Images, Videos, PDF (Max 50MB)
                 </p>
-                <label className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all">
-                  <Upload size={20} className="text-blue-600" />
-                  <span className="font-medium text-blue-600">
-                    {uploadingAttachment ? "Uploading..." : "Choose File"}
-                  </span>
+                <label className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-all"
+                  style={{ background: "white", border: "2px dashed #93c5fd", color: "#0369a1" }}>
+                  <Upload size={18} />
+                  <span className="font-semibold text-sm">{uploadingAttachment ? "Uploading..." : "Choose File"}</span>
                   <input
                     type="file"
                     accept="image/*,video/*,application/pdf"
@@ -471,90 +420,70 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     className="hidden"
                   />
                 </label>
-                {uploadingAttachment && (
-                  <div className="mt-3 flex items-center justify-center gap-2 text-blue-600">
-                    <LoadingSpinner size="small" />
-                    <span className="text-sm">Uploading attachment...</span>
-                  </div>
-                )}
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Comments Section (Expandable) */}
       {isExpanded && !isEditing && (
-        <div className="bg-gray-50 border-t border-gray-200">
-          <div className="p-6 lg:p-8">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="p-2 bg-[rgba(245,130,32,0.1)] rounded-md">
-                <MessageSquare size={20} className="text-[#f7953f]" />
+        <div style={{ background: "#faf6ef", borderTop: "1px solid #ede8e0" }}>
+          <div className="p-6 lg:p-7">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#fff0e8" }}>
+                <MessageSquare size={16} className="text-[#f7953f]" />
               </div>
-              <h3 className="text-lg font-bold text-[#333333]">
+              <h3 className="text-lg font-bold" style={{ color: "#1a1209" }}>
                 {isManager ? "Team Discussion" : "Comments"}
               </h3>
-              <span className="ml-auto bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-semibold">
+              <span className="ml-auto px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#f3ede4", color: "#6b5e4e" }}>
                 {commentCount}
               </span>
             </div>
 
-            {/* Comments List */}
             {announcement.comments && announcement.comments.length > 0 ? (
-              <div className="space-y-4 mb-6">
-                {announcement.comments.map((comment, index) => (
-                  <Card
-                    key={comment.id}
-                    variant="default"
-                    padding="md"
-                    shadow="sm"
-                    className="animate-in slide-in-from-left duration-300"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
+              <div className="space-y-3 mb-5">
+                {announcement.comments.map((comment) => (
+                  <div key={comment.id} className="rounded-xl border p-3" style={{ background: "white", borderColor: "#ede8e0" }}>
                     <div className="flex items-start gap-3">
-                      {/* Avatar */}
-                      <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#FDB913] to-[#f7953f] rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-bold overflow-hidden" style={{ background: "#1a1209" }}>
                         {comment.user_profile_picture ? (
-                          <img
-                            src={comment.user_profile_picture}
-                            alt={comment.user_name || "User"}
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={comment.user_profile_picture} alt={comment.user_name || "User"} className="w-full h-full object-cover" />
                         ) : (
                           <span>{(comment.user_name || "U")[0].toUpperCase()}</span>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="font-semibold text-[#333333]">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="font-semibold text-sm" style={{ color: "#1a1209" }}>
                             {comment.user_name || "Team Member"}
                           </span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 flex items-center gap-1">
-                              <Clock size={12} />
+                            <span className="text-xs flex items-center gap-1" style={{ color: "#9c8e80" }}>
+                              <Clock size={11} />
                               {formatRelativeTime(comment.created_at)}
                             </span>
                             {comment.can_delete && (
                               <button
                                 onClick={() => handleDeleteComment(comment.id)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                className="p-1 rounded transition-colors"
+                                style={{ color: "#dc2626" }}
                                 title="Delete comment"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={13} />
                               </button>
                             )}
                           </div>
                         </div>
-                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                        <p className="text-sm whitespace-pre-wrap" style={{ color: "#3d3228" }}>
                           {comment.body}
                         </p>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 ))}
-                
-                {/* Load More Comments Button */}
+
                 {announcement.commentsTotal > announcement.comments.length && onLoadMoreComments && (
                   <LoadMoreButton
                     onClick={onLoadMoreComments}
@@ -569,21 +498,20 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                 )}
               </div>
             ) : (
-              <div className="text-center py-8 mb-6">
-                <div className="inline-flex p-4 bg-gray-100 rounded-full mb-3">
-                  <MessageSquare size={32} className="text-gray-400" />
+              <div className="text-center py-8 mb-5">
+                <div className="inline-flex p-4 rounded-full mb-3" style={{ background: "#f3ede4" }}>
+                  <MessageSquare size={28} className="text-[#9c8e80]" />
                 </div>
-                <p className="text-gray-500 italic">
+                <p style={{ color: "#9c8e80" }} className="italic text-sm">
                   No comments yet. Be the first to share your thoughts!
                 </p>
               </div>
             )}
 
-            {/* Add Comment Form */}
-            <Card variant="default" padding="md" shadow="sm" className="hover:shadow-md transition-shadow">
+            <div className="rounded-xl border p-4" style={{ background: "white", borderColor: "#ede8e0" }}>
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles size={18} className="text-[#f7953f]" />
-                <span className="font-semibold text-[#333333]">Add your comment</span>
+                <MessageSquare size={16} className="text-[#f7953f]" />
+                <span className="font-semibold text-sm" style={{ color: "#1a1209" }}>Add your comment</span>
               </div>
               <Textarea
                 placeholder="Share your thoughts or ask a question..."
@@ -607,17 +535,17 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     </>
                   ) : (
                     <>
-                      <Send size={18} />
+                      <Send size={16} />
                       <span className="ml-2">Post Comment</span>
                     </>
                   )}
                 </Button>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 };
 
