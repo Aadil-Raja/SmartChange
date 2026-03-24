@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, BookOpen, Star, Clock, CheckCircle, TrendingUp, Award, Calendar, Camera, Trash2, Upload } from 'lucide-react';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
-import Card from '../../components/ui/Card';
 import CourseCard from '../../components/ui/CourseCard';
 import { getEmployeeCoursesOverview, uploadProfilePicture, removeProfilePicture } from '../../services/courseApi';
 
@@ -133,18 +132,48 @@ const EmployeeProfile = () => {
     }
   };
 
+  const stats = profileData?.stats || {};
+
+  const getTabMeta = (tab) => {
+    switch (tab) {
+      case 'starred':
+        return { label: 'Starred', icon: Star, emptyText: 'Star courses to keep track of your favorites' };
+      case 'in_progress':
+        return { label: 'In Progress', icon: Clock, emptyText: 'Start learning to see courses in progress here' };
+      case 'completed':
+        return { label: 'Completed', icon: CheckCircle, emptyText: 'Complete courses to see them here' };
+      case 'expired':
+        return { label: 'Expired', icon: Calendar, emptyText: 'Courses with expired deadlines will appear here' };
+      default:
+        return { label: 'Courses', icon: BookOpen, emptyText: 'No courses found' };
+    }
+  };
+
+  const tabMeta = getTabMeta(activeTab);
+  const ActiveTabIcon = tabMeta.icon;
+
+  const tabConfig = [
+    { key: 'starred', label: 'Starred', icon: Star, count: (profileData?.starred || []).length },
+    { key: 'in_progress', label: 'In Progress', icon: Clock, count: (profileData?.in_progress || []).length },
+    { key: 'completed', label: 'Completed', icon: CheckCircle, count: (profileData?.completed || []).length },
+  ];
+
+  if ((stats?.total_expired || 0) > 0) {
+    tabConfig.push({ key: 'expired', label: 'Expired', icon: Calendar, count: (profileData?.expired || []).length, danger: true });
+  }
+
   if (loading) {
     return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen bg-[#faf6ef] overflow-hidden">
         <EmployeeSidebar 
           collapsed={navCollapsed} 
           onToggle={() => setNavCollapsed(!navCollapsed)} 
         />
         <div className="flex-1 overflow-auto">
           <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your profile...</p>
+            <div className="text-center bg-white rounded-3xl p-8 border" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 24px rgba(26,18,9,0.08)' }}>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4" />
+              <p style={{ color: '#6b5e4e' }}>Loading your profile...</p>
             </div>
           </div>
         </div>
@@ -154,79 +183,81 @@ const EmployeeProfile = () => {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <div className="flex h-screen bg-[#faf6ef] overflow-hidden">
         <EmployeeSidebar 
           collapsed={navCollapsed} 
           onToggle={() => setNavCollapsed(!navCollapsed)} 
         />
         <div className="flex-1 overflow-auto">
           <div className="flex items-center justify-center h-full">
-            <Card className="p-8 text-center border-red-200 bg-red-50">
-              <p className="text-red-800 font-semibold">{error}</p>
+            <div className="p-8 text-center rounded-3xl border" style={{ background: '#fff7f7', borderColor: '#f6caca', boxShadow: '0 8px 24px rgba(220,38,38,0.08)' }}>
+              <p className="font-semibold" style={{ color: '#b91c1c' }}>{error}</p>
               <button
                 onClick={fetchProfileData}
-                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="mt-4 px-5 py-2.5 rounded-full text-white font-semibold transition-all"
+                style={{ background: '#dc2626' }}
               >
                 Retry
               </button>
-            </Card>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  const stats = profileData?.stats || {};
-
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-[#faf6ef] overflow-hidden">
       <EmployeeSidebar 
         collapsed={navCollapsed} 
         onToggle={() => setNavCollapsed(!navCollapsed)} 
       />
       
       <div className="flex-1 overflow-auto">
-        {/* Profile Header */}
-        <div className="bg-gradient-to-br from-[#f7953f] to-[#E0741C] border-b border-orange-300">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-              {/* Avatar + Info */}
-              <div className="flex items-center gap-6">
-                <div className="relative group profile-picture-container">
-                  {/* Profile Picture */}
-                  <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30 shadow-lg overflow-hidden">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
+          <section
+            className="relative overflow-visible rounded-[28px] p-6 sm:p-8 mb-8 border"
+            style={{
+              background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)',
+              borderColor: '#2f2317',
+              boxShadow: '0 20px 48px rgba(26,18,9,0.28)',
+            }}
+          >
+            <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: 'rgba(247,149,63,0.12)' }} />
+            <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full" style={{ background: 'rgba(247,149,63,0.08)' }} />
+
+            <div className="relative flex flex-col xl:flex-row xl:items-center xl:justify-between gap-7">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+                <div className="relative group profile-picture-container shrink-0">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center overflow-hidden border-[3px]"
+                    style={{ borderColor: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }}>
                     {profileData?.profile_picture_url ? (
-                      <img
-                        src={profileData.profile_picture_url}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={profileData.profile_picture_url} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <User size={48} className="text-white" />
+                      <User size={46} className="text-[#fff8ef]" />
                     )}
                   </div>
 
-                  {/* Upload/Remove Button Overlay */}
-                  <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <button
-                      onClick={() => setShowPictureMenu(!showPictureMenu)}
-                      disabled={uploadingPicture}
-                      className="text-white hover:scale-110 transition-transform"
-                    >
-                      {uploadingPicture ? (
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                      ) : (
-                        <Camera size={32} />
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowPictureMenu(!showPictureMenu)}
+                    disabled={uploadingPicture}
+                    className="absolute inset-0 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'rgba(0,0,0,0.4)' }}
+                  >
+                    {uploadingPicture ? (
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                    ) : (
+                      <Camera size={30} className="text-white" />
+                    )}
+                  </button>
 
-                  {/* Picture Menu */}
                   {showPictureMenu && !uploadingPicture && (
-                    <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[200px]">
+                    <div className="absolute top-full left-0 mt-3 rounded-2xl border py-2 z-50 min-w-[220px]"
+                      style={{ background: '#fffdf8', borderColor: '#e8e0d4', boxShadow: '0 18px 30px rgba(26,18,9,0.16)' }}>
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                        className="w-full px-4 py-2.5 text-left flex items-center gap-2"
+                        style={{ color: '#3d3228' }}
                       >
                         <Upload size={16} />
                         <span>{profileData?.profile_picture_url ? 'Change Picture' : 'Upload Picture'}</span>
@@ -234,7 +265,8 @@ const EmployeeProfile = () => {
                       {profileData?.profile_picture_url && (
                         <button
                           onClick={handleRemovePicture}
-                          className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2 text-red-600"
+                          className="w-full px-4 py-2.5 text-left flex items-center gap-2"
+                          style={{ color: '#dc2626' }}
                         >
                           <Trash2 size={16} />
                           <span>Remove Picture</span>
@@ -243,7 +275,6 @@ const EmployeeProfile = () => {
                     </div>
                   )}
 
-                  {/* Hidden File Input */}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -251,230 +282,161 @@ const EmployeeProfile = () => {
                     onChange={handleFileSelect}
                     className="hidden"
                   />
-                  
-                  {/* Achievement Badge */}
-                  <div className="absolute -bottom-2 -right-2 bg-[#78BE20] rounded-full p-2 border-4 border-white shadow-lg">
-                    <Award size={16} className="text-white" />
+
+                  <div className="absolute -bottom-2 -right-1 rounded-full p-2 border-[3px]"
+                    style={{ background: '#78BE20', borderColor: '#fff4e8' }}>
+                    <Award size={15} className="text-white" />
                   </div>
                 </div>
-                
-                <div className="text-white">
-                  <h1 className="text-3xl font-bold mb-2">{profileData?.user_name || 'Employee Profile'}</h1>
-                  <p className="text-orange-100 text-lg mb-1">Learning Journey Dashboard</p>
-                  <div className="flex items-center gap-4 text-sm text-orange-100">
-                    <div className="flex items-center gap-1">
-                      <TrendingUp size={16} />
-                      <span>{stats.overall_progress || 0}% Overall Progress</span>
-                    </div>
+
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-3"
+                    style={{ background: 'rgba(247,149,63,0.2)', color: '#ffd9b8' }}>
+                    <TrendingUp size={14} />
+                    <span className="text-xs font-semibold tracking-wide">{stats.overall_progress || 0}% OVERALL PROGRESS</span>
                   </div>
+                  <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-1" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>
+                    {profileData?.user_name || 'Employee Profile'}
+                  </h1>
+                  <p className="text-sm sm:text-base" style={{ color: '#f6d5b8' }}>Learning Journey Dashboard</p>
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="flex gap-3">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center">
-                  <div className="text-2xl font-bold text-white">{stats.total_courses_started || 0}</div>
-                  <div className="text-xs text-orange-100">Courses Started</div>
-                </Card>
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center">
-                  <div className="text-2xl font-bold text-white">{stats.total_items_completed || 0}</div>
-                  <div className="text-xs text-orange-100">Items Completed</div>
-                </Card>
+              <div className="grid grid-cols-2 gap-3 w-full xl:w-auto">
+                <div className="rounded-2xl px-5 py-4 border" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+                  <div className="text-2xl font-bold" style={{ color: '#fffaf0' }}>{stats.total_courses_started || 0}</div>
+                  <div className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Courses Started</div>
+                </div>
+                <div className="rounded-2xl px-5 py-4 border" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+                  <div className="text-2xl font-bold" style={{ color: '#fffaf0' }}>{stats.total_items_completed || 0}</div>
+                  <div className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Items Completed</div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Stats Grid */}
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="p-3 bg-blue-50 rounded-full">
-                  <BookOpen size={24} className="text-[#00ADEF]" />
-                </div>
+          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            <div className="rounded-3xl p-5 border bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#ecf6fd' }}>
+                <BookOpen size={21} className="text-[#0a7cb8]" />
               </div>
-              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_enrolled || 0}</div>
-              <div className="text-sm text-gray-600 font-medium">Enrolled</div>
-            </Card>
-
-            <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="p-3 bg-orange-50 rounded-full">
-                  <Clock size={24} className="text-[#f7953f]" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_in_progress || 0}</div>
-              <div className="text-sm text-gray-600 font-medium">In Progress</div>
-            </Card>
-
-            <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="p-3 bg-green-50 rounded-full">
-                  <CheckCircle size={24} className="text-[#78BE20]" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_completed || 0}</div>
-              <div className="text-sm text-gray-600 font-medium">Completed</div>
-            </Card>
-
-            <Card className="p-6 text-center border border-gray-200 hover:shadow-lg transition-all">
-              <div className="flex items-center justify-center mb-3">
-                <div className="p-3 bg-yellow-50 rounded-full">
-                  <Star size={24} className="text-yellow-500" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-[#333333] mb-1">{stats.total_starred || 0}</div>
-              <div className="text-sm text-gray-600 font-medium">Starred</div>
-            </Card>
-          </div>
-
-          {/* Overall Progress Bar */}
-          <Card className="p-6 mb-8 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-[#333333]">Overall Learning Progress</h3>
-              <span className="text-2xl font-bold text-[#f7953f]">{stats.overall_progress || 0}%</span>
+              <div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_enrolled || 0}</div>
+              <p className="text-sm mt-1" style={{ color: '#6b5e4e' }}>Enrolled Courses</p>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+
+            <div className="rounded-3xl p-5 border bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#fff3e8' }}>
+                <Clock size={21} className="text-[#e0741c]" />
+              </div>
+              <div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_in_progress || 0}</div>
+              <p className="text-sm mt-1" style={{ color: '#6b5e4e' }}>In Progress</p>
+            </div>
+
+            <div className="rounded-3xl p-5 border bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#edf8ea' }}>
+                <CheckCircle size={21} className="text-[#3f8e1b]" />
+              </div>
+              <div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_completed || 0}</div>
+              <p className="text-sm mt-1" style={{ color: '#6b5e4e' }}>Completed</p>
+            </div>
+
+            <div className="rounded-3xl p-5 border bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#fff8e8' }}>
+                <Star size={21} className="text-[#d59a11]" />
+              </div>
+              <div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_starred || 0}</div>
+              <p className="text-sm mt-1" style={{ color: '#6b5e4e' }}>Starred</p>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border p-6 mb-8 bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <h3 className="text-2xl font-bold" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>Overall Learning Progress</h3>
+              <span className="text-2xl font-bold" style={{ color: '#f7953f' }}>{stats.overall_progress || 0}%</span>
+            </div>
+            <div className="w-full rounded-full h-3 mb-3" style={{ background: '#eee4d7' }}>
               <div
-                className="bg-gradient-to-r from-[#FDB913] to-[#f7953f] h-4 rounded-full transition-all duration-500"
-                style={{ width: `${stats.overall_progress || 0}%` }}
+                className="h-3 rounded-full transition-all duration-500"
+                style={{ width: `${stats.overall_progress || 0}%`, background: 'linear-gradient(90deg, #f2b44d 0%, #f7953f 55%, #e0741c 100%)' }}
               />
             </div>
-            <div className="flex justify-between text-sm text-gray-600">
+            <div className="flex flex-wrap justify-between gap-2 text-sm" style={{ color: '#6b5e4e' }}>
               <span>{stats.total_items_completed || 0} of {stats.total_items || 0} items completed</span>
               <span>{stats.total_completed || 0} courses completed</span>
             </div>
-          </Card>
+          </section>
 
-          {/* Course Collections */}
-          <Card className="border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-2xl font-bold text-[#333333] mb-4">My Course Collections</h3>
-              
-              {/* Tabs */}
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setActiveTab('starred')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'starred'
-                      ? 'bg-[#f7953f] text-white shadow-md'
-                      : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                  }`}
-                >
-                  <Star size={16} className={activeTab === 'starred' ? 'fill-current' : ''} />
-                  <span>Starred</span>
-                  <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === 'starred' 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {(profileData?.starred || []).length}
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => setActiveTab('in_progress')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'in_progress'
-                      ? 'bg-[#f7953f] text-white shadow-md'
-                      : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                  }`}
-                >
-                  <Clock size={16} />
-                  <span>In Progress</span>
-                  <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === 'in_progress' 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {(profileData?.in_progress || []).length}
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => setActiveTab('completed')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'completed'
-                      ? 'bg-[#f7953f] text-white shadow-md'
-                      : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                  }`}
-                >
-                  <CheckCircle size={16} />
-                  <span>Completed</span>
-                  <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === 'completed' 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {(profileData?.completed || []).length}
-                  </span>
-                </button>
-                
-                {stats.total_expired > 0 && (
-                  <button
-                    onClick={() => setActiveTab('expired')}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      activeTab === 'expired'
-                        ? 'bg-red-500 text-white shadow-md'
-                        : 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
-                    }`}
-                  >
-                    <Calendar size={16} />
-                    <span>Expired</span>
-                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      activeTab === 'expired' 
-                        ? 'bg-white/20 text-white' 
-                        : 'bg-red-100 text-red-600'
-                    }`}>
-                      {(profileData?.expired || []).length}
-                    </span>
-                  </button>
-                )}
+          <section className="rounded-3xl border bg-white overflow-hidden" style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}>
+            <div className="p-6 border-b" style={{ borderColor: '#ede6dc' }}>
+              <h3 className="text-2xl font-bold mb-4" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>My Course Collections</h3>
+
+              <div className="flex flex-wrap gap-2">
+                {tabConfig.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.key;
+
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all"
+                      style={{
+                        background: isActive
+                          ? (tab.danger ? '#dc2626' : '#1a1209')
+                          : (tab.danger ? '#fff1f2' : '#f6f1e8'),
+                        color: isActive
+                          ? '#ffffff'
+                          : (tab.danger ? '#b91c1c' : '#6b5e4e'),
+                        border: isActive
+                          ? '1px solid transparent'
+                          : `1px solid ${tab.danger ? '#fecdd3' : '#eadfce'}`,
+                      }}
+                    >
+                      <Icon size={15} className={tab.key === 'starred' && isActive ? 'fill-current' : ''} />
+                      <span>{tab.label}</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs"
+                        style={{ background: isActive ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Course Grid */}
             <div className="p-6">
               {getActiveTabCourses().length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
-                    {activeTab === 'starred' && <Star size={48} className="text-gray-300" />}
-                    {activeTab === 'in_progress' && <Clock size={48} className="text-gray-300" />}
-                    {activeTab === 'completed' && <CheckCircle size={48} className="text-gray-300" />}
-                    {activeTab === 'expired' && <Calendar size={48} className="text-gray-300" />}
+                <div className="text-center py-14">
+                  <div className="inline-flex p-5 rounded-full mb-4" style={{ background: '#f3ede4' }}>
+                    <ActiveTabIcon size={44} style={{ color: '#b1a492' }} />
                   </div>
-                  <h4 className="text-xl font-semibold text-[#333333] mb-2">
+                  <h4 className="text-xl font-semibold mb-2" style={{ color: '#1a1209' }}>
                     No {activeTab.replace('_', ' ')} courses yet
                   </h4>
-                  <p className="text-gray-600">
-                    {activeTab === 'starred' && 'Star courses to keep track of your favorites'}
-                    {activeTab === 'in_progress' && 'Start learning to see courses in progress here'}
-                    {activeTab === 'completed' && 'Complete courses to see them here'}
-                    {activeTab === 'expired' && 'Courses with expired deadlines will appear here'}
-                  </p>
+                  <p style={{ color: '#7c6f61' }}>{tabMeta.emptyText}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {getActiveTabCourses().map((course) => {
                     const progress = course.progress ? {
                       completed: course.completed_items || 0,
                       total: course.total_items || 0,
                       percentage: Math.round(course.progress || 0)
                     } : null;
-                    
+
                     return (
                       <CourseCard
                         key={course.id}
                         course={course}
                         progress={progress}
+                        variant={activeTab}
                       />
                     );
                   })}
                 </div>
               )}
             </div>
-          </Card>
+          </section>
         </div>
       </div>
     </div>

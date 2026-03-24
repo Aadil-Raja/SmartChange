@@ -1,4 +1,4 @@
-import { useEffect, useState,useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationItem from '../../components/ui/NotificationItem';
@@ -26,8 +26,8 @@ const Notifications = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if(!hasFetched.current){
-      hasFetched.current=true;
+    if (!hasFetched.current) {
+      hasFetched.current = true;
       fetchNotifications(1, 50);
     }
   }, []);
@@ -36,10 +36,10 @@ const Notifications = () => {
   useEffect(() => {
     const messageId = searchParams.get('message');
     const announcementId = searchParams.get('announcement');
-    
+
     if (notifications.length > 0) {
       if (messageId) {
-        const message = notifications.find(n => n.id === parseInt(messageId));
+        const message = notifications.find((n) => n.id === parseInt(messageId));
         if (message && message.type === 'direct_message') {
           setSelectedMessage(message);
           if (!message.is_read) {
@@ -47,7 +47,7 @@ const Notifications = () => {
           }
         }
       } else if (announcementId) {
-        const announcement = notifications.find(n => n.id === parseInt(announcementId));
+        const announcement = notifications.find((n) => n.id === parseInt(announcementId));
         if (announcement && announcement.type === 'team_announcement') {
           setSelectedAnnouncement(announcement);
           if (!announcement.is_read) {
@@ -60,7 +60,7 @@ const Notifications = () => {
 
   const handleNotificationClick = async (notification) => {
     if (!notification.is_read) await markNotificationAsRead(notification.id);
-    
+
     // For direct messages, open message modal
     if (notification.type === 'direct_message') {
       setSelectedMessage(notification);
@@ -115,447 +115,90 @@ const Notifications = () => {
     }
   };
 
-  const filteredNotifications = notifications.filter(notif => {
+  const filteredNotifications = notifications.filter((notif) => {
     if (filterType === 'all') return true;
     return notif.type === filterType;
   });
 
-  const unreadCount = notifications.filter(n => !n.is_read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const formatDetailedDate = (dateValue) => {
+    try {
+      return new Date(dateValue).toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return 'Recently';
+    }
+  };
+
+  const getFilterLabel = (key) => {
+    switch (key) {
+      case 'system':
+        return 'System';
+      case 'team_announcement':
+        return 'Announcements';
+      case 'direct_message':
+        return 'Messages';
+      default:
+        return 'All';
+    }
+  };
 
   const filters = [
-    { key: 'all',              label: 'All',          count: notifications.length },
-    { key: 'system',           label: 'System',       count: notifications.filter(n => n.type === 'system').length },
-    { key: 'team_announcement',label: 'Announcements',count: notifications.filter(n => n.type === 'team_announcement').length },
-    { key: 'direct_message',   label: 'Messages',     count: notifications.filter(n => n.type === 'direct_message').length },
+    { key: 'all', label: 'All', count: notifications.length },
+    { key: 'system', label: 'System', count: notifications.filter((n) => n.type === 'system').length },
+    { key: 'team_announcement', label: 'Announcements', count: notifications.filter((n) => n.type === 'team_announcement').length },
+    { key: 'direct_message', label: 'Messages', count: notifications.filter((n) => n.type === 'direct_message').length },
   ];
+
+  const unreadNotifications = filteredNotifications.filter((n) => !n.is_read);
+  const readNotifications = filteredNotifications.filter((n) => n.is_read);
 
   return (
     <>
-      <style>{`
-        @keyframes np-fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes np-spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .np-page    { display:flex; height:100vh; background:#f8f7f5; overflow:hidden; }
-        .np-content { flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#fde0c0 transparent; }
-        .np-content::-webkit-scrollbar       { width:4px; }
-        .np-content::-webkit-scrollbar-thumb { background:#fde0c0; border-radius:4px; }
-
-        /* Hero header */
-        .np-hero {
-          background: #fff;
-          border-bottom: 1px solid #f0f0f0;
-          padding: 28px 32px 24px;
-          position: sticky; top: 0; z-index: 10;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        .np-hero-inner { max-width: 860px; margin: 0 auto; }
-        .np-hero-row   { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
-        .np-hero-left  { display:flex; align-items:center; gap:14px; }
-        .np-hero-icon  {
-          width:44px; height:44px; border-radius:13px;
-          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
-          display:flex; align-items:center; justify-content:center;
-          box-shadow: 0 4px 12px rgba(245,130,32,0.2);
-        }
-        .np-hero-title { font-size:22px; font-weight:800; color:#1f2937; letter-spacing:-.3px; }
-        .np-hero-sub   { font-size:13px; color:#6b7280; margin-top:3px; }
-
-        /* Unread pill in hero */
-        .np-hero-pill {
-          display:inline-flex; align-items:center; gap:5px;
-          padding:4px 12px; border-radius:999px;
-          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
-          color:#fff; font-size:12px; font-weight:700;
-          box-shadow: 0 2px 8px rgba(245,130,32,0.25);
-        }
-        .np-hero-dot { width:6px; height:6px; border-radius:50%; background:#fff; }
-
-        /* Mark all btn */
-        .np-mark-btn {
-          display:flex; align-items:center; gap:6px;
-          padding:8px 16px; border-radius:10px;
-          border:1.5px solid #e5e7eb;
-          background:#fff; color:#374151;
-          font-size:13px; font-weight:600; cursor:pointer;
-          font-family:inherit; white-space:nowrap;
-          transition:all 0.15s;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .np-mark-btn:hover:not(:disabled) { 
-          background:#f7953f; 
-          color:#fff;
-          border-color:#f7953f;
-          box-shadow: 0 4px 12px rgba(245,130,32,0.25);
-        }
-        .np-mark-btn:disabled { opacity:.5; cursor:not-allowed; }
-        .np-spin { animation:np-spin .9s linear infinite; }
-
-        /* Filter bar */
-        .np-filters {
-          background:#fff;
-          border-bottom: 1px solid #f0ebe4;
-          padding: 0 32px;
-          position: sticky; top: 0; z-index: 9;
-        }
-        /* Note: the hero is sticky too so filters sit right below hero 
-           and together they scroll away — adjust top values if you want 
-           filters to stay fixed independently */
-        .np-filters-inner {
-          max-width:860px; margin:0 auto;
-          display:flex; align-items:center; gap:2px;
-          overflow-x:auto;
-          scrollbar-width:none;
-        }
-        .np-filters-inner::-webkit-scrollbar { display:none; }
-        .np-ftab {
-          display:flex; align-items:center; gap:6px;
-          padding:13px 14px; border:none; background:transparent;
-          font-size:13px; font-weight:500; color:#9ca3af;
-          cursor:pointer; white-space:nowrap; border-bottom:2.5px solid transparent;
-          margin-bottom:-1px; transition:color 0.15s, border-color 0.15s;
-          font-family:inherit;
-        }
-        .np-ftab:hover { color:#E0741C; }
-        .np-ftab.active { color:#E0741C; border-bottom-color:#f7953f; font-weight:700; }
-        .np-fcount {
-          display:inline-flex; align-items:center; justify-content:center;
-          min-width:20px; height:20px; padding:0 5px; border-radius:999px;
-          font-size:10px; font-weight:700;
-          background:#f3f4f6; color:#6b7280;
-        }
-        .np-ftab.active .np-fcount { background:#fff0e6; color:#E0741C; }
-
-        /* Body */
-        .np-body { padding:24px 32px 40px; }
-        .np-body-inner { max-width:860px; margin:0 auto; }
-
-        /* Notification card wrapper */
-        .np-card-wrap {
-          position:relative;
-          animation:np-fadeUp .2s ease both;
-        }
-        .np-card-wrap:nth-child(2)  { animation-delay:.03s; }
-        .np-card-wrap:nth-child(3)  { animation-delay:.06s; }
-        .np-card-wrap:nth-child(4)  { animation-delay:.09s; }
-        .np-card-wrap:nth-child(5)  { animation-delay:.12s; }
-        .np-card-wrap:nth-child(6)  { animation-delay:.15s; }
-
-        /* Notification card itself gets a subtle lift */
-        .np-card-wrap > *:first-child {
-          border-radius:14px !important;
-          border:1px solid #f0ebe4 !important;
-          box-shadow:0 1px 3px rgba(0,0,0,.04) !important;
-          transition:box-shadow 0.15s, transform 0.15s !important;
-        }
-        .np-card-wrap:hover > *:first-child {
-          box-shadow:0 4px 16px rgba(245,130,32,.10) !important;
-          transform:translateY(-1px);
-        }
-
-        /* Delete btn */
-        .np-del {
-          position:absolute; top:10px; right:10px;
-          width:32px; height:32px; border-radius:9px; border:none;
-          background:transparent; cursor:pointer; color:#d1d5db;
-          display:flex; align-items:center; justify-content:center;
-          opacity:0; transition:opacity 0.15s, background 0.15s, color 0.15s;
-        }
-        .np-card-wrap:hover .np-del { opacity:1; }
-        .np-del:hover { background:#fef2f2; color:#ef4444; }
-
-        /* Section divider */
-        .np-section-label {
-          font-size:11px; font-weight:700; color:#c2855a;
-          letter-spacing:.08em; text-transform:uppercase;
-          padding:18px 4px 8px;
-        }
-        .np-section-label:first-child { padding-top:0; }
-
-        /* Empty / error states */
-        .np-state {
-          display:flex; flex-direction:column;
-          align-items:center; justify-content:center;
-          padding:72px 24px; gap:12px; text-align:center;
-        }
-        .np-state-icon {
-          width:72px; height:72px; border-radius:22px; background:#fff7ed;
-          display:flex; align-items:center; justify-content:center;
-          color:#fbbf24; margin-bottom:4px;
-          box-shadow:0 2px 12px rgba(245,130,32,.12);
-        }
-        .np-state-icon.err { background:#fef2f2; color:#fca5a5; }
-        .np-state-title { font-size:17px; font-weight:700; color:#1f2937; }
-        .np-state-sub   { font-size:14px; color:#9ca3af; line-height:1.6; max-width:260px; }
-
-        .np-retry-btn {
-          display:flex; align-items:center; gap:7px;
-          padding:10px 20px; border-radius:11px; border:none;
-          background:#f7953f; color:#fff;
-          font-size:14px; font-weight:600; cursor:pointer;
-          font-family:inherit; margin-top:4px;
-          transition:background 0.15s, box-shadow 0.15s;
-        }
-        .np-retry-btn:hover { background:#E0741C; box-shadow:0 4px 12px rgba(245,130,32,.35); }
-
-        /* List gap */
-        .np-list { display:flex; flex-direction:column; gap:8px; }
-
-        /* Message Modal Styles */
-        .msg-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          animation: msg-fadeIn 0.2s ease;
-          padding: 20px;
-        }
-        @keyframes msg-fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .msg-modal {
-          background: #fff;
-          border-radius: 20px;
-          max-width: 600px;
-          width: 100%;
-          max-height: 90vh;
-          overflow: hidden;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-          animation: msg-slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          display: flex;
-          flex-direction: column;
-        }
-        @keyframes msg-slideUp {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .msg-header {
-          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
-          padding: 24px 28px;
-          position: relative;
-          overflow: hidden;
-        }
-        .msg-header::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          right: -10%;
-          width: 200px;
-          height: 200px;
-          background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-          border-radius: 50%;
-        }
-        .msg-header-content {
-          position: relative;
-          z-index: 1;
-        }
-        .msg-close {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          width: 36px;
-          height: 36px;
-          border-radius: 10px;
-          border: none;
-          background: rgba(255, 255, 255, 0.2);
-          color: #fff;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s;
-          z-index: 2;
-        }
-        .msg-close:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: rotate(90deg);
-        }
-
-        .msg-icon-wrap {
-          width: 56px;
-          height: 56px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, 0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 16px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .msg-title {
-          font-size: 24px;
-          font-weight: 800;
-          color: #fff;
-          margin-bottom: 8px;
-          letter-spacing: -0.5px;
-        }
-        .msg-subtitle {
-          font-size: 14px;
-          color: rgba(255, 255, 255, 0.85);
-        }
-
-        .msg-body {
-          padding: 32px 28px;
-          overflow-y: auto;
-          flex: 1;
-        }
-        .msg-body::-webkit-scrollbar { width: 6px; }
-        .msg-body::-webkit-scrollbar-thumb { background: #fde0c0; border-radius: 4px; }
-
-        .msg-meta {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          margin-bottom: 28px;
-          padding-bottom: 24px;
-          border-bottom: 2px solid #f9fafb;
-        }
-        .msg-meta-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .msg-meta-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #f7953f;
-          flex-shrink: 0;
-        }
-        .msg-meta-content {
-          flex: 1;
-        }
-        .msg-meta-label {
-          font-size: 11px;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #9ca3af;
-          margin-bottom: 2px;
-        }
-        .msg-meta-value {
-          font-size: 15px;
-          font-weight: 600;
-          color: #1f2937;
-        }
-
-        .msg-content {
-          background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-          border: 2px solid #f3f4f6;
-          border-radius: 16px;
-          padding: 24px;
-          position: relative;
-          overflow: hidden;
-        }
-        .msg-content::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 4px;
-          height: 100%;
-          background: linear-gradient(180deg, #f7953f 0%, #E0741C 100%);
-        }
-        .msg-content-label {
-          font-size: 12px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: #f7953f;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .msg-content-text {
-          font-size: 15px;
-          line-height: 1.7;
-          color: #374151;
-          white-space: pre-wrap;
-          word-wrap: break-word;
-        }
-
-        .msg-footer {
-          padding: 20px 28px;
-          background: #fafafa;
-          border-top: 1px solid #f0f0f0;
-          display: flex;
-          gap: 12px;
-        }
-        .msg-btn {
-          flex: 1;
-          padding: 12px 20px;
-          border-radius: 12px;
-          border: none;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-family: inherit;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-        .msg-btn-primary {
-          background: linear-gradient(135deg, #f7953f 0%, #E0741C 100%);
-          color: #fff;
-          box-shadow: 0 4px 12px rgba(245, 130, 32, 0.3);
-        }
-        .msg-btn-primary:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(245, 130, 32, 0.4);
-        }
-        .msg-btn-secondary {
-          background: #fff;
-          color: #6b7280;
-          border: 2px solid #e5e7eb;
-        }
-        .msg-btn-secondary:hover {
-          background: #f9fafb;
-          border-color: #d1d5db;
-        }
-      `}</style>
-
-      <div className="np-page">
+      <div className="flex h-screen bg-[#faf6ef] overflow-hidden">
         <EmployeeSidebar
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed(!navCollapsed)}
         />
 
-        <div className="np-content">
-          {/* Hero Header */}
-          <div className="np-hero">
-            <div className="np-hero-inner">
-              <div className="np-hero-row">
-                <div className="np-hero-left">
-                  <div className="np-hero-icon">
-                    <Bell size={22} color="#fff" />
+        <div className="flex-1 overflow-auto">
+          <div className="max-w-7xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
+            <section
+              className="relative overflow-hidden rounded-[28px] p-6 sm:p-8 mb-6 border"
+              style={{
+                background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)',
+                borderColor: '#2f2317',
+                boxShadow: '0 20px 48px rgba(26,18,9,0.28)',
+              }}
+            >
+              <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: 'rgba(247,149,63,0.12)' }} />
+              <div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full" style={{ background: 'rgba(247,149,63,0.08)' }} />
+
+              <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(247,149,63,0.28)' }}>
+                    <Bell size={22} className="text-[#fff4e8]" />
                   </div>
                   <div>
-                    <div className="np-hero-title">Notifications</div>
-                    <div className="np-hero-sub">
+                    <h1 className="text-3xl sm:text-4xl font-bold leading-tight" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>
+                      Notifications
+                    </h1>
+                    <div className="mt-2 text-sm" style={{ color: '#f6d5b8' }}>
                       {unreadCount > 0 ? (
-                        <span className="np-hero-pill">
-                          <span className="np-hero-dot" />
+                        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(247,149,63,0.22)', color: '#ffe2ca' }}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#ffe2ca]" />
                           {unreadCount} unread
                         </span>
-                      ) : "You're all caught up!"}
+                      ) : (
+                        "You're all caught up!"
+                      )}
                     </div>
                   </div>
                 </div>
@@ -564,89 +207,97 @@ const Notifications = () => {
                   <button
                     onClick={handleMarkAllAsRead}
                     disabled={markingAll}
-                    className="np-mark-btn"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all disabled:opacity-50"
+                    style={{ background: 'rgba(255,255,255,0.12)', color: '#fff4e8', border: '1px solid rgba(255,255,255,0.24)' }}
                   >
-                    {markingAll
-                      ? <Loader2 size={14} className="np-spin" />
-                      : <CheckCheck size={14} />}
+                    {markingAll ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
                     Mark all read
                   </button>
                 )}
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Filter Tabs */}
-          <div className="np-filters">
-            <div className="np-filters-inner">
+            <section className="rounded-3xl border bg-white p-3 mb-6" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}>
+              <div className="flex flex-wrap gap-2">
               {filters.map((f) => (
                 <button
                   key={f.key}
                   onClick={() => setFilterType(f.key)}
-                  className={`np-ftab${filterType === f.key ? ' active' : ''}`}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all"
+                  style={{
+                    background: filterType === f.key ? '#1a1209' : '#f6f1e8',
+                    color: filterType === f.key ? '#ffffff' : '#6b5e4e',
+                    border: filterType === f.key ? '1px solid transparent' : '1px solid #eadfce',
+                  }}
                 >
-                  {f.label}
-                  <span className="np-fcount">{f.count}</span>
+                  {getFilterLabel(f.key)}
+                  <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: filterType === f.key ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
+                    {f.count}
+                  </span>
                 </button>
               ))}
-            </div>
-          </div>
+              </div>
+            </section>
 
-          {/* Body */}
-          <div className="np-body">
-            <div className="np-body-inner">
+            <section className="rounded-3xl border bg-white p-4 sm:p-5" style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}>
               {loading && notifications.length === 0 ? (
-                <div className="np-state">
-                  <div className="np-state-icon">
-                    <Loader2 size={32} className="np-spin" style={{ color: '#f7953f' }} />
+                <div className="text-center py-16">
+                  <div className="inline-flex p-5 rounded-full mb-4" style={{ background: '#f3ede4' }}>
+                    <Loader2 size={34} className="animate-spin" style={{ color: '#f7953f' }} />
                   </div>
-                  <div className="np-state-title">Loading notifications</div>
-                  <div className="np-state-sub">Just a moment…</div>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: '#1a1209' }}>Loading notifications</h3>
+                  <p style={{ color: '#7c6f61' }}>Just a moment...</p>
                 </div>
 
               ) : error ? (
-                <div className="np-state">
-                  <div className="np-state-icon err">
-                    <Bell size={32} />
+                <div className="text-center py-16">
+                  <div className="inline-flex p-5 rounded-full mb-4" style={{ background: '#fff1f2' }}>
+                    <Bell size={32} className="text-[#dc2626]" />
                   </div>
-                  <div className="np-state-title">Something went wrong</div>
-                  <div className="np-state-sub">{error}</div>
-                  <button className="np-retry-btn" onClick={() => fetchNotifications(1, 50)}>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: '#1a1209' }}>Something went wrong</h3>
+                  <p className="max-w-md mx-auto" style={{ color: '#7c6f61' }}>{error}</p>
+                  <button
+                    className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold"
+                    style={{ background: '#dc2626' }}
+                    onClick={() => fetchNotifications(1, 50)}
+                  >
                     <RefreshCw size={14} /> Try again
                   </button>
                 </div>
 
               ) : filteredNotifications.length === 0 ? (
-                <div className="np-state">
-                  <div className="np-state-icon">
-                    <BellOff size={32} />
+                <div className="text-center py-16">
+                  <div className="inline-flex p-5 rounded-full mb-4" style={{ background: '#f3ede4' }}>
+                    <BellOff size={32} style={{ color: '#9d907f' }} />
                   </div>
-                  <div className="np-state-title">
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: '#1a1209' }}>
                     {filterType === 'all' ? 'No notifications yet' : `No ${filterType.replace('_', ' ')} notifications`}
-                  </div>
-                  <div className="np-state-sub">
+                  </h3>
+                  <p className="max-w-md mx-auto" style={{ color: '#7c6f61' }}>
                     {filterType === 'all'
                       ? "We'll notify you as soon as something arrives."
                       : 'Try switching to a different tab to see other notifications.'}
-                  </div>
+                  </p>
                 </div>
 
               ) : (
                 <>
-                  {/* Unread section */}
-                  {filteredNotifications.some(n => !n.is_read) && (
-                    <>
-                      <div className="np-section-label">New</div>
-                      <div className="np-list" style={{ marginBottom: 24 }}>
-                        {filteredNotifications.filter(n => !n.is_read).map((notification) => (
-                          <div key={notification.id} className="np-card-wrap">
+                  {unreadNotifications.length > 0 && (
+                    <div className="mb-5">
+                      <p className="text-xs font-bold tracking-[0.14em] uppercase mb-2 px-1" style={{ color: '#b97a4f' }}>
+                        New
+                      </p>
+                      <div className="space-y-3">
+                        {unreadNotifications.map((notification) => (
+                          <div key={notification.id} className="relative group">
                             <NotificationItem
                               notification={notification}
                               onClick={() => handleNotificationClick(notification)}
                               compact={false}
                             />
                             <button
-                              className="np-del"
+                              className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                              style={{ background: '#fff1f2', color: '#dc2626' }}
                               onClick={(e) => handleDelete(notification.id, e)}
                               title="Delete"
                             >
@@ -655,25 +306,27 @@ const Notifications = () => {
                           </div>
                         ))}
                       </div>
-                    </>
+                    </div>
                   )}
 
-                  {/* Read section */}
-                  {filteredNotifications.some(n => n.is_read) && (
-                    <>
-                      {filteredNotifications.some(n => !n.is_read) && (
-                        <div className="np-section-label">Earlier</div>
+                  {readNotifications.length > 0 && (
+                    <div>
+                      {unreadNotifications.length > 0 && (
+                        <p className="text-xs font-bold tracking-[0.14em] uppercase mb-2 px-1" style={{ color: '#b97a4f' }}>
+                          Earlier
+                        </p>
                       )}
-                      <div className="np-list">
-                        {filteredNotifications.filter(n => n.is_read).map((notification) => (
-                          <div key={notification.id} className="np-card-wrap">
+                      <div className="space-y-3">
+                        {readNotifications.map((notification) => (
+                          <div key={notification.id} className="relative group">
                             <NotificationItem
                               notification={notification}
                               onClick={() => handleNotificationClick(notification)}
                               compact={false}
                             />
                             <button
-                              className="np-del"
+                              className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                              style={{ background: '#fff1f2', color: '#dc2626' }}
                               onClick={(e) => handleDelete(notification.id, e)}
                               title="Delete"
                             >
@@ -682,113 +335,98 @@ const Notifications = () => {
                           </div>
                         ))}
                       </div>
-                    </>
+                    </div>
                   )}
                 </>
               )}
-            </div>
+            </section>
           </div>
         </div>
       </div>
 
       {/* Message Detail Modal */}
       {selectedMessage && selectedMessage.type === 'direct_message' && (
-        <div className="msg-overlay" onClick={closeMessageModal}>
-          <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="msg-header">
-              <button className="msg-close" onClick={closeMessageModal}>
+        <div className="fixed inset-0 z-[9999] bg-black/45 backdrop-blur-sm p-5 flex items-center justify-center" onClick={closeMessageModal}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[24px] border bg-white flex flex-col" style={{ borderColor: '#e8e0d4', boxShadow: '0 22px 62px rgba(26,18,9,0.35)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="relative p-6 sm:p-7" style={{ background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)' }}>
+              <button className="absolute top-5 right-5 w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }} onClick={closeMessageModal}>
                 <X size={20} />
               </button>
-              <div className="msg-header-content">
-                <div className="msg-icon-wrap">
-                  <Mail size={28} color="#fff" />
-                </div>
-                <h2 className="msg-title">Direct Message</h2>
-                <p className="msg-subtitle">You've received a personal message</p>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                <Mail size={28} color="#fff" />
               </div>
+              <h2 className="text-3xl font-bold mb-1" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>Direct Message</h2>
+              <p className="text-sm" style={{ color: '#f6d5b8' }}>You've received a personal message</p>
             </div>
 
-            {/* Body */}
-            <div className="msg-body">
-              {/* Meta Information */}
-              <div className="msg-meta">
+            <div className="p-6 sm:p-7 overflow-y-auto flex-1">
+              <div className="space-y-4 mb-6 pb-5" style={{ borderBottom: '1px solid #efe7dc' }}>
                 {selectedMessage.sender_name && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <User size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">From</div>
-                      <div className="msg-meta-value">{selectedMessage.sender_name}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>From</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedMessage.sender_name}</p>
                     </div>
                   </div>
                 )}
 
-                <div className="msg-meta-item">
-                  <div className="msg-meta-icon">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                     <Calendar size={18} />
                   </div>
-                  <div className="msg-meta-content">
-                    <div className="msg-meta-label">Received</div>
-                    <div className="msg-meta-value">
-                      {new Date(selectedMessage.created_at).toLocaleString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Received</p>
+                    <p className="font-semibold" style={{ color: '#1a1209' }}>{formatDetailedDate(selectedMessage.created_at)}</p>
                   </div>
                 </div>
 
                 {selectedMessage.title && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <MessageCircle size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Subject</div>
-                      <div className="msg-meta-value">{selectedMessage.title}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Subject</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedMessage.title}</p>
                     </div>
                   </div>
                 )}
 
                 {selectedMessage.related_course_title && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <GraduationCap size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Related Course</div>
-                      <div className="msg-meta-value">{selectedMessage.related_course_title}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Related Course</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedMessage.related_course_title}</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Message Content */}
-              <div className="msg-content">
-                <div className="msg-content-label">
+              <div className="rounded-2xl border p-5" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
+                <div className="text-xs font-bold uppercase tracking-wide mb-2 inline-flex items-center gap-2" style={{ color: '#f7953f' }}>
                   <MessageCircle size={14} />
                   Message
                 </div>
-                <div className="msg-content-text">
+                <div className="whitespace-pre-wrap" style={{ color: '#3d3228', lineHeight: 1.7 }}>
                   {selectedMessage.message}
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="msg-footer">
-              <button className="msg-btn msg-btn-secondary" onClick={closeMessageModal}>
+            <div className="p-5 sm:p-6 border-t flex gap-3" style={{ borderColor: '#efe7dc', background: '#fffdfa' }}>
+              <button className="flex-1 px-4 py-3 rounded-xl font-semibold border" style={{ borderColor: '#dfd5c8', color: '#6b5e4e', background: '#fff' }} onClick={closeMessageModal}>
                 Close
               </button>
               {selectedMessage.related_course_id && (
-                <button 
-                  className="msg-btn msg-btn-primary"
+                <button
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold text-white inline-flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #f7953f 0%, #E0741C 100%)' }}
                   onClick={() => {
                     closeMessageModal();
                     navigate(`/employee/course/${selectedMessage.related_course_id}`);
@@ -805,114 +443,99 @@ const Notifications = () => {
 
       {/* Announcement Detail Modal */}
       {selectedAnnouncement && selectedAnnouncement.type === 'team_announcement' && (
-        <div className="msg-overlay" onClick={closeAnnouncementModal}>
-          <div className="msg-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className="msg-header">
-              <button className="msg-close" onClick={closeAnnouncementModal}>
+        <div className="fixed inset-0 z-[9999] bg-black/45 backdrop-blur-sm p-5 flex items-center justify-center" onClick={closeAnnouncementModal}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[24px] border bg-white flex flex-col" style={{ borderColor: '#e8e0d4', boxShadow: '0 22px 62px rgba(26,18,9,0.35)' }} onClick={(e) => e.stopPropagation()}>
+            <div className="relative p-6 sm:p-7" style={{ background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)' }}>
+              <button className="absolute top-5 right-5 w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }} onClick={closeAnnouncementModal}>
                 <X size={20} />
               </button>
-              <div className="msg-header-content">
-                <div className="msg-icon-wrap">
-                  <Megaphone size={28} color="#fff" />
-                </div>
-                <h2 className="msg-title">Team Announcement</h2>
-                <p className="msg-subtitle">Important update from your team</p>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                <Megaphone size={28} color="#fff" />
               </div>
+              <h2 className="text-3xl font-bold mb-1" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>Team Announcement</h2>
+              <p className="text-sm" style={{ color: '#f6d5b8' }}>Important update from your team</p>
             </div>
 
-            {/* Body */}
-            <div className="msg-body">
-              {/* Meta Information */}
-              <div className="msg-meta">
+            <div className="p-6 sm:p-7 overflow-y-auto flex-1">
+              <div className="space-y-4 mb-6 pb-5" style={{ borderBottom: '1px solid #efe7dc' }}>
                 {selectedAnnouncement.related_course_title && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <Users size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Course</div>
-                      <div className="msg-meta-value">{selectedAnnouncement.related_course_title}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Course</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedAnnouncement.related_course_title}</p>
                     </div>
                   </div>
                 )}
 
                 {selectedAnnouncement.related_team_name && !selectedAnnouncement.related_course_title && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <Users size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Team</div>
-                      <div className="msg-meta-value">{selectedAnnouncement.related_team_name}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Team</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedAnnouncement.related_team_name}</p>
                     </div>
                   </div>
                 )}
 
                 {selectedAnnouncement.sender_name && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <User size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Posted By</div>
-                      <div className="msg-meta-value">{selectedAnnouncement.sender_name}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Posted By</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedAnnouncement.sender_name}</p>
                     </div>
                   </div>
                 )}
 
-                <div className="msg-meta-item">
-                  <div className="msg-meta-icon">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                     <Calendar size={18} />
                   </div>
-                  <div className="msg-meta-content">
-                    <div className="msg-meta-label">Posted On</div>
-                    <div className="msg-meta-value">
-                      {new Date(selectedAnnouncement.created_at).toLocaleString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Posted On</p>
+                    <p className="font-semibold" style={{ color: '#1a1209' }}>{formatDetailedDate(selectedAnnouncement.created_at)}</p>
                     </div>
                   </div>
-                </div>
 
                 {selectedAnnouncement.title && (
-                  <div className="msg-meta-item">
-                    <div className="msg-meta-icon">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8', color: '#f7953f' }}>
                       <Megaphone size={18} />
                     </div>
-                    <div className="msg-meta-content">
-                      <div className="msg-meta-label">Subject</div>
-                      <div className="msg-meta-value">{selectedAnnouncement.title}</div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Subject</p>
+                      <p className="font-semibold" style={{ color: '#1a1209' }}>{selectedAnnouncement.title}</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Announcement Content */}
-              <div className="msg-content">
-                <div className="msg-content-label">
+              <div className="rounded-2xl border p-5" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
+                <div className="text-xs font-bold uppercase tracking-wide mb-2 inline-flex items-center gap-2" style={{ color: '#f7953f' }}>
                   <MessageCircle size={14} />
                   Announcement
                 </div>
-                <div className="msg-content-text">
+                <div className="whitespace-pre-wrap" style={{ color: '#3d3228', lineHeight: 1.7 }}>
                   {selectedAnnouncement.message}
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="msg-footer">
-              <button className="msg-btn msg-btn-secondary" onClick={closeAnnouncementModal}>
+            <div className="p-5 sm:p-6 border-t flex gap-3" style={{ borderColor: '#efe7dc', background: '#fffdfa' }}>
+              <button className="flex-1 px-4 py-3 rounded-xl font-semibold border" style={{ borderColor: '#dfd5c8', color: '#6b5e4e', background: '#fff' }} onClick={closeAnnouncementModal}>
                 Close
               </button>
               {(selectedAnnouncement.related_course_id || selectedAnnouncement.related_team_id) && (
-                <button 
-                  className="msg-btn msg-btn-primary"
+                <button
+                  className="flex-1 px-4 py-3 rounded-xl font-semibold text-white inline-flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #f7953f 0%, #E0741C 100%)' }}
                   onClick={navigateFromAnnouncement}
                 >
                   <ArrowRight size={16} />

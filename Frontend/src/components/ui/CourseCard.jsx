@@ -20,7 +20,7 @@ const getEmoji = (id) => {
   return map[key] || '📚';
 };
 
-const CourseCard = ({ course, progress }) => {
+const CourseCard = ({ course, progress, variant }) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [arrowHovered, setArrowHovered] = useState(false);
@@ -35,16 +35,21 @@ const CourseCard = ({ course, progress }) => {
   };
 
   const getStatusMeta = () => {
-    if (course.category === 'completed') {
+    const category = variant || course.category;
+
+    if (category === 'completed') {
       return { label: 'Completed', style: { background: '#e6f4f1', color: '#0d9488' }, dot: '#0d9488' };
     }
-    if (course.category === 'in_progress') {
+    if (category === 'in_progress') {
       return { label: 'In Progress', style: { background: '#fff4e8', color: '#b45309' }, dot: '#f59e0b' };
     }
-    if (course.category === 'expired') {
+    if (category === 'expired') {
       return { label: 'Expired', style: { background: '#fee2e2', color: '#b91c1c' }, dot: '#ef4444' };
     }
-    if (course.category === 'not_enrolled') {
+    if (category === 'starred') {
+      return { label: 'Starred', style: { background: '#fff8e8', color: '#b45309' }, dot: '#f59e0b' };
+    }
+    if (category === 'not_enrolled') {
       return { label: 'Not Enrolled', style: { background: '#f0ede8', color: '#78716c' }, dot: '#9ca3af' };
     }
     return { label: 'Active', style: { background: '#e6f4f1', color: '#0d9488' }, dot: '#0d9488' };
@@ -58,8 +63,9 @@ const CourseCard = ({ course, progress }) => {
 
   return (
     <div
-      className="rounded-[20px] border border-gray-200 bg-white overflow-hidden cursor-pointer transition-all duration-200"
+      className="rounded-[24px] border overflow-hidden cursor-pointer transition-all duration-200 bg-white"
       style={{
+        borderColor: '#e8e0d4',
         boxShadow: hovered
           ? '0 12px 32px rgba(26,18,9,0.13)'
           : '0 2px 8px rgba(26,18,9,0.06)',
@@ -70,17 +76,14 @@ const CourseCard = ({ course, progress }) => {
       onClick={handleNavigate}
     >
       {/* Cover Area */}
-      <div
-        className="relative h-44 flex items-center justify-center overflow-hidden"
-        style={{ background: '#fff0e8' }}
-      >
+      <div className="relative h-44 flex items-center justify-center overflow-hidden" style={{ background: '#fff1e4' }}>
         <div
           className="absolute -top-6 -left-6 w-24 h-24 rounded-full"
-          style={{ background: 'rgba(245,130,32,0.08)' }}
+          style={{ background: 'rgba(245,130,32,0.12)' }}
         />
         <div
           className="absolute -bottom-8 -right-8 w-32 h-32 rounded-full"
-          style={{ background: 'rgba(245,130,32,0.06)' }}
+          style={{ background: 'rgba(245,130,32,0.08)' }}
         />
 
         {course.thumbnail_url ? (
@@ -96,7 +99,7 @@ const CourseCard = ({ course, progress }) => {
 
       {/* Body */}
       <div className="px-5 pt-4 pb-5">
-        <div className="mb-2">
+        <div className="mb-2.5">
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
             style={status.style}
@@ -113,27 +116,28 @@ const CourseCard = ({ course, progress }) => {
           {course.title}
         </h3>
 
-        {course.description && (
-          <p className="text-sm text-gray-500 line-clamp-2 mb-4">{course.description}</p>
-        )}
+        {course.description && <p className="text-sm line-clamp-2 mb-4" style={{ color: '#7c6f61' }}>{course.description}</p>}
 
         {progress && (
           <div className="mb-4">
-            <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+            <div className="mb-1 flex items-center justify-between text-xs" style={{ color: '#847768' }}>
               <span>Progress</span>
               <span>{progress.percentage}%</span>
             </div>
-            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: '#efe5d7' }}>
               <div
                 className="h-full rounded-full transition-all duration-300"
-                style={{ width: `${progress.percentage}%`, background: '#f7953f' }}
+                style={{ width: `${progress.percentage}%`, background: 'linear-gradient(90deg, #f2b44d 0%, #f7953f 55%, #e0741c 100%)' }}
               />
             </div>
+            <p className="mt-2 text-xs" style={{ color: '#9b8c7b' }}>
+              {progress.completed} of {progress.total} items completed
+            </p>
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-400">{formatDate(course.created_at || course.enrolled_at)}</span>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs" style={{ color: '#9b8c7b' }}>{formatDate(course.created_at || course.enrolled_at)}</span>
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
             style={{

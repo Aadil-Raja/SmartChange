@@ -109,29 +109,43 @@ const TeamMemberInfo = () => {
 	};
 
 	return (
-		<div className="flex h-screen bg-gray-50 overflow-hidden">
+		<div className="flex h-screen bg-[#faf6ef] overflow-hidden">
 			<EmployeeSidebar
 				collapsed={navCollapsed}
 				onToggle={() => setNavCollapsed(!navCollapsed)}
 			/>
 
 			<div className="flex-1 overflow-auto">
-				<div className="bg-gradient-to-br from-[#f7953f] to-[#E0741C] border-b border-orange-300">
-					<div className="max-w-7xl mx-auto px-6 py-8">
-						<div className="mb-6">
+				<div className="max-w-7xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
+					<section
+						className="relative overflow-hidden rounded-[28px] p-6 sm:p-8 mb-8 border"
+						style={{
+							background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)',
+							borderColor: '#2f2317',
+							boxShadow: '0 20px 48px rgba(26,18,9,0.28)',
+						}}
+					>
+						<div className="absolute -top-10 -right-10 w-44 h-44 rounded-full" style={{ background: 'rgba(247,149,63,0.12)' }} />
+						<div className="absolute -bottom-16 -left-10 w-56 h-56 rounded-full" style={{ background: 'rgba(247,149,63,0.08)' }} />
+
+						<div className="relative mb-5">
 							<button
 								onClick={() => navigate(-1)}
-								className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-white bg-white/15 hover:bg-white/25 transition-colors"
+								className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all"
+								style={{ color: '#f6d5b8', background: 'rgba(255,255,255,0.12)' }}
 							>
 								<ArrowLeft size={16} />
 								Back
 							</button>
 						</div>
 
-						<div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+						<div className="relative flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
 							<div className="flex items-center gap-6">
 								<div className="relative">
-									<div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-4 border-white/30 shadow-lg overflow-hidden">
+									<div
+										className="w-24 h-24 sm:w-28 sm:h-28 rounded-full flex items-center justify-center overflow-hidden border-[3px]"
+										style={{ borderColor: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.12)' }}
+									>
 										{member?.user_profile_picture ? (
 											<img
 												src={member.user_profile_picture}
@@ -139,30 +153,32 @@ const TeamMemberInfo = () => {
 												className="w-full h-full object-cover"
 											/>
 										) : (
-											<User size={48} className="text-white" />
+											<User size={48} className="text-[#fff8ef]" />
 										)}
 									</div>
 
-									<div className="absolute -bottom-2 -right-2 bg-[#78BE20] rounded-full p-2 border-4 border-white shadow-lg">
-										<Sparkles size={16} className="text-white" />
+									<div className="absolute -bottom-2 -right-2 rounded-full p-2 border-[3px]" style={{ background: '#78BE20', borderColor: '#fff4e8' }}>
+										<Sparkles size={15} className="text-white" />
 									</div>
 								</div>
 
-								<div className="text-white">
-									<h1 className="text-3xl font-bold mb-2">{member?.user_name || member?.user_email || 'Team Member'}</h1>
-									<div className="flex flex-wrap items-center gap-3 mb-2">
-										<div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+								<div>
+									<h1 className="text-3xl sm:text-4xl font-bold mb-2" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>
+										{member?.user_name || member?.user_email || 'Team Member'}
+									</h1>
+									<div className="flex flex-wrap items-center gap-2.5 mb-2.5">
+										<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(255,255,255,0.16)', color: '#f7dcc1' }}>
 											{member?.role_in_team === 'manager' ? <Crown size={12} /> : <UserCheck size={12} />}
 											<span>{member?.role_in_team === 'manager' ? 'Manager' : 'Member'}</span>
 										</div>
 										{stateTeam?.team_name && (
-											<div className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white">
+											<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'rgba(247,149,63,0.22)', color: '#ffd9b8' }}>
 												<Trophy size={12} />
 												<span>{stateTeam.team_name}</span>
 											</div>
 										)}
 									</div>
-									<div className="flex items-center gap-2 text-orange-100 text-sm">
+									<div className="flex items-center gap-2 text-sm" style={{ color: '#f6d5b8' }}>
 										<Mail size={14} />
 										<span>{member?.user_email || 'No email available'}</span>
 									</div>
@@ -170,32 +186,31 @@ const TeamMemberInfo = () => {
 							</div>
 
 							<div className="grid grid-cols-2 gap-3 w-full lg:w-auto">
-								<Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center min-w-[140px]">
-									<div className="text-2xl font-bold text-white">{safeProgress.toFixed(2)}%</div>
-									<div className="text-xs text-orange-100">Overall Progress</div>
-								</Card>
-								<Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center min-w-[140px]">
-									<div className="text-2xl font-bold text-white">{stats.total_items_completed || 0}</div>
-									<div className="text-xs text-orange-100">Items Completed</div>
-								</Card>
+								<div className="rounded-2xl px-5 py-4 border text-center min-w-[148px]" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+									<div className="text-2xl font-bold" style={{ color: '#fffaf0' }}>{safeProgress.toFixed(2)}%</div>
+									<div className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Overall Progress</div>
+								</div>
+								<div className="rounded-2xl px-5 py-4 border text-center min-w-[148px]" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+									<div className="text-2xl font-bold" style={{ color: '#fffaf0' }}>{stats.total_items_completed || 0}</div>
+									<div className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Items Completed</div>
+								</div>
 							</div>
 						</div>
-					</div>
-				</div>
+					</section>
 
-				<div className="max-w-7xl mx-auto px-6 py-8">
 					{loading ? (
-						<Card className="p-10 text-center border border-gray-200">
+						<Card className="p-10 text-center border rounded-3xl" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}>
 							<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f7953f] mx-auto mb-4"></div>
-							<p className="text-gray-600">Loading member analytics...</p>
+							<p style={{ color: '#6b5e4e' }}>Loading member analytics...</p>
 						</Card>
 					) : error ? (
-						<Card className="p-8 text-center border-red-200 bg-red-50">
+						<Card className="p-8 text-center rounded-3xl border" style={{ background: '#fff7f7', borderColor: '#f6caca', boxShadow: '0 8px 24px rgba(220,38,38,0.08)' }}>
 							<AlertCircle size={36} className="text-red-500 mx-auto mb-3" />
 							<p className="text-red-800 font-semibold mb-4">{error}</p>
 							<button
 								onClick={fetchMemberData}
-								className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+								className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold transition-all"
+								style={{ background: '#dc2626' }}
 							>
 								<RefreshCw size={16} />
 								Retry
@@ -203,116 +218,129 @@ const TeamMemberInfo = () => {
 						</Card>
 					) : (
 						<>
-							<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
-								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<BookOpen size={22} className="text-[#00ADEF] mx-auto mb-2" />
-									<div className="text-2xl font-bold text-[#333333]">{stats.total_enrolled || 0}</div>
-									<div className="text-xs text-gray-600">Enrolled</div>
+							<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+								<Card className="p-5 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+									<div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#ecf6fd' }}>
+										<BookOpen size={22} className="text-[#0a7cb8]" />
+									</div>
+									<div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_enrolled || 0}</div>
+									<div className="text-xs" style={{ color: '#6b5e4e' }}>Enrolled</div>
 								</Card>
 
-								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<Clock size={22} className="text-[#FDB913] mx-auto mb-2" />
-									<div className="text-2xl font-bold text-[#333333]">{stats.total_in_progress || 0}</div>
-									<div className="text-xs text-gray-600">In Progress</div>
+								<Card className="p-5 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+									<div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#fff3e8' }}>
+										<Clock size={22} className="text-[#e0741c]" />
+									</div>
+									<div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_in_progress || 0}</div>
+									<div className="text-xs" style={{ color: '#6b5e4e' }}>In Progress</div>
 								</Card>
 
-								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<CheckCircle size={22} className="text-[#78BE20] mx-auto mb-2" />
-									<div className="text-2xl font-bold text-[#333333]">{stats.total_completed || 0}</div>
-									<div className="text-xs text-gray-600">Completed</div>
+								<Card className="p-5 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+									<div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#edf8ea' }}>
+										<CheckCircle size={22} className="text-[#3f8e1b]" />
+									</div>
+									<div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_completed || 0}</div>
+									<div className="text-xs" style={{ color: '#6b5e4e' }}>Completed</div>
 								</Card>
 
-								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<Calendar size={22} className="text-red-500 mx-auto mb-2" />
-									<div className="text-2xl font-bold text-[#333333]">{stats.total_expired || 0}</div>
-									<div className="text-xs text-gray-600">Expired</div>
+								<Card className="p-5 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+									<div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#fff1f2' }}>
+										<Calendar size={22} className="text-[#dc2626]" />
+									</div>
+									<div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_expired || 0}</div>
+									<div className="text-xs" style={{ color: '#6b5e4e' }}>Expired</div>
 								</Card>
 
-								<Card className="p-5 text-center border border-gray-200 hover:shadow-lg transition-all">
-									<Award size={22} className="text-[#f7953f] mx-auto mb-2" />
-									<div className="text-2xl font-bold text-[#333333]">{stats.total_quizzes_completed || 0}/{stats.total_quizzes || 0}</div>
-									<div className="text-xs text-gray-600">Quizzes Done</div>
+								<Card className="p-5 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 6px 16px rgba(26,18,9,0.07)' }}>
+									<div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-3" style={{ background: '#fff6e8' }}>
+										<Award size={22} className="text-[#f7953f]" />
+									</div>
+									<div className="text-3xl font-bold" style={{ color: '#1a1209' }}>{stats.total_quizzes_completed || 0}/{stats.total_quizzes || 0}</div>
+									<div className="text-xs" style={{ color: '#6b5e4e' }}>Quizzes Done</div>
 								</Card>
 							</div>
 
-							<Card className="p-6 mb-8 border border-gray-200">
+							<Card className="p-6 mb-8 border rounded-3xl bg-white" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}>
 								<div className="flex items-center justify-between mb-4">
-									<h3 className="text-xl font-bold text-[#333333] inline-flex items-center gap-2">
+									<h3 className="text-2xl font-bold inline-flex items-center gap-2" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>
 										<TrendingUp size={20} className="text-[#f7953f]" />
 										Overall Learning Progress
 									</h3>
 									<span className="text-2xl font-bold text-[#f7953f]">{safeProgress.toFixed(2)}%</span>
 								</div>
-								<div className="w-full bg-gray-200 rounded-full h-4 mb-2">
+								<div className="w-full rounded-full h-4 mb-2" style={{ background: '#eee4d7' }}>
 									<div
 										className={`bg-gradient-to-r ${getProgressTone(safeProgress)} h-4 rounded-full transition-all duration-500`}
 										style={{ width: `${safeProgress}%` }}
 									/>
 								</div>
-								<div className="flex flex-wrap justify-between gap-2 text-sm text-gray-600">
+								<div className="flex flex-wrap justify-between gap-2 text-sm" style={{ color: '#6b5e4e' }}>
 									<span>{stats.total_items_completed || 0} of {stats.total_items || 0} items completed</span>
 									<span>{stats.total_courses_started || 0} courses started</span>
 								</div>
 							</Card>
 
-							<Card className="border border-gray-200">
-								<div className="p-6 border-b border-gray-200">
-									<h3 className="text-2xl font-bold text-[#333333] mb-4">Course Activity</h3>
+							<Card className="border rounded-3xl bg-white overflow-hidden" style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}>
+								<div className="p-6 border-b" style={{ borderColor: '#ede6dc' }}>
+									<h3 className="text-2xl font-bold mb-4" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>Course Activity</h3>
 
 									<div className="flex flex-wrap gap-2">
 										<button
 											onClick={() => setActiveTab('in_progress')}
-											className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+											className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
 												activeTab === 'in_progress'
-													? 'bg-[#f7953f] text-white shadow-md'
-													: 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
+													? 'text-white'
+													: ''
 											}`}
+											style={{
+												background: activeTab === 'in_progress' ? '#1a1209' : '#f6f1e8',
+												color: activeTab === 'in_progress' ? '#ffffff' : '#6b5e4e',
+												border: activeTab === 'in_progress' ? '1px solid transparent' : '1px solid #eadfce',
+											}}
 										>
 											<Clock size={16} />
 											<span>In Progress</span>
-											<span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-												activeTab === 'in_progress'
-													? 'bg-white/20 text-white'
-													: 'bg-gray-100 text-gray-600'
-											}`}>
+											<span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: activeTab === 'in_progress' ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
 												{(memberData?.in_progress || []).length}
 											</span>
 										</button>
 
 										<button
 											onClick={() => setActiveTab('completed')}
-											className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+											className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
 												activeTab === 'completed'
-													? 'bg-[#78BE20] text-white shadow-md'
-													: 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
+													? 'text-white'
+													: ''
 											}`}
+											style={{
+												background: activeTab === 'completed' ? '#3f8e1b' : '#f6f1e8',
+												color: activeTab === 'completed' ? '#ffffff' : '#6b5e4e',
+												border: activeTab === 'completed' ? '1px solid transparent' : '1px solid #eadfce',
+											}}
 										>
 											<CheckCircle size={16} />
 											<span>Completed</span>
-											<span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-												activeTab === 'completed'
-													? 'bg-white/20 text-white'
-													: 'bg-gray-100 text-gray-600'
-											}`}>
+											<span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: activeTab === 'completed' ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
 												{(memberData?.completed || []).length}
 											</span>
 										</button>
 
 										<button
 											onClick={() => setActiveTab('expired')}
-											className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+											className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all ${
 												activeTab === 'expired'
-													? 'bg-red-500 text-white shadow-md'
-													: 'text-gray-600 hover:text-[#333333] hover:bg-gray-50'
+													? 'text-white'
+													: ''
 											}`}
+											style={{
+												background: activeTab === 'expired' ? '#dc2626' : '#fff1f2',
+												color: activeTab === 'expired' ? '#ffffff' : '#b91c1c',
+												border: activeTab === 'expired' ? '1px solid transparent' : '1px solid #fecdd3',
+											}}
 										>
 											<Calendar size={16} />
 											<span>Expired</span>
-											<span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-												activeTab === 'expired'
-													? 'bg-white/20 text-white'
-													: 'bg-red-100 text-red-600'
-											}`}>
+											<span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: activeTab === 'expired' ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
 												{(memberData?.expired || []).length}
 											</span>
 										</button>
@@ -322,15 +350,15 @@ const TeamMemberInfo = () => {
 								<div className="p-6">
 									{getActiveTabCourses.length === 0 ? (
 										<div className="text-center py-16">
-											<div className="inline-flex p-6 bg-gray-50 rounded-full mb-4">
-												{activeTab === 'in_progress' && <Clock size={48} className="text-gray-300" />}
-												{activeTab === 'completed' && <CheckCircle size={48} className="text-gray-300" />}
-												{activeTab === 'expired' && <Calendar size={48} className="text-gray-300" />}
+											<div className="inline-flex p-6 rounded-full mb-4" style={{ background: '#f3ede4' }}>
+												{activeTab === 'in_progress' && <Clock size={48} style={{ color: '#b1a492' }} />}
+												{activeTab === 'completed' && <CheckCircle size={48} style={{ color: '#b1a492' }} />}
+												{activeTab === 'expired' && <Calendar size={48} style={{ color: '#b1a492' }} />}
 											</div>
-											<h4 className="text-xl font-semibold text-[#333333] mb-2">
+											<h4 className="text-xl font-semibold mb-2" style={{ color: '#1a1209' }}>
 												No {activeTab.replace('_', ' ')} courses
 											</h4>
-											<p className="text-gray-600">
+											<p style={{ color: '#7c6f61' }}>
 												{activeTab === 'in_progress' && 'No active learning is in progress right now.'}
 												{activeTab === 'completed' && 'This member has not completed any courses yet.'}
 												{activeTab === 'expired' && 'No course deadlines have expired.'}
@@ -346,21 +374,25 @@ const TeamMemberInfo = () => {
 												const totalQuizzes = course.total_quizzes || 0;
 
 												return (
-													<Card key={course.id} className="border border-gray-200 bg-white p-5">
+													<Card
+														key={course.id}
+														className="border bg-white p-5 rounded-3xl"
+														style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 20px rgba(26,18,9,0.07)' }}
+													>
 														<div className="flex items-start justify-between gap-3 mb-4">
 															<div className="min-w-0">
-																<h4 className="font-bold text-[#333333] truncate">{course.title}</h4>
+																<h4 className="font-bold truncate" style={{ color: '#1a1209' }}>{course.title}</h4>
 																{course.description && (
-																	<p className="text-sm text-gray-600 mt-1 line-clamp-2">{course.description}</p>
+																	<p className="text-sm mt-1 line-clamp-2" style={{ color: '#7c6f61' }}>{course.description}</p>
 																)}
 															</div>
-															<span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-																activeTab === 'completed'
-																	? 'bg-green-100 text-green-700'
-																	: activeTab === 'expired'
-																	? 'bg-red-100 text-red-700'
-																	: 'bg-blue-100 text-blue-700'
-															}`}>
+															<span
+																className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+																style={{
+																	background: activeTab === 'completed' ? '#e8f5e3' : activeTab === 'expired' ? '#fee2e2' : '#e8f4fd',
+																	color: activeTab === 'completed' ? '#3f8e1b' : activeTab === 'expired' ? '#b91c1c' : '#0369a1',
+																}}
+															>
 																{getStatusLabel(activeTab)}
 															</span>
 														</div>
@@ -368,10 +400,10 @@ const TeamMemberInfo = () => {
 														<div className="space-y-3">
 															<div>
 																<div className="flex items-center justify-between text-sm mb-1">
-																	<span className="text-gray-600 font-medium">Progress</span>
-																	<span className="text-gray-700">{courseProgress.toFixed(2)}%</span>
+																	<span className="font-medium" style={{ color: '#6b5e4e' }}>Progress</span>
+																	<span style={{ color: '#6b5e4e' }}>{courseProgress.toFixed(2)}%</span>
 																</div>
-																<div className="h-2.5 w-full rounded-full bg-gray-200 overflow-hidden">
+																<div className="h-2.5 w-full rounded-full overflow-hidden" style={{ background: '#efe5d7' }}>
 																	<div
 																		className={`h-full rounded-full bg-gradient-to-r ${getProgressTone(courseProgress)} transition-all duration-500`}
 																		style={{ width: `${courseProgress}%` }}
@@ -380,24 +412,24 @@ const TeamMemberInfo = () => {
 															</div>
 
 															<div className="grid grid-cols-2 gap-2 text-xs">
-																<div className="rounded-md bg-gray-50 p-2 border border-gray-100">
-																	<p className="text-gray-500">Learning Items</p>
-																	<p className="font-semibold text-[#333333]">{completedItems}/{totalItems}</p>
+																<div className="rounded-xl p-2.5 border" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
+																	<p style={{ color: '#8b7e6e' }}>Learning Items</p>
+																	<p className="font-semibold" style={{ color: '#1a1209' }}>{completedItems}/{totalItems}</p>
 																</div>
-																<div className="rounded-md bg-gray-50 p-2 border border-gray-100">
-																	<p className="text-gray-500">Quizzes</p>
-																	<p className="font-semibold text-[#333333]">{completedQuizzes}/{totalQuizzes}</p>
+																<div className="rounded-xl p-2.5 border" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
+																	<p style={{ color: '#8b7e6e' }}>Quizzes</p>
+																	<p className="font-semibold" style={{ color: '#1a1209' }}>{completedQuizzes}/{totalQuizzes}</p>
 																</div>
 															</div>
 
-															<div className="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1 pt-1">
+															<div className="text-xs flex flex-wrap gap-x-4 gap-y-1 pt-1" style={{ color: '#8b7e6e' }}>
 																{course.enrolled_at && <span>Enrolled: {formatDate(course.enrolled_at)}</span>}
 																{course.completed_at && <span>Completed: {formatDate(course.completed_at)}</span>}
 																{course.deadline_at && <span>Deadline: {formatDate(course.deadline_at)}</span>}
 															</div>
 														</div>
 
-														<p className="text-[11px] text-gray-400 mt-4 pt-3 border-t border-gray-100">
+														<p className="text-[11px] mt-4 pt-3 border-t" style={{ color: '#a39788', borderColor: '#ede3d5' }}>
 															View only: actions are disabled on team member profiles.
 														</p>
 													</Card>
@@ -409,17 +441,17 @@ const TeamMemberInfo = () => {
 							</Card>
 
 							{memberData?.completed?.length > 0 && (
-								<Card className="mt-8 p-6 border border-gray-200 bg-gradient-to-r from-green-50 to-emerald-50">
-									<h4 className="text-lg font-bold text-[#333333] mb-3 inline-flex items-center gap-2">
+								<Card className="mt-8 p-6 border rounded-3xl" style={{ borderColor: '#d6ebc8', background: 'linear-gradient(135deg, #f4fbef 0%, #ecf8e3 100%)' }}>
+									<h4 className="text-lg font-bold mb-3 inline-flex items-center gap-2" style={{ color: '#26401b' }}>
 										<Trophy size={18} className="text-[#78BE20]" />
 										Recent Completion Highlights
 									</h4>
 									<div className="space-y-3">
 										{memberData.completed.slice(0, 3).map((course) => (
-											<div key={course.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-100">
+											<div key={course.id} className="flex items-center justify-between p-3 bg-white rounded-2xl border" style={{ borderColor: '#d6ebc8' }}>
 												<div>
-													<p className="font-medium text-[#333333]">{course.title}</p>
-													<p className="text-sm text-gray-600">Completed on {formatDate(course.completed_at)}</p>
+													<p className="font-medium" style={{ color: '#26401b' }}>{course.title}</p>
+													<p className="text-sm" style={{ color: '#5f7b4a' }}>Completed on {formatDate(course.completed_at)}</p>
 												</div>
 												<CheckCircle size={18} className="text-[#78BE20]" />
 											</div>
