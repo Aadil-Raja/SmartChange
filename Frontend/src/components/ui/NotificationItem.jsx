@@ -1,18 +1,40 @@
 import { Bell, Megaphone, Mail, Clock } from 'lucide-react';
 
 const NotificationItem = ({ notification, onClick, compact = false }) => {
-  const getIcon = () => {
+  const getMeta = () => {
     switch (notification.type) {
       case 'system':
-        return <Bell size={compact ? 16 : 20} className="text-blue-600" />;
+        return {
+          icon: <Bell size={compact ? 16 : 20} className="text-[#0a7cb8]" />,
+          bg: '#ecf6fd',
+          label: 'System',
+          labelStyle: { background: '#e8f4fd', color: '#0369a1' },
+        };
       case 'team_announcement':
-        return <Megaphone size={compact ? 16 : 20} className="text-orange-600" />;
+        return {
+          icon: <Megaphone size={compact ? 16 : 20} className="text-[#e0741c]" />,
+          bg: '#fff3e8',
+          label: 'Announcement',
+          labelStyle: { background: '#fff0e8', color: '#b45309' },
+        };
       case 'direct_message':
-        return <Mail size={compact ? 16 : 20} className="text-green-600" />;
+        return {
+          icon: <Mail size={compact ? 16 : 20} className="text-[#3f8e1b]" />,
+          bg: '#edf8ea',
+          label: 'Message',
+          labelStyle: { background: '#e8f5e3', color: '#3f8e1b' },
+        };
       default:
-        return <Bell size={compact ? 16 : 20} className="text-gray-600" />;
+        return {
+          icon: <Bell size={compact ? 16 : 20} className="text-[#6b5e4e]" />,
+          bg: '#f3ede4',
+          label: 'Notification',
+          labelStyle: { background: '#f3ede4', color: '#6b5e4e' },
+        };
     }
   };
+
+  const meta = getMeta();
 
   const getTimeAgo = () => {
     try {
@@ -37,33 +59,47 @@ const NotificationItem = ({ notification, onClick, compact = false }) => {
     <div
       onClick={onClick}
       className={`
-        flex items-start gap-3 p-3 cursor-pointer transition-all
-        ${notification.is_read ? 'bg-white hover:bg-gray-50' : 'bg-blue-50 hover:bg-blue-100'}
-        ${compact ? 'border-b border-gray-100' : 'rounded-lg border border-gray-200 shadow-sm'}
+        flex items-start gap-3 p-4 cursor-pointer transition-all
+        ${compact ? 'border-b' : 'rounded-2xl border'}
       `}
+      style={{
+        background: notification.is_read ? '#ffffff' : '#fffaf3',
+        borderColor: compact ? '#ede3d5' : '#e8e0d4',
+        boxShadow: compact ? 'none' : '0 4px 12px rgba(26,18,9,0.05)',
+      }}
     >
-      {/* Icon */}
-      <div className={`flex-shrink-0 ${compact ? 'mt-0.5' : 'mt-1'}`}>
-        {getIcon()}
+      <div
+        className={`flex-shrink-0 rounded-xl flex items-center justify-center ${compact ? 'w-8 h-8 mt-0.5' : 'w-10 h-10 mt-0.5'}`}
+        style={{ background: meta.bg }}
+      >
+        {meta.icon}
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <h4 className={`text-sm ${notification.is_read ? 'font-medium text-gray-900' : 'font-bold text-gray-900'}`}>
+          <h4
+            className={`text-sm ${notification.is_read ? 'font-medium' : 'font-bold'}`}
+            style={{ color: '#1a1209' }}
+          >
             {notification.title}
           </h4>
           {!notification.is_read && (
-            <div className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-1.5"></div>
+            <div className="flex-shrink-0 w-2 h-2 rounded-full mt-1.5" style={{ background: '#f7953f' }}></div>
           )}
         </div>
 
-        <p className={`text-sm text-gray-600 mt-1 ${compact ? 'line-clamp-2' : ''}`}>
+        <p className={`text-sm mt-1 ${compact ? 'line-clamp-2' : ''}`} style={{ color: '#6b5e4e' }}>
           {notification.message}
         </p>
 
-        <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-          <Clock size={12} />
+        <div className="mt-2">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold" style={meta.labelStyle}>
+            {meta.label}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs" style={{ color: '#8f8172' }}>
+          <Clock size={12} className="text-[#9b8c7b]" />
           <span>{getTimeAgo()}</span>
           {notification.sender_name && (
             <>
@@ -74,13 +110,13 @@ const NotificationItem = ({ notification, onClick, compact = false }) => {
           {notification.related_team_name && (
             <>
               <span>•</span>
-              <span className="text-orange-600 font-medium">{notification.related_team_name}</span>
+              <span className="font-medium" style={{ color: '#b45309' }}>{notification.related_team_name}</span>
             </>
           )}
           {notification.related_course_title && (
             <>
               <span>•</span>
-              <span className="text-blue-600 font-medium">{notification.related_course_title}</span>
+              <span className="font-medium" style={{ color: '#0369a1' }}>{notification.related_course_title}</span>
             </>
           )}
         </div>
