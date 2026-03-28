@@ -33,6 +33,7 @@ export const AdminAuthProvider = ({ children }) => {
         }
         console.log("Admin login successful, token:", accessToken);
         localStorage.setItem("adminToken", accessToken);
+        localStorage.removeItem("token"); // clear stale employee token
         setToken(accessToken);
         setAdmin({
           email,

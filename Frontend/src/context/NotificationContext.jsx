@@ -20,12 +20,12 @@ export const NotificationProvider = ({ children }) => {
   const { token: employeeToken } = useContext(AuthContext);
   const { token: adminToken } = useContext(AdminAuthContext);
   
-  // Only poll when employee is logged in AND admin is NOT logged in
-  const shouldPoll = !!employeeToken && !adminToken;
+  // Only poll when employee is logged in
+  const shouldPoll = !!employeeToken;
 
   // Fetch notifications
   const fetchNotifications = async (page = 1, limit = 10, unreadOnly = false) => {
-    // Don't fetch if admin is logged in
+    // Don't fetch if not an employee
     if (!shouldPoll) {
       return { success: false, message: 'Not available for admin users' };
     }
@@ -52,7 +52,7 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch unread count only
   const fetchUnreadCount = async () => {
-    // Don't fetch if admin is logged in
+    // Don't fetch if not an employee
     if (!shouldPoll) {
       return;
     }

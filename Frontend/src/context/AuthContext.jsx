@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }) => {
                 if (res.requiresCode) {
                     return { requiresCode: true };
                 } else {
+                    localStorage.removeItem('adminToken'); // clear stale admin token
                     setToken(res.token);
                     setUser({ email, authenticated: true });
                     localStorage.setItem('token', res.data.access_token);
@@ -76,6 +77,7 @@ export const AuthProvider = ({ children }) => {
             if (res.success) {
                 setToken(res.token);
                 localStorage.setItem('token', res.token);
+                localStorage.removeItem('adminToken'); // clear stale admin token
                 setUser({ email, authenticated: true });
                 return { success: true };
             } else {
@@ -155,6 +157,7 @@ export const AuthProvider = ({ children }) => {
 
                 setToken(token);
                 localStorage.setItem('token', token);
+                localStorage.removeItem('adminToken'); // clear stale admin token
                 setUser({ authenticated: true }); // Backend doesn't return user object in this response
 
                 return { success: true };
