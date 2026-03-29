@@ -87,7 +87,9 @@ def bulk_insert(
             document_id=document_id,
             text=chunk.text,
             chunk_index=chunk.chunk_index,
-            page_num=chunk.page_num,
+            page_num=chunk.page_num,  # Keep for backward compatibility
+            start_page_num=chunk.start_page_num,
+            end_page_num=chunk.end_page_num,
             char_start=chunk.char_start,
             char_end=chunk.char_end,
             embedding=embedding,

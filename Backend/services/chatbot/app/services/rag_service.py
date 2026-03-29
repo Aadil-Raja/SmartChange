@@ -9,6 +9,27 @@ from app.core.config import get_settings
 settings = get_settings()
 settings = get_settings()
 
+
+def format_page_range(start_page: int, end_page: int) -> str:
+    """
+    Format page range for display.
+    
+    Args:
+        start_page: Starting page number
+        end_page: Ending page number
+        
+    Returns:
+        Formatted string like "Page 5" or "Pages 5-7"
+    """
+    if not start_page:
+        return "Page unknown"
+    
+    if not end_page or start_page == end_page:
+        return f"Page {start_page}"
+    
+    return f"Pages {start_page}-{end_page}"
+
+
 def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5) -> Dict[str, Any]:
     print("\n" + "="*80, file=sys.stderr)
     print(f"[DOC_QA] Starting document Q&A", file=sys.stderr)
@@ -59,7 +80,14 @@ def doc_qa(chunk_db: Session, *, document_id: int, question: str, top_k: int = 5
     print(f"[STEP 4] ✓ Generated answer (length: {len(result['answer'])} chars)", file=sys.stderr)
     print(f"[STEP 4] ✓ Generated {len(result['follow_up_questions'])} follow-up questions", file=sys.stderr)
     
-    sources = [{"doc_id": document_id, "chunk_index": c["chunk_index"]} for c in answer_chunks]
+    sources = [{
+        "doc_id": document_id, 
+        "chunk_index": c["chunk_index"],
+        "start_page": c.get("start_page_num"),
+        "end_page": c.get("end_page_num"),
+        "section": c.get("section_title"),
+        "page_range": format_page_range(c.get("start_page_num"), c.get("end_page_num"))
+    } for c in answer_chunks]
     
     print("\n" + "="*80, file=sys.stderr)
     print(f"[DOC_QA] COMPLETED SUCCESSFULLY", file=sys.stderr)
@@ -114,6 +142,9 @@ def _search_similar_chunks(
                 "chunk_index": c.chunk_index,
                 "text": c.text,
                 "section_title": getattr(c, "section_title", None),
+                "start_page_num": getattr(c, "start_page_num", None),
+                "end_page_num": getattr(c, "end_page_num", None),
+                "document_id": c.document_id,
             }
             result_chunks.append(chunk_dict)
             
@@ -301,7 +332,10 @@ def retrieve_chunks_with_scores(
                     'text': chunk.text,
                     'score': float(cosine_sim),
                     'chunk_index': chunk.chunk_index,
-                    'section_title': getattr(chunk, 'section_title', None)
+                    'section_title': getattr(chunk, 'section_title', None),
+                    'start_page_num': getattr(chunk, 'start_page_num', None),
+                    'end_page_num': getattr(chunk, 'end_page_num', None),
+                    'document_id': chunk.document_id,
                 })
             except Exception as e:
                 print(f"[retrieve_chunks_with_scores] Score error for chunk {chunk.chunk_index}: {e}", file=sys.stderr)

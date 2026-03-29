@@ -389,3 +389,5 @@ def generate_quiz_from_prompt(quiz_id: int, prompt_text: str, num_questions: int
         return {"success": False, "error": str(e), "quiz_id": quiz_id, "questions_created": 0}
     finally:
         db.close()
+
+process_document(41)
