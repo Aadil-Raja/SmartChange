@@ -4,29 +4,20 @@ import { useChatbot } from "../../hooks/useChatbot";
 import ChatSidebar from "../../components/ui/ChatSidebar";
 import ChatWindow from "../../components/ui/ChatWindow";
 import DocumentSelector from "../../components/ui/DocumentSelector";
-import { MessageSquare, FileText, Sparkles, History, ChevronRight } from "lucide-react";
+import { MessageSquare, FileText, PanelLeftOpen, PanelLeftClose, X } from "lucide-react";
 import Alert from "../../components/ui/Alert";
-import PrimaryButton from "../../components/ui/PrimaryButton";
 import EmployeeSidebar from "../../components/ui/EmployeeSidebar";
 
 const Chatbot = () => {
-  const {
-    selectedDocumentIds,
-    error,
-    success,
-    clearMessages,
-    fetchChatHeads,
-    fetchDocuments,
-  } = useChatbot();
-
+  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments } = useChatbot();
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
-  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const hasFetchedChats = useRef(false);
+
   useEffect(() => {
-    // Load chat heads and documents on mount
     if (!hasFetchedChats.current) {
-      hasFetchedChats.current=true;
+      hasFetchedChats.current = true;
       fetchChatHeads();
       fetchDocuments();
     }
@@ -34,123 +25,113 @@ const Chatbot = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-[#FFFDF7] overflow-hidden">
-      {/* Employee Sidebar */}
-      <EmployeeSidebar
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed(!navCollapsed)}
-      />
+    <div className="flex h-screen overflow-hidden" style={{ background: "#FAF6EF" }}>
+      <EmployeeSidebar collapsed={navCollapsed} onToggle={() => setNavCollapsed(!navCollapsed)} />
 
-      {/* Main Chat Container */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Minimal Header */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4">
-          <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-gradient-to-r from-[#f7953f]/10 to-[#E0741C]/10 rounded-xl">
-                <MessageSquare size={20} className="text-[#f7953f]" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold text-[#333333] flex items-center gap-2">
-                  AI Assistant
-                  <Sparkles size={16} className="text-[#f7953f]" />
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {selectedDocumentIds.length > 0 
-                    ? `${selectedDocumentIds.length} document${selectedDocumentIds.length > 1 ? 's' : ''} selected` 
-                    : "Select documents to begin"}
-                </p>
-              </div>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* ── Header: exact MyCourses pattern ── */}
+        <div
+          className="w-full px-8 py-5 flex items-center justify-between flex-shrink-0"
+          style={{ background: "#FAF6EF", borderBottom: "2px solid #F58220" }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "#1A1209" }}>
+              <MessageSquare size={17} color="#F58220" />
             </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setChatDrawerOpen(true)}
-                className="p-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200 hover:border-gray-300"
-                title="Chat History"
-                aria-label="Open chat history"
-              >
-                <History size={20} />
-              </button>
-              <PrimaryButton
-                onClick={() => setShowDocumentSelector(true)}
-                variant={selectedDocumentIds.length > 0 ? "secondary" : "primary"}
-                size="sm"
-                className="shadow-sm"
-              >
-                <FileText size={16} />
-                <span>
-                  {selectedDocumentIds.length > 0 
-                    ? `${selectedDocumentIds.length} Selected` 
-                    : "Select Documents"}
-                </span>
-              </PrimaryButton>
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "#3D2C1C", fontFamily: "Georgia, serif" }}>
+                AI Assistant
+              </h1>
+              <p style={{ color: "rgba(65,50,24,0.5)", fontSize: 13, marginTop: 2 }}>
+                {selectedDocumentIds.length > 0
+                  ? `${selectedDocumentIds.length} document${selectedDocumentIds.length > 1 ? "s" : ""} selected`
+                  : "Select documents to begin chatting"}
+              </p>
             </div>
           </div>
 
-          {/* Alerts */}
-          {(success || error) && (
-            <div className="max-w-4xl mx-auto mt-4">
-              {success && (
-                <Alert variant="success" className="mb-2" onClose={clearMessages}>
-                  {success}
-                </Alert>
-              )}
-              {error && (
-                <Alert variant="error" className="mb-2" onClose={clearMessages}>
-                  {error}
-                </Alert>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setHistoryOpen(v => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+              style={{
+                background: historyOpen ? "#fff0e8" : "#fff",
+                color: historyOpen ? "#F58220" : "#6b5e4e",
+                border: `1px solid ${historyOpen ? "#F58220" : "#e0d8ce"}`,
+              }}
+              onMouseEnter={e => { if (!historyOpen) { e.currentTarget.style.borderColor = "#F58220"; e.currentTarget.style.color = "#F58220"; } }}
+              onMouseLeave={e => { if (!historyOpen) { e.currentTarget.style.borderColor = "#e0d8ce"; e.currentTarget.style.color = "#6b5e4e"; } }}
+            >
+              {historyOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
+              <span>History</span>
+            </button>
+
+            <button
+              onClick={() => setShowDocumentSelector(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+              style={{
+                background: selectedDocumentIds.length > 0 ? "#fff0e8" : "#1A1209",
+                color: selectedDocumentIds.length > 0 ? "#F58220" : "#faf6ef",
+                border: `1px solid ${selectedDocumentIds.length > 0 ? "#F58220" : "transparent"}`,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+            >
+              <FileText size={15} />
+              {selectedDocumentIds.length > 0 ? `${selectedDocumentIds.length} Selected` : "Select Documents"}
+            </button>
+          </div>
         </div>
 
-        {/* Chat Area - Fixed Height */}
-        <div className="flex-1 flex flex-col p-6 min-h-0">
-          <div className="w-full max-w-4xl mx-auto h-full bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden flex flex-col">
-            <ChatWindow
-              onOpenDocumentSelector={() => setShowDocumentSelector(true)}
-              onCloseSidebar={() => setChatDrawerOpen(false)}
-              minimal={true}
-            />
+        {(success || error) && (
+          <div className="px-8 pt-3 flex-shrink-0">
+            {success && <Alert variant="success" className="mb-2" onClose={clearMessages}>{success}</Alert>}
+            {error && <Alert variant="error" className="mb-2" onClose={clearMessages}>{error}</Alert>}
+          </div>
+        )}
+
+        {/* ── Body: history panel + chat ── */}
+        <div className="flex-1 flex overflow-hidden px-6 py-5 gap-4 min-h-0">
+
+          {historyOpen && (
+            <div
+              className="flex-shrink-0 flex flex-col rounded-2xl overflow-hidden"
+              style={{ width: 268, background: "#fff", border: "1px solid #e0d8ce", boxShadow: "0 2px 12px rgba(26,18,9,0.06)" }}
+            >
+              <div
+                className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+                style={{ borderBottom: "1px solid #e0d8ce", background: "#FAF6EF" }}
+              >
+                <span className="text-sm font-bold" style={{ color: "#3D2C1C", fontFamily: "Georgia, serif" }}>
+                  Chat History
+                </span>
+                <button
+                  onClick={() => setHistoryOpen(false)}
+                  className="w-6 h-6 rounded flex items-center justify-center transition-all"
+                  style={{ color: "#9c8e80" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#f0e8de"; e.currentTarget.style.color = "#1A1209"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#9c8e80"; }}
+                >
+                  <X size={13} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ChatSidebar onNewChat={() => setShowDocumentSelector(true)} minimal={true} />
+              </div>
+            </div>
+          )}
+
+          <div
+            className="flex-1 flex flex-col rounded-2xl overflow-hidden min-w-0"
+            style={{ background: "#fff", border: "1px solid #e0d8ce", boxShadow: "0 2px 12px rgba(26,18,9,0.06)" }}
+          >
+            <ChatWindow onOpenDocumentSelector={() => setShowDocumentSelector(true)} minimal={true} />
           </div>
         </div>
       </div>
 
-      {/* Right Chat Drawer */}
-      {chatDrawerOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-            onClick={() => setChatDrawerOpen(false)}
-          />
-          <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-[#333333]">Chat History</h3>
-              <button
-                onClick={() => setChatDrawerOpen(false)}
-                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-            <div className="h-full overflow-hidden">
-              <ChatSidebar
-                onNewChat={() => {
-                  setShowDocumentSelector(true);
-                  setChatDrawerOpen(false);
-                }}
-                minimal={true}
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Document Selector Modal */}
-      {showDocumentSelector && (
-        <DocumentSelector onClose={() => setShowDocumentSelector(false)} />
-      )}
+      {showDocumentSelector && <DocumentSelector onClose={() => setShowDocumentSelector(false)} />}
     </div>
   );
 };

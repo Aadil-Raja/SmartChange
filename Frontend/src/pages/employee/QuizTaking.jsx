@@ -175,10 +175,13 @@ const QuizTaking = () => {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-[#faf6ef] flex items-center justify-center p-6">
+        <div
+          className="text-center rounded-3xl p-8 border bg-white"
+          style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 26px rgba(26,18,9,0.08)' }}
+        >
           <LoadingSpinner size="large" />
-          <p className="mt-4 text-gray-600">Loading quiz...</p>
+          <p className="mt-4" style={{ color: '#6b5e4e' }}>Loading quiz...</p>
         </div>
       </div>
     );
@@ -187,14 +190,14 @@ const QuizTaking = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-[#faf6ef] p-6">
         <div className="max-w-2xl mx-auto">
-          <Alert variant="error" className="mb-6">
+          <Alert variant="error" className="mb-6 rounded-2xl">
             {error}
           </Alert>
           <Button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-full px-5 py-2.5"
           >
             <ArrowLeft size={18} />
             Go Back
@@ -210,81 +213,95 @@ const QuizTaking = () => {
   const isLastQuestion = currentQuestionIndex === quiz.questions.length - 1;
   const answeredCount = getAnsweredCount();
   const allAnswered = answeredCount === quiz.questions.length;
+  const progressPercent = Math.round((answeredCount / quiz.questions.length) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[#faf6ef]">
+      <div className="max-w-5xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
+        <section
+          className="relative overflow-hidden rounded-[28px] p-6 sm:p-7 mb-6 border"
+          style={{
+            background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)',
+            borderColor: '#2f2317',
+            boxShadow: '0 20px 48px rgba(26,18,9,0.28)',
+          }}
+        >
+          <div className="absolute -top-8 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(247,149,63,0.12)' }} />
+          <div className="absolute -bottom-12 -left-10 w-56 h-56 rounded-full" style={{ background: 'rgba(247,149,63,0.08)' }} />
+
+          <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div>
               <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all mb-4 disabled:opacity-60"
+                style={{ color: '#f6d5b8', background: 'rgba(255,255,255,0.12)' }}
                 disabled={quizStarted}
               >
-                <ArrowLeft size={20} />
-                <span className="font-medium">Back</span>
+                <ArrowLeft size={17} />
+                Back
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-[#333333]">{quiz.title}</h1>
-                <p className="text-sm text-gray-600">
-                  Attempt {quiz.attempt_number} of {quiz.max_attempts}
-                </p>
-              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-bold leading-tight" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>
+                {quiz.title}
+              </h1>
+              <p className="text-sm mt-1" style={{ color: '#f6d5b8' }}>
+                Attempt {quiz.attempt_number} of {quiz.max_attempts}
+              </p>
             </div>
-            
+
             {quizStarted && (
-              <div className="flex items-center gap-4">
+              <div className="w-full lg:w-auto grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {timeRemaining && (
-                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                    <Timer size={16} className="text-red-600" />
-                    <span className="text-sm font-medium text-red-700">
-                      {formatTime(timeRemaining)}
-                    </span>
+                  <div className="rounded-2xl border px-4 py-3 inline-flex items-center gap-2" style={{ background: 'rgba(220,38,38,0.14)', borderColor: 'rgba(252,165,165,0.34)' }}>
+                    <Timer size={16} className="text-red-200" />
+                    <span className="text-sm font-semibold text-red-100">{formatTime(timeRemaining)}</span>
                   </div>
                 )}
-                <div className="text-sm text-gray-600">
-                  {answeredCount} of {quiz.questions.length} answered
+
+                <div className="rounded-2xl border px-4 py-3" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+                  <p className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Progress</p>
+                  <p className="text-sm font-semibold" style={{ color: '#fffaf0' }}>
+                    {answeredCount} of {quiz.questions.length} answered ({progressPercent}%)
+                  </p>
                 </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
         {!quizStarted ? (
-          // Quiz Start Screen
-          <Card className="text-center p-8">
+          <Card
+            className="text-center p-8 sm:p-10 rounded-[24px] border bg-white"
+            style={{ borderColor: '#e8e0d4', boxShadow: '0 12px 30px rgba(26,18,9,0.08)' }}
+          >
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-[#78BE20] rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: '#edf8ea' }}>
                 <HelpCircle size={32} className="text-white" />
               </div>
-              
-              <h2 className="text-2xl font-bold text-[#333333] mb-4">Ready to Start?</h2>
-              
+
+              <h2 className="text-3xl font-bold mb-4" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>Ready to Start?</h2>
+
               <div className="space-y-4 mb-8">
-                <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Questions:</span>
-                  <span className="font-semibold">{quiz.questions.length}</span>
+                <div className="flex items-center justify-between py-2.5 border-b" style={{ borderColor: '#eee4d7' }}>
+                  <span style={{ color: '#6b5e4e' }}>Questions:</span>
+                  <span className="font-semibold" style={{ color: '#1a1209' }}>{quiz.questions.length}</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                  <span className="text-gray-600">Attempt:</span>
-                  <span className="font-semibold">{quiz.attempt_number} of {quiz.max_attempts}</span>
+                <div className="flex items-center justify-between py-2.5 border-b" style={{ borderColor: '#eee4d7' }}>
+                  <span style={{ color: '#6b5e4e' }}>Attempt:</span>
+                  <span className="font-semibold" style={{ color: '#1a1209' }}>{quiz.attempt_number} of {quiz.max_attempts}</span>
                 </div>
                 {timeRemaining && (
-                  <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                    <span className="text-gray-600">Time Limit:</span>
-                    <span className="font-semibold">{formatTime(timeRemaining)}</span>
+                  <div className="flex items-center justify-between py-2.5 border-b" style={{ borderColor: '#eee4d7' }}>
+                    <span style={{ color: '#6b5e4e' }}>Time Limit:</span>
+                    <span className="font-semibold" style={{ color: '#1a1209' }}>{formatTime(timeRemaining)}</span>
                   </div>
                 )}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <div className="rounded-2xl p-4 mb-6 text-left" style={{ background: '#fff7eb', border: '1px solid #f6dec1' }}>
                 <div className="flex items-start gap-2">
                   <AlertTriangle size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-left">
+                  <div>
                     <p className="text-sm font-medium text-amber-900">Important Notes:</p>
                     <ul className="text-sm text-amber-700 mt-1 space-y-1">
                       <li>• You cannot pause once started</li>
@@ -297,21 +314,22 @@ const QuizTaking = () => {
 
               <Button
                 onClick={handleStartQuiz}
-                className="bg-[#78BE20] hover:bg-[#6BA51D] px-8 py-3"
+                className="px-8 py-3 rounded-full bg-[#1a1209] hover:bg-[#f7953f] transition-all"
               >
                 Start Quiz
               </Button>
             </div>
           </Card>
         ) : (
-          // Quiz Taking Interface
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Question Navigation Sidebar */}
             <div className="lg:col-span-1">
-              <Card className="sticky top-24">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-[#333333]">Questions</h3>
-                  <p className="text-sm text-gray-600">
+              <Card
+                className="sticky top-6 rounded-[24px] border bg-white"
+                style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}
+              >
+                <div className="p-4 border-b" style={{ borderColor: '#eee4d7' }}>
+                  <h3 className="font-semibold" style={{ color: '#1a1209' }}>Questions</h3>
+                  <p className="text-sm" style={{ color: '#6b5e4e' }}>
                     {answeredCount} of {quiz.questions.length} answered
                   </p>
                 </div>
@@ -321,12 +339,12 @@ const QuizTaking = () => {
                       <button
                         key={question.id}
                         onClick={() => goToQuestion(index)}
-                        className={`w-8 h-8 rounded text-sm font-medium transition-colors ${
+                        className={`w-8 h-8 rounded-lg text-sm font-semibold transition-all ${
                           index === currentQuestionIndex
-                            ? 'bg-[#f7953f] text-white'
+                            ? 'bg-[#1a1209] text-white'
                             : answers[question.id] !== null && answers[question.id] !== undefined
-                            ? 'bg-[#78BE20] text-white'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            ? 'bg-[#3f8e1b] text-white'
+                            : 'text-[#6b5e4e] bg-[#f3ede4] hover:bg-[#eadfce]'
                         }`}
                       >
                         {index + 1}
@@ -336,15 +354,15 @@ const QuizTaking = () => {
                   
                   <div className="mt-4 space-y-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-[#f7953f] rounded"></div>
+                      <div className="w-3 h-3 bg-[#1a1209] rounded"></div>
                       <span>Current</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-[#78BE20] rounded"></div>
+                      <div className="w-3 h-3 bg-[#3f8e1b] rounded"></div>
                       <span>Answered</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-gray-200 rounded"></div>
+                      <div className="w-3 h-3 bg-[#f3ede4] rounded"></div>
                       <span>Not answered</span>
                     </div>
                   </div>
@@ -352,40 +370,43 @@ const QuizTaking = () => {
               </Card>
             </div>
 
-            {/* Main Question Area */}
             <div className="lg:col-span-3">
-              <Card className="p-6">
-                {/* Question Header */}
+              <Card
+                className="p-6 sm:p-7 rounded-[24px] border bg-white"
+                style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}
+              >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 bg-[#f7953f] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    <span className="w-8 h-8 bg-[#1a1209] text-white rounded-full flex items-center justify-center text-sm font-bold">
                       {currentQuestionIndex + 1}
                     </span>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm" style={{ color: '#6b5e4e' }}>
                       Question {currentQuestionIndex + 1} of {quiz.questions.length}
                     </span>
                   </div>
                 </div>
 
-                {/* Question Text */}
                 <div className="mb-8">
-                  <h2 className="text-lg font-semibold text-[#333333] leading-relaxed">
+                  <h2 className="text-xl font-semibold leading-relaxed" style={{ color: '#1a1209' }}>
                     {currentQuestion.question_text}
                   </h2>
                 </div>
 
-                {/* Answer Options */}
                 <div className="space-y-3 mb-8">
                   {currentQuestion.options
                     .sort((a, b) => a.option_order - b.option_order)
                     .map((option) => (
                     <label
                       key={option.id}
-                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-[#f7953f] ${
+                      className={`block p-4 border rounded-xl cursor-pointer transition-all ${
                         answers[currentQuestion.id] === option.option_order
-                          ? 'border-[#f7953f] bg-orange-50'
-                          : 'border-gray-200 hover:bg-gray-50'
+                          ? 'border-[#f7953f]'
+                          : 'hover:border-[#eadfce]'
                       }`}
+                      style={{
+                        background: answers[currentQuestion.id] === option.option_order ? '#fff5ea' : '#ffffff',
+                        borderColor: answers[currentQuestion.id] === option.option_order ? '#f7953f' : '#e8e0d4',
+                      }}
                     >
                       <div className="flex items-center gap-3">
                         <input
@@ -396,18 +417,18 @@ const QuizTaking = () => {
                           onChange={() => handleAnswerSelect(currentQuestion.id, option.id)}
                           className="w-4 h-4 text-[#f7953f] focus:ring-[#f7953f]"
                         />
-                        <span className="text-[#333333]">{option.option_text}</span>
+                        <span style={{ color: '#3d3228' }}>{option.option_text}</span>
                       </div>
                     </label>
                   ))}
                 </div>
 
-                {/* Navigation Buttons */}
                 <div className="flex items-center justify-between">
                   <Button
                     variant="outline"
                     onClick={goToPreviousQuestion}
                     disabled={currentQuestionIndex === 0}
+                    className="rounded-full"
                   >
                     Previous
                   </Button>
@@ -416,7 +437,7 @@ const QuizTaking = () => {
                     {!isLastQuestion ? (
                       <Button
                         onClick={goToNextQuestion}
-                        className="bg-[#f7953f] hover:bg-[#E0741C]"
+                        className="bg-[#1a1209] hover:bg-[#f7953f] rounded-full"
                       >
                         Next Question
                       </Button>
@@ -424,7 +445,7 @@ const QuizTaking = () => {
                       <Button
                         onClick={handleSubmitClick}
                         disabled={submitting || !allAnswered}
-                        className="bg-[#78BE20] hover:bg-[#6BA51D]"
+                        className="bg-[#3f8e1b] hover:bg-[#5aa125] rounded-full"
                       >
                         {submitting ? (
                           <>
@@ -442,9 +463,8 @@ const QuizTaking = () => {
                   </div>
                 </div>
 
-                {/* Submit Warning */}
                 {isLastQuestion && !allAnswered && (
-                  <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="mt-4 rounded-xl p-3" style={{ background: '#fff7eb', border: '1px solid #f6dec1' }}>
                     <div className="flex items-center gap-2">
                       <AlertTriangle size={16} className="text-amber-600" />
                       <p className="text-sm text-amber-700">
@@ -461,15 +481,15 @@ const QuizTaking = () => {
 
       {/* Submit Confirmation Modal */}
       {showSubmitConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="max-w-md mx-4 p-6">
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full mx-4 p-6 rounded-[24px] border" style={{ borderColor: '#e8e0d4', boxShadow: '0 18px 40px rgba(26,18,9,0.2)' }}>
             <div className="text-center">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: '#fff3e8' }}>
                 <AlertTriangle size={32} className="text-amber-600" />
               </div>
               
-              <h3 className="text-lg font-bold text-[#333333] mb-2">Submit Quiz?</h3>
-              <p className="text-gray-600 mb-6">
+              <h3 className="text-2xl font-bold mb-2" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>Submit Quiz?</h3>
+              <p className="mb-6" style={{ color: '#6b5e4e' }}>
                 Are you sure you want to submit your quiz? You won't be able to change your answers after submission.
               </p>
               
@@ -478,13 +498,14 @@ const QuizTaking = () => {
                   variant="outline"
                   onClick={() => setShowSubmitConfirm(false)}
                   disabled={submitting}
+                  className="rounded-full"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSubmitQuiz}
                   disabled={submitting}
-                  className="bg-[#78BE20] hover:bg-[#6BA51D]"
+                  className="bg-[#3f8e1b] hover:bg-[#5aa125] rounded-full"
                 >
                   {submitting ? (
                     <>

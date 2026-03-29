@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -48,69 +48,87 @@ const QuizResults = () => {
   const scorePercentage = Math.round(percentage || 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-[#faf6ef]">
+      <div className="max-w-5xl mx-auto px-5 sm:px-6 py-6 sm:py-8">
+        <section
+          className="relative overflow-hidden rounded-[28px] p-6 sm:p-7 mb-6 border"
+          style={{
+            background: 'linear-gradient(135deg, #1a1209 0%, #2a1d11 55%, #3a2817 100%)',
+            borderColor: '#2f2317',
+            boxShadow: '0 20px 48px rgba(26,18,9,0.28)',
+          }}
+        >
+          <div className="absolute -top-8 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(247,149,63,0.12)' }} />
+          <div className="absolute -bottom-12 -left-10 w-56 h-56 rounded-full" style={{ background: 'rgba(247,149,63,0.08)' }} />
+
+          <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
               <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 text-gray-600 hover:text-[#f7953f] transition-colors"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-semibold transition-all mb-4"
+                style={{ color: '#f6d5b8', background: 'rgba(255,255,255,0.12)' }}
               >
-                <ArrowLeft size={20} />
-                <span className="font-medium">Back to Course</span>
+                <ArrowLeft size={17} />
+                Back to Course
               </button>
-              <div>
-                <h1 className="text-xl font-bold text-[#333333]">Quiz Results</h1>
-                <p className="text-sm text-gray-600">
-                  {attempts_remaining} attempt{attempts_remaining !== 1 ? 's' : ''} remaining
-                </p>
-              </div>
+
+              <h1 className="text-3xl font-bold leading-tight" style={{ color: '#fff9ef', fontFamily: 'Georgia, serif' }}>
+                Quiz Results
+              </h1>
+              <p className="text-sm mt-1" style={{ color: '#f6d5b8' }}>
+                {attempts_remaining} attempt{attempts_remaining !== 1 ? 's' : ''} remaining
+              </p>
+            </div>
+
+            <div className="rounded-2xl border px-4 py-3" style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.2)' }}>
+              <p className="text-xs uppercase tracking-wide" style={{ color: '#f3d1b1' }}>Final Score</p>
+              <p className="text-xl font-bold" style={{ color: '#fffaf0' }}>{scorePercentage}%</p>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Results Summary */}
-        <Card className="mb-8 text-center p-8">
+        <Card
+          className="mb-8 text-center p-8 sm:p-10 rounded-[24px] border bg-white"
+          style={{ borderColor: '#e8e0d4', boxShadow: '0 12px 30px rgba(26,18,9,0.08)' }}
+        >
           <div className="max-w-md mx-auto">
-            {/* Score Circle */}
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
-              passed ? 'bg-green-100' : 'bg-red-100'
-            }`}>
+            <div
+              className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{ background: passed ? '#edf8ea' : '#fff1f2' }}
+            >
               {passed ? (
-                <Trophy size={40} className="text-green-600" />
+                <Trophy size={40} className="text-[#3f8e1b]" />
               ) : (
-                <AlertCircle size={40} className="text-red-600" />
+                <AlertCircle size={40} className="text-[#dc2626]" />
               )}
             </div>
-            
-            <h2 className={`text-3xl font-bold mb-2 ${
-              passed ? 'text-green-600' : 'text-red-600'
-            }`}>
+
+            <h2
+              className="text-4xl font-bold mb-2"
+              style={{ color: passed ? '#3f8e1b' : '#dc2626' }}
+            >
               {scorePercentage}%
             </h2>
-            
-            <p className={`text-lg font-semibold mb-4 ${
-              passed ? 'text-green-800' : 'text-red-800'
-            }`}>
+
+            <p
+              className="text-lg font-semibold mb-5"
+              style={{ color: passed ? '#26401b' : '#9f1239' }}
+            >
               {passed ? 'Congratulations! You passed!' : 'Keep trying! You can do better!'}
             </p>
-            
+
             <div className="grid grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-2xl font-bold text-blue-900">{score}</p>
-                <p className="text-sm text-blue-700">Correct</p>
+              <div className="rounded-2xl p-3 border" style={{ background: '#edf8ea', borderColor: '#d6ebc8' }}>
+                <p className="text-2xl font-bold" style={{ color: '#26401b' }}>{score}</p>
+                <p className="text-sm" style={{ color: '#5f7b4a' }}>Correct</p>
               </div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-2xl font-bold text-red-900">{total_questions - score}</p>
-                <p className="text-sm text-red-700">Incorrect</p>
+              <div className="rounded-2xl p-3 border" style={{ background: '#fff1f2', borderColor: '#fecdd3' }}>
+                <p className="text-2xl font-bold" style={{ color: '#9f1239' }}>{total_questions - score}</p>
+                <p className="text-sm" style={{ color: '#be123c' }}>Incorrect</p>
               </div>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <p className="text-2xl font-bold text-gray-900">70%</p>
-                <p className="text-sm text-gray-700">Required</p>
+              <div className="rounded-2xl p-3 border" style={{ background: '#f3ede4', borderColor: '#eadfce' }}>
+                <p className="text-2xl font-bold" style={{ color: '#1a1209' }}>70%</p>
+                <p className="text-sm" style={{ color: '#6b5e4e' }}>Required</p>
               </div>
             </div>
 
@@ -118,7 +136,7 @@ const QuizResults = () => {
               <Button
                 onClick={() => navigate(-1)}
                 variant="outline"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 rounded-full"
               >
                 <BookOpen size={18} />
                 Back to Course
@@ -127,7 +145,7 @@ const QuizResults = () => {
               {can_retake && attempts_remaining > 0 && (
                 <Button
                   onClick={() => navigate(`/employee/quiz/${quizId}`)}
-                  className="bg-[#f7953f] hover:bg-[#E0741C] flex items-center gap-2"
+                  className="bg-[#1a1209] hover:bg-[#f7953f] rounded-full flex items-center gap-2"
                 >
                   <RotateCcw size={18} />
                   Retake Quiz
@@ -137,13 +155,15 @@ const QuizResults = () => {
           </div>
         </Card>
 
-        {/* Question Review */}
-        <Card className="p-6">
+        <Card
+          className="p-6 sm:p-7 rounded-[24px] border bg-white"
+          style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}
+        >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-[#00ADEF] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: '#fff3e8' }}>
               <BookOpen size={18} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-[#333333]">Question Review</h2>
+            <h2 className="text-2xl font-bold" style={{ color: '#1a1209', fontFamily: 'Georgia, serif' }}>Question Review</h2>
           </div>
           
           <div className="space-y-6">
@@ -151,47 +171,54 @@ const QuizResults = () => {
               const isCorrect = questionResult.is_correct;
               
               return (
-                <div key={questionResult.question_id} className="border border-gray-200 rounded-lg p-4">
-                  {/* Question Header */}
+                <div
+                  key={questionResult.question_id}
+                  className="border rounded-2xl p-5"
+                  style={{ borderColor: '#e8e0d4', background: '#fffdfa' }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      isCorrect ? 'bg-green-100' : 'bg-red-100'
-                    }`}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: isCorrect ? '#edf8ea' : '#fff1f2' }}
+                    >
                       {isCorrect ? (
-                        <CheckCircle size={16} className="text-green-600" />
+                        <CheckCircle size={16} className="text-[#3f8e1b]" />
                       ) : (
-                        <XCircle size={16} className="text-red-600" />
+                        <XCircle size={16} className="text-[#dc2626]" />
                       )}
                     </div>
-                    <span className="text-sm font-medium text-gray-600">
+                    <span className="text-sm font-medium" style={{ color: '#6b5e4e' }}>
                       Question {index + 1}
                     </span>
-                    <span className={`text-sm font-semibold ${
-                      isCorrect ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: isCorrect ? '#3f8e1b' : '#dc2626' }}
+                    >
                       {isCorrect ? 'Correct' : 'Incorrect'}
                     </span>
                   </div>
 
-                  {/* Question Text */}
-                  <h3 className="text-lg font-semibold text-[#333333] mb-4">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: '#1a1209' }}>
                     {questionResult.question_text}
                   </h3>
 
-                  {/* Answer Display */}
                   <div className="space-y-3 mb-4">
-                    <div className={`p-3 border rounded-lg ${
-                      isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
-                    }`}>
+                    <div
+                      className="p-3 border rounded-xl"
+                      style={{
+                        borderColor: isCorrect ? '#86d59f' : '#f9a8ba',
+                        background: isCorrect ? '#edf8ea' : '#fff1f2',
+                      }}
+                    >
                       <div className="flex items-center gap-3">
                         {isCorrect ? (
-                          <CheckCircle size={16} className="text-green-600" />
+                          <CheckCircle size={16} className="text-[#3f8e1b]" />
                         ) : (
-                          <XCircle size={16} className="text-red-600" />
+                          <XCircle size={16} className="text-[#dc2626]" />
                         )}
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Your Answer:</p>
-                          <p className={`text-sm ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                          <p className="text-sm font-medium" style={{ color: '#1a1209' }}>Your Answer:</p>
+                          <p className="text-sm" style={{ color: isCorrect ? '#26401b' : '#9f1239' }}>
                             {questionResult.user_answer}
                           </p>
                         </div>
@@ -199,23 +226,22 @@ const QuizResults = () => {
                     </div>
                     
                     {!isCorrect && (
-                      <div className="p-3 border border-green-500 bg-green-50 rounded-lg">
+                      <div className="p-3 border rounded-xl" style={{ borderColor: '#86d59f', background: '#edf8ea' }}>
                         <div className="flex items-center gap-3">
-                          <CheckCircle size={16} className="text-green-600" />
+                          <CheckCircle size={16} className="text-[#3f8e1b]" />
                           <div>
-                            <p className="text-sm font-medium text-green-900">Correct Answer:</p>
-                            <p className="text-sm text-green-800">{questionResult.correct_answer}</p>
+                            <p className="text-sm font-medium" style={{ color: '#26401b' }}>Correct Answer:</p>
+                            <p className="text-sm" style={{ color: '#26401b' }}>{questionResult.correct_answer}</p>
                           </div>
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Explanation */}
                   {questionResult.explanation && (
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm font-medium text-blue-900 mb-1">Explanation:</p>
-                      <p className="text-sm text-blue-800">{questionResult.explanation}</p>
+                    <div className="mt-4 p-3 rounded-xl" style={{ background: '#fff7eb', border: '1px solid #f6dec1' }}>
+                      <p className="text-sm font-medium mb-1" style={{ color: '#9a5800' }}>Explanation:</p>
+                      <p className="text-sm" style={{ color: '#8a5a2d' }}>{questionResult.explanation}</p>
                     </div>
                   )}
                 </div>

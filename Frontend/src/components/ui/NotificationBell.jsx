@@ -41,10 +41,26 @@ const NotificationBell = ({ collapsed = false }) => {
   useEffect(() => {
     if (showDropdown && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = 380;
+      const viewportPadding = 12;
+      const gap = 10;
+      const maxHeight = Math.min(560, window.innerHeight - viewportPadding * 2);
+
+      let left = rect.right + gap;
+      if (left + dropdownWidth + viewportPadding > window.innerWidth) {
+        left = Math.max(viewportPadding, rect.left - dropdownWidth - gap);
+      }
+
+      const top = Math.min(
+        Math.max(viewportPadding, rect.top),
+        Math.max(viewportPadding, window.innerHeight - maxHeight - viewportPadding)
+      );
+
       setDropdownStyle({
         position: 'fixed',
-        top: rect.top,
-        left: rect.right + 8,
+        top,
+        left,
+        maxHeight,
         zIndex: 9999,
       });
     }
@@ -118,18 +134,22 @@ const NotificationBell = ({ collapsed = false }) => {
           position:relative; display:flex; align-items:center;
           width:100%; padding:9px 12px; border:none; border-radius:12px;
           background:transparent; cursor:pointer; gap:10px;
-          font-size:14px; font-weight:500; color:#6b7280;
+          font-size:14px; font-weight:600; color:#7c6f61;
           transition:background 0.15s, color 0.15s; font-family:inherit; text-align:left;
         }
         .nb-btn.c { justify-content:center; padding:9px; }
-        .nb-btn:hover, .nb-btn.on { background:#fff7ed; color:#f7953f; }
+        .nb-btn:hover, .nb-btn.on {
+          background:#f6f1e8;
+          color:#1a1209;
+          box-shadow: inset 0 0 0 1px #eadfce;
+        }
         .nb-btn:hover .nb-bi      { animation:nb-ring 0.65s ease; }
 
         .nb-badge {
           display:flex; align-items:center; justify-content:center;
           min-width:18px; height:18px; padding:0 4px; border-radius:999px;
           font-size:10px; font-weight:800; color:#fff;
-          background:#ef4444; border:2px solid #fff;
+          background:#dc2626; border:2px solid #fff8ef;
           box-shadow:0 2px 5px rgba(239,68,68,.4);
           animation:nb-pop .3s cubic-bezier(.34,1.56,.64,1);
         }
@@ -137,61 +157,61 @@ const NotificationBell = ({ collapsed = false }) => {
         .nb-bi2 { margin-left:auto; }
 
         .nb-drop {
-          width:370px; background:#fff; border-radius:16px;
-          border:1px solid rgba(0,0,0,.07);
-          box-shadow:0 4px 8px rgba(0,0,0,.05),0 16px 40px rgba(0,0,0,.10);
-          display:flex; flex-direction:column; max-height:560px; overflow:hidden;
+          width:380px; background:#fffdf8; border-radius:22px;
+          border:1px solid #e8e0d4;
+          box-shadow:0 18px 42px rgba(26,18,9,.22);
+          display:flex; flex-direction:column; overflow:hidden;
           animation:nb-in .2s cubic-bezier(.22,1,.36,1);
         }
 
         .nb-hd {
           display:flex; align-items:center; justify-content:space-between;
           padding:16px 18px 14px;
-          background:linear-gradient(135deg,#f7953f 0%,#E0741C 100%);
+          background:linear-gradient(135deg,#1a1209 0%, #2a1d11 55%, #3a2817 100%);
           flex-shrink:0;
         }
         .nb-hl { display:flex; align-items:center; gap:10px; }
         .nb-hi {
           width:32px; height:32px; border-radius:9px;
-          background:rgba(255,255,255,.18);
+          background:rgba(247,149,63,.22);
           display:flex; align-items:center; justify-content:center;
         }
-        .nb-ht  { font-size:15px; font-weight:700; color:#fff; letter-spacing:-.2px; }
-        .nb-hs  { font-size:11px; color:rgba(255,255,255,.7); margin-top:1px; }
+        .nb-ht  { font-size:16px; font-weight:700; color:#fff9ef; letter-spacing:-.2px; }
+        .nb-hs  { font-size:11px; color:#f6d5b8; margin-top:1px; }
         .nb-pill{
           display:inline-flex; align-items:center; gap:4px;
           padding:2px 7px; border-radius:999px;
-          background:rgba(255,255,255,.2); color:#fff;
+          background:rgba(247,149,63,.22); color:#ffe2ca;
           font-size:11px; font-weight:600;
         }
-        .nb-dot { width:5px; height:5px; border-radius:50%; background:#fde68a; }
+        .nb-dot { width:5px; height:5px; border-radius:50%; background:#ffe2ca; }
 
         .nb-mb {
           display:flex; align-items:center; gap:5px;
           padding:6px 11px; border-radius:8px;
-          border:1.5px solid rgba(255,255,255,.35);
-          background:rgba(255,255,255,.14); color:#fff;
+          border:1.5px solid rgba(255,255,255,.26);
+          background:rgba(255,255,255,.12); color:#fff4e8;
           font-size:12px; font-weight:600;
           cursor:pointer; font-family:inherit; white-space:nowrap;
           transition:background 0.15s;
         }
-        .nb-mb:hover:not(:disabled){ background:rgba(255,255,255,.26); }
+        .nb-mb:hover:not(:disabled){ background:rgba(255,255,255,.2); }
         .nb-mb:disabled{ opacity:.5; cursor:not-allowed; }
 
         .nb-list{
           flex:1; overflow-y:auto;
-          scrollbar-width:thin; scrollbar-color:#fde0c0 transparent;
+          scrollbar-width:thin; scrollbar-color:#eadfce transparent;
         }
         .nb-list::-webkit-scrollbar{ width:3px; }
-        .nb-list::-webkit-scrollbar-thumb{ background:#fcd9b6; border-radius:4px; }
+        .nb-list::-webkit-scrollbar-thumb{ background:#eadfce; border-radius:4px; }
 
         .nb-sl{
           padding:10px 16px 3px;
           font-size:10px; font-weight:700;
-          color:#c2855a; letter-spacing:.09em; text-transform:uppercase;
+          color:#b97a4f; letter-spacing:.09em; text-transform:uppercase;
         }
-        .nb-iw  { padding:4px 8px; }
-        .nb-div { height:1px; background:#fef3ea; margin:0 12px; }
+        .nb-iw  { padding:6px 10px; }
+        .nb-div { height:1px; background:#efe7dc; margin:0 14px; }
 
         .nb-empty{
           display:flex; flex-direction:column;
@@ -199,11 +219,11 @@ const NotificationBell = ({ collapsed = false }) => {
           padding:44px 24px; gap:10px; text-align:center;
         }
         .nb-ei{
-          width:60px; height:60px; border-radius:18px; background:#fff7ed;
-          display:flex; align-items:center; justify-content:center; color:#fbbf24;
+          width:60px; height:60px; border-radius:18px; background:#f3ede4;
+          display:flex; align-items:center; justify-content:center; color:#9d907f;
         }
-        .nb-et{ font-size:15px; font-weight:600; color:#374151; }
-        .nb-es{ font-size:13px; color:#9ca3af; line-height:1.5; max-width:210px; }
+        .nb-et{ font-size:15px; font-weight:700; color:#1a1209; }
+        .nb-es{ font-size:13px; color:#7c6f61; line-height:1.5; max-width:210px; }
 
         .nb-ld{
           display:flex; flex-direction:column;
@@ -211,21 +231,21 @@ const NotificationBell = ({ collapsed = false }) => {
           padding:44px 24px; gap:10px;
         }
         .nb-sp{ animation:nb-spin .9s linear infinite; color:#f7953f; }
-        .nb-lt{ font-size:13px; color:#9ca3af; }
+        .nb-lt{ font-size:13px; color:#7c6f61; }
 
         .nb-ft{
-          padding:10px 12px; border-top:1px solid #fef3ea;
-          background:#fffaf6; flex-shrink:0;
+          padding:11px 12px; border-top:1px solid #efe7dc;
+          background:#fffdfa; flex-shrink:0;
         }
         .nb-vb{
           display:flex; align-items:center; justify-content:center; gap:5px;
-          width:100%; padding:9px 16px; border-radius:10px;
-          border:1.5px solid #fde0c0; background:#fff;
-          color:#E0741C; font-size:13px; font-weight:600;
+          width:100%; padding:10px 16px; border-radius:12px;
+          border:1.5px solid #eadfce; background:#fff;
+          color:#6b5e4e; font-size:13px; font-weight:700;
           cursor:pointer; font-family:inherit;
           transition:background 0.15s, box-shadow 0.15s;
         }
-        .nb-vb:hover{ background:#fff7ed; box-shadow:0 2px 8px rgba(245,130,32,.15); }
+        .nb-vb:hover{ background:#f6f1e8; box-shadow:0 2px 8px rgba(26,18,9,.08); }
       `}</style>
 
       {/* Anchor element — just holds the button */}

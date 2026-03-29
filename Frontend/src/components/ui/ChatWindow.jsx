@@ -1,233 +1,197 @@
 // src/components/ui/ChatWindow.jsx
 import { useState, useEffect, useRef } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
-import { Send, Bot, User, Sparkles, FileText, MessageCircle } from "lucide-react";
-import PrimaryButton from "./PrimaryButton";
-import IconButton from "./IconButton";
-import ChatCard from "./ChatCard";
+import { Send, Bot, User, Sparkles, FileText, MessageCircle, Zap, BookOpen } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
 
-const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false }) => {
-  const {
-    activeChatId,
-    messages,
-    selectedDocumentIds,
-    loading,
-    sendMessage,
-    fetchMessages,
-  } = useChatbot();
+/* Quick-prompt suggestions shown on empty state */
+const QUICK_PROMPTS = [
+  { icon: Sparkles, text: "Summarize the key points from this document" },
+  { icon: BookOpen, text: "What are the main topics covered?" },
+  { icon: Zap,      text: "List the most important takeaways" },
+];
 
+const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
+  const { activeChatId, messages, selectedDocumentIds, loading, sendMessage, fetchMessages } = useChatbot();
   const [inputMessage, setInputMessage] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
-  
-  // Check if we're in read-only mode (viewing history without a document)
   const isReadOnlyMode = activeChatId && (!selectedDocumentIds || selectedDocumentIds.length === 0);
   const hasDocuments = selectedDocumentIds && selectedDocumentIds.length > 0;
 
-  // Auto-scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [currentMessages]);
-
-  // Load messages when switching chats
-  useEffect(() => {
-    if (activeChatId && !messages[activeChatId]) {
-      fetchMessages(activeChatId);
-    }
-  }, [activeChatId]);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages]);
+  useEffect(() => { if (activeChatId && !messages[activeChatId]) fetchMessages(activeChatId); }, [activeChatId]);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !hasDocuments || sending) return;
-
-    const messageText = inputMessage.trim();
+    const text = inputMessage.trim();
     setInputMessage("");
     setSending(true);
-
-    // Generate title for new chats
-    const title = !activeChatId ? messageText.substring(0, 50) : null;
-
-    await sendMessage(messageText, activeChatId, title);
+    await sendMessage(text, activeChatId, !activeChatId ? text.substring(0, 50) : null);
     setSending(false);
-
-    // Focus input after sending
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  // Show welcome screen only if no document AND no active chat
+  /* ── No-document welcome screen ── */
   if (!hasDocuments && !activeChatId) {
     return (
-      <div className="h-full flex items-center justify-center p-8">
-        <div className="text-center max-w-lg">
-          <div className="inline-flex p-8 bg-gradient-to-br from-[#f7953f]/5 to-[#E0741C]/5 rounded-full mb-8">
-            <Sparkles size={64} className="text-[#f7953f]/60" />
-          </div>
-          <h2 className="text-2xl font-semibold text-[#333333] mb-4">
-            Ready to assist you
-          </h2>
-          <p className="text-gray-600 mb-8 leading-relaxed">
-            Select one or more documents to start an intelligent conversation and get insights from your content.
-          </p>
-          <PrimaryButton
-            onClick={onOpenDocumentSelector}
-            size="lg"
-            className="shadow-sm"
-          >
-            <FileText size={20} />
-            <span>Choose Documents</span>
-          </PrimaryButton>
+      <div className="h-full flex flex-col items-center justify-center p-10" style={{ background: "#FAF6EF" }}>
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+          style={{ background: "#1A1209" }}
+        >
+          <Bot size={30} color="#F58220" />
         </div>
+        <h2 className="text-xl font-bold mb-2 text-center" style={{ color: "#3D2C1C", fontFamily: "Georgia, serif" }}>
+          Ready to assist you
+        </h2>
+        <p className="text-sm text-center mb-7 max-w-xs" style={{ color: "rgba(65,50,24,0.55)" }}>
+          Select one or more documents to start an intelligent conversation and extract insights from your content.
+        </p>
+        <button
+          onClick={onOpenDocumentSelector}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all"
+          style={{ background: "#1A1209", color: "#faf6ef" }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+        >
+          <FileText size={16} /> Choose Documents
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#FFFDF7] min-h-0">
-      {/* Read-Only Mode Banner */}
+    <div className="h-full flex flex-col min-h-0" style={{ background: "#fff" }}>
+
+      {/* Read-only mode banner */}
       {isReadOnlyMode && currentMessages.length > 0 && (
-        <div className="flex-shrink-0 px-6 pt-4">
-          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="p-1.5 bg-blue-100 rounded-lg">
-              <MessageCircle size={16} className="text-blue-600" />
-            </div>
-            <p className="text-sm text-blue-800 font-medium">
-              You're viewing a previous conversation. Select a document to continue chatting.
+        <div className="flex-shrink-0 px-5 pt-4">
+          <div
+            className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl"
+            style={{ background: "#eff6ff", border: "1px solid #bfdbfe" }}
+          >
+            <MessageCircle size={14} style={{ color: "#2563eb", flexShrink: 0 }} />
+            <p className="text-xs font-medium" style={{ color: "#1d4ed8" }}>
+              Viewing previous conversation — select a document to continue chatting.
             </p>
           </div>
         </div>
       )}
-      
-      {/* Messages Area - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0 scroll-smooth" onClick={onCloseSidebar}>
-        {currentMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-2xl">
-              <div className="inline-flex p-6 bg-gradient-to-br from-[#f7953f]/5 to-[#E0741C]/5 rounded-full mb-8">
-                <Bot size={48} className="text-[#f7953f]/60" />
-              </div>
-              <h2 className="text-xl font-semibold text-[#333333] mb-4">
-                How can I help you today?
-              </h2>
-              <p className="text-gray-600 mb-8">
-                Ask me anything about your document. I'm here to help you understand and extract insights.
-              </p>
-              <div className="grid gap-3 max-w-md mx-auto">
+
+      {/* ── Messages area ── */}
+      <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 min-h-0">
+
+        {/* Empty / first-time state with quick prompts */}
+        {currentMessages.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+              style={{ background: "#FAF6EF" }}
+            >
+              <Bot size={26} style={{ color: "#F58220" }} />
+            </div>
+            <h3 className="font-bold text-base mb-1" style={{ color: "#3D2C1C", fontFamily: "Georgia, serif" }}>
+              How can I help you today?
+            </h3>
+            <p className="text-xs mb-6 text-center" style={{ color: "rgba(65,50,24,0.5)" }}>
+              Ask me anything about your selected {selectedDocumentIds.length > 1 ? "documents" : "document"}.
+            </p>
+            <div className="w-full max-w-sm space-y-2">
+              {QUICK_PROMPTS.map(({ icon: Icon, text }) => (
                 <button
-                  onClick={() => setInputMessage("Summarize the key points from this document")}
-                  className="p-4 text-left border border-gray-200 hover:border-[#f7953f]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
+                  key={text}
+                  onClick={() => setInputMessage(text)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left text-sm transition-all"
+                  style={{ background: "#FAF6EF", border: "1px solid #e0d8ce", color: "#6b5e4e" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#F58220"; e.currentTarget.style.color = "#1A1209"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#e0d8ce"; e.currentTarget.style.color = "#6b5e4e"; }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#f7953f]/10 rounded-lg group-hover:bg-[#f7953f]/20 transition-colors">
-                      <Sparkles size={16} className="text-[#f7953f]" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#f7953f]">
-                      Summarize the key points
-                    </span>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#fff0e8" }}>
+                    <Icon size={14} style={{ color: "#F58220" }} />
                   </div>
+                  <span className="font-medium">{text}</span>
                 </button>
-                <button
-                  onClick={() => setInputMessage("What are the main topics covered?")}
-                  className="p-4 text-left border border-gray-200 hover:border-[#00ADEF]/40 rounded-xl cursor-pointer group transition-all hover:shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-[#00ADEF]/10 rounded-lg group-hover:bg-[#00ADEF]/20 transition-colors">
-                      <MessageCircle size={16} className="text-[#00ADEF]" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 group-hover:text-[#00ADEF]">
-                      What are the main topics?
-                    </span>
-                  </div>
-                </button>
-              </div>
+              ))}
             </div>
           </div>
-        ) : (
-          currentMessages.map((message, index) => (
-            <div
-              key={message.id || index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              } animate-in slide-in-from-bottom duration-300`}
-            >
-              <div
-                className={`flex gap-4 max-w-3xl ${
-                  message.role === "user" ? "flex-row-reverse" : "flex-row"
-                }`}
-              >
+        )}
+
+        {/* Messages */}
+        {currentMessages.map((message, index) => {
+          const isUser = message.role === "user";
+          return (
+            <div key={message.id || index} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+              <div className={`flex gap-3 max-w-[78%] ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+
                 {/* Avatar */}
                 <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.role === "user"
-                      ? "bg-gradient-to-br from-[#f7953f] to-[#E0741C]"
-                      : "bg-gradient-to-br from-[#333333] to-[#555555]"
-                  }`}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 self-end"
+                  style={{ background: isUser ? "#F58220" : "#1A1209" }}
                 >
-                  {message.role === "user" ? (
-                    <User size={16} className="text-white" />
-                  ) : (
-                    <Bot size={16} className="text-white" />
-                  )}
+                  {isUser ? <User size={14} color="#fff" /> : <Bot size={14} color="#F58220" />}
                 </div>
 
-                {/* Message Content */}
+                {/* Bubble */}
                 <div
-                  className={`flex-1 px-4 py-3 rounded-2xl ${
-                    message.role === "user"
-                      ? "bg-gradient-to-br from-[#f7953f] to-[#E0741C] text-white"
-                      : "bg-white border border-gray-200 text-gray-800"
-                  }`}
+                  className="px-4 py-3 rounded-2xl text-sm leading-relaxed"
+                  style={isUser
+                    ? {
+                        background: "#1A1209",
+                        color: "#faf6ef",
+                        borderBottomRightRadius: 4,
+                      }
+                    : {
+                        background: "#FAF6EF",
+                        color: "#2c1a08",
+                        border: "1px solid #e0d8ce",
+                        borderBottomLeftRadius: 4,
+                      }
+                  }
                 >
-                  <MarkdownMessage 
-                    content={message.message} 
-                    isUser={message.role === "user"}
-                  />
+                  <MarkdownMessage content={message.message} isUser={isUser} />
                   <span
-                    className={`text-xs mt-2 block ${
-                      message.role === "user" ? "text-white/80" : "text-gray-500"
-                    }`}
+                    className="text-[10px] mt-1.5 block"
+                    style={{ color: isUser ? "rgba(250,246,239,0.5)" : "#c4b8a8" }}
                   >
-                    {new Date(message.created_at).toLocaleTimeString("en-US", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {new Date(message.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </div>
               </div>
             </div>
-          ))
-        )}
+          );
+        })}
 
-        {/* Loading indicator */}
+        {/* Typing indicator */}
         {sending && (
-          <div className="flex justify-start animate-in slide-in-from-bottom duration-300">
-            <div className="flex gap-4 max-w-3xl">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[#333333] to-[#555555]">
-                <Bot size={16} className="text-white" />
+          <div className="flex justify-start">
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 self-end" style={{ background: "#1A1209" }}>
+                <Bot size={14} color="#F58220" />
               </div>
-              <div className="px-4 py-3 bg-white border border-gray-200 rounded-2xl">
-                <div className="flex items-center gap-3">
-                  <LoadingSpinner size="small" />
-                  <span className="text-sm text-gray-600">AI is thinking...</span>
-                  <div className="flex gap-1">
-                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce"></div>
-                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-1 h-1 bg-[#f7953f] rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              <div
+                className="px-4 py-3 rounded-2xl"
+                style={{ background: "#FAF6EF", border: "1px solid #e0d8ce", borderBottomLeftRadius: 4 }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs" style={{ color: "rgba(65,50,24,0.5)" }}>Thinking</span>
+                  <div className="flex gap-1 ml-1">
+                    {[0, 0.18, 0.36].map((delay, i) => (
+                      <span
+                        key={i}
+                        className="w-1.5 h-1.5 rounded-full animate-bounce inline-block"
+                        style={{ background: "#F58220", animationDelay: `${delay}s` }}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -238,75 +202,81 @@ const ChatWindow = ({ onOpenDocumentSelector, onCloseSidebar, minimal = false })
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at Bottom */}
-      <div className="flex-shrink-0 p-6 bg-white/50 backdrop-blur-sm border-t border-gray-200/50">
-        <div className="max-w-3xl mx-auto">
-          {isReadOnlyMode ? (
-            /* Read-Only Mode Message */
-            <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-xl">
-              <div className="flex items-center gap-3 flex-1">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <FileText size={20} className="text-amber-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-900">
-                    Viewing Chat History
-                  </p>
-                  <p className="text-xs text-amber-700">
-                    Select a document to continue this conversation
-                  </p>
-                </div>
+      {/* ── Input area ── */}
+      <div
+        className="flex-shrink-0 px-5 py-4"
+        style={{ borderTop: "1px solid #e0d8ce", background: "#fff" }}
+      >
+        {isReadOnlyMode ? (
+          /* Read-only CTA */
+          <div
+            className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl"
+            style={{ background: "#FAF6EF", border: "1px solid #e0d8ce" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#fff0e8" }}>
+                <FileText size={15} style={{ color: "#F58220" }} />
               </div>
-              <PrimaryButton
-                onClick={onOpenDocumentSelector}
-                variant="primary"
-                size="sm"
-                className="shadow-sm whitespace-nowrap"
-              >
-                <FileText size={16} />
-                <span>Select Document</span>
-              </PrimaryButton>
+              <div>
+                <p className="text-xs font-bold" style={{ color: "#1A1209" }}>Viewing Chat History</p>
+                <p className="text-[10px]" style={{ color: "rgba(65,50,24,0.5)" }}>Select a document to continue this conversation</p>
+              </div>
             </div>
-          ) : (
-            /* Normal Input Mode */
-            <>
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <ChatTextArea
-                    ref={inputRef}
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Ask me anything about your documents..."
-                    disabled={sending || !hasDocuments}
-                    maxRows={4}
-                    className="w-full border border-gray-300 focus:border-[#f7953f] focus:ring-2 focus:ring-[#f7953f]/20 rounded-xl px-4 py-3 resize-none bg-white shadow-sm"
-                  />
-                </div>
-                <IconButton
+            <button
+              onClick={onOpenDocumentSelector}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold flex-shrink-0 transition-all"
+              style={{ background: "#1A1209", color: "#faf6ef" }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+            >
+              <FileText size={13} /> Select Document
+            </button>
+          </div>
+        ) : (
+          /* Normal input */
+          <>
+            <div
+              className="flex items-end gap-0 rounded-xl overflow-hidden transition-all"
+              style={{ border: "1.5px solid #e0d8ce", background: "#FAF6EF" }}
+              onFocusCapture={e => { e.currentTarget.style.borderColor = "#F58220"; }}
+              onBlurCapture={e => { e.currentTarget.style.borderColor = "#e0d8ce"; }}
+            >
+              <ChatTextArea
+                ref={inputRef}
+                value={inputMessage}
+                onChange={e => setInputMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything about your documents…"
+                disabled={sending || !hasDocuments}
+                maxRows={4}
+                className="flex-1 px-4 py-3 resize-none text-sm outline-none bg-transparent"
+                style={{ color: "#1A1209", fontFamily: "inherit", minHeight: 44 }}
+              />
+              <div className="flex items-end p-2 flex-shrink-0">
+                <button
                   onClick={handleSend}
                   disabled={!inputMessage.trim() || sending || !hasDocuments}
-                  variant="primary"
-                  size="lg"
-                  tooltip={sending ? "Sending..." : "Send message"}
-                  className="bg-gradient-to-r from-[#f7953f] to-[#E0741C] hover:from-[#E0741C] hover:to-[#D06419] shadow-sm hover:shadow-md flex-shrink-0 border-0 rounded-xl"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                  style={{
+                    background: (!inputMessage.trim() || sending || !hasDocuments) ? "#e8dfd2" : "#1A1209",
+                    color: (!inputMessage.trim() || sending || !hasDocuments) ? "#b0a090" : "#faf6ef",
+                    cursor: (!inputMessage.trim() || sending || !hasDocuments) ? "not-allowed" : "pointer",
+                  }}
+                  onMouseEnter={e => { if (inputMessage.trim() && !sending && hasDocuments) e.currentTarget.style.opacity = "0.85"; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
-                  {sending ? (
-                    <LoadingSpinner size="small" />
-                  ) : (
-                    <Send size={18} />
-                  )}
-                </IconButton>
+                  {sending ? <LoadingSpinner size="small" /> : <Send size={15} />}
+                </button>
               </div>
-              <div className="flex items-center justify-center mt-3">
-                <p className="text-xs text-gray-500">
-                  Press <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd> to send • 
-                  <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs ml-1">Shift + Enter</kbd> for new line
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+            <p className="text-[10px] mt-2 text-center" style={{ color: "#c4b8a8" }}>
+              <kbd className="px-1 py-0.5 rounded text-[9px]" style={{ background: "#f0e8de", border: "1px solid #e0d8ce" }}>Enter</kbd>
+              {" "}to send ·{" "}
+              <kbd className="px-1 py-0.5 rounded text-[9px]" style={{ background: "#f0e8de", border: "1px solid #e0d8ce" }}>Shift + Enter</kbd>
+              {" "}for new line
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
