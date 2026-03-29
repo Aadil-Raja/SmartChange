@@ -73,7 +73,11 @@ class DocumentChunk(Base):
     
     # Positioning metadata
     chunk_index = Column(Integer, nullable=False)  # 0-indexed position in document
-    page_num = Column(Integer, nullable=True)      # source page number (None for non-paginated)
+    page_num = Column(Integer, nullable=True)      # DEPRECATED: use start_page_num instead
+    
+    # Page range for chunk (physical page numbers from PDF)
+    start_page_num = Column(Integer, nullable=True)  # Starting page number (physical)
+    end_page_num = Column(Integer, nullable=True)    # Ending page number (physical)
     
     # Character boundaries in original document
     char_start = Column(Integer, nullable=True)

@@ -30,3 +30,27 @@ class ChatTurnIn(BaseModel):
 
 class ChatRenameIn(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
+
+
+# ── V2 Schemas ────────────────────────────────────────────────────────────────
+
+class PageCitation(BaseModel):
+    """A single page/section reference within a document."""
+    page: Optional[int] = None
+    section: Optional[str] = None
+    snippet: Optional[str] = None
+
+
+class DocumentCitation(BaseModel):
+    """All citations grouped under one document."""
+    doc_id: int
+    doc_title: str
+    references: List[PageCitation] = []
+
+
+class ChatTurnOutV2(BaseModel):
+    """Structured response returned by the v2 endpoint."""
+    chathead_id: int
+    answer: str
+    has_contradiction: bool = False
+    citations: List[DocumentCitation] = []

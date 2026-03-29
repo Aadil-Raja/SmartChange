@@ -23,6 +23,14 @@ class TextSegment:
     char_end: int = 0
     heading_level: int = 0  # 0=body, 1=h1, 2=h2, etc.
     font_size: float = 0.0
+    # Tracks (page_num, char_start, char_end) for each element in this segment
+    # Used by chunking to calculate accurate page per chunk
+    element_pages: Optional[List[Tuple[int, int, int]]] = None
+
+    def __post_init__(self):
+        # Always ensure element_pages is populated as fallback
+        if self.element_pages is None:
+            self.element_pages = [(self.page_num, 0, len(self.text))]
 
 
 class PreprocessingResultFitz:
@@ -632,6 +640,7 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
     """
     Build hierarchical sections from content elements.
     Groups paragraphs under their preceding heading.
+    Also tracks per-element page boundaries for accurate chunk page calculation.
     
     Args:
         elements: List of content elements
@@ -645,7 +654,8 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
     current_page = 1
     current_heading_level = 0
     char_position = 0
-    
+    current_element_pages: List[Tuple[int, int, int]] = []  # (page, start, end) per element
+
     for element in elements:
         if element["type"] == "heading":
             # Save previous section if exists
@@ -659,31 +669,39 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
                     char_start=char_position,
                     char_end=char_position + len(section_text),
                     heading_level=current_heading_level,
-                    font_size=element["font_size"]
+                    font_size=element["font_size"],
+                    element_pages=current_element_pages
                 ))
                 char_position += len(section_text) + 2
-            
+
             # Start new section
             current_section_title = element["text"]
-            current_section_text = [element["text"]]  # Include heading in section
+            current_section_text = [element["text"]]
             current_page = element["page_num"]
             current_heading_level = element["heading_level"]
-        
+            # First element in new section
+            current_element_pages = [(element["page_num"], 0, len(element["text"]))]
+
         else:  # paragraph
             if current_section_text:
+                # Calculate this element's start position in the combined section text
+                elem_start = sum(len(t) + 2 for t in current_section_text)  # +2 for \n\n separator
+                elem_end = elem_start + len(element["text"])
+                current_element_pages.append((element["page_num"], elem_start, elem_end))
                 current_section_text.append(element["text"])
             else:
-                # Paragraph without heading - create standalone segment
+                # Standalone paragraph (no heading before it)
                 segments.append(TextSegment(
                     text=element["text"],
                     page_num=element["page_num"],
                     segment_type="paragraph",
                     char_start=char_position,
                     char_end=char_position + len(element["text"]),
-                    font_size=element["font_size"]
+                    font_size=element["font_size"],
+                    element_pages=[(element["page_num"], 0, len(element["text"]))]
                 ))
                 char_position += len(element["text"]) + 2
-    
+
     # Save last section
     if current_section_text:
         section_text = "\n\n".join(current_section_text)
@@ -694,16 +712,16 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
             section_title=current_section_title,
             char_start=char_position,
             char_end=char_position + len(section_text),
-            heading_level=current_heading_level
+            heading_level=current_heading_level,
+            element_pages=current_element_pages
         ))
-    
+
     logger.info(f"Built {len(segments)} sections from {len(elements)} elements")
-    
-    # Log section details
+
     for i, seg in enumerate(segments):
         logger.debug(f"Section {i+1}: '{seg.section_title}' - {len(seg.text)} chars, "
                     f"level {seg.heading_level}, page {seg.page_num}")
-    
+
     return segments
 
 

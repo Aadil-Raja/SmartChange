@@ -35,7 +35,7 @@ class TextBlock:
 @dataclass
 class PageContentFitz:
     """Container for a page's content with rich formatting metadata."""
-    page_num: int
+    page_num: int  # Physical page position (1-based)
     blocks: List[TextBlock]
     width: float
     height: float
