@@ -9,11 +9,16 @@ import Alert from "../../components/ui/Alert";
 import EmployeeSidebar from "../../components/ui/EmployeeSidebar";
 
 const Chatbot = () => {
-  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments } = useChatbot();
+  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments, startNewChat } = useChatbot();
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
   const hasFetchedChats = useRef(false);
+
+  const handleNewChatFromSidebar = () => {
+    startNewChat();
+    setShowDocumentSelector(true);
+  };
 
   useEffect(() => {
     if (!hasFetchedChats.current) {
@@ -117,7 +122,7 @@ const Chatbot = () => {
                 </button>
               </div>
               <div className="flex-1 overflow-hidden">
-                <ChatSidebar onNewChat={() => setShowDocumentSelector(true)} minimal={true} />
+                <ChatSidebar onNewChat={handleNewChatFromSidebar} minimal={true} />
               </div>
             </div>
           )}

@@ -176,6 +176,25 @@ def list_processed_documents_route(
         return make_response(False, "Could not fetch processed documents", status_code=500, error=str(e))
 
 
+@router.get("/documents/processed/{document_id}", status_code=status.HTTP_200_OK)
+def get_processed_document_by_id_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Return one processed document by ID with full metadata.
+    Useful for citation click flows where doc_id is known but URL isn't in memory.
+    """
+    try:
+        document = documents_repo.get_processed_document_by_id(db, document_id=document_id)
+        if not document:
+            return make_response(False, "Document not found", status_code=404)
+        return make_response(True, "OK", data={"document": document})
+    except Exception as e:
+        return make_response(False, "Could not fetch document", status_code=500, error=str(e))
+
+
 @router.post("/content/{content_id}/progress", status_code=status.HTTP_200_OK)
 def mark_or_update_progress_route(
     content_id: int,

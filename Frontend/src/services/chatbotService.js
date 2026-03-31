@@ -43,7 +43,7 @@ export const sendChatMessage = async (messageData) => {
   console.log("🚀 sendChatMessage called with:", messageData);
   console.log("🔑 Token in localStorage:", localStorage.getItem("token"));
   
-  const response = await chatbotApi.post('/chat/respond', {
+  const response = await chatbotApi.post('/chat/respond-v2', {
     message: messageData.message,
     active_doc_ids: messageData.active_doc_ids,
     chathead_id: messageData.chathead_id || null,

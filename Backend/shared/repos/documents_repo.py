@@ -129,7 +129,7 @@ def list_documents(db: Session):
 
 def list_processed_documents(db: Session) -> dict:
     """
-    Return all processed documents (id + title only).
+    Return all processed documents with metadata needed for preview/open.
     
     Args:
         db: SQLAlchemy session
@@ -143,7 +143,61 @@ def list_processed_documents(db: Session) -> dict:
         .order_by(desc(Document.created_at))
         .all()
     )
-    return {"documents": [{"id": d.id, "title": d.title} for d in docs]}
+    return {
+        "documents": [
+            {
+                "id": d.id,
+                "title": d.title,
+                "original_filename": d.original_filename,
+                "mime_type": d.mime_type,
+                "size_bytes": d.size_bytes,
+                "created_at": d.created_at,
+                "cloudinary_url": d.cloudinary_url,
+                "cloudinary_thumbnail_url": d.cloudinary_thumbnail_url,
+            }
+            for d in docs
+        ]
+    }
+
+
+def get_processed_document_by_id(db: Session, document_id: int) -> Optional[dict]:
+    """
+    Return one processed document with metadata needed for preview/open.
+
+    Args:
+        db: SQLAlchemy session
+        document_id: Document ID
+
+    Returns:
+        Document metadata dictionary or None if not found/not processed
+    """
+    row = (
+        db.query(Document, User.email.label("uploader_email"))
+        .join(User, User.id == Document.uploaded_by)
+        .filter(Document.id == document_id, Document.status == DocStatus.PROCESSED)
+        .first()
+    )
+
+    if not row:
+        return None
+
+    doc, uploader_email = row
+    return {
+        "id": doc.id,
+        "title": doc.title,
+        "original_filename": doc.original_filename,
+        "storage_key": doc.storage_key,
+        "mime_type": doc.mime_type,
+        "size_bytes": doc.size_bytes,
+        "status": doc.status.value if hasattr(doc.status, "value") else str(doc.status),
+        "uploader_email": uploader_email,
+        "created_at": doc.created_at,
+        "updated_at": doc.updated_at,
+        "cloudinary_url": doc.cloudinary_url,
+        "cloudinary_public_id": doc.cloudinary_public_id,
+        "cloudinary_thumbnail_url": doc.cloudinary_thumbnail_url,
+        "main_topics": doc.main_topics or {},
+    }
 
 
 def update_status(db: Session, document_id: int, status: DocStatus) -> bool:

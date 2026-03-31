@@ -187,6 +187,8 @@ export const ChatbotProvider = ({ children }) => {
       if (res?.success) {
         const newChatId = res.data?.chathead_id;
         const assistantResponse = res.data?.answer;
+        const citations = res.data?.citations || [];
+        const hasContradiction = Boolean(res.data?.has_contradiction);
 
         // Update active chat ID if this was a new chat
         if (!chatHeadId && newChatId) {
@@ -200,6 +202,8 @@ export const ChatbotProvider = ({ children }) => {
           message: assistantResponse,
           created_at: new Date().toISOString(),
           active_doc_ids: selectedDocumentIds,
+          citations,
+          has_contradiction: hasContradiction,
         };
 
         // Handle message updates properly

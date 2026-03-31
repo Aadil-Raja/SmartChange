@@ -6,3 +6,9 @@ export const getProcessedDocuments = async () => {
   const response = await api.get('/employee/documents/processed');
   return response.data;
 };
+
+// Get a single processed document by ID (used by citation viewer fallback)
+export const getProcessedDocumentById = async (documentId) => {
+  const response = await api.get(`/employee/documents/processed/${documentId}`);
+  return response.data;
+};

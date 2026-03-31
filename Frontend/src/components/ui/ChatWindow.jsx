@@ -1,10 +1,11 @@
 // src/components/ui/ChatWindow.jsx
 import { useState, useEffect, useRef } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
-import { Send, Bot, User, Sparkles, FileText, MessageCircle, Zap, BookOpen } from "lucide-react";
+import { Send, Bot, User, Sparkles, FileText, MessageCircle, Zap, BookOpen, Quote } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
+import DocumentCitationViewer from "./DocumentCitationViewer";
 
 /* Quick-prompt suggestions shown on empty state */
 const QUICK_PROMPTS = [
@@ -13,10 +14,58 @@ const QUICK_PROMPTS = [
   { icon: Zap,      text: "List the most important takeaways" },
 ];
 
+const getCitationGroups = (message) => {
+  const citations = Array.isArray(message?.citations) ? message.citations : [];
+  return citations
+    .map((citationDoc, docIndex) => {
+      const references = Array.isArray(citationDoc?.references) ? citationDoc.references : [];
+      
+      // Deduplicate pages by page number within this document
+      const pageMap = new Map();
+      references.forEach((ref) => {
+        const pageValue = ref?.page;
+        const pageNumber = pageValue === null || pageValue === undefined ? null : Number(pageValue);
+        if (!Number.isFinite(pageNumber) || pageNumber <= 0) return;
+        
+        // Only add if we haven't seen this page number yet
+        if (!pageMap.has(pageNumber)) {
+          pageMap.set(pageNumber, {
+            key: `${citationDoc?.doc_id || docIndex}-${pageNumber}`,
+            page: pageNumber,
+            section: ref?.section ?? null,
+            snippet: ref?.snippet ?? null,
+          });
+        }
+      });
+      
+      const pages = Array.from(pageMap.values());
+      if (pages.length === 0) return null;
+
+      return {
+        key: `group-${citationDoc?.doc_id || docIndex}`,
+        docId: citationDoc?.doc_id,
+        docTitle: citationDoc?.doc_title || `Document ${citationDoc?.doc_id}`,
+        pages,
+      };
+    })
+    .filter(Boolean);
+};
+
+const getCitationRefs = (message) => {
+  return getCitationGroups(message).flatMap((group) =>
+    group.pages.map((pageRef) => ({
+      ...pageRef,
+      docId: group.docId,
+      docTitle: group.docTitle,
+    }))
+  );
+};
+
 const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
-  const { activeChatId, messages, selectedDocumentIds, loading, sendMessage, fetchMessages } = useChatbot();
+  const { activeChatId, messages, selectedDocumentIds, availableDocuments, loading, sendMessage, fetchMessages, fetchDocuments } = useChatbot();
   const [inputMessage, setInputMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [activeCitation, setActiveCitation] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -26,6 +75,11 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages]);
   useEffect(() => { if (activeChatId && !messages[activeChatId]) fetchMessages(activeChatId); }, [activeChatId]);
+  useEffect(() => {
+    if (!availableDocuments || availableDocuments.length === 0) {
+      fetchDocuments();
+    }
+  }, [availableDocuments, fetchDocuments]);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !hasDocuments || sending) return;
@@ -129,6 +183,7 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
         {/* Messages */}
         {currentMessages.map((message, index) => {
           const isUser = message.role === "user";
+          const citationGroups = isUser ? [] : getCitationGroups(message);
           return (
             <div key={message.id || index} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
               <div className={`flex gap-3 max-w-[78%] ${isUser ? "flex-row-reverse" : "flex-row"}`}>
@@ -159,6 +214,58 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
                   }
                 >
                   <MarkdownMessage content={message.message} isUser={isUser} />
+
+                  {!isUser && citationGroups.length > 0 && (
+                    <div className="mt-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Quote size={11} style={{ color: "#9c8e80" }} />
+                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#9c8e80" }}>
+                          Citations
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {citationGroups.map((group) => (
+                          <div
+                            key={group.key}
+                            className="rounded-lg p-2"
+                            style={{ background: "#fff", border: "1px solid #e0d8ce" }}
+                          >
+                            <p className="text-[10px] font-semibold mb-1 truncate" style={{ color: "#6b5e4e" }} title={group.docTitle}>
+                              {group.docTitle}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {group.pages.map((ref) => (
+                                <button
+                                  key={ref.key}
+                                  onClick={() =>
+                                    setActiveCitation({
+                                      ...ref,
+                                      docId: group.docId,
+                                      docTitle: group.docTitle,
+                                    })
+                                  }
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                                  style={{ background: "#fff9f3", border: "1px solid #f1c9a5", color: "#8a5a2b" }}
+                                  onMouseEnter={(event) => {
+                                    event.currentTarget.style.borderColor = "#F58220";
+                                    event.currentTarget.style.color = "#F58220";
+                                  }}
+                                  onMouseLeave={(event) => {
+                                    event.currentTarget.style.borderColor = "#f1c9a5";
+                                    event.currentTarget.style.color = "#8a5a2b";
+                                  }}
+                                  title={ref.snippet || ref.section || `Page ${ref.page}`}
+                                >
+                                  <span>p.{ref.page}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <span
                     className="text-[10px] mt-1.5 block"
                     style={{ color: isUser ? "rgba(250,246,239,0.5)" : "#c4b8a8" }}
@@ -278,6 +385,14 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
           </>
         )}
       </div>
+
+      {activeCitation && (
+        <DocumentCitationViewer
+          citation={activeCitation}
+          documents={availableDocuments}
+          onClose={() => setActiveCitation(null)}
+        />
+      )}
     </div>
   );
 };
