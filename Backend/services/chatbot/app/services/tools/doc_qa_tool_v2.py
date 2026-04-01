@@ -28,7 +28,7 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
     from app.services.rag_service import retrieve_chunks_with_scores
     from shared.repos import documents_repo
 
-    @tool(args_schema=DocQAToolArgs)
+    @tool(args_schema=DocQAToolArgs, return_direct=True)
     def doc_qa_tool(question: str) -> str:
         """Answer questions by searching across all selected documents.
 
@@ -40,6 +40,10 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
 
         Do NOT use this tool when the user wants a summary, overview, table of
         contents, or section list — use list_document_sections_tool for those.
+
+        IMPORTANT: Do NOT call this tool immediately after list_document_sections_tool
+        or generate_section_summary_tool. Those tools are self-contained and their
+        output should be returned directly to the user without chaining to this tool.
 
         Returns a JSON string with keys: answer, has_contradiction, citations.
         IMPORTANT: Return the tool output EXACTLY as-is. Do not reformat or summarize it.

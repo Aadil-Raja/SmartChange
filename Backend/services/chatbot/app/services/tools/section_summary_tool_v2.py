@@ -23,10 +23,14 @@ class ListSectionsToolArgs(BaseModel):
 
 
 class GenerateSummaryToolArgs(BaseModel):
-    section_title: str = Field(description="The exact section title to generate summary for")
+    section_title: str = Field(description="The exact section title to generate summary for. If user asks for multiple sections or all sections, pass any value here and set selection_type to 'many'.")
     user_intent: str = Field(
         default="summary",
         description="What the user wants from this section (e.g. 'summary', 'key takeaways', 'highlights')"
+    )
+    selection_type: str = Field(
+        default="one",
+        description="Pass 'one' if user selected a single specific section. Pass 'many' if user asked for multiple sections, all sections, or a range like 'days 5 to 12'."
     )
 
 
@@ -41,8 +45,12 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
         ALWAYS use this tool FIRST whenever the user wants any kind of summary,
         overview, explanation, or topic breakdown of the document.
 
-        Returns a JSON string with keys: sections (list), doc_title, citations.
-        IMPORTANT: Return the tool output EXACTLY as-is.
+        IMPORTANT: After this tool returns, STOP immediately. Do NOT call doc_qa_tool
+        or any other tool. Return this tool's output directly to the user as-is.
+        If this tool returns a message about multiple documents or errors, return
+        that message directly - do NOT try another tool.
+
+        Returns a JSON string with keys: answer, has_contradiction, citations.
         """
         print(f"\n[TOOL V2] list_document_sections_tool called", file=sys.stderr)
 
@@ -64,6 +72,7 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
             document_id = document_ids[0]
             doc = documents_repo.get_by_id(management_db, document_id)
             doc_title = doc.title if doc else "this document"
+            cloudinary_url = doc.cloudinary_url if doc else None
 
             sections = management_db.query(DocumentSection).filter(
                 DocumentSection.document_id == document_id
@@ -87,6 +96,7 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
             citations = [{
                 "doc_id": document_id,
                 "doc_title": doc_title,
+                "cloudinary_url": cloudinary_url,
                 "page": None,
                 "section": s.section_title,
                 "snippet": None
@@ -120,16 +130,41 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
 
     settings = get_settings()
 
-    @tool(args_schema=GenerateSummaryToolArgs)
-    def generate_section_summary_tool(section_title: str, user_intent: str = "summary") -> str:
+    @tool(args_schema=GenerateSummaryToolArgs, return_direct=True)
+    def generate_section_summary_tool(section_title: str, user_intent: str = "summary", selection_type: str = "one") -> str:
         """Generate or retrieve a summary for a specific document section.
 
         Use this tool when the user names a specific section and wants to know about it.
+
+        IMPORTANT: After this tool returns, STOP immediately. Do NOT call any other
+        tool after this one. Return this tool's output directly to the user as-is.
+
+        CRITICAL - selection_type rules:
+        - If the user mentions TWO OR MORE section names (e.g. "Day 1 and Day 7",
+          "Day 1, Day 2, Day 3", "first and last day"), you MUST call this tool
+          EXACTLY ONCE with selection_type='many'. Do NOT call it once per section.
+        - If the user asks for "all sections", "everything", "all days", or any range
+          like "days 5 to 12", call ONCE with selection_type='many'.
+        - Only use selection_type='one' when the user names exactly ONE section.
+
+        Examples:
+        - "summarize Day 03" → call once, selection_type='one', section_title='Day 03'
+        - "summarize Day 1 and Day 7" → call once, selection_type='many'
+        - "summarize all days" → call once, selection_type='many'
+        - "Day 5 to Day 8" → call once, selection_type='many'
+
         Returns a JSON string with keys: answer, has_contradiction, citations.
-        IMPORTANT: Return the tool output EXACTLY as-is.
         """
         print(f"\n[TOOL V2] generate_section_summary_tool called", file=sys.stderr)
-        print(f"[TOOL V2] section_title={section_title}, user_intent={user_intent}", file=sys.stderr)
+        print(f"[TOOL V2] section_title={section_title}, user_intent={user_intent}, selection_type={selection_type}", file=sys.stderr)
+
+        # Handle multi-section request immediately
+        if selection_type == "many":
+            return json.dumps({
+                "answer": "I can only summarize one section at a time. Please tell me the name of one specific section you'd like me to summarize.",
+                "has_contradiction": False,
+                "citations": []
+            })
 
         try:
             if len(document_ids) > 1:
@@ -151,6 +186,7 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             from shared.repos import documents_repo
             doc = documents_repo.get_by_id(management_db, document_id)
             doc_title = doc.title if doc else f"Document {document_id}"
+            cloudinary_url = doc.cloudinary_url if doc else None
 
             # Fuzzy match section
             all_sections = management_db.query(DocumentSection).filter(
@@ -208,6 +244,7 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
                     citations.append({
                         "doc_id": document_id,
                         "doc_title": doc_title,
+                        "cloudinary_url": cloudinary_url,
                         "page": page,
                         "section": section.section_title,
                         "snippet": c.text[:150].strip()
@@ -216,8 +253,7 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             if cache_ok:
                 answer = (
                     f"**{_intent_label(user_intent)} - {section.section_title}**\n\n"
-                    f"{section.summary}\n\n"
-                    f"_[Cached · {section.summary_generated_at.strftime('%Y-%m-%d %H:%M')}]_"
+                    f"{section.summary}"
                 )
                 return json.dumps({
                     "answer": answer,
@@ -279,8 +315,7 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
 
             answer = (
                 f"**{_intent_label(user_intent)} - {section.section_title}**\n\n"
-                f"{summary}\n\n"
-                f"_[{chunk_count} chunks · {len(summary.split())} words]_"
+                f"{summary}"
             )
 
             return json.dumps({

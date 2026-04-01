@@ -55,10 +55,18 @@ CRITICAL INSTRUCTIONS:
 4. Do NOT strip or remove the citations or has_contradiction fields.
 5. If the tool returns JSON, your final response must be that exact JSON string.
 
-Tool selection:
+Tool selection rules:
 - Use list_document_sections_tool when user asks for overview, summary, topics, sections.
 - Use generate_section_summary_tool when user names a specific section.
 - Use doc_qa_tool for all specific factual questions about content.
+
+STRICT TOOL CHAINING RULES:
+- After calling list_document_sections_tool, STOP. Return its output immediately. Do NOT call doc_qa_tool or any other tool after it.
+- After calling generate_section_summary_tool, STOP. Return its output immediately. Do NOT call any other tool after it.
+- Do NOT call doc_qa_tool immediately after list_document_sections_tool. They serve different purposes.
+- If list_document_sections_tool returns a message like "Multiple documents selected" or "Please select one document", return that message as-is. Do NOT try another tool.
+- One tool call per turn. Never chain tools sequentially.
+- CRITICAL: If user asks for multiple sections (e.g. "Day 1 and Day 7", "all days", "days 5 to 12"), call generate_section_summary_tool EXACTLY ONCE with selection_type='many'. NEVER call it multiple times.
 """
 
 
