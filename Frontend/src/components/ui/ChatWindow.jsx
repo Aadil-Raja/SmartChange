@@ -20,14 +20,11 @@ const getCitationGroups = (message) => {
     .map((citationDoc, docIndex) => {
       const references = Array.isArray(citationDoc?.references) ? citationDoc.references : [];
       
-      // Deduplicate pages by page number within this document
       const pageMap = new Map();
       references.forEach((ref) => {
         const pageValue = ref?.page;
         const pageNumber = pageValue === null || pageValue === undefined ? null : Number(pageValue);
         if (!Number.isFinite(pageNumber) || pageNumber <= 0) return;
-        
-        // Only add if we haven't seen this page number yet
         if (!pageMap.has(pageNumber)) {
           pageMap.set(pageNumber, {
             key: `${citationDoc?.doc_id || docIndex}-${pageNumber}`,
@@ -45,6 +42,7 @@ const getCitationGroups = (message) => {
         key: `group-${citationDoc?.doc_id || docIndex}`,
         docId: citationDoc?.doc_id,
         docTitle: citationDoc?.doc_title || `Document ${citationDoc?.doc_id}`,
+        cloudinaryUrl: citationDoc?.cloudinary_url || null,
         pages,
       };
     })
@@ -215,54 +213,44 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
                 >
                   <MarkdownMessage content={message.message} isUser={isUser} />
 
-                  {!isUser && citationGroups.length > 0 && (
+                  {!isUser && (
                     <div className="mt-3">
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <Quote size={11} style={{ color: "#9c8e80" }} />
-                        <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#9c8e80" }}>
-                          Citations
-                        </span>
-                      </div>
-                      <div className="space-y-2">
-                        {citationGroups.map((group) => (
-                          <div
-                            key={group.key}
-                            className="rounded-lg p-2"
-                            style={{ background: "#fff", border: "1px solid #e0d8ce" }}
-                          >
-                            <p className="text-[10px] font-semibold mb-1 truncate" style={{ color: "#6b5e4e" }} title={group.docTitle}>
-                              {group.docTitle}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {group.pages.map((ref) => (
-                                <button
-                                  key={ref.key}
-                                  onClick={() =>
-                                    setActiveCitation({
-                                      ...ref,
-                                      docId: group.docId,
-                                      docTitle: group.docTitle,
-                                    })
-                                  }
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
-                                  style={{ background: "#fff9f3", border: "1px solid #f1c9a5", color: "#8a5a2b" }}
-                                  onMouseEnter={(event) => {
-                                    event.currentTarget.style.borderColor = "#F58220";
-                                    event.currentTarget.style.color = "#F58220";
-                                  }}
-                                  onMouseLeave={(event) => {
-                                    event.currentTarget.style.borderColor = "#f1c9a5";
-                                    event.currentTarget.style.color = "#8a5a2b";
-                                  }}
-                                  title={ref.snippet || ref.section || `Page ${ref.page}`}
-                                >
-                                  <span>p.{ref.page}</span>
-                                </button>
-                              ))}
-                            </div>
+                      {citationGroups.length > 0 ? (
+                        <>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Quote size={11} style={{ color: "#9c8e80" }} />
+                            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "#9c8e80" }}>Citations</span>
                           </div>
-                        ))}
-                      </div>
+                          <div className="space-y-2">
+                            {citationGroups.map((group) => (
+                              <div key={group.key} className="rounded-lg p-2" style={{ background: "#fff", border: "1px solid #e0d8ce" }}>
+                                <p className="text-[10px] font-semibold mb-1 truncate" style={{ color: "#6b5e4e" }} title={group.docTitle}>
+                                  {group.docTitle}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {group.pages.map((ref) => (
+                                    <button
+                                      key={ref.key}
+                                      onClick={() => setActiveCitation({ ...ref, docId: group.docId, docTitle: group.docTitle, cloudinaryUrl: group.cloudinaryUrl })}
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-all"
+                                      style={{ background: "#fff9f3", border: "1px solid #f1c9a5", color: "#8a5a2b" }}
+                                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#F58220"; e.currentTarget.style.color = "#F58220"; }}
+                                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#f1c9a5"; e.currentTarget.style.color = "#8a5a2b"; }}
+                                      title={ref.snippet || ref.section || `Page ${ref.page}`}
+                                    >
+                                      <span>p.{ref.page}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-[10px] italic" style={{ color: "#c4b8a8" }}>
+                          No document citations for this response.
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -389,7 +377,6 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
       {activeCitation && (
         <DocumentCitationViewer
           citation={activeCitation}
-          documents={availableDocuments}
           onClose={() => setActiveCitation(null)}
         />
       )}

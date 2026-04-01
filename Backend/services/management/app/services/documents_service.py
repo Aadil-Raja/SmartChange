@@ -200,8 +200,9 @@ def queue_document(db, *, document_id: int):
    
     q = get_queue()
 
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
-    
+    job = q.enqueue(RQ_TASK, document_id=doc.id)
+    job_id = job.id
+
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
 
     # Create audit record
@@ -240,11 +241,12 @@ def reprocess_document(db, *, document_id: int):
     
     # Queue for reprocessing
     q = get_queue()
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
-    
+    job = q.enqueue(RQ_TASK, document_id=doc.id)
+    job_id = job.id
+
     # Update status to QUEUED
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
-    
+
     # Create new audit record
     audit_repo.create_audit_record(
         db,
@@ -253,7 +255,7 @@ def reprocess_document(db, *, document_id: int):
         status=ProcessingStatus.QUEUED,
         current_stage=ProcessingStage.QUEUED
     )
-    
+
     return make_response(
         True,
         "Document queued for reprocessing",
@@ -331,11 +333,12 @@ def resume_processing(db, *, document_id: int):
     
     # Queue for processing
     q = get_queue()
-    job_id = q.enqueue(RQ_TASK, document_id=doc.id)
-    
+    job = q.enqueue(RQ_TASK, document_id=doc.id)
+    job_id = job.id
+
     # Update status to QUEUED
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
-    
+
     # Create new audit record
     audit_repo.create_audit_record(
         db,

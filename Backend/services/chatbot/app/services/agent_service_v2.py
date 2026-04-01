@@ -19,8 +19,8 @@ settings = get_settings()
 
 def _group_citations(flat_citations: list) -> list:
     """
-    Convert flat list of {doc_id, doc_title, page, section, snippet}
-    into grouped list of {doc_id, doc_title, references: [{page, section, snippet}]}.
+    Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippet}
+    into grouped list of {doc_id, doc_title, cloudinary_url, references: [{page, section, snippet}]}.
     """
     grouped = {}
     for c in flat_citations:
@@ -29,6 +29,7 @@ def _group_citations(flat_citations: list) -> list:
             grouped[doc_id] = {
                 "doc_id": doc_id,
                 "doc_title": c.get("doc_title", f"Document {doc_id}"),
+                "cloudinary_url": c.get("cloudinary_url"),
                 "references": []
             }
         grouped[doc_id]["references"].append({

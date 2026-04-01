@@ -45,6 +45,7 @@ class DocumentCitation(BaseModel):
     """All citations grouped under one document."""
     doc_id: int
     doc_title: str
+    cloudinary_url: Optional[str] = None
     references: List[PageCitation] = []
 
 

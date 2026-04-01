@@ -2,6 +2,11 @@
 """
 V2 doc QA tool - returns structured dict with answer, citations, has_contradiction.
 Used by agent_service_v2 for the /respond-v2 endpoint.
+
+Filtering strategy:
+- Best doc threshold:  max(0.65, best_score * 0.75)
+- Other docs threshold: max(0.65, best_score * 0.85)
+- LLM verifies which chunk IDs it actually used → secondary citation filter
 """
 from pydantic import BaseModel, Field
 from langchain.tools import tool
@@ -9,9 +14,10 @@ from typing import List
 import sys
 import json
 
-ABSOLUTE_MIN_SCORE = 0.45
-RELATIVE_RATIO = 0.75
-TOP_K_PER_DOC = 3
+ABSOLUTE_FLOOR   = 0.65   # Hard minimum cosine similarity for any chunk
+SAME_DOC_RATIO   = 0.75   # Threshold ratio for the best-scoring document
+OTHER_DOC_RATIO  = 0.85   # Stricter threshold ratio for all other documents
+TOP_K_PER_DOC    = 3
 
 
 class DocQAToolArgs(BaseModel):
@@ -19,10 +25,6 @@ class DocQAToolArgs(BaseModel):
 
 
 def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
-    """
-    V2 tool: returns a JSON string with {answer, has_contradiction, citations}.
-    Each citation has doc_id, doc_title, page, section, snippet.
-    """
     from app.services.rag_service import retrieve_chunks_with_scores
     from shared.repos import documents_repo
 
@@ -54,7 +56,7 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                     "citations": []
                 })
 
-            # Step 1: Retrieve chunks with scores from each document
+            # ── Step 1: Retrieve top-k chunks per document ──────────────────
             raw_results = {}
             for doc_id in document_ids:
                 try:
@@ -69,13 +71,17 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                     )
 
                     if chunks:
-                        raw_results[doc_id] = {"doc_title": doc_title, "chunks": chunks}
+                        raw_results[doc_id] = {
+                            "doc_title": doc_title,
+                            "cloudinary_url": doc.cloudinary_url if doc else None,
+                            "chunks": chunks
+                        }
                         print(f"[TOOL V2] Doc {doc_id} ('{doc_title}'): {len(chunks)} chunks, "
                               f"top score={chunks[0]['score']:.3f}", file=sys.stderr)
-                        print(f"[TOOL V2] All chunks for doc {doc_id}:", file=sys.stderr)
                         for i, c in enumerate(chunks, 1):
                             print(f"  Chunk {i}: score={c['score']:.4f} | page={c.get('start_page_num')} | "
-                                  f"section={c.get('section_title')} | preview={c['text'][:80].replace(chr(10), ' ')}...",
+                                  f"chunk_index={c.get('chunk_index')} | "
+                                  f"preview={c['text'][:80].replace(chr(10), ' ')}...",
                                   file=sys.stderr)
                 except Exception as e:
                     print(f"[TOOL V2] Error for doc {doc_id}: {e}", file=sys.stderr)
@@ -88,39 +94,56 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                     "citations": []
                 })
 
-            # Step 2: Compute relevance threshold
-            best_score = max(
-                data["chunks"][0]["score"]
-                for data in raw_results.values()
-                if data["chunks"]
-            )
-            threshold = max(ABSOLUTE_MIN_SCORE, best_score * RELATIVE_RATIO)
-            print(f"[TOOL V2] Best score: {best_score:.3f}, threshold: {threshold:.3f}", file=sys.stderr)
+            # ── Step 2: Tiered threshold filtering ──────────────────────────
+            # Find overall best score and which doc it belongs to
+            best_score = 0.0
+            best_doc_id = None
+            for doc_id, data in raw_results.items():
+                if data["chunks"] and data["chunks"][0]["score"] > best_score:
+                    best_score = data["chunks"][0]["score"]
+                    best_doc_id = doc_id
 
-            # Step 3: Filter chunks and build context + citations
+            same_doc_threshold  = max(ABSOLUTE_FLOOR, best_score * SAME_DOC_RATIO)
+            other_doc_threshold = max(ABSOLUTE_FLOOR, best_score * OTHER_DOC_RATIO)
+
+            print(f"[TOOL V2] Best score: {best_score:.3f} (doc {best_doc_id})", file=sys.stderr)
+            print(f"[TOOL V2] Same-doc threshold:  {same_doc_threshold:.3f} "
+                  f"(max({ABSOLUTE_FLOOR}, {best_score:.3f} * {SAME_DOC_RATIO}))", file=sys.stderr)
+            print(f"[TOOL V2] Other-doc threshold: {other_doc_threshold:.3f} "
+                  f"(max({ABSOLUTE_FLOOR}, {best_score:.3f} * {OTHER_DOC_RATIO}))", file=sys.stderr)
+
+            # Build labeled context with CHUNK_ID tags for LLM verification
+            # chunk_map: chunk_id_str -> citation metadata
             context_blocks = []
-            citations = []
+            chunk_map = {}   # "DOC{doc_id}_CHUNK{chunk_index}" -> citation dict
 
             for doc_id, data in raw_results.items():
                 doc_title = data["doc_title"]
+                threshold = same_doc_threshold if doc_id == best_doc_id else other_doc_threshold
                 passing_chunks = [c for c in data["chunks"] if c["score"] >= threshold]
 
                 if not passing_chunks:
-                    print(f"[TOOL V2] Doc '{doc_title}' dropped - below threshold", file=sys.stderr)
+                    print(f"[TOOL V2] Doc '{doc_title}' dropped - all chunks below threshold", file=sys.stderr)
                     continue
 
-                chunk_texts = "\n\n".join([c["text"] for c in passing_chunks])
-                context_blocks.append(f"[Source: {doc_title}]\n{chunk_texts}")
+                print(f"[TOOL V2] Doc '{doc_title}': {len(passing_chunks)} chunks passed", file=sys.stderr)
 
+                block_lines = [f"[Source: {doc_title}]"]
                 for c in passing_chunks:
-                    page = c.get("start_page_num")
-                    citations.append({
+                    cid = f"DOC{doc_id}_CHUNK{c['chunk_index']}"
+                    block_lines.append(f"[CHUNK_ID: {cid}]\n{c['text']}")
+                    # Store full metadata in chunk_map (never sent to LLM)
+                    # cloudinary_url is attached here, not in the prompt
+                    chunk_map[cid] = {
                         "doc_id": doc_id,
                         "doc_title": doc_title,
-                        "page": page,
+                        "cloudinary_url": data.get("cloudinary_url"),  # attached post-LLM
+                        "page": c.get("start_page_num"),
                         "section": c.get("section_title"),
                         "snippet": c["text"][:150].strip()
-                    })
+                    }
+
+                context_blocks.append("\n\n".join(block_lines))
 
             if not context_blocks:
                 return json.dumps({
@@ -129,7 +152,7 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                     "citations": []
                 })
 
-            # Step 4: Call LLM for unified answer with contradiction detection
+            # ── Step 3: LLM generates answer + reports used chunk IDs ───────
             from shared.llm import create_llm_provider
             from app.core.config import get_settings
             settings = get_settings()
@@ -142,10 +165,10 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
             )
 
             full_context = "\n\n---\n\n".join(context_blocks)
-            num_docs = len(context_blocks)
+            available_chunk_ids = list(chunk_map.keys())
 
-            prompt = f"""You are answering a question using content retrieved from {num_docs} document(s).
-Each source block is labeled with its document name in brackets.
+            prompt = f"""You are answering a question using content retrieved from documents.
+Each chunk is labeled with [CHUNK_ID: ...] and its source document.
 
 Question: {question}
 
@@ -153,33 +176,61 @@ Retrieved Content:
 {full_context}
 
 Instructions:
-1. Provide ONE unified answer combining all relevant information.
-2. If different sources contribute different points, integrate them naturally.
-3. CONTRADICTION DETECTION: If two or more documents provide conflicting information
-   on the same specific point (e.g. different numbers, opposite statements, contradictory rules),
-   you MUST explicitly note it like:
-   "Note: The documents contradict each other on this point —
-    [Doc A] states X while [Doc B] states Y."
-   Then recommend the safer or more authoritative option if possible.
-4. If no contradiction exists, answer normally without mentioning contradictions.
-5. Do not make up information not present in the retrieved content.
+1. Provide ONE unified answer using only the content above.
+2. If sources contribute different points, integrate them naturally.
+3. CONTRADICTION DETECTION: If documents conflict on the same point, explicitly note:
+   "Note: Documents contradict each other — [Doc A] states X while [Doc B] states Y."
+   Then recommend the safer option if possible.
+4. If no contradiction, answer normally.
+5. Do not make up information not in the content.
+6. In "used_chunk_ids", list ONLY the CHUNK_IDs you actually used to form your answer.
+   Available chunk IDs: {available_chunk_ids}
 
-You MUST respond with ONLY valid JSON in this exact format:
+EXAMPLE of correct output format:
+Suppose the question is "What is the refund policy?" and you used DOC5_CHUNK2 and DOC5_CHUNK4:
+{{
+  "answer": "The refund policy allows returns within 30 days with a receipt.",
+  "has_contradiction": false,
+  "used_chunk_ids": ["DOC5_CHUNK2", "DOC5_CHUNK4"]
+}}
+
+If two docs contradict:
+{{
+  "answer": "Note: Documents contradict each other — Resume.pdf states 3.99 GPA while Transcript.pdf states 3.85 GPA.",
+  "has_contradiction": true,
+  "used_chunk_ids": ["DOC5_CHUNK2", "DOC7_CHUNK1"]
+}}
+
+Respond with ONLY valid JSON:
 {{
   "answer": "your full answer here",
-  "has_contradiction": true or false
+  "has_contradiction": true or false,
+  "used_chunk_ids": ["list only chunk IDs you actually used"]
 }}"""
 
             result = llm.generate_json(prompt)
             answer = result.get("answer", "Could not generate an answer.")
             has_contradiction = result.get("has_contradiction", False)
+            used_chunk_ids = result.get("used_chunk_ids", [])
 
             print(f"[TOOL V2] Answer generated, has_contradiction={has_contradiction}", file=sys.stderr)
+            print(f"[TOOL V2] LLM used chunk IDs: {used_chunk_ids}", file=sys.stderr)
+
+            # ── Step 4: Build final citations using LLM-reported chunk IDs ──
+            # Trust the LLM completely - if it used no chunks, citations = []
+            final_citations = []
+            for cid in used_chunk_ids:
+                if cid in chunk_map:
+                    final_citations.append(chunk_map[cid])
+                else:
+                    print(f"[TOOL V2] Warning: LLM reported unknown chunk ID '{cid}'", file=sys.stderr)
+
+            print(f"[TOOL V2] Final citations: {len(final_citations)}", file=sys.stderr)
 
             return json.dumps({
                 "answer": answer,
                 "has_contradiction": has_contradiction,
-                "citations": citations
+                "citations": final_citations
             })
 
         except Exception as e:
