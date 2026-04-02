@@ -79,16 +79,16 @@ const VideoCard = ({ video, onDelete }) => {
 
   return (
     <div
-      className="overflow-hidden flex flex-col"
+      className="relative overflow-hidden flex flex-col transition-all cursor-pointer group/card"
       style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => url && window.open(url, "_blank")}
     >
       {/* Cover — fixed 180px */}
       <div
-        className="relative flex-shrink-0 cursor-pointer group overflow-hidden"
+        className="relative flex-shrink-0 overflow-hidden"
         style={{ height: 180, background: "#1a1209" }}
-        onClick={() => url && window.open(url, "_blank")}
       >
         {video.thumbnail_url ? (
           <img
@@ -123,7 +123,7 @@ const VideoCard = ({ video, onDelete }) => {
       </div>
 
       {/* Body */}
-      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+      <div className="px-4 pt-3 pb-4 flex-1 flex flex-col gap-1">
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{video.title}</p>
         <p className="text-xs" style={{ color: C.muted }}>{formatDate(video.created_at)}</p>
         {video.size_bytes && (
@@ -131,19 +131,13 @@ const VideoCard = ({ video, onDelete }) => {
         )}
       </div>
 
-      {/* Footer — anchored */}
-      <div className="px-4 pb-4 pt-2 flex items-center gap-2">
+      {/* Secondary Actions Overlay */}
+      <div className="absolute top-2.5 left-2.5 opacity-0 group-hover/card:opacity-100 transition-opacity">
         <button
-          onClick={() => url && window.open(url, "_blank")}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-88"
-          style={{ background: C.orange }}
-        >
-          <Play size={12} fill="#fff" /> Watch
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-red-50"
-          style={{ border: "1.5px solid #fca5a5" }}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="w-8 h-8 rounded-full flex items-center justify-center shadow-md bg-white hover:bg-red-50 transition-colors"
+          style={{ border: "1px solid #fca5a5" }}
+          title="Delete video"
         >
           <Trash2 size={13} color="#ef4444" />
         </button>
@@ -168,10 +162,11 @@ const DocCard = ({ doc }) => {
 
   return (
     <div
-      className="overflow-hidden flex flex-col"
-      style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
+      className={`relative overflow-hidden flex flex-col transition-all group/card ${canView && viewUrl ? 'cursor-pointer' : 'opacity-80'}`}
+      style={{ ...cardStyle, ...(hovered && canView && viewUrl ? cardHover : {}) }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => viewUrl && canView && window.open(viewUrl, "_blank")}
     >
       {/* Cover — fixed 180px */}
       <div
@@ -202,7 +197,7 @@ const DocCard = ({ doc }) => {
       </div>
 
       {/* Body */}
-      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+      <div className="px-4 pt-3 pb-5 flex-1 flex flex-col gap-1">
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{doc.title || doc.filename}</p>
         <div className="flex items-center gap-1.5">
           <FileText size={11} style={{ color: C.muted }} />
@@ -218,21 +213,7 @@ const DocCard = ({ doc }) => {
         <p className="text-xs" style={{ color: C.muted }}>{formatDate(doc.created_at)}</p>
       </div>
 
-      {/* Footer — anchored */}
-      <div className="px-4 pb-4 pt-2">
-        <button
-          onClick={() => viewUrl && canView && window.open(viewUrl, "_blank")}
-          disabled={!viewUrl || !canView}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity"
-          style={{
-            background: canView && viewUrl ? C.orange : "#d4cdc5",
-            cursor: canView && viewUrl ? "pointer" : "not-allowed",
-            opacity: canView && viewUrl ? 1 : 0.6,
-          }}
-        >
-          <FileText size={12} /> View Document
-        </button>
-      </div>
+
     </div>
   );
 };
@@ -242,10 +223,11 @@ const LinkCard = ({ link, onEdit, onDelete }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <div
-      className="overflow-hidden flex flex-col"
+      className="relative overflow-hidden flex flex-col transition-all cursor-pointer group/card"
       style={{ ...cardStyle, ...(hovered ? cardHover : {}) }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => window.open(link.url, "_blank")}
     >
       {/* Cover — fixed 180px */}
       <div
@@ -265,7 +247,7 @@ const LinkCard = ({ link, onEdit, onDelete }) => {
       </div>
 
       {/* Body */}
-      <div className="px-4 pt-3 pb-1 flex-1 flex flex-col gap-1">
+      <div className="px-4 pt-3 pb-4 flex-1 flex flex-col gap-1">
         <p className="font-bold text-sm leading-snug line-clamp-2" style={{ color: C.ink, fontFamily: "Georgia, serif" }}>{link.title}</p>
         <a
           href={link.url}
@@ -279,26 +261,21 @@ const LinkCard = ({ link, onEdit, onDelete }) => {
         <p className="text-xs" style={{ color: C.muted }}>{formatDate(link.created_at)}</p>
       </div>
 
-      {/* Footer — anchored */}
-      <div className="px-4 pb-4 pt-2 flex items-center gap-2">
+      {/* Secondary Actions Overlay */}
+      <div className="absolute top-2.5 left-2.5 flex items-center gap-2 opacity-0 group-hover/card:opacity-100 transition-opacity">
         <button
-          onClick={() => window.open(link.url, "_blank")}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full text-xs font-semibold text-white transition-opacity hover:opacity-88"
-          style={{ background: C.orange }}
-        >
-          <ExternalLink size={12} /> Open Link
-        </button>
-        <button
-          onClick={onEdit}
-          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-orange-50"
-          style={{ border: `1.5px solid ${C.orangeBorder}` }}
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="w-8 h-8 rounded-full flex items-center justify-center shadow-md bg-white hover:bg-orange-50 transition-colors"
+          style={{ border: `1px solid ${C.orangeBorder}` }}
+          title="Edit link"
         >
           <Edit2 size={13} style={{ color: C.orange }} />
         </button>
         <button
-          onClick={onDelete}
-          className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center transition-colors hover:bg-red-50"
-          style={{ border: "1.5px solid #fca5a5" }}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="w-8 h-8 rounded-full flex items-center justify-center shadow-md bg-white hover:bg-red-50 transition-colors"
+          style={{ border: "1px solid #fca5a5" }}
+          title="Delete link"
         >
           <Trash2 size={13} color="#ef4444" />
         </button>
@@ -584,8 +561,7 @@ const AdminContentLibrary = () => {
                 {activeTab === "videos" && (
                   <button
                     onClick={() => setShowVideoModal(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 flex-shrink-0"
-                    style={{ background: C.orange }}
+                    className="flex items-center gap-2 px-6 py-2 rounded-full bg-[#1a1209] text-sm font-semibold text-[#faf6ef] transition-all hover:bg-[#2d1f0e] hover:-translate-y-0.5 hover:shadow-lg flex-shrink-0"
                   >
                     <Upload size={14} /> Upload Video
                   </button>
@@ -593,8 +569,7 @@ const AdminContentLibrary = () => {
                 {activeTab === "links" && (
                   <button
                     onClick={() => { setEditingLink(null); setShowLinkModal(true); }}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 flex-shrink-0"
-                    style={{ background: C.orange }}
+                    className="flex items-center gap-2 px-6 py-2 rounded-full bg-[#1a1209] text-sm font-semibold text-[#faf6ef] transition-all hover:bg-[#2d1f0e] hover:-translate-y-0.5 hover:shadow-lg flex-shrink-0"
                   >
                     <Plus size={14} /> Add Link
                   </button>

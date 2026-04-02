@@ -521,25 +521,25 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                 disabled={submittingComment}
                 className="mb-3"
               />
-              <div className="flex justify-end">
-                <Button
+              <div className="flex justify-end mt-1">
+                <button
                   onClick={handleAddComment}
                   type="button"
-                  variant="primary"
                   disabled={submittingComment || !commentText.trim()}
+                  className="flex w-fit items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-5 py-2 text-sm font-semibold text-white transition-all hover:shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submittingComment ? (
                     <>
                       <LoadingSpinner size="small" />
-                      <span className="ml-2">Posting...</span>
+                      <span>Posting...</span>
                     </>
                   ) : (
                     <>
                       <Send size={16} />
-                      <span className="ml-2">Post Comment</span>
+                      <span>Post Comment</span>
                     </>
                   )}
-                </Button>
+                </button>
               </div>
             </div>
           </div>

@@ -129,9 +129,9 @@ const CourseContent = () => {
   const getContentIcon = (type) => {
     switch (type) {
       case 'document': return <FileText size={16} style={{ color: '#00ADEF' }} />;
-      case 'video':    return <Video     size={16} style={{ color: '#f7953f' }} />;
-      case 'link':     return <LinkIcon  size={16} style={{ color: '#78BE20' }} />;
-      default:         return <FileText  size={16} style={{ color: '#9c8e80' }} />;
+      case 'video': return <Video size={16} style={{ color: '#f7953f' }} />;
+      case 'link': return <LinkIcon size={16} style={{ color: '#78BE20' }} />;
+      default: return <FileText size={16} style={{ color: '#9c8e80' }} />;
     }
   };
 
@@ -347,17 +347,8 @@ const CourseContent = () => {
                             Last viewed: {new Date(itemProgress.last_viewed_at).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
                           <MarkAsDoneButton itemId={item.id} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} />
-                          <button
-                            onClick={() => scrollToItem(item.id)}
-                            className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all"
-                            style={{ borderColor: '#e0d8ce', color: '#6b5e4e', background: 'white' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#f7953f'; e.currentTarget.style.color = '#f7953f'; }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; }}
-                          >
-                            Focus Item
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -378,6 +369,13 @@ const CourseContent = () => {
                   const BtnIcon = s.btn.icon;
                   const canTake = quiz.status === 'can_take';
                   const isDisabled = !canTake && quiz.status !== 'completed';
+                  const missingPrereqIds = quiz.missing_prerequisites || [];
+                  const missingPrereqItems = missingPrereqIds
+                    .map((prereqId) => selectedCourse.items?.find((item) => item.id === prereqId))
+                    .filter(Boolean);
+                  const unresolvedPrereqIds = missingPrereqIds.filter(
+                    (prereqId) => !missingPrereqItems.some((item) => item.id === prereqId)
+                  );
 
                   return (
                     <div
@@ -431,12 +429,37 @@ const CourseContent = () => {
                       <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
                         {/* Left: prerequisite / cooldown info */}
                         <div className="flex-1 min-w-0">
-                          {quiz.status === 'locked' && quiz.missing_prerequisites?.length > 0 && (
-                            <div className="flex items-start gap-2">
-                              <Lock size={13} style={{ color: '#9c8e80', marginTop: 2, flexShrink: 0 }} />
-                              <p className="text-xs" style={{ color: '#9c6a3a' }}>
-                                Complete {quiz.missing_prerequisites.length} prerequisite{quiz.missing_prerequisites.length !== 1 ? 's' : ''} to unlock this quiz
-                              </p>
+                          {quiz.status === 'locked' && missingPrereqIds.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <Lock size={13} style={{ color: '#9c8e80', marginTop: 2, flexShrink: 0 }} />
+                                <p className="text-xs" style={{ color: '#9c6a3a' }}>
+                                  Complete {missingPrereqIds.length} prerequisite{missingPrereqIds.length !== 1 ? 's' : ''} to unlock this quiz
+                                </p>
+                              </div>
+
+                              {(missingPrereqItems.length > 0 || unresolvedPrereqIds.length > 0) && (
+                                <div className="flex flex-wrap gap-1.5 ml-5">
+                                  {missingPrereqItems.map((item) => (
+                                    <span
+                                      key={item.id}
+                                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      style={{ background: '#fff5ea', color: '#9c6a3a', border: '1px solid #fcd9b8' }}
+                                    >
+                                      {(item.type || 'content').charAt(0).toUpperCase() + (item.type || 'content').slice(1)}: {item.title}
+                                    </span>
+                                  ))}
+                                  {unresolvedPrereqIds.map((prereqId) => (
+                                    <span
+                                      key={prereqId}
+                                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                                      style={{ background: '#f3ede4', color: '#9c8e80', border: '1px solid #e0d8ce' }}
+                                    >
+                                      Content #{prereqId}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                           {quiz.status === 'cooldown' && quiz.next_attempt_at && (
@@ -500,8 +523,8 @@ const CourseContent = () => {
 
 const StatChip = ({ icon, value, label, tint }) => {
   const styles = {
-    teal:    { background: '#e6f4f1', color: '#0d9488' },
-    orange:  { background: '#fff0e8', color: '#E0741C' },
+    teal: { background: '#e6f4f1', color: '#0d9488' },
+    orange: { background: '#fff0e8', color: '#E0741C' },
     neutral: { background: '#f3ede4', color: '#78716c' },
   };
   return (
@@ -528,9 +551,9 @@ const SectionCard = ({ title, subtitle, actions, children }) => (
 
 const TypeBadge = ({ type }) => {
   const map = {
-    document: { label: 'Document', style: { background: '#fff0e8', color: '#E0741C',  border: '1px solid #fcd9b8' } },
-    video:    { label: 'Video',    style: { background: '#fef9e7', color: '#b45309',  border: '1px solid #fde68a' } },
-    link:     { label: 'Link',     style: { background: '#f0fdf4', color: '#15803d',  border: '1px solid #bbf7d0' } },
+    document: { label: 'Document', style: { background: '#fff0e8', color: '#E0741C', border: '1px solid #fcd9b8' } },
+    video: { label: 'Video', style: { background: '#fef9e7', color: '#b45309', border: '1px solid #fde68a' } },
+    link: { label: 'Link', style: { background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' } },
   };
   const c = map[type] || { label: type, style: { background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' } };
   return (

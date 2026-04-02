@@ -65,12 +65,12 @@ const Notifications = () => {
     if (notification.type === 'direct_message') {
       setSelectedMessage(notification);
       setSearchParams({ message: notification.id });
-    } 
+    }
     // For announcements, open announcement modal
     else if (notification.type === 'team_announcement') {
       setSelectedAnnouncement(notification);
       setSearchParams({ announcement: notification.id });
-    } 
+    }
     // For other types, navigate directly
     else if (notification.related_course_id) {
       navigate(`/employee/course/${notification.related_course_id}`);
@@ -94,7 +94,7 @@ const Notifications = () => {
       // Check if it's related to a course first
       if (selectedAnnouncement.related_course_id) {
         navigate(`/employee/course/${selectedAnnouncement.related_course_id}`);
-      } 
+      }
       // Otherwise check if it's related to a team
       else if (selectedAnnouncement.related_team_id) {
         navigate(`/employee/team/${selectedAnnouncement.related_team_id}/announcements`);
@@ -219,23 +219,23 @@ const Notifications = () => {
 
             <section className="rounded-3xl border bg-white p-3 mb-6" style={{ borderColor: '#e8e0d4', boxShadow: '0 8px 22px rgba(26,18,9,0.08)' }}>
               <div className="flex flex-wrap gap-2">
-              {filters.map((f) => (
-                <button
-                  key={f.key}
-                  onClick={() => setFilterType(f.key)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all"
-                  style={{
-                    background: filterType === f.key ? '#1a1209' : '#f6f1e8',
-                    color: filterType === f.key ? '#ffffff' : '#6b5e4e',
-                    border: filterType === f.key ? '1px solid transparent' : '1px solid #eadfce',
-                  }}
-                >
-                  {getFilterLabel(f.key)}
-                  <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: filterType === f.key ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
-                    {f.count}
-                  </span>
-                </button>
-              ))}
+                {filters.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilterType(f.key)}
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold transition-all"
+                    style={{
+                      background: filterType === f.key ? '#1a1209' : '#f6f1e8',
+                      color: filterType === f.key ? '#ffffff' : '#6b5e4e',
+                      border: filterType === f.key ? '1px solid transparent' : '1px solid #eadfce',
+                    }}
+                  >
+                    {getFilterLabel(f.key)}
+                    <span className="px-2 py-0.5 rounded-full text-xs" style={{ background: filterType === f.key ? 'rgba(255,255,255,0.2)' : '#ffffff' }}>
+                      {f.count}
+                    </span>
+                  </button>
+                ))}
               </div>
             </section>
 
@@ -420,9 +420,7 @@ const Notifications = () => {
             </div>
 
             <div className="p-5 sm:p-6 border-t flex gap-3" style={{ borderColor: '#efe7dc', background: '#fffdfa' }}>
-              <button className="flex-1 px-4 py-3 rounded-xl font-semibold border" style={{ borderColor: '#dfd5c8', color: '#6b5e4e', background: '#fff' }} onClick={closeMessageModal}>
-                Close
-              </button>
+
               {selectedMessage.related_course_id && (
                 <button
                   className="flex-1 px-4 py-3 rounded-xl font-semibold text-white inline-flex items-center justify-center gap-2"
@@ -501,8 +499,8 @@ const Notifications = () => {
                   <div>
                     <p className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: '#9d907f' }}>Posted On</p>
                     <p className="font-semibold" style={{ color: '#1a1209' }}>{formatDetailedDate(selectedAnnouncement.created_at)}</p>
-                    </div>
                   </div>
+                </div>
 
                 {selectedAnnouncement.title && (
                   <div className="flex items-center gap-3">
@@ -539,8 +537,8 @@ const Notifications = () => {
                   onClick={navigateFromAnnouncement}
                 >
                   <ArrowRight size={16} />
-                  {selectedAnnouncement.related_course_id 
-                    ? 'Go to Course' 
+                  {selectedAnnouncement.related_course_id
+                    ? 'Go to Course'
                     : 'Go to Team Page'}
                 </button>
               )}

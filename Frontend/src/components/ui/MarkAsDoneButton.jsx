@@ -8,7 +8,7 @@ const MarkAsDoneButton = ({
   isCompleted = false, 
   progress = 0 
 }) => {
-  const { markModuleDone, updateVideoProgress } = useCourses();
+  const { markModuleDone } = useCourses();
   const [isMarking, setIsMarking] = useState(false);
 
   const handleMarkAsDone = async () => {
@@ -29,9 +29,9 @@ const MarkAsDoneButton = ({
       return (
         <button
           disabled
-          className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-4 py-2.5 font-medium text-green-700"
+          className="flex w-fit items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-700 transition-all"
         >
-          <Check size={20} />
+          <Check size={16} />
           Video Completed
         </button>
       );
@@ -39,26 +39,26 @@ const MarkAsDoneButton = ({
 
     if (progress > 0 && progress < 100) {
       return (
-        <div className="space-y-2">
+        <div className="flex flex-col items-end gap-1.5">
           <button
             onClick={handleMarkAsDone}
             disabled={isMarking}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-fit items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-5 py-2 text-sm font-semibold text-white transition-all hover:shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isMarking ? (
               <>
-                <Loader2 size={20} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
                 Marking...
               </>
             ) : (
               <>
-                <Check size={20} />
+                <Check size={16} />
                 Mark as Complete
               </>
             )}
           </button>
-          <p className="text-xs text-gray-500 text-center">
-            Video progress: {Math.round(progress)}% • Continue watching or mark as complete
+          <p className="text-xs font-medium text-gray-500">
+            Progress: {Math.round(progress)}% • Continue watching or mark as complete
           </p>
         </div>
       );
@@ -68,16 +68,16 @@ const MarkAsDoneButton = ({
       <button
         onClick={handleMarkAsDone}
         disabled={isMarking}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex w-fit items-center justify-center gap-1.5 rounded-full bg-[#1a1209] px-5 py-2 text-sm font-semibold text-[#faf6ef] transition-all hover:bg-[#2d1f0e] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isMarking ? (
           <>
-            <Loader2 size={20} className="animate-spin" />
+            <Loader2 size={16} className="animate-spin" />
             Starting...
           </>
         ) : (
           <>
-            <Play size={20} />
+            <Play size={15} className="fill-current ml-0.5" />
             Start Video
           </>
         )}
@@ -90,9 +90,9 @@ const MarkAsDoneButton = ({
     return (
       <button
         disabled
-        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-4 py-2.5 font-medium text-green-700"
+        className="flex w-fit items-center justify-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-semibold text-emerald-700 transition-all"
       >
-        <Check size={20} />
+        <Check size={16} />
         Completed
       </button>
     );
@@ -102,16 +102,16 @@ const MarkAsDoneButton = ({
     <button
       onClick={handleMarkAsDone}
       disabled={isMarking}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-4 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex w-fit items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-5 py-2 text-sm font-semibold text-white transition-all hover:shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isMarking ? (
         <>
-          <Loader2 size={20} className="animate-spin" />
+          <Loader2 size={16} className="animate-spin" />
           Marking...
         </>
       ) : (
         <>
-          <Check size={20} />
+          <Check size={16} />
           Mark as Done
         </>
       )}

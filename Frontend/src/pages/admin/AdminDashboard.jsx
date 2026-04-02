@@ -44,22 +44,22 @@ const formatDuration = (s) => {
 
 const getStatusBadge = (status) => {
   switch (status) {
-    case 'STORED':     return { color: '#00ADEF', bg: 'rgba(0,173,239,0.10)',  label: 'Stored' };
-    case 'QUEUED':     return { color: '#f7953f', bg: 'rgba(245,130,32,0.10)', label: 'Queued' };
+    case 'STORED': return { color: '#00ADEF', bg: 'rgba(0,173,239,0.10)', label: 'Stored' };
+    case 'QUEUED': return { color: '#f7953f', bg: 'rgba(245,130,32,0.10)', label: 'Queued' };
     case 'PROCESSING': return { color: '#f7953f', bg: 'rgba(245,130,32,0.10)', label: 'Processing' };
-    case 'PROCESSED':  return { color: '#78BE20', bg: 'rgba(120,190,32,0.10)', label: 'Processed' };
-    case 'FAILED':     return { color: '#ef4444', bg: 'rgba(239,68,68,0.10)',  label: 'Failed' };
-    default:           return { color: C.muted,   bg: C.cream,                 label: status };
+    case 'PROCESSED': return { color: '#78BE20', bg: 'rgba(120,190,32,0.10)', label: 'Processed' };
+    case 'FAILED': return { color: '#ef4444', bg: 'rgba(239,68,68,0.10)', label: 'Failed' };
+    default: return { color: C.muted, bg: C.cream, label: status };
   }
 };
 
 const auditStatusColor = (s) => {
   switch (s?.toLowerCase()) {
-    case 'queued':     return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
+    case 'queued': return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
     case 'processing': return { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' };
-    case 'completed':  return { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' };
-    case 'failed':     return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
-    default:           return { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' };
+    case 'completed': return { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' };
+    case 'failed': return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
+    default: return { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' };
   }
 };
 
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* ── Hero Banner ── */}
-        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF',borderBottom: '0.5px solid #63472d' }}>
+        <div className="w-full px-8 py-7 flex items-center justify-between flex-shrink-0" style={{ background: '#FAF6EF', borderBottom: '0.5px solid #63472d' }}>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#3D2C1C', fontFamily: 'Georgia, serif' }}>
               Document Dashboard
@@ -188,10 +188,10 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             {[
-              { label: 'Total',      value: docStats.total,      dot: '#1a1918' },
-              { label: 'Ready',      value: docStats.ready,      dot: C.blue },
+              { label: 'Total', value: docStats.total, dot: '#1a1918' },
+              { label: 'Ready', value: docStats.ready, dot: C.blue },
               { label: 'Processing', value: docStats.processing, dot: C.orange },
-              { label: 'Completed',  value: docStats.completed,  dot: C.green },
+              { label: 'Completed', value: docStats.completed, dot: C.green },
             ].map(s => (
               <div key={s.label} className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium"
                 style={{ background: 'rgba(134, 78, 25, 0.08)', color: '#111111' }}>
@@ -204,239 +204,228 @@ const AdminDashboard = () => {
 
         {/* ── Scrollable body ── */}
         <div className="flex-1 overflow-auto">
-        <div className="p-6 max-w-7xl mx-auto space-y-6">
+          <div className="p-6 max-w-7xl mx-auto space-y-6">
 
-          {/* ── Error ── */}
-          {error && (
-            <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 14 }}
-              className="flex items-start justify-between p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle size={18} color="#dc2626" className="mt-0.5" />
-                <p style={{ color: '#991b1b', fontSize: 13 }}>{error}</p>
+            {/* ── Error ── */}
+            {error && (
+              <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 14 }}
+                className="flex items-start justify-between p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle size={18} color="#dc2626" className="mt-0.5" />
+                  <p style={{ color: '#991b1b', fontSize: 13 }}>{error}</p>
+                </div>
+                <button onClick={clearError} style={{ color: '#dc2626' }}><X size={16} /></button>
               </div>
-              <button onClick={clearError} style={{ color: '#dc2626' }}><X size={16} /></button>
+            )}
+
+            {/* ── Document Management Banner ── */}
+            <div 
+              className="relative overflow-hidden w-full p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:justify-between gap-6 transition-all"
+              style={{ 
+                background: 'linear-gradient(to right, #ffffff, #faf6ef)', 
+                borderRadius: 24, 
+                border: `1px solid ${C.border}`,
+                boxShadow: '0 4px 24px rgba(26,18,9,0.04)'
+              }}
+            >
+              {/* Subtle background decorative blobs */}
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#f7953f] rounded-full blur-[80px] opacity-15 pointer-events-none" />
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-[#00ADEF] rounded-full blur-[80px] opacity-10 pointer-events-none" />
+              
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 sm:gap-6 relative z-10 w-full">
+                <div style={{
+                  width: 64, height: 64, borderRadius: 20, flexShrink: 0,
+                  background: 'linear-gradient(135deg, #f7953f 0%, #E0741C 100%)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 8px 16px rgba(247,149,63,0.25)'
+                }}>
+                  <Upload size={30} color="#fff" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 style={{ fontFamily: 'Georgia, serif', color: C.ink, fontSize: 24, fontWeight: 700, marginBottom: 6 }}>
+                    Document Management
+                  </h2>
+                  <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.5, maxWidth: 480 }}>
+                    Upload PDF documents to train the AI. Our system will automatically extract and process the text for immediate use.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.blue, border: `1px solid ${C.border}` }}>
+                      <FileText size={12} /> PDF Documents Only
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.orange, border: `1px solid ${C.border}` }}>
+                      <AlertCircle size={12} /> Max 100MB Size
+                    </span>
+                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.green, border: `1px solid ${C.border}` }}>
+                      <CheckCircle size={12} /> Automatic Processing
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10 w-full sm:w-auto flex-shrink-0 mt-2 sm:mt-0">
+                <button
+                  onClick={() => setShowUploadModal(true)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-8 py-3.5 text-sm font-bold text-white transition-all hover:shadow-[0_8px_20px_rgba(247,149,63,0.3)] hover:-translate-y-0.5"
+                >
+                  <Upload size={18} /> 
+                  Upload Document
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* ── Upload Card ── */}
-          <div>
-
-            {/* Upload / Document Management Card */}
+            {/* ── Recent Documents Card ── */}
             <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}` }}
               className="p-6 shadow-sm">
 
-              {/* Icon + Title */}
-              <div className="flex items-start gap-4 mb-5">
-                <div style={{
-                  width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                  background: C.orange, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Upload size={26} color="#fff" />
-                </div>
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-5">
                 <div>
                   <h2 style={{ fontFamily: 'Georgia, serif', color: C.ink, fontSize: 22, fontWeight: 700 }}>
-                    Document Management
+                    Recent Documents
                   </h2>
                   <p style={{ color: C.muted, fontSize: 13, marginTop: 3 }}>
-                    Upload and process PDF documents for AI training
+                    Manage and process your uploaded files
                   </p>
                 </div>
-              </div>
-
-              {/* Requirements box */}
-              <div style={{ background: C.cream, border: `1px solid ${C.border}`, borderRadius: 12 }}
-                className="p-4 mb-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[
-                    { icon: <FileText size={16} color={C.blue} />, label: 'File Format', desc: 'PDF documents only', dot: C.blue },
-                    { icon: <AlertCircle size={16} color={C.orange} />, label: 'File Size', desc: 'Maximum 100 MB per file', dot: C.orange },
-                    { icon: <CheckCircle size={16} color={C.green} />, label: 'Processing', desc: 'Automatic AI extraction', dot: C.green },
-                  ].map(({ icon, label, desc }) => (
-                    <div key={label} className="flex items-start gap-2">
-                      <div className="mt-0.5 flex-shrink-0">{icon}</div>
-                      <div>
-                        <p style={{ color: C.ink, fontSize: 13, fontWeight: 600 }}>{label}</p>
-                        <p style={{ color: C.muted, fontSize: 12, marginTop: 2 }}>{desc}</p>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-3">
+                  {documents.length > 0 && (
+                    <span style={{
+                      background: C.cream, color: C.muted, borderRadius: 50,
+                      padding: '4px 14px', fontSize: 12, fontWeight: 600,
+                    }}>
+                      {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
+                    </span>
+                  )}
+                  <button
+                    onClick={handleOpenAuditLog}
+                    style={{
+                      border: `1.5px solid ${C.orange}`, color: C.orange, background: 'transparent',
+                      borderRadius: 50, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <ClipboardList size={14} /> Audit Log
+                  </button>
                 </div>
               </div>
 
-              {/* Upload button */}
-              <button
-                onClick={() => setShowUploadModal(true)}
-                style={{
-                  width: '100%', background: C.orange, color: '#fff', border: 'none',
-                  borderRadius: 50, padding: '12px 0', fontSize: 14, fontWeight: 600,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = '#e0741c'}
-                onMouseLeave={e => e.currentTarget.style.background = C.orange}
-              >
-                <Upload size={18} /> Upload New Document
-              </button>
-            </div>
-          </div>
-
-          {/* ── Recent Documents Card ── */}
-          <div style={{ background: C.card, borderRadius: 18, border: `1px solid ${C.border}` }}
-            className="p-6 shadow-sm">
-
-            {/* Header row */}
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 style={{ fontFamily: 'Georgia, serif', color: C.ink, fontSize: 22, fontWeight: 700 }}>
-                  Recent Documents
-                </h2>
-                <p style={{ color: C.muted, fontSize: 13, marginTop: 3 }}>
-                  Manage and process your uploaded files
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {documents.length > 0 && (
-                  <span style={{
-                    background: C.cream, color: C.muted, borderRadius: 50,
-                    padding: '4px 14px', fontSize: 12, fontWeight: 600,
-                  }}>
-                    {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
-                  </span>
-                )}
-                <button
-                  onClick={handleOpenAuditLog}
-                  style={{
-                    border: `1.5px solid ${C.orange}`, color: C.orange, background: 'transparent',
-                    borderRadius: 50, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <ClipboardList size={14} /> Audit Log
-                </button>
-              </div>
-            </div>
-
-            {/* Document rows */}
-            {loading ? (
-              <div className="py-12 text-center" style={{ color: C.muted }}>Loading documents…</div>
-            ) : documents.length === 0 ? (
-              <div className="py-16 text-center">
-                <div style={{ display: 'inline-flex', padding: 24, background: C.cream, borderRadius: '50%', marginBottom: 16 }}>
-                  <FileText size={48} color={C.border} />
+              {/* Document rows */}
+              {loading ? (
+                <div className="py-12 text-center" style={{ color: C.muted }}>Loading documents…</div>
+              ) : documents.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div style={{ display: 'inline-flex', padding: 24, background: C.cream, borderRadius: '50%', marginBottom: 16 }}>
+                    <FileText size={48} color={C.border} />
+                  </div>
+                  <h3 style={{ color: C.ink, fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No documents yet</h3>
+                  <p style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>
+                    Upload your first document to get started with AI processing
+                  </p>
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="inline-flex w-fit items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-6 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Upload size={16} /> Upload First Document
+                  </button>
                 </div>
-                <h3 style={{ color: C.ink, fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No documents yet</h3>
-                <p style={{ color: C.muted, fontSize: 13, marginBottom: 20 }}>
-                  Upload your first document to get started with AI processing
-                </p>
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  style={{
-                    background: C.orange, color: '#fff', border: 'none', borderRadius: 50,
-                    padding: '10px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                  }}
-                >
-                  <Upload size={16} /> Upload First Document
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {documents.map((doc) => {
-                  const badge = getStatusBadge(doc.status);
-                  const isProcessing = processingDocs.has(doc.id);
-                  return (
-                    <div key={doc.id}
-                      style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.card }}
-                      className="flex items-center justify-between px-4 py-3 hover:shadow-sm transition-shadow">
+              ) : (
+                <div className="space-y-2">
+                  {documents.map((doc) => {
+                    const badge = getStatusBadge(doc.status);
+                    const isProcessing = processingDocs.has(doc.id);
+                    return (
+                      <div key={doc.id}
+                        style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.card }}
+                        className="flex items-center justify-between px-4 py-3 hover:shadow-sm transition-shadow">
 
-                      {/* Left: icon + info */}
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <FileText size={28} color={C.muted} className="mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p style={{ color: C.ink, fontWeight: 600, fontSize: 14 }} className="truncate">
-                            {doc.title}
-                          </p>
-                          <p style={{ color: C.muted, fontSize: 12 }} className="truncate">{doc.original_filename}</p>
-                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                            {/* Status pill */}
-                            <span style={{
-                              background: badge.bg, color: badge.color,
-                              borderRadius: 50, padding: '2px 10px', fontSize: 11, fontWeight: 600,
-                            }}>
-                              {badge.label}
-                            </span>
-                            <span style={{ color: C.muted, fontSize: 11 }}>{formatFileSize(doc.size_bytes)}</span>
-                            <span style={{ color: C.muted, fontSize: 11 }}>{formatDate(doc.created_at)}</span>
-                            <span style={{ color: C.muted, fontSize: 11 }}>by {doc.uploader_email}</span>
+                        {/* Left: icon + info */}
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <FileText size={28} color={C.muted} className="mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p style={{ color: C.ink, fontWeight: 600, fontSize: 14 }} className="truncate">
+                              {doc.title}
+                            </p>
+                            <p style={{ color: C.muted, fontSize: 12 }} className="truncate">{doc.original_filename}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                              {/* Status pill */}
+                              <span style={{
+                                background: badge.bg, color: badge.color,
+                                borderRadius: 50, padding: '2px 10px', fontSize: 11, fontWeight: 600,
+                              }}>
+                                {badge.label}
+                              </span>
+                              <span style={{ color: C.muted, fontSize: 11 }}>{formatFileSize(doc.size_bytes)}</span>
+                              <span style={{ color: C.muted, fontSize: 11 }}>{formatDate(doc.created_at)}</span>
+                              <span style={{ color: C.muted, fontSize: 11 }}>by {doc.uploader_email}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Right: actions */}
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                        {doc.status === 'STORED' && (
-                          <button
-                            onClick={() => handleQueueDocument(doc.id)}
-                            disabled={isProcessing}
-                            style={{
-                              background: C.orange, color: '#fff', border: 'none',
-                              borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
-                              cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.6 : 1,
-                              display: 'flex', alignItems: 'center', gap: 5,
-                            }}
-                          >
-                            <Play size={13} /> {isProcessing ? 'Queuing…' : 'Process'}
-                          </button>
-                        )}
-                        {(doc.status === 'QUEUED' || doc.status === 'PROCESSING') && (
-                          <span style={{
-                            background: 'rgba(245,130,32,0.10)', color: C.orange,
-                            borderRadius: 50, padding: '5px 12px', fontSize: 11, fontWeight: 600,
-                          }}>
-                            In Progress…
-                          </span>
-                        )}
-                        {doc.status === 'FAILED' && (
-                          <button
-                            onClick={() => handleQueueDocument(doc.id)}
-                            disabled={isProcessing}
-                            style={{
-                              background: '#ef4444', color: '#fff', border: 'none',
-                              borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
-                              cursor: isProcessing ? 'not-allowed' : 'pointer',
-                              display: 'flex', alignItems: 'center', gap: 5,
-                            }}
-                          >
-                            <RefreshCw size={13} /> {isProcessing ? 'Reprocessing…' : 'Reprocess'}
-                          </button>
-                        )}
-                        {/* Sections button — only for PROCESSED docs */}
-                        {doc.status === 'PROCESSED' && (
-                          <button
-                            onClick={() => handleOpenSections(doc)}
-                            style={{
-                              background: 'transparent', border: 'none', cursor: 'pointer',
-                              color: C.orange, padding: 6, borderRadius: 8,
-                              display: 'flex', alignItems: 'center',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            title="View Sections"
-                          >
-                            <BookOpen size={17} />
-                          </button>
-                        )}
+                        {/* Right: actions */}
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                          {doc.status === 'STORED' && (
+                            <button
+                              onClick={() => handleQueueDocument(doc.id)}
+                              disabled={isProcessing}
+                              style={{
+                                background: C.orange, color: '#fff', border: 'none',
+                                borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                                cursor: isProcessing ? 'not-allowed' : 'pointer', opacity: isProcessing ? 0.6 : 1,
+                                display: 'flex', alignItems: 'center', gap: 5,
+                              }}
+                            >
+                              <Play size={13} /> {isProcessing ? 'Queuing…' : 'Process'}
+                            </button>
+                          )}
+                          {(doc.status === 'QUEUED' || doc.status === 'PROCESSING') && (
+                            <span style={{
+                              background: 'rgba(245,130,32,0.10)', color: C.orange,
+                              borderRadius: 50, padding: '5px 12px', fontSize: 11, fontWeight: 600,
+                            }}>
+                              In Progress…
+                            </span>
+                          )}
+                          {doc.status === 'FAILED' && (
+                            <button
+                              onClick={() => handleQueueDocument(doc.id)}
+                              disabled={isProcessing}
+                              style={{
+                                background: '#ef4444', color: '#fff', border: 'none',
+                                borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                                cursor: isProcessing ? 'not-allowed' : 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 5,
+                              }}
+                            >
+                              <RefreshCw size={13} /> {isProcessing ? 'Reprocessing…' : 'Reprocess'}
+                            </button>
+                          )}
+                          {/* Sections button — only for PROCESSED docs */}
+                          {doc.status === 'PROCESSED' && (
+                            <button
+                              onClick={() => handleOpenSections(doc)}
+                              style={{
+                                background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: C.orange, padding: 6, borderRadius: 8,
+                                display: 'flex', alignItems: 'center',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              title="View Sections"
+                            >
+                              <BookOpen size={17} />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>{/* end scrollable body */}
       </div>{/* end flex-col */}
 
@@ -530,10 +519,10 @@ const AdminDashboard = () => {
               {/* Stat tiles */}
               <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: 'Queued',     value: auditStats.queued,     bg: '#fef3c7', text: '#92400e' },
+                  { label: 'Queued', value: auditStats.queued, bg: '#fef3c7', text: '#92400e' },
                   { label: 'Processing', value: auditStats.processing, bg: '#dbeafe', text: '#1e40af' },
-                  { label: 'Completed',  value: auditStats.completed,  bg: '#dcfce7', text: '#166534' },
-                  { label: 'Failed',     value: auditStats.failed,     bg: '#fee2e2', text: '#991b1b' },
+                  { label: 'Completed', value: auditStats.completed, bg: '#dcfce7', text: '#166534' },
+                  { label: 'Failed', value: auditStats.failed, bg: '#fee2e2', text: '#991b1b' },
                 ].map(({ label, value, bg, text }) => (
                   <div key={label} style={{ background: bg, borderRadius: 12, padding: '14px 8px', textAlign: 'center' }}>
                     <p style={{ color: text, fontSize: 28, fontWeight: 700, lineHeight: 1 }}>{value}</p>
@@ -647,16 +636,7 @@ const AdminDashboard = () => {
 
             {/* Footer close button */}
             <div className="p-4" style={{ borderTop: `1px solid ${C.border}` }}>
-              <button
-                onClick={() => { setShowAuditLog(false); setAuditSearchTerm(''); setAuditStatusFilter('all'); }}
-                style={{
-                  width: '100%', background: 'transparent', color: C.orange,
-                  border: `1.5px solid ${C.orange}`, borderRadius: 50,
-                  padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                Close
-              </button>
+
             </div>
           </div>
         </div>
@@ -782,16 +762,7 @@ const AdminDashboard = () => {
 
             {/* Footer */}
             <div className="p-4" style={{ borderTop: `1px solid ${C.border}` }}>
-              <button
-                onClick={() => { setShowSectionsModal(false); setSections([]); setSelectedDoc(null); }}
-                style={{
-                  width: '100%', background: 'transparent', color: C.orange,
-                  border: `1.5px solid ${C.orange}`, borderRadius: 50,
-                  padding: '11px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                }}
-              >
-                Close
-              </button>
+
             </div>
           </div>
         </div>
