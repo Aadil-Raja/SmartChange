@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Plus,
   FileText,
+  BookOpen,
   Trash2,
   Search,
   CheckCircle,
@@ -93,11 +94,7 @@ const AdminQuizManagement = () => {
   useEffect(() => {
     if (!hasFetched.current) {
       hasFetched.current = true;
-      Promise.all([loadDocuments(), fetchCourses().then((result) => {
-        // Load counts for all courses in background
-        const list = Array.isArray(result?.data) ? result.data : [];
-        list.forEach((c) => loadQuizzesForCourse(c.id));
-      })]);
+      Promise.all([loadDocuments(), fetchCourses()]);
     }
     return () => clearMessages();
   }, []);
@@ -110,8 +107,6 @@ const AdminQuizManagement = () => {
         const docs = result.data?.documents || [];
         const processed = docs.filter((d) => d.status === "PROCESSED");
         setDocuments(processed);
-        // Load counts for all docs in background
-        processed.forEach((doc) => loadQuizzesForDocument(doc.id));
       }
     } catch {
       setError("Failed to load documents");
@@ -230,11 +225,12 @@ const AdminQuizManagement = () => {
 
   const filteredDocuments = documents.filter((d) => d.title?.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredCourses = (courses || []).filter((c) => c.title?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const isInitialPageLoading = (loading || coursesLoading) && documents.length === 0 && (courses || []).length === 0;
 
-  if (loading && documents.length === 0) {
+  if (isInitialPageLoading) {
     return (
       <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingSpinner size="lg" />
+        <LoadingSpinner size="large" text="Loading quiz management..." />
       </div>
     );
   }
@@ -314,7 +310,11 @@ const AdminQuizManagement = () => {
           {/* Document Tab */}
           {activeTab === "document" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {filteredDocuments.length === 0 ? (
+              {loading && documents.length === 0 ? (
+                <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
+                  <LoadingSpinner size="small" text="Loading documents..." />
+                </div>
+              ) : filteredDocuments.length === 0 ? (
                 <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
                   <FileText size={40} color={C.border} style={{ margin: "0 auto 12px" }} />
                   <p style={{ color: C.muted, fontSize: 14 }}>No processed documents found</p>
@@ -347,7 +347,7 @@ const AdminQuizManagement = () => {
                     <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px 12px 52px", display: "flex", flexDirection: "column", gap: 8 }}>
                       {loadingQuizzes[doc.id] ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
-                          <LoadingSpinner size="sm" /><span style={{ fontSize: 13, color: C.muted }}>Loading...</span>
+                          
                         </div>
                       ) : quizzes[doc.id]?.length > 0 ? quizzes[doc.id].map((quiz) => (
                         <div key={quiz.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 16px", gap: 12 }}>
@@ -379,7 +379,7 @@ const AdminQuizManagement = () => {
           {/* Course Tab */}
           {activeTab === "course" && (            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {coursesLoading && !courses?.length ? (
-                <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><LoadingSpinner size="lg" /></div>
+                <div style={{ display: "flex", justifyContent: "center", padding: 48 }}><LoadingSpinner size="large" text="Loading courses..." /></div>
               ) : filteredCourses.length === 0 ? (
                 <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
                   <BookOpen size={40} color={C.border} style={{ margin: "0 auto 12px" }} />
@@ -421,7 +421,7 @@ const AdminQuizManagement = () => {
                     <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px 12px 52px", display: "flex", flexDirection: "column", gap: 8 }}>
                       {loadingCourseQuizzes[course.id] ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0" }}>
-                          <LoadingSpinner size="sm" /><span style={{ fontSize: 13, color: C.muted }}>Loading...</span>
+                        
                         </div>
                       ) : courseQuizzes[course.id]?.length > 0 ? courseQuizzes[course.id].map((quiz) => (
                         <div key={quiz.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 16px", gap: 12 }}>
