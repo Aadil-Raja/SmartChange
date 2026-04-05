@@ -1,4 +1,6 @@
 import { createContext, useState, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { employeeKeys } from "../hooks/useEmployeeQueries";
 import {
     getEmployeeCoursesOverview,
     getEmployeeCourses,
@@ -25,6 +27,7 @@ export const CourseProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [progressLoading, setProgressLoading] = useState(false);
     const fetchingProgress = useRef(new Set());
+    const qc = useQueryClient();
 
 
     // Fetch all courses with enrollment status and progress (single API call)
@@ -86,6 +89,9 @@ export const CourseProvider = ({ children }) => {
                         fetchActualCourseProgress(selectedCourse.id),
                         fetchCourseItemsProgress(selectedCourse.id)
                     ]);
+                    // Invalidate React Query cache so MyCourses card updates
+                    qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+                    qc.invalidateQueries({ queryKey: employeeKeys.course(selectedCourse.id) });
                 }
 
                 return { success: true, data: res.data };
@@ -301,7 +307,6 @@ export const CourseProvider = ({ children }) => {
             }
 
             if (result.success) {
-                // Update the course in the local state
                 setCourses(prevCourses =>
                     prevCourses.map(c =>
                         c.id === courseId
@@ -309,6 +314,7 @@ export const CourseProvider = ({ children }) => {
                             : c
                     )
                 );
+                qc.invalidateQueries({ queryKey: employeeKeys.courses() });
                 return { success: true, starred: !course.is_starred };
             }
             return result;
@@ -322,10 +328,10 @@ export const CourseProvider = ({ children }) => {
     const enrollInCourse = async (courseId) => {
         try {
             const result = await enrollCourse(courseId);
-            
             if (result.success) {
-                // Refresh courses to get updated enrollment status
                 await fetchCourses();
+                qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+                qc.invalidateQueries({ queryKey: employeeKeys.course(courseId) });
                 return result;
             }
             return result;
@@ -339,18 +345,13 @@ export const CourseProvider = ({ children }) => {
     const unenrollFromCourse = async (courseId) => {
         try {
             const result = await unenrollCourse(courseId);
-            
             if (result.success) {
-                // Clear cached progress and course details for this course
-                setCourseItemsProgress(prev => {
-                    const next = { ...prev };
-                    delete next[courseId];
-                    return next;
-                });
+                setCourseItemsProgress(prev => { const next = { ...prev }; delete next[courseId]; return next; });
                 setCompletedItems(new Set());
                 setSelectedCourse(null);
-                // Refresh courses to get updated enrollment status
                 await fetchCourses();
+                qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+                qc.removeQueries({ queryKey: employeeKeys.course(courseId) });
                 return result;
             }
             return result;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourses } from '../../hooks/useCourses';
+import { useEmployeeCourse } from '../../hooks/useEmployeeQueries';
 import CourseContentPreview from '../../components/ui/CourseContentPreview';
 import MarkAsDoneButton from '../../components/ui/MarkAsDoneButton';
 import {
@@ -108,13 +109,22 @@ const CourseContent = () => {
     enrollInCourse,
   } = useCourses();
 
+  // Use React Query for cache warming — prefetches course data into cache
+  useEmployeeCourse(parseInt(id));
+
   const contentRefs = useRef({});
   const [activeItemId, setActiveItemId] = useState(null);
   const [activeTab, setActiveTab] = useState('content');
   const [showMenu, setShowMenu] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
   const menuRef = useRef(null);
-  const hasFetchedCourse = useRef(null);
+
+  // Sync React Query cache into context selectedCourse — only on initial load or course change
+  useEffect(() => {
+    if (id && (!selectedCourse || selectedCourse.id !== parseInt(id))) {
+      fetchCourseDetails(parseInt(id));
+    }
+  }, [id]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -153,13 +163,6 @@ const CourseContent = () => {
       default: return <FileText size={16} style={{ color: '#9c8e80' }} />;
     }
   };
-
-  useEffect(() => {
-    if (id && hasFetchedCourse.current !== id) {
-      hasFetchedCourse.current = id;
-      fetchCourseDetails(parseInt(id));
-    }
-  }, [id]);
 
   /* ─── Loading / Error states ─── */
   if (loading && !selectedCourse) {

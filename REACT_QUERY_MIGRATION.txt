@@ -1,0 +1,81 @@
+REACT QUERY MIGRATION STATUS
+=============================
+
+SETUP
+-----
+[DONE] Installed @tanstack/react-query + @tanstack/react-query-devtools
+[DONE] Added QueryClientProvider + ReactQueryDevtools to main.jsx
+[DONE] Created Frontend/src/hooks/useEmployeeQueries.js with all hooks and mutations
+
+
+PHASE 1 — EMPLOYEE PORTAL (DONE)
+----------------------------------
+[DONE] MyCourses.jsx — migrated to useEmployeeCourses()
+[DONE] EmployeeProfile.jsx — migrated to useEmployeeCoursesOverview()
+[DONE] CourseContent.jsx — uses useEmployeeCourse() for cached initial load
+[DONE] CourseContext.jsx — invalidates React Query cache on:
+         - markModuleDone
+         - enrollInCourse
+         - unenrollFromCourse
+         - toggleCourseStar
+         - uploadProfilePicture / removeProfilePicture
+
+Query keys defined in useEmployeeQueries.js:
+  employeeKeys.courses()                    staleTime: 60s
+  employeeKeys.coursesOverview()            staleTime: 60s
+  employeeKeys.course(id)                   staleTime: 30s
+  employeeKeys.courseProgress(id)           staleTime: 30s
+  employeeKeys.courseItemsProgress(id)      staleTime: 30s
+  employeeKeys.profile()                    staleTime: 5min
+
+
+PHASE 2 — EMPLOYEE PORTAL SECONDARY PAGES (TODO)
+--------------------------------------------------
+[ ] QuizTaking.jsx — useQuery(['employee', 'quiz', quizId]) for getQuizForTaking
+[ ] QuizResults.jsx — no fetch needed (results passed via navigate state)
+[ ] Notifications.jsx — useQuery(['employee', 'notifications']) staleTime: 30s
+[ ] Chatbot.jsx — useQuery(['employee', 'documents']) for document list
+[ ] Wire useSubmitQuiz mutation from useEmployeeQueries into QuizTaking
+    (currently QuizTaking calls submitQuizAttempt directly — needs to invalidate
+     ['employee', 'courses'] and ['employee', 'course', courseId] on success)
+
+
+PHASE 3 — ADMIN PORTAL (TODO)
+-------------------------------
+[ ] Create Frontend/src/hooks/useAdminQueries.js with admin query keys:
+      adminKeys.documents()
+      adminKeys.courses()
+      adminKeys.course(id)
+      adminKeys.quiz(id)
+      adminKeys.promptQuizzes()
+[ ] AdminDashboard.jsx — useQuery(['admin', 'documents'])
+[ ] AdminQuizManagement.jsx — useQuery(['admin', 'quizzes']), useQuery(['admin', 'courses'])
+[ ] AdminCourseDetails.jsx — useQuery(['admin', 'course', id])
+[ ] AdminPromptQuizManagement.jsx — useQuery(['admin', 'prompt-quizzes'])
+[ ] Mutations to wire up with invalidation:
+      - uploadDocument → invalidate ['admin', 'documents']
+      - publishQuiz → invalidate ['admin', 'quiz', id], ['admin', 'quizzes']
+      - createCourseQuiz → invalidate ['admin', 'course', id]
+      - deleteQuiz → invalidate ['admin', 'quizzes'], ['admin', 'documents']
+      - generatePromptQuiz → invalidate ['admin', 'prompt-quizzes']
+
+
+PHASE 4 — CLEANUP (TODO, do after Phase 3)
+-------------------------------------------
+[ ] Remove hasFetched refs from pages that no longer need them
+[ ] Remove lastFetchedAt ref from CourseContext (already removed)
+[ ] Slim down CourseContext — remove server state that React Query now owns:
+      - courses array (owned by useEmployeeCourses)
+      - Keep: selectedCourse, completedItems, courseItemsProgress (local UI state)
+[ ] Remove fetchCourses() from CourseContext (no longer needed)
+[ ] Same cleanup for AdminContext once Phase 3 is done
+
+
+NOTES
+------
+- refetchOnWindowFocus is set to false globally (in QueryClient defaultOptions)
+- Invalidation is the primary mechanism for keeping data fresh after mutations
+- CourseContent still uses CourseContext for progress tracking (completedItems,
+  courseItemsProgress) — these are local UI state, not server state, so they
+  stay in context. Only the initial course fetch moved to React Query.
+- ReactQueryDevtools available in dev mode (bottom-right corner flower icon)

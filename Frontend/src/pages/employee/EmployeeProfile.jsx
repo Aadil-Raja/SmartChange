@@ -2,25 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { User, BookOpen, Star, Clock, CheckCircle, TrendingUp, Award, Calendar, Camera, Trash2, Upload } from 'lucide-react';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
 import CourseCard from '../../components/ui/CourseCard';
-import { getEmployeeCoursesOverview, uploadProfilePicture, removeProfilePicture } from '../../services/courseApi';
+import { uploadProfilePicture, removeProfilePicture } from '../../services/courseApi';
+import { useEmployeeCoursesOverview } from '../../hooks/useEmployeeQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { employeeKeys } from '../../hooks/useEmployeeQueries';
 
 const EmployeeProfile = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState('starred');
-  const [profileData, setProfileData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
   const [showPictureMenu, setShowPictureMenu] = useState(false);
   const fileInputRef = useRef(null);
-  const hasFetchedProfile=useRef(false);
+  const qc = useQueryClient();
 
-  useEffect(() => {
-    if(!hasFetchedProfile.current){
-      hasFetchedProfile.current=true;
-      fetchProfileData();
-    }
-  }, []);
+  const { data: profileData, isLoading: loading, error: queryError, refetch } = useEmployeeCoursesOverview();
+  const error = queryError?.message || null;
 
   // Close picture menu when clicking outside
   useEffect(() => {
@@ -35,20 +31,7 @@ const EmployeeProfile = () => {
   }, [showPictureMenu]);
 
   const fetchProfileData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await getEmployeeCoursesOverview();
-      if (res.success) {
-        setProfileData(res.data);
-      } else {
-        throw new Error(res.message || 'Failed to fetch profile data');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to load profile data');
-    } finally {
-      setLoading(false);
-    }
+    refetch();
   };
 
   const getActiveTabCourses = () => {
@@ -89,11 +72,7 @@ const EmployeeProfile = () => {
     try {
       const res = await uploadProfilePicture(file);
       if (res.success) {
-        // Update profile data with new picture URL
-        setProfileData(prev => ({
-          ...prev,
-          profile_picture_url: res.data.profile_picture_url
-        }));
+        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
       } else {
         alert(res.message || 'Failed to upload profile picture');
       }
@@ -117,11 +96,7 @@ const EmployeeProfile = () => {
     try {
       const res = await removeProfilePicture();
       if (res.success) {
-        // Remove picture URL from profile data
-        setProfileData(prev => ({
-          ...prev,
-          profile_picture_url: null
-        }));
+        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
       } else {
         alert(res.message || 'Failed to remove profile picture');
       }
