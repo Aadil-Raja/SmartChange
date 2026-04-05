@@ -10,6 +10,9 @@ const MyCourses = () => {
         loading,
         error,
         fetchCourses,
+        toggleCourseStar,
+        enrollInCourse,
+        unenrollFromCourse,
     } = useCourses();
 
     const [navCollapsed, setNavCollapsed] = useState(true);
@@ -206,6 +209,10 @@ const MyCourses = () => {
                                                     key={course.id}
                                                     course={course}
                                                     progress={progress}
+                                                    showActions
+                                                    onToggleStar={toggleCourseStar}
+                                                    onEnroll={enrollInCourse}
+                                                    onUnenroll={unenrollFromCourse}
                                                 />
                                             );
                                         })}

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, MoreVertical, Star, UserPlus, UserMinus } from 'lucide-react';
 
 const COURSE_EMOJIS = ['BOOK', 'TARGET', 'IDEA', 'SCIENCE', 'TOOLS', 'CHART', 'GLOBE', 'BRAIN', 'BOLT', 'ROCKET'];
 const getEmoji = (id) => {
@@ -20,10 +20,36 @@ const getEmoji = (id) => {
   return map[key] || '📚';
 };
 
-const CourseCard = ({ course, progress, variant }) => {
+const CourseCard = ({
+  course,
+  progress,
+  variant,
+  showActions = false,
+  onToggleStar,
+  onEnroll,
+  onUnenroll,
+}) => {
   const navigate = useNavigate();
   const [hovered, setHovered] = useState(false);
   const [arrowHovered, setArrowHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    if (menuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+      return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }
+
+    return undefined;
+  }, [menuOpen]);
 
   const formatDate = (dateValue) => {
     if (!dateValue) return 'Recently added';
@@ -56,9 +82,49 @@ const CourseCard = ({ course, progress, variant }) => {
   };
 
   const status = getStatusMeta();
+  const isStarred = Boolean(course.is_starred);
+  const isEnrolled = course.is_enrolled !== undefined
+    ? Boolean(course.is_enrolled)
+    : course.category !== 'not_enrolled';
 
   const handleNavigate = () => {
     navigate(`/employee/course/${course.id}`);
+  };
+
+  const handleStarAction = async (e) => {
+    e.stopPropagation();
+    if (!onToggleStar || actionLoading) return;
+
+    setActionLoading(true);
+    try {
+      await onToggleStar(course.id);
+      setMenuOpen(false);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEnrollAction = async (e) => {
+    e.stopPropagation();
+    if (actionLoading) return;
+
+    if (isEnrolled && !onUnenroll) return;
+    if (!isEnrolled && !onEnroll) return;
+
+    setActionLoading(true);
+    try {
+      if (isEnrolled) {
+        if (!window.confirm('Are you sure you want to unenroll? This will delete your progress and quiz attempts for this course.')) {
+          return;
+        }
+        await onUnenroll(course.id);
+      } else {
+        await onEnroll(course.id);
+      }
+      setMenuOpen(false);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -95,11 +161,40 @@ const CourseCard = ({ course, progress, variant }) => {
         ) : (
           <span className="text-5xl select-none z-10">{getEmoji(course.id)}</span>
         )}
+
+        {showActions && onToggleStar && (
+          <button
+            className="absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10"
+            style={{
+              background: isStarred ? '#f59e0b' : 'rgba(255,255,255,0.95)',
+              color: isStarred ? '#ffffff' : '#9c8e80',
+              boxShadow: '0 4px 12px rgba(26,18,9,0.18)',
+            }}
+            onClick={handleStarAction}
+            onMouseEnter={(e) => {
+              if (!isStarred) {
+                e.currentTarget.style.background = '#fff7e6';
+                e.currentTarget.style.color = '#f59e0b';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isStarred) {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
+                e.currentTarget.style.color = '#9c8e80';
+              }
+            }}
+            disabled={actionLoading}
+            title={isStarred ? 'Unstar course' : 'Star course'}
+            aria-label={isStarred ? 'Unstar course' : 'Star course'}
+          >
+            <Star size={16} className={isStarred ? 'fill-current' : ''} />
+          </button>
+        )}
       </div>
 
       {/* Body */}
       <div className="px-5 pt-4 pb-5">
-        <div className="mb-2.5">
+        <div className="mb-2.5 flex items-start justify-between gap-2">
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
             style={status.style}
@@ -107,6 +202,55 @@ const CourseCard = ({ course, progress, variant }) => {
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: status.dot }} />
             {status.label}
           </span>
+
+          {showActions && (onToggleStar || onEnroll || onUnenroll) && (
+            <div className="relative" ref={menuRef}>
+              <button
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
+                style={{ background: '#f3ede4', color: '#6b5e4e' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#fee2c8';
+                  e.currentTarget.style.color = '#f7953f';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#f3ede4';
+                  e.currentTarget.style.color = '#6b5e4e';
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen((prev) => !prev);
+                }}
+                title="Course actions"
+                aria-label="Course actions"
+              >
+                <MoreVertical size={16} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-44 rounded-xl border bg-white py-1 z-20"
+                  style={{ borderColor: '#e8e0d4', boxShadow: '0 16px 28px rgba(26,18,9,0.14)' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+       
+
+                  {(onEnroll || onUnenroll) && (
+                    <button
+                      disabled={actionLoading}
+                      onClick={handleEnrollAction}
+                      className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+                      style={{ color: isEnrolled ? '#dc2626' : '#15803d' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = isEnrolled ? '#fff5f5' : '#f0fdf4'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      {isEnrolled ? <UserMinus size={15} /> : <UserPlus size={15} />}
+                      {isEnrolled ? 'Unenroll from Course' : 'Enroll in Course'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <h3

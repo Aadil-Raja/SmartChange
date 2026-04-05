@@ -301,7 +301,7 @@ const NotificationBell = ({ collapsed = false }) => {
                 <Loader2 size={26} className="nb-sp" />
                 <span className="nb-lt">Loading…</span>
               </div>
-            ) : notifications.length === 0 ? (
+            ) : notifications.length === 0  || !notifications.some((n) => !n.is_read) ? (
               <div className="nb-empty">
                 <div className="nb-ei"><BellOff size={26} /></div>
                 <div className="nb-et">Nothing here yet</div>
@@ -312,7 +312,7 @@ const NotificationBell = ({ collapsed = false }) => {
                 {notifications.some((n) => !n.is_read) && (
                   <div className="nb-sl">New</div>
                 )}
-                {notifications.map((notification, index) => (
+                {notifications.map((notification, index)  => (!notification.is_read) && (
                   <div key={notification.id}>
                     <div className="nb-iw">
                       <NotificationItem
