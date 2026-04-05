@@ -155,6 +155,18 @@ def get_course_route(
 
         items = data.get("items", [])
         quizzes = data.get("quizzes", [])
+
+        # Add enrollment status
+        from app.repositories.course_enrollment_repo import get_enrollment, get_enrollment_status
+        enrollment = get_enrollment(db, user_id=user.id, course_id=course_id)
+        course["is_enrolled"] = enrollment is not None
+        if enrollment:
+            from shared.models.course import Course as CourseModel
+            course_obj = db.query(CourseModel).filter(CourseModel.id == course_id).first()
+            course["enrollment_status"] = get_enrollment_status(enrollment, course_obj) if course_obj else "active"
+        else:
+            course["enrollment_status"] = "not_enrolled"
+
         return make_response(True, "OK", data={"course": course, "items": items, "quizzes": quizzes})
     except Exception as e:
         return make_response(False, "Could not fetch course details", status_code=500, error=str(e))

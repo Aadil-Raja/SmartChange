@@ -162,18 +162,23 @@ const MyCourses = () => {
                                     
                                     <div className="flex gap-2">
                                         <div className="flex rounded-full p-1 gap-1" style={{ background: "#e8e0d4" }}>
-                                            {["all", "in-progress", "completed"].map((f) => (
+                                            {[
+                                                { key: "all", label: "All" },
+                                                { key: "in-progress", label: "In Progress" },
+                                                { key: "completed", label: "Completed" },
+                                                { key: "starred", label: "⭐ Starred" },
+                                            ].map(({ key, label }) => (
                                                 <button
-                                                    key={f}
-                                                    onClick={() => setStatusFilter(f)}
-                                                    className="px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-all duration-200"
+                                                    key={key}
+                                                    onClick={() => setStatusFilter(key)}
+                                                    className="px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200"
                                                     style={
-                                                        statusFilter === f
+                                                        statusFilter === key
                                                             ? { background: "#705536", color: "#faf6ef" }
                                                             : { color: "#6b5e4e", background: "transparent" }
                                                     }
                                                 >
-                                                    {f}
+                                                    {label}
                                                 </button>
                                             ))}
                                         </div>
@@ -193,14 +198,15 @@ const MyCourses = () => {
                                             if (statusFilter === 'all') return matchesSearch;
                                             if (statusFilter === 'in-progress') return matchesSearch && course.category === 'in_progress';
                                             if (statusFilter === 'completed') return matchesSearch && course.category === 'completed';
+                                            if (statusFilter === 'starred') return matchesSearch && course.is_starred === true;
                                             
                                             return matchesSearch;
                                         })
                                         .map((course) => {
                                             // Use progress from API response
                                             const progress = course.progress ? {
-                                                completed: course.progress.completed_items,
-                                                total: course.progress.total_items,
+                                                completed: (course.progress.completed_items || 0) + (course.progress.completed_quizzes || 0),
+                                                total: (course.progress.total_items || 0) + (course.progress.total_quizzes || 0),
                                                 percentage: Math.round(course.progress.percent)
                                             } : null;
                                             

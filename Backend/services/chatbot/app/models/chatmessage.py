@@ -13,6 +13,7 @@ from sqlalchemy import (
     ForeignKey,
     ARRAY,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -39,6 +40,7 @@ class ChatMessage(Base):
     
     message = Column(Text, nullable=False)
     active_doc_ids = Column(ARRAY(BigInteger), nullable=True, index=True)
+    citations = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # Relationship

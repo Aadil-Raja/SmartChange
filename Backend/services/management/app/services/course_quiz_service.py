@@ -99,6 +99,7 @@ def get_course_quiz(db: Session, *, quiz_id: int, user_id: int):
         if question.question_type == QuestionType.REFERENCED:
             # Get data from referenced document question
             doc_question = question.source_document_question
+            source_quiz = doc_question.quiz if doc_question else None
             question_data = {
                 "id": question.id,
                 "course_quiz_id": question.course_quiz_id,
@@ -108,6 +109,9 @@ def get_course_quiz(db: Session, *, quiz_id: int, user_id: int):
                 "correct_answer_index": doc_question.correct_answer_index,
                 "explanation": doc_question.explanation,
                 "source_document_question_id": question.source_document_question_id,
+                "source_quiz_id": source_quiz.id if source_quiz else None,
+                "source_title": (source_quiz.document.title if source_quiz and source_quiz.document else None) or (source_quiz.title if source_quiz else None),
+                "source_type": "DOCUMENT" if (source_quiz and source_quiz.document) else "PROMPT",
                 "created_at": question.created_at,
                 "updated_at": question.updated_at,
                 "options": [

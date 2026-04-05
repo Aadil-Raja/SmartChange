@@ -400,10 +400,10 @@ const TeamMemberInfo = () => {
 														<div className="space-y-3">
 															<div>
 																<div className="flex items-center justify-between text-sm mb-1">
-																	<span className="font-medium" style={{ color: '#6b5e4e' }}>Progress</span>
-																	<span style={{ color: '#6b5e4e' }}>{courseProgress.toFixed(2)}%</span>
+																	<span className="font-medium" style={{ color: '#6b5e4e' }}>Completion</span>
+																	<span style={{ color: '#6b5e4e' }}>{courseProgress.toFixed(0)}%</span>
 																</div>
-																<div className="h-2.5 w-full rounded-full overflow-hidden" style={{ background: '#efe5d7' }}>
+																<div className="h-2 w-full rounded-full overflow-hidden" style={{ background: '#efe5d7' }}>
 																	<div
 																		className={`h-full rounded-full bg-gradient-to-r ${getProgressTone(courseProgress)} transition-all duration-500`}
 																		style={{ width: `${courseProgress}%` }}
@@ -411,15 +411,24 @@ const TeamMemberInfo = () => {
 																</div>
 															</div>
 
-															<div className="grid grid-cols-2 gap-2 text-xs">
-																<div className="rounded-xl p-2.5 border" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
-																	<p style={{ color: '#8b7e6e' }}>Learning Items</p>
-																	<p className="font-semibold" style={{ color: '#1a1209' }}>{completedItems}/{totalItems}</p>
+															{/* Per-quiz scores */}
+															{course.quiz_scores && course.quiz_scores.length > 0 && (
+																<div className="space-y-1.5">
+																	<p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: '#9c8e80' }}>Quiz Scores</p>
+																	{course.quiz_scores.map(q => (
+																		<div key={q.quiz_id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: '#faf6ef', border: '1px solid #ede3d5' }}>
+																			<span className="truncate max-w-[120px]" style={{ color: '#6b5e4e' }}>{q.title}</span>
+																			<span className="font-semibold flex-shrink-0 ml-2" style={{ color: q.passed ? '#15803d' : q.attempts_used > 0 ? '#b45309' : '#9c8e80' }}>
+																				{q.attempts_used === 0 ? 'Not attempted' : q.passed ? `Passed · ${q.best_score?.toFixed(0)}%` : `Failed · ${q.best_score?.toFixed(0)}%`}
+																			</span>
+																		</div>
+																	))}
 																</div>
-																<div className="rounded-xl p-2.5 border" style={{ background: '#faf6ef', borderColor: '#ede3d5' }}>
-																	<p style={{ color: '#8b7e6e' }}>Quizzes</p>
-																	<p className="font-semibold" style={{ color: '#1a1209' }}>{completedQuizzes}/{totalQuizzes}</p>
-																</div>
+															)}
+
+															{/* Content items count */}
+															<div className="text-xs" style={{ color: '#8b7e6e' }}>
+																{completedItems}/{totalItems} content items completed
 															</div>
 
 															<div className="text-xs flex flex-wrap gap-x-4 gap-y-1 pt-1" style={{ color: '#8b7e6e' }}>

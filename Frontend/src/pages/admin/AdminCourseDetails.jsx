@@ -296,7 +296,15 @@ const AdminCourseDetails = () => {
                           {item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover rounded-xl" /> : getContentIcon(item.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate" style={{ color: '#1a1209' }}>{item.title}</p>
+                          <p
+                            className="text-sm font-bold truncate transition-colors"
+                            style={{ color: '#1a1209', cursor: (item.type === 'document' || item.access_url) ? 'pointer' : 'default' }}
+                            onMouseEnter={e => { if (item.type === 'document' || item.access_url) e.currentTarget.style.color = '#f7953f'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#1a1209'; }}
+                            onClick={() => {
+                              if (item.access_url) window.open(item.access_url, '_blank');
+                            }}
+                          >{item.title}</p>
                           {item.description && <p className="text-xs text-gray-400 truncate">{item.description}</p>}
                         </div>
                         <TypeBadge type={item.type} />
@@ -322,7 +330,13 @@ const AdminCourseDetails = () => {
                         <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ background: '#e6f4f1', color: '#0d9488' }}>{index+1}</span>
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#e6f4f1' }}><HelpCircle size={18} className="text-teal-600" /></div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold truncate" style={{ color: '#1a1209' }}>{quiz.title}</p>
+                          <p
+                            className="text-sm font-bold truncate transition-colors"
+                            style={{ color: '#1a1209', cursor: 'pointer' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#0d9488'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#1a1209'; }}
+                            onClick={() => navigate(`/admin/quiz/${quiz.id}?type=course`)}
+                          >{quiz.title}</p>
                           <p className="text-xs text-gray-400">{quiz.total_questions} question{quiz.total_questions!==1?'s':''}{quiz.published_at?` · Published ${fmt(quiz.published_at)}`:''}</p>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${quiz.status==='PUBLISHED'?'bg-green-50 text-green-700 border border-green-200':'bg-amber-50 text-amber-700 border border-amber-200'}`}>
@@ -330,7 +344,6 @@ const AdminCourseDetails = () => {
                         </span>
                         <div className="flex gap-1 flex-shrink-0">
                           {quiz.status==='DRAFT' && <IconAction onClick={() => handlePublishQuiz(quiz.id)} title="Publish" hoverClass="hover:text-teal-600 hover:bg-teal-50"><CheckCircle size={15} /></IconAction>}
-                          <IconAction onClick={() => handleViewQuiz(quiz)} title="View" hoverClass="hover:text-teal-600 hover:bg-teal-50"><Eye size={15} /></IconAction>
                           <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
                           <IconAction onClick={() => setDeleteQuizConfirm(quiz)} title={quiz.status==='PUBLISHED'?'Cannot delete a published quiz':'Delete'} danger disabled={quiz.status==='PUBLISHED'}><Trash2 size={15} /></IconAction>
                         </div>

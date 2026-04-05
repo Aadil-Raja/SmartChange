@@ -21,7 +21,7 @@ def list_messages(db: Session, *, user_id: int, chathead_id: int, limit: int, be
     return {
         "chathead_id": chathead_id,
         "items": [
-            {"id": m.id, "role": m.role, "message": m.message, "active_doc_ids": m.active_doc_ids, "created_at": m.created_at}
+            {"id": m.id, "role": m.role, "message": m.message, "active_doc_ids": m.active_doc_ids, "citations": m.citations or [], "created_at": m.created_at}
             for m in rows
         ],
     }

@@ -51,7 +51,7 @@ const QUIZ_STATUS = {
     iconColor: '#d97706',
     label: 'Passed',
     pill: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-    btn: { bg: '#fffbeb', color: '#d97706', hover: '#fef3c7', label: 'Retake Quiz', icon: RotateCcw },
+    btn: { bg: '#f0fdf4', color: '#15803d', hover: '#dcfce7', label: 'Passed', icon: ShieldCheck },
     cardBorder: '#fde68a',
     cardAccent: '#fffbeb',
   },
@@ -63,6 +63,24 @@ const QUIZ_STATUS = {
     btn: { bg: '#eff6ff', color: '#2563eb', hover: '#dbeafe', label: 'On Cooldown', icon: Clock },
     cardBorder: '#bfdbfe',
     cardAccent: '#eff6ff',
+  },
+  in_cooldown: {
+    icon: Clock,
+    iconColor: '#2563eb',
+    label: 'Cooldown',
+    pill: { bg: '#eff6ff', color: '#2563eb', border: '#bfdbfe' },
+    btn: { bg: '#eff6ff', color: '#2563eb', hover: '#dbeafe', label: 'On Cooldown', icon: Clock },
+    cardBorder: '#bfdbfe',
+    cardAccent: '#eff6ff',
+  },
+  max_attempts_reached: {
+    icon: Lock,
+    iconColor: '#dc2626',
+    label: 'No Attempts Left',
+    pill: { bg: '#fff1f0', color: '#dc2626', border: '#fca5a5' },
+    btn: { bg: '#fff1f0', color: '#dc2626', hover: '#fee2e2', label: 'No Attempts Left', icon: Lock },
+    cardBorder: '#fca5a5',
+    cardAccent: '#fff1f0',
   },
 };
 
@@ -87,6 +105,7 @@ const CourseContent = () => {
     getItemProgress,
     isItemCompleted,
     unenrollFromCourse,
+    enrollInCourse,
   } = useCourses();
 
   const contentRefs = useRef({});
@@ -142,12 +161,6 @@ const CourseContent = () => {
     }
   }, [id]);
 
-  useEffect(() => {
-    const handleFocus = () => { if (id && selectedCourse) fetchCourseDetails(parseInt(id)); };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [id, selectedCourse, fetchCourseDetails]);
-
   /* ─── Loading / Error states ─── */
   if (loading && !selectedCourse) {
     return (
@@ -178,6 +191,8 @@ const CourseContent = () => {
 
   const isCorrectCourse = selectedCourse.id === parseInt(id);
   const showLoadingOverlay = loading || !isCorrectCourse;
+  const isEnrolled = selectedCourse.is_enrolled !== false;
+  const isCourseCompleted = selectedCourse.enrollment_status === 'completed';
 
   return (
     <div className="min-h-screen" style={{ background: '#faf6ef' }}>
@@ -225,6 +240,7 @@ const CourseContent = () => {
               </button>
               {showMenu && (
                 <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border bg-white py-1 z-20" style={{ borderColor: '#e8e0d4', boxShadow: '0 16px 28px rgba(26,18,9,0.14)' }}>
+                  {isEnrolled ? (
                   <button
                     onClick={handleUnenroll}
                     disabled={isUnenrolling}
@@ -236,6 +252,18 @@ const CourseContent = () => {
                     <LogOut size={16} />
                     {isUnenrolling ? 'Unenrolling…' : 'Unenroll from Course'}
                   </button>
+                  ) : (
+                  <button
+                    onClick={async () => { setShowMenu(false); await enrollInCourse(parseInt(id)); fetchCourseDetails(parseInt(id)); }}
+                    className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors"
+                    style={{ color: '#f7953f' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#fff7ed'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <LogOut size={16} />
+                    Enroll in Course
+                  </button>
+                  )}
                 </div>
               )}
             </div>
@@ -269,6 +297,39 @@ const CourseContent = () => {
             </div>
           </div>
         </div>
+
+        {/* ── Course Completed Banner ── */}
+        {isCourseCompleted && (
+          <div className="flex items-center gap-4 px-6 py-4 rounded-2xl border" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
+            <span style={{ fontSize: 24 }}>🎓</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: '#15803d' }}>Course completed</p>
+              <p className="text-xs" style={{ color: '#16a34a' }}>You've finished all content and quizzes. Great work!</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Enroll Banner (shown when not enrolled) ── */}
+        {!isEnrolled && (
+          <div className="flex items-center justify-between gap-4 px-6 py-4 rounded-2xl border" style={{ background: '#fff7ed', borderColor: '#fcd9b8' }}>
+            <div className="flex items-center gap-3">
+              <span style={{ fontSize: 22 }}>👀</span>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#92400e' }}>You're previewing this course</p>
+                <p className="text-xs" style={{ color: '#b45309' }}>Enroll to track progress, mark items complete, and take quizzes.</p>
+              </div>
+            </div>
+            <button
+              onClick={async () => { await enrollInCourse(parseInt(id)); fetchCourseDetails(parseInt(id)); }}
+              className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all"
+              style={{ background: '#f7953f' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#e0741c'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f7953f'}
+            >
+              Enroll Now
+            </button>
+          </div>
+        )}
 
         {/* ── Content + Quizzes ── */}
         <SectionCard
@@ -327,28 +388,28 @@ const CourseContent = () => {
                         <TypeBadge type={item.type} />
                         {isCompleted && <CheckCircle size={16} style={{ color: '#78BE20', flexShrink: 0 }} />}
                       </div>
-                      <div className="p-4">
-                        <div className="mb-4">
+                      <div className="p-3">
+                        <div className="mb-3">
                           <CourseContentPreview item={item} />
                         </div>
                         {item.type === 'video' && progressPercent > 0 && (
-                          <div className="mb-4">
+                          <div className="mb-3">
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs" style={{ color: '#9c8e80' }}>Progress</span>
                               <span className="text-xs font-semibold" style={{ color: '#f7953f' }}>{Math.round(progressPercent)}%</span>
                             </div>
-                            <div className="w-full rounded-full h-2" style={{ background: '#ede8e0' }}>
-                              <div className="h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%`, background: '#f7953f' }} />
+                            <div className="w-full rounded-full h-1.5" style={{ background: '#ede8e0' }}>
+                              <div className="h-1.5 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%`, background: '#f7953f' }} />
                             </div>
                           </div>
                         )}
                         {itemProgress?.last_viewed_at && (
-                          <p className="text-xs mb-4" style={{ color: '#9c8e80' }}>
+                          <p className="text-xs mb-3" style={{ color: '#9c8e80' }}>
                             Last viewed: {new Date(itemProgress.last_viewed_at).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
-                          <MarkAsDoneButton itemId={item.id} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} />
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                          <MarkAsDoneButton itemId={item.id} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} disabled={!isEnrolled} />
                         </div>
                       </div>
                     </div>
@@ -368,7 +429,7 @@ const CourseContent = () => {
                   const StatusIcon = s.icon;
                   const BtnIcon = s.btn.icon;
                   const canTake = quiz.status === 'can_take';
-                  const isDisabled = !canTake && quiz.status !== 'completed';
+                  const isDisabled = !canTake;
                   const missingPrereqIds = quiz.missing_prerequisites || [];
                   const missingPrereqItems = missingPrereqIds
                     .map((prereqId) => selectedCourse.items?.find((item) => item.id === prereqId))
@@ -388,37 +449,35 @@ const CourseContent = () => {
                       }}
                     >
                       {/* Card header accent strip */}
-                      <div className="px-5 py-4 flex items-start gap-4" style={{ borderBottom: `1px solid ${s.cardBorder}`, background: s.cardAccent }}>
-                        {/* Index + icon */}
-                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                            style={{ background: s.pill.bg, color: s.pill.color, border: `1px solid ${s.pill.border}` }}>
-                            {index + 1}
-                          </span>
-                        </div>
+                      <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: `1px solid ${s.cardBorder}`, background: s.cardAccent }}>
+                        {/* Index */}
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          style={{ background: s.pill.bg, color: s.pill.color, border: `1px solid ${s.pill.border}` }}>
+                          {index + 1}
+                        </span>
 
                         {/* Quiz icon circle */}
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                           style={{ background: s.pill.bg, border: `1.5px solid ${s.pill.border}` }}>
-                          <StatusIcon size={18} style={{ color: s.pill.color }} />
+                          <StatusIcon size={15} style={{ color: s.pill.color }} />
                         </div>
 
                         {/* Title + meta */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-bold" style={{ color: '#1a1209' }}>{quiz.title}</p>
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold"
                               style={{ background: s.pill.bg, color: s.pill.color, border: `1px solid ${s.pill.border}` }}>
                               {s.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 flex-wrap">
                             <span className="text-xs" style={{ color: '#9c8e80' }}>
-                              Attempts remaining: <span className="font-semibold" style={{ color: '#6b5e4e' }}>{quiz.attempts_remaining}/3</span>
+                              Attempts: <span className="font-semibold" style={{ color: '#6b5e4e' }}>{quiz.attempts_remaining}/3</span>
                             </span>
                             {quiz.best_score !== null && quiz.best_score !== undefined && (
                               <span className="text-xs" style={{ color: '#9c8e80' }}>
-                                Best score: <span className="font-semibold" style={{ color: '#d97706' }}>{quiz.best_score}%</span>
+                                Best: <span className="font-semibold" style={{ color: '#d97706' }}>{quiz.best_score}%</span>
                               </span>
                             )}
                           </div>
@@ -426,7 +485,7 @@ const CourseContent = () => {
                       </div>
 
                       {/* Card body */}
-                      <div className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+                      <div className="px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
                         {/* Left: prerequisite / cooldown info */}
                         <div className="flex-1 min-w-0">
                           {quiz.status === 'locked' && missingPrereqIds.length > 0 && (
@@ -462,7 +521,7 @@ const CourseContent = () => {
                               )}
                             </div>
                           )}
-                          {quiz.status === 'cooldown' && quiz.next_attempt_at && (
+                          {(quiz.status === 'cooldown' || quiz.status === 'in_cooldown') && quiz.next_attempt_at && (
                             <div className="flex items-start gap-2">
                               <Clock size={13} style={{ color: '#2563eb', marginTop: 2, flexShrink: 0 }} />
                               <p className="text-xs" style={{ color: '#2563eb' }}>
@@ -472,38 +531,45 @@ const CourseContent = () => {
                           )}
                           {quiz.status === 'completed' && (
                             <div className="flex items-center gap-2">
-                              <Trophy size={13} style={{ color: '#d97706' }} />
-                              <p className="text-xs font-medium" style={{ color: '#d97706' }}>Quiz passed — you can retake to improve your score</p>
+                              <ShieldCheck size={13} style={{ color: '#15803d' }} />
+                              <p className="text-xs font-medium" style={{ color: '#15803d' }}>Quiz passed</p>
                             </div>
                           )}
                           {quiz.status === 'can_take' && (
                             <div className="flex items-center gap-2">
                               <CheckCircle size={13} style={{ color: '#15803d' }} />
-                              <p className="text-xs font-medium" style={{ color: '#15803d' }}>All prerequisites met — you're ready to attempt</p>
+                              <p className="text-xs font-medium" style={{ color: '#15803d' }}>
+                                {(quiz.prerequisite_content_ids?.length || 0) === 0
+                                  ? "No prerequisites — ready to attempt"
+                                  : "All prerequisites met — you're ready to attempt"}
+                              </p>
                             </div>
                           )}
                         </div>
 
-                        {/* Right: CTA button */}
-                        <button
-                          disabled={isDisabled}
-                          onClick={() => { if (canTake || quiz.status === 'completed') navigate(`/employee/quiz/${quiz.id}`); }}
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all flex-shrink-0"
-                          style={{
-                            background: isDisabled ? '#f3ede4' : s.btn.bg,
-                            color: isDisabled ? '#b0a090' : s.btn.color,
-                            cursor: isDisabled ? 'not-allowed' : 'pointer',
-                            border: canTake ? 'none' : `1px solid ${s.cardBorder}`,
-                            opacity: isDisabled ? 0.7 : 1,
-                            minWidth: 130,
-                            justifyContent: 'center',
-                          }}
-                          onMouseEnter={e => { if (!isDisabled) e.currentTarget.style.opacity = '0.88'; }}
-                          onMouseLeave={e => { if (!isDisabled) e.currentTarget.style.opacity = '1'; }}
-                        >
-                          <BtnIcon size={15} />
-                          {s.btn.label}
-                        </button>
+                        {/* Right: CTA button — hidden for passed quizzes */}
+                        {quiz.status !== 'completed' && (
+                          <button
+                            disabled={isDisabled || !isEnrolled}
+                            onClick={() => { if (canTake && isEnrolled) navigate(`/employee/quiz/${quiz.id}`); }}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex-shrink-0"
+                            style={{
+                              background: (!isEnrolled || isDisabled) ? '#f3ede4' : s.btn.bg,
+                              color: (!isEnrolled || isDisabled) ? '#b0a090' : s.btn.color,
+                              cursor: (!isEnrolled || isDisabled) ? 'not-allowed' : 'pointer',
+                              border: (canTake && isEnrolled) ? 'none' : `1px solid ${s.cardBorder}`,
+                              opacity: (!isEnrolled || isDisabled) ? 0.7 : 1,
+                              minWidth: 100,
+                              justifyContent: 'center',
+                            }}
+                            title={!isEnrolled ? "Enroll to take quizzes" : undefined}
+                            onMouseEnter={e => { if (isEnrolled && !isDisabled) e.currentTarget.style.opacity = '0.88'; }}
+                            onMouseLeave={e => { if (isEnrolled && !isDisabled) e.currentTarget.style.opacity = '1'; }}
+                          >
+                            <BtnIcon size={13} />
+                            {!isEnrolled ? "Enroll First" : s.btn.label}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

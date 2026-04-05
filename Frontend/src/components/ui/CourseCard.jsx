@@ -265,7 +265,7 @@ const CourseCard = ({
         {progress && (
           <div className="mb-4">
             <div className="mb-1 flex items-center justify-between text-xs" style={{ color: '#847768' }}>
-              <span>Progress</span>
+              <span>Completion</span>
               <span>{progress.percentage}%</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: '#efe5d7' }}>
@@ -274,9 +274,6 @@ const CourseCard = ({
                 style={{ width: `${progress.percentage}%`, background: 'linear-gradient(90deg, #f2b44d 0%, #f7953f 55%, #e0741c 100%)' }}
               />
             </div>
-            <p className="mt-2 text-xs" style={{ color: '#9b8c7b' }}>
-              {progress.completed} of {progress.total} items completed
-            </p>
           </div>
         )}
 

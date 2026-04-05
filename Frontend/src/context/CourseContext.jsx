@@ -71,8 +71,17 @@ export const CourseProvider = ({ children }) => {
                 // Update local completed items state
                 setCompletedItems(prev => new Set([...prev, itemId]));
 
-                // If we have a selected course, refresh its progress and items progress
+                // Re-fetch course to update quiz unlock statuses (lightweight, no loading state)
                 if (selectedCourse) {
+                    try {
+                        const courseRes = await getCourseById(selectedCourse.id);
+                        if (courseRes.success) {
+                            setSelectedCourse(prev => prev ? {
+                                ...prev,
+                                quizzes: courseRes.data.quizzes || prev.quizzes,
+                            } : prev);
+                        }
+                    } catch {}
                     await Promise.all([
                         fetchActualCourseProgress(selectedCourse.id),
                         fetchCourseItemsProgress(selectedCourse.id)
@@ -332,7 +341,15 @@ export const CourseProvider = ({ children }) => {
             const result = await unenrollCourse(courseId);
             
             if (result.success) {
-                // Refresh courses to get updated status
+                // Clear cached progress and course details for this course
+                setCourseItemsProgress(prev => {
+                    const next = { ...prev };
+                    delete next[courseId];
+                    return next;
+                });
+                setCompletedItems(new Set());
+                setSelectedCourse(null);
+                // Refresh courses to get updated enrollment status
                 await fetchCourses();
                 return result;
             }

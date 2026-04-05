@@ -57,13 +57,14 @@ def respond_turn_v2(
 
         answer_text = out["answer"]
 
-        # Save only the answer text to DB
+        # Save only the answer text and citations to DB
         chat_repo.add_message(
             db,
             chathead_id=cid,
             role=MessageRole.ASSISTANT,
             message=answer_text,
-            active_doc_ids=active_doc_ids
+            active_doc_ids=active_doc_ids,
+            citations=out.get("citations", [])
         )
 
         chat = chat_repo.get_chathead(db, cid)

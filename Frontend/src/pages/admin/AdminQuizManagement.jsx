@@ -1,6 +1,6 @@
 // src/pages/admin/AdminQuizManagement.jsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
   FileText,
@@ -62,10 +62,15 @@ function FocusInput({ style, ...props }) {
 
 const AdminQuizManagement = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { fetchProcessedDocuments, fetchCourses, courses, loading: coursesLoading, clearMessages } = useAdminTraining();
 
   const [documents, setDocuments] = useState([]);
   const [navCollapsed, setNavCollapsed] = useState(true);
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "document";
+  });
 
   const [quizzes, setQuizzes] = useState({});
   const [expandedDocs, setExpandedDocs] = useState(new Set());
@@ -85,7 +90,6 @@ const AdminQuizManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [activeTab, setActiveTab] = useState("document");
 
   const [generateForm, setGenerateForm] = useState({ title: "", description: "", num_questions: 10 });
   const [submitting, setSubmitting] = useState(false);
@@ -107,6 +111,15 @@ const AdminQuizManagement = () => {
         const docs = result.data?.documents || [];
         const processed = docs.filter((d) => d.status === "PROCESSED");
         setDocuments(processed);
+        // Pre-fetch quiz counts for all documents
+        processed.forEach((doc) => {
+          quizApi.getQuizzesByDocument(doc.id)
+            .then((response) => {
+              const list = response.quizzes || [];
+              setDocQuizCounts((p) => ({ ...p, [doc.id]: response.total ?? list.length }));
+            })
+            .catch(() => {});
+        });
       }
     } catch {
       setError("Failed to load documents");
@@ -329,7 +342,14 @@ const AdminQuizManagement = () => {
                       {expandedDocs.has(doc.id) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </button>
                     <span style={{ flex: 1, fontWeight: 600, fontSize: 14, color: C.ink }}>
-                      {doc.title}
+                      <span
+                        onClick={() => doc.cloudinary_url && window.open(doc.cloudinary_url, '_blank')}
+                        style={{ cursor: doc.cloudinary_url ? "pointer" : "default" }}
+                        onMouseEnter={e => { if (doc.cloudinary_url) e.currentTarget.style.color = C.orange; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = C.ink; }}
+                      >
+                        {doc.title}
+                      </span>
                       {docQuizCounts[doc.id] > 0 && (
                         <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 600, color: C.orange, background: "#fff7ed", padding: "2px 8px", borderRadius: 999 }}>
                           {docQuizCounts[doc.id]} {docQuizCounts[doc.id] === 1 ? "quiz" : "quizzes"}
@@ -351,14 +371,13 @@ const AdminQuizManagement = () => {
                         </div>
                       ) : quizzes[doc.id]?.length > 0 ? quizzes[doc.id].map((quiz) => (
                         <div key={quiz.id} style={{ display: "flex", alignItems: "center", background: "#fff", borderRadius: 10, border: `1px solid ${C.border}`, padding: "10px 16px", gap: 12 }}>
-                          <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink }}>{quiz.title}</span>
-                          {getStatusBadge(quiz.status || "DRAFT")}
-                          <button
+                          <span
+                            style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink, cursor: "pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.color = C.orange}
+                            onMouseLeave={e => e.currentTarget.style.color = C.ink}
                             onClick={() => navigate(`/admin/quiz/${quiz.id}`)}
-                            style={{ background: "none", border: "none", cursor: "pointer", color: "#15803d", fontSize: 13, fontWeight: 600 }}
-                          >
-                            View Details
-                          </button>
+                          >{quiz.title}</span>
+                          {getStatusBadge(quiz.status || "DRAFT")}
                           <button
                             onClick={() => setDeleteConfirm({ quizId: quiz.id, documentId: doc.id })}
                             style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", display: "flex", alignItems: "center" }}
@@ -395,7 +414,14 @@ const AdminQuizManagement = () => {
                       {expandedCourses.has(course.id) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </button>
                     <span style={{ flex: 1, fontWeight: 600, fontSize: 14, color: C.ink }}>
-                      {course.title}
+                      <span
+                        onClick={() => navigate(`/admin/training/course/${course.id}`)}
+                        style={{ cursor: "pointer", color: C.ink, textDecoration: "none" }}
+                        onMouseEnter={e => e.currentTarget.style.color = C.orange}
+                        onMouseLeave={e => e.currentTarget.style.color = C.ink}
+                      >
+                        {course.title}
+                      </span>
                       {courseQuizCounts[course.id] > 0 && (
                         <span style={{ marginLeft: 10, fontSize: 11, fontWeight: 600, color: C.orange, background: "#fff7ed", padding: "2px 8px", borderRadius: 999 }}>
                           {courseQuizCounts[course.id]} {courseQuizCounts[course.id] === 1 ? "quiz" : "quizzes"}

@@ -252,9 +252,6 @@ const AdminDashboard = () => {
                     <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.blue, border: `1px solid ${C.border}` }}>
                       <FileText size={12} /> PDF Documents Only
                     </span>
-                    <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.orange, border: `1px solid ${C.border}` }}>
-                      <AlertCircle size={12} /> Max 100MB Size
-                    </span>
                     <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: 'white', color: C.green, border: `1px solid ${C.border}` }}>
                       <CheckCircle size={12} /> Automatic Processing
                     </span>
@@ -345,7 +342,13 @@ const AdminDashboard = () => {
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           <FileText size={28} color={C.muted} className="mt-0.5 flex-shrink-0" />
                           <div className="min-w-0">
-                            <p style={{ color: C.ink, fontWeight: 600, fontSize: 14 }} className="truncate">
+                            <p
+                              style={{ color: C.ink, fontWeight: 600, fontSize: 14, cursor: doc.cloudinary_url ? 'pointer' : 'default' }}
+                              className="truncate"
+                              onMouseEnter={e => { if (doc.cloudinary_url) e.currentTarget.style.color = C.orange; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = C.ink; }}
+                              onClick={() => { if (doc.cloudinary_url) window.open(doc.cloudinary_url, '_blank'); }}
+                            >
                               {doc.title}
                             </p>
                             <p style={{ color: C.muted, fontSize: 12 }} className="truncate">{doc.original_filename}</p>

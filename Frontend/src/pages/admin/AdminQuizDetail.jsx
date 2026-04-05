@@ -47,6 +47,7 @@ const AdminQuizDetail = () => {
   const [referencedSubTab, setReferencedSubTab] = useState("document");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReferencedQuestion, setSelectedReferencedQuestion] = useState(null);
+  const [selectedBank, setSelectedBank] = useState(null);
 
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [quizConfig, setQuizConfig] = useState({ max_attempts: 1, passing_score: 80, cooldown_minutes: 0 });
@@ -126,6 +127,7 @@ const AdminQuizDetail = () => {
     setAddQuestionTab("custom");
     setReferencedSubTab("document");
     setSelectedReferencedQuestion(null);
+    setSelectedBank(null);
     setShowAddQuestion(true);
     if (isCourseQuiz) loadAvailableQuestions();
   };
@@ -233,7 +235,8 @@ const AdminQuizDetail = () => {
         const matchesTab = referencedSubTab === "prompt"
           ? q.source_type === "PROMPT"
           : q.source_type !== "PROMPT";
-        return matchesSearch && matchesTab;
+        const matchesBank = selectedBank ? q.quiz_id === selectedBank.quiz_id : true;
+        return matchesSearch && matchesTab && matchesBank;
       })
     : [];
 
@@ -285,14 +288,23 @@ const AdminQuizDetail = () => {
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <h1 style={{ fontFamily: "Georgia, serif", fontSize: 26, fontWeight: 700, color: C.ink, margin: 0 }}>{quiz.title}</h1>
-              {isCourseQuiz && (
-                <span style={{ background: "#f3e8ff", color: "#7c3aed", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 999 }}>Course Quiz</span>
-              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <p style={{ color: C.muted, fontSize: 13, margin: 0 }}>{quiz.description || "No description"}</p>
               <span style={{ color: C.muted, fontSize: 13 }}>·</span>
               <span style={{ color: C.muted, fontSize: 13 }}>{quiz.questions?.length || 0} questions</span>
+              {isCourseQuiz && (
+                <span
+                  onClick={() => quiz.course_id && navigate(`/admin/training/course/${quiz.course_id}`)}
+                  style={{ background: "#f3e8ff", color: "#7c3aed", fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, cursor: quiz.course_id ? "pointer" : "default", display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}
+                  onMouseEnter={e => { if (quiz.course_id) { e.currentTarget.style.background = "#ede9fe"; } }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "#f3e8ff"; }}
+                  title="Go to course"
+                >
+                  Course Quiz
+                  {quiz.course_id && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 8.5L8.5 1.5M8.5 1.5H4M8.5 1.5V6" stroke="#7c3aed" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </span>
+              )}
               {isCourseQuiz && (
                 <span style={{
                   background: quiz.status === "PUBLISHED" ? "#f0fdf4" : "#fffbeb",
@@ -388,14 +400,36 @@ const AdminQuizDetail = () => {
             <div key={question.id} style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "24px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flex: 1 }}>
-                  <span style={{ width: 32, height: 32, borderRadius: "50%", background: index % 2 === 0 ? C.orange : C.teal, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                  <span style={{ width: 28, height: 28, borderRadius: "50%", background: "#fff0e8", color: C.orange, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, flexShrink: 0, border: `1.5px solid #fcd9b8` }}>
                     {index + 1}
                   </span>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                       <p style={{ fontSize: 15, fontWeight: 700, color: C.ink, margin: 0 }}>{question.question_text}</p>
                       {question.question_type === "REFERENCED" && (
-                        <span style={{ background: "#f3e8ff", color: "#7c3aed", fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>Referenced</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                          <span style={{ background: "#f5f0ea", color: C.muted, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999 }}>
+                            Referenced
+                          </span>
+                          {question.source_title && (
+                            <span
+                              onClick={() => {
+                                if (!question.source_quiz_id) return;
+                                if (question.source_type === "PROMPT") {
+                                  navigate(`/admin/quiz?tab=prompt`);
+                                } else {
+                                  navigate(`/admin/quiz/${question.source_quiz_id}`);
+                                }
+                              }}
+                              title={question.source_title}
+                              style={{ background: "#f5f0ea", color: C.muted, fontSize: 11, fontWeight: 500, padding: "3px 10px", borderRadius: 999, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: question.source_quiz_id ? "pointer" : "default", display: "inline-flex", alignItems: "center", gap: 4 }}
+                              onMouseEnter={e => { if (question.source_quiz_id) { e.currentTarget.style.background = "#ede9fe"; e.currentTarget.style.color = "#7c3aed"; } }}
+                              onMouseLeave={e => { e.currentTarget.style.background = "#f5f0ea"; e.currentTarget.style.color = C.muted; }}
+                            >
+                              {question.source_type === "PROMPT" ? "✦" : "📄"} {question.source_title}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -411,8 +445,8 @@ const AdminQuizDetail = () => {
                       })}
                     </div>
                     {question.explanation && (
-                      <div style={{ marginTop: 12, padding: "12px 16px", background: "#eff6ff", borderRadius: 10 }}>
-                        <p style={{ fontSize: 13, color: "#1e40af", margin: 0 }}><strong>Explanation:</strong> {question.explanation}</p>
+                      <div style={{ marginTop: 12, padding: "12px 16px", background: "#faf6ef", borderRadius: 10, border: `1px solid ${C.border}` }}>
+                        <p style={{ fontSize: 13, color: C.muted, margin: 0 }}><strong style={{ color: C.ink }}>Explanation:</strong> {question.explanation}</p>
                       </div>
                     )}
                   </div>
@@ -509,41 +543,85 @@ const AdminQuizDetail = () => {
                   {[{ key: "document", label: "Documents" }, { key: "prompt", label: "Prompt Quizzes" }].map(({ key, label }) => (
                     <button
                       key={key}
-                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); }}
+                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); setSelectedBank(null); setSearchTerm(""); }}
                       style={{ flex: 1, padding: "6px 0", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: referencedSubTab === key ? "#fff" : "transparent", color: referencedSubTab === key ? C.ink : C.muted, boxShadow: referencedSubTab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
-                <div style={{ position: "relative" }}>
-                  <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
-                  <FocusInput type="text" placeholder="Search available questions..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ paddingLeft: 40 }} />
-                </div>
-                <div style={{ maxHeight: 360, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, border: `1px solid ${C.border}`, borderRadius: 12, padding: 10, background: C.bg }}>
-                  {loadingAvailable ? (
-                    <div style={{ display: "flex", justifyContent: "center", padding: 32 }}><LoadingSpinner size="sm" /></div>
-                  ) : filteredAvailableQuestions.length === 0 ? (
-                    <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No available questions found</p>
-                  ) : filteredAvailableQuestions.map((q) => (
-                    <div key={q.id} onClick={() => setSelectedReferencedQuestion(q)} style={{ padding: "12px 14px", borderRadius: 10, border: selectedReferencedQuestion?.id === q.id ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: selectedReferencedQuestion?.id === q.id ? "#fff7ed" : "#fff", cursor: "pointer" }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: C.ink, margin: "0 0 8px" }}>{q.question_text}</p>
-                      <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                        {q.options?.map((opt, idx) => (
-                          <span key={idx} style={{ fontSize: 12, color: idx === q.correct_answer_index ? "#15803d" : C.muted, fontWeight: idx === q.correct_answer_index ? 600 : 400 }}>
-                            {String.fromCharCode(65 + idx)}. {opt.option_text}
-                          </span>
+
+                {loadingAvailable ? (
+                  <div style={{ display: "flex", justifyContent: "center", padding: 32 }}><LoadingSpinner size="sm" /></div>
+                ) : !selectedBank ? (
+                  /* Level 1 — bank list */
+                  (() => {
+                    const banks = Object.values(
+                      availableQuestions
+                        .filter(q => referencedSubTab === "prompt" ? q.source_type === "PROMPT" : q.source_type !== "PROMPT")
+                        .reduce((acc, q) => {
+                          if (!acc[q.quiz_id]) acc[q.quiz_id] = {
+                            quiz_id: q.quiz_id,
+                            title: referencedSubTab === "prompt" ? (q.quiz_title || "Prompt Quiz") : (q.document_title || q.quiz_title || "Unknown"),
+                            count: 0,
+                          };
+                          acc[q.quiz_id].count++;
+                          return acc;
+                        }, {})
+                    );
+                    return banks.length === 0 ? (
+                      <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No question banks available</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {banks.map(bank => (
+                          <div key={bank.quiz_id}
+                            onClick={() => { setSelectedBank(bank); setSelectedReferencedQuestion(null); setSearchTerm(""); }}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = C.orange}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <FileText size={15} color={C.muted} />
+                              <span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{bank.title}</span>
+                            </div>
+                            <span style={{ fontSize: 12, color: C.muted, background: "#f5f0ea", padding: "2px 10px", borderRadius: 999 }}>{bank.count} questions</span>
+                          </div>
                         ))}
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                        <FileText size={11} color={C.muted} />
-                        <span style={{ fontSize: 11, color: C.muted }}>
-                          {q.source_type === "PROMPT" ? (q.quiz_title || "Prompt Quiz") : (q.document_title || "Unknown Document")}
-                        </span>
-                      </div>
+                    );
+                  })()
+                ) : (
+                  /* Level 2 — questions inside selected bank */
+                  <>
+                    <button
+                      onClick={() => { setSelectedBank(null); setSelectedReferencedQuestion(null); setSearchTerm(""); }}
+                      style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 13, fontWeight: 600, padding: 0 }}
+                    >
+                      <ArrowLeft size={14} /> {selectedBank.title}
+                    </button>
+                    <div style={{ position: "relative" }}>
+                      <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: C.muted }} />
+                      <FocusInput type="text" placeholder="Search questions..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ paddingLeft: 40 }} />
                     </div>
-                  ))}
-                </div>
+                    <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, border: `1px solid ${C.border}`, borderRadius: 12, padding: 10, background: C.bg }}>
+                      {filteredAvailableQuestions.length === 0 ? (
+                        <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No questions found</p>
+                      ) : filteredAvailableQuestions.map((q) => (
+                        <div key={q.id} onClick={() => setSelectedReferencedQuestion(q)} style={{ padding: "12px 14px", borderRadius: 10, border: selectedReferencedQuestion?.id === q.id ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: selectedReferencedQuestion?.id === q.id ? "#fff7ed" : "#fff", cursor: "pointer" }}>
+                          <p style={{ fontWeight: 600, fontSize: 13, color: C.ink, margin: "0 0 8px" }}>{q.question_text}</p>
+                          <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                            {q.options?.map((opt, idx) => (
+                              <span key={idx} style={{ fontSize: 12, color: idx === q.correct_answer_index ? "#15803d" : C.muted, fontWeight: idx === q.correct_answer_index ? 600 : 400 }}>
+                                {String.fromCharCode(65 + idx)}. {opt.option_text}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <div style={{ display: "flex", gap: 10 }}>
                   <button type="button" onClick={() => setShowAddQuestion(false)} disabled={submitting} style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: `1.5px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
                   <button type="button" onClick={submitQuestion} disabled={submitting || !selectedReferencedQuestion} style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: "none", background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, cursor: (!selectedReferencedQuestion || submitting) ? "not-allowed" : "pointer", opacity: (!selectedReferencedQuestion || submitting) ? 0.6 : 1 }}>

@@ -185,6 +185,15 @@ def update_progress(
     progress: float,
     completed: bool | None,
 ) -> Dict[str, Any]:
+    # Check enrollment — must be enrolled to track progress
+    from shared.models.course_content import ContentItem
+    from app.repositories.course_enrollment_repo import get_enrollment
+    item = db.query(ContentItem).filter(ContentItem.id == content_id).first()
+    if item:
+        enrollment = get_enrollment(db, user_id=user_id, course_id=item.course_id)
+        if not enrollment:
+            raise ValueError("You must be enrolled in this course to track progress")
+
     mark_complete = bool(completed) or progress >= 100.0
     row = prog_repo.upsert_progress(
         db,
@@ -193,6 +202,33 @@ def update_progress(
         progress=progress,
         mark_complete=mark_complete,
     )
+
+    # Auto-complete course if all content done AND all quizzes passed or exhausted
+    if mark_complete and item:
+        try:
+            from app.repositories.course_enrollment_repo import get_enrollment, mark_course_completed
+            from shared.repos.course_quiz_repo import get_course_quizzes_by_course
+            from shared.models.course_quiz import QuizStatus as CQStatus
+            from shared.services.quiz_status_service import calculate_quiz_status
+
+            enrollment = get_enrollment(db, user_id=user_id, course_id=item.course_id)
+            if enrollment and not enrollment.completed_at:
+                items = db.query(ContentItem).filter(ContentItem.course_id == item.course_id).all()
+                content_ids = [i.id for i in items]
+                rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
+                done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
+                all_content_done = done_ids >= set(content_ids)
+
+                published_quizzes = get_course_quizzes_by_course(db, item.course_id, CQStatus.PUBLISHED)
+                all_quizzes_done = all(
+                    calculate_quiz_status(db, user_id, q)["status"] in ("completed", "max_attempts_reached")
+                    for q in published_quizzes
+                ) if published_quizzes else True
+
+                if all_content_done and all_quizzes_done:
+                    mark_course_completed(db, user_id=user_id, course_id=item.course_id)
+        except Exception:
+            pass
     return {
         "content_id": row.content_id,
         "progress": float(row.progress),

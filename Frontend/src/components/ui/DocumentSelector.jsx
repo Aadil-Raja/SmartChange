@@ -1,7 +1,7 @@
 // src/components/ui/DocumentSelector.jsx
 import { useEffect, useState } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
-import { X, FileText, Check, Search, RefreshCw } from "lucide-react";
+import { X, FileText, Check, Search, RefreshCw, ExternalLink } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 
 const DocumentSelector = ({ onClose }) => {
@@ -161,6 +161,21 @@ const DocumentSelector = ({ onClose }) => {
                       </span>
                     )}
                   </div>
+                  {doc.cloudinary_url && (
+                    <a
+                      href={doc.cloudinary_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{ color: "#9c8e80", background: "transparent" }}
+                      title="Open PDF"
+                      onMouseEnter={e => { e.currentTarget.style.background = "#fff0e8"; e.currentTarget.style.color = "#F58220"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#9c8e80"; }}
+                    >
+                      <ExternalLink size={13} />
+                    </a>
+                  )}
                   <div
                     className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
                     style={{

@@ -111,12 +111,33 @@ def build_enrollment_based_overview(
         
         # Add progress data if enrolled
         if progress_data:
+            # Get per-quiz scores for manager view
+            from shared.repos.course_quiz_repo import get_course_quizzes_by_course
+            from shared.models.course_quiz import QuizStatus as CQStatus
+            from shared.repos import quiz_attempt_repo
+            from shared.services.quiz_status_service import calculate_quiz_status
+
+            published_quizzes = get_course_quizzes_by_course(db, course_id, CQStatus.PUBLISHED)
+            quiz_scores = []
+            for q in published_quizzes:
+                attempts = quiz_attempt_repo.get_user_quiz_attempts(db, user_id, q.id)
+                best_score = max((float(a.percentage) for a in attempts), default=None)
+                passed = any(a.passed for a in attempts)
+                quiz_scores.append({
+                    "quiz_id": q.id,
+                    "title": q.title,
+                    "best_score": best_score,
+                    "passed": passed,
+                    "attempts_used": len(attempts),
+                })
+
             course_info.update({
                 "progress": progress_data["percent"],
                 "completed_items": progress_data["completed_items"],
                 "total_items": progress_data["total_items"],
                 "completed_quizzes": progress_data["completed_quizzes"],
                 "total_quizzes": progress_data["total_quizzes"],
+                "quiz_scores": quiz_scores,
             })
         
         # Add starred flag if requested

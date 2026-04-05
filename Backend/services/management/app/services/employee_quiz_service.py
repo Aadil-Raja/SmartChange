@@ -16,45 +16,20 @@ def get_quiz_for_taking(db: Session, *, quiz_id: int, user_id: int):
     if not quiz:
         return make_response(False, "Quiz not found", status_code=404, error="Quiz does not exist")
     
-    # Check quiz status - must be "can_take" to access quiz questions
+    # Check quiz status - must be "can_take" or passed with retakes remaining
     status_info = calculate_quiz_status(db, user_id, quiz)
-    if status_info["status"] != "can_take":
-        # Return appropriate error based on status
+    allowed = status_info["status"] == "can_take" or (status_info["status"] == "completed" and status_info.get("can_retake"))
+    if not allowed:
         if status_info["status"] == "locked":
-            return make_response(
-                False, 
-                "Quiz is locked", 
-                status_code=403, 
-                error=status_info["reason"]
-            )
+            return make_response(False, "Quiz is locked", status_code=403, error=status_info["reason"])
         elif status_info["status"] == "completed":
-            return make_response(
-                False, 
-                "Quiz already completed", 
-                status_code=403, 
-                error=f"You have already passed this quiz with {status_info['best_score']}%"
-            )
-        elif status_info["status"] == "in_cooldown":
-            return make_response(
-                False, 
-                "Quiz in cooldown period", 
-                status_code=403, 
-                error=f"Must wait until {status_info['next_attempt_at']} before next attempt"
-            )
+            return make_response(False, "No attempts remaining", status_code=403, error="You have used all attempts for this quiz")
+        elif status_info["status"] in ("in_cooldown", "cooldown"):
+            return make_response(False, "Quiz in cooldown period", status_code=403, error=f"Must wait until {status_info['next_attempt_at']} before next attempt")
         elif status_info["status"] == "max_attempts_reached":
-            return make_response(
-                False, 
-                "Maximum attempts reached", 
-                status_code=403, 
-                error=f"You have used all {status_info['attempts_used']} attempts for this quiz"
-            )
+            return make_response(False, "Maximum attempts reached", status_code=403, error=f"You have used all {status_info['attempts_used']} attempts for this quiz")
         else:
-            return make_response(
-                False, 
-                "Quiz not available", 
-                status_code=403, 
-                error=status_info["reason"]
-            )
+            return make_response(False, "Quiz not available", status_code=403, error=status_info["reason"])
     
     # Get current attempt number for UI display
     attempts = quiz_attempt_repo.get_user_quiz_attempts(db, user_id, quiz.id)
@@ -140,13 +115,9 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
     
     # Check quiz status - must be "can_take"
     status_info = calculate_quiz_status(db, user_id, quiz)
-    if status_info["status"] != "can_take":
-        return make_response(
-            False, 
-            f"Cannot take quiz: {status_info['reason']}", 
-            status_code=403, 
-            error=status_info["reason"]
-        )
+    allowed = status_info["status"] == "can_take" or (status_info["status"] == "completed" and status_info.get("can_retake"))
+    if not allowed:
+        return make_response(False, f"Cannot take quiz: {status_info['reason']}", status_code=403, error=status_info["reason"])
     
     # Get quiz with questions for scoring
     quiz_with_questions = course_quiz_repo.get_course_quiz_with_questions(db, quiz_id)
@@ -167,6 +138,42 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
         percentage=score_data["percentage"],
         passed=score_data["passed"]
     )
+
+    # Auto-complete course if all content done AND all quizzes passed or exhausted
+    try:
+        course_id = quiz.course_id
+        from app.repositories.course_enrollment_repo import get_enrollment, mark_course_completed
+        from app.repositories import courseContent_repo as content_repo
+        from app.repositories import progress_repo as prog_repo
+        from shared.repos.course_quiz_repo import get_course_quizzes_by_course
+        from shared.models.course_quiz import QuizStatus as CQStatus
+        from shared.repos import quiz_attempt_repo as qa_repo
+
+        enrollment = get_enrollment(db, user_id=user_id, course_id=course_id)
+        if enrollment and not enrollment.completed_at:
+            # Check all content items completed
+            items = content_repo.list_items_for_course(db, course_id=course_id)
+            content_ids = [i.id for i in items]
+            if content_ids:
+                rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
+                done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
+                all_content_done = done_ids >= set(content_ids)
+            else:
+                all_content_done = True
+
+            # Check all published quizzes passed or attempts exhausted
+            published_quizzes = get_course_quizzes_by_course(db, course_id, CQStatus.PUBLISHED)
+            all_quizzes_done = True
+            for q in published_quizzes:
+                q_status = calculate_quiz_status(db, user_id, q)
+                if q_status["status"] not in ("completed", "max_attempts_reached"):
+                    all_quizzes_done = False
+                    break
+
+            if all_content_done and all_quizzes_done:
+                mark_course_completed(db, user_id=user_id, course_id=course_id)
+    except Exception:
+        pass  # Don't fail the quiz submission if completion check errors
     
     # Get updated quiz status after this attempt
     updated_status_info = calculate_quiz_status(db, user_id, quiz)
