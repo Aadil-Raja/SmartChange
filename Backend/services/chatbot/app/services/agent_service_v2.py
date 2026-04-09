@@ -56,9 +56,9 @@ CRITICAL INSTRUCTIONS:
 5. If the tool returns JSON, your final response must be that exact JSON string.
 
 Tool selection rules:
-- Use list_document_sections_tool when user asks for overview, summary, topics, sections.
-- Use generate_section_summary_tool when user names a specific section.
-- Use doc_qa_tool for all specific factual questions about content.
+- Use list_document_sections_tool ONLY when user explicitly asks for: "list sections", "show topics", "what sections are there", "give me an overview/table of contents". NOT for factual questions.
+- Use generate_section_summary_tool when user names a specific section they want summarized.
+- Use doc_qa_tool for ALL other questions — any question asking for facts, names, details, explanations, or specific information from the document. When in doubt, use doc_qa_tool.
 
 STRICT TOOL CHAINING RULES:
 - After calling list_document_sections_tool, STOP. Return its output immediately. Do NOT call doc_qa_tool or any other tool after it.
@@ -66,6 +66,7 @@ STRICT TOOL CHAINING RULES:
 - Do NOT call doc_qa_tool immediately after list_document_sections_tool. They serve different purposes.
 - If list_document_sections_tool returns a message like "Multiple documents selected" or "Please select one document", return that message as-is. Do NOT try another tool.
 - One tool call per turn. Never chain tools sequentially.
+- CRITICAL: If user asks multiple questions in one message (e.g. "tell tournament format and notable players"), combine them into ONE single call to doc_qa_tool with the full question. Never call doc_qa_tool more than once per turn.
 - CRITICAL: If user asks for multiple sections (e.g. "Day 1 and Day 7", "all days", "days 5 to 12"), call generate_section_summary_tool EXACTLY ONCE with selection_type='many'. NEVER call it multiple times.
 """
 
@@ -134,6 +135,7 @@ class DocumentAgentV2:
         print(f"[AGENT V2] Raw output: {raw_output[:200]}", file=sys.stderr)
 
         # Parse structured JSON from tool output
+        # Handle case where agent called tool multiple times and concatenated outputs
         try:
             parsed = json.loads(raw_output)
             flat_citations = parsed.get("citations", [])
@@ -143,6 +145,33 @@ class DocumentAgentV2:
                 "citations": _group_citations(flat_citations)
             }
         except (json.JSONDecodeError, TypeError):
+            # Try to extract and merge multiple JSON objects from concatenated output
+            import re
+            json_objects = []
+            decoder = json.JSONDecoder()
+            idx = 0
+            while idx < len(raw_output):
+                try:
+                    obj, end_idx = decoder.raw_decode(raw_output, idx)
+                    if isinstance(obj, dict) and "answer" in obj:
+                        json_objects.append(obj)
+                    idx += end_idx
+                except json.JSONDecodeError:
+                    idx += 1
+
+            if json_objects:
+                merged_answer = "\n\n".join(o.get("answer", "") for o in json_objects)
+                merged_citations = []
+                for o in json_objects:
+                    merged_citations.extend(o.get("citations", []))
+                has_contradiction = any(o.get("has_contradiction", False) for o in json_objects)
+                print(f"[AGENT V2] Merged {len(json_objects)} tool outputs", file=sys.stderr)
+                return {
+                    "answer": merged_answer,
+                    "has_contradiction": has_contradiction,
+                    "citations": _group_citations(merged_citations)
+                }
+
             print(f"[AGENT V2] Could not parse JSON from output, returning as plain answer", file=sys.stderr)
             return {
                 "answer": raw_output,

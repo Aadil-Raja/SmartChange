@@ -40,10 +40,8 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
       if (!normalizedSnippet || normalizedSnippet.length < 15) return str;
       try {
         const normalizedStr = normalize(str);
-        // Require span to be at least 15 chars AND at least 10% of the snippet length
-        // This filters out short common substrings
-        const minLength = Math.max(15, Math.floor(normalizedSnippet.length * 0.10));
-        if (normalizedStr.length < minLength) return str;
+        // Require span to be at least 4 chars to avoid highlighting single words/noise
+        if (normalizedStr.length < 4) return str;
         if (normalizedSnippet.includes(normalizedStr)) {
           return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
         }

@@ -14,10 +14,10 @@ from typing import List
 import sys
 import json
 
-ABSOLUTE_FLOOR   = 0.65   # Hard minimum cosine similarity for any chunk
+ABSOLUTE_FLOOR   = 0.60   # Hard minimum cosine similarity for any chunk
 SAME_DOC_RATIO   = 0.75   # Threshold ratio for the best-scoring document
 OTHER_DOC_RATIO  = 0.85   # Stricter threshold ratio for all other documents
-TOP_K_PER_DOC    = 3
+TOP_K_PER_DOC    = 5      # Retrieve more candidates per doc
 
 
 class DocQAToolArgs(BaseModel):
@@ -37,9 +37,13 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
         - "What are the requirements for...?", "Who is responsible for...?"
         - "What does the document say about...?"
         - Factual lookups, definitions, procedures, rules, or any content question
+        - Multiple questions in one message — combine them into a single question string
 
         Do NOT use this tool when the user wants a summary, overview, table of
         contents, or section list — use list_document_sections_tool for those.
+
+        IMPORTANT: Call this tool ONLY ONCE per turn, even if the user asks multiple questions.
+        Combine all questions into one question string.
 
         IMPORTANT: Do NOT call this tool immediately after list_document_sections_tool
         or generate_section_summary_tool. Those tools are self-contained and their
@@ -187,7 +191,9 @@ Instructions:
    Then recommend the safer option if possible.
 4. If no contradiction, answer normally.
 5. Do not make up information not in the content.
-6. In "used_chunk_ids", list ONLY the CHUNK_IDs you actually used to form your answer.
+6. In "used_chunk_ids", list ONLY the CHUNK_IDs that directly contain the specific facts answering the question.
+   Do NOT include chunks used only for background context or general topic framing.
+   Example: if asked "Who is Babar Azam?" and one chunk says "PSL is a cricket league" and another says "Babar Azam is a top batsman", only include the second chunk.
    Available chunk IDs: {available_chunk_ids}
 
 EXAMPLE of correct output format:

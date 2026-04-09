@@ -8,6 +8,7 @@ from langchain.tools import tool
 from typing import List
 import sys
 import json
+import re
 from datetime import datetime
 
 # Re-use intent resolution from v1
@@ -85,9 +86,14 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
                     "citations": []
                 })
 
-            section_list = "\n".join([f"{i+1}. {s.section_title}" for i, s in enumerate(sections)])
+            # Filter out blank/null section titles
+            valid_sections = [s for s in sections if s.section_title and s.section_title.strip() and len(s.section_title.strip()) > 1]
+
+            # Always use markdown list to ensure proper rendering
+            section_list = "\n".join([f"- {s.section_title.strip()}" for s in valid_sections])
+
             answer = (
-                f"**{doc_title}** contains the following {len(sections)} sections:\n\n"
+                f"**{doc_title}** contains the following {len(valid_sections)} sections:\n\n"
                 f"{section_list}\n\n"
                 "Which section would you like me to summarize?"
             )
@@ -100,7 +106,7 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
                 "page": None,
                 "section": s.section_title,
                 "snippet": None
-            } for s in sections]
+            } for s in valid_sections]
 
             return json.dumps({
                 "answer": answer,

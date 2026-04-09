@@ -1,11 +1,22 @@
 import os
 import sys
+import logging
 
 import redis
 from rq import Queue, Worker
 from rq.worker import SimpleWorker
 
 from core.config import get_settings
+
+# Set to True to enable DEBUG logging, False for WARNING (quiet)
+VERBOSE_LOGGING = False
+
+logging.basicConfig(
+    level=logging.DEBUG if VERBOSE_LOGGING else logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+# Suppress noisy RQ internal debug logs
+logging.getLogger("rq").setLevel(logging.WARNING)
 
 
 def main():

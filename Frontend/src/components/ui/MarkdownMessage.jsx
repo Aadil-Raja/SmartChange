@@ -3,6 +3,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const MarkdownMessage = ({ content, isUser = false }) => {
+  // Escape "- N. text" patterns so remarkGfm doesn't misparse them as nested ordered lists.
+  // Replaces "- 1. Foo" → "- 1\. Foo" which renders as plain text "1. Foo" in the bullet.
+  const safeContent = typeof content === 'string'
+    ? content.replace(/^([ \t]*-[ \t]+)(\d+)\./gm, '$1$2\\.')
+    : content;
   return (
     <div className={`markdown-content text-sm leading-relaxed ${
       isUser ? 'text-white' : 'text-gray-800'
@@ -37,14 +42,29 @@ const MarkdownMessage = ({ content, isUser = false }) => {
 
         // Lists
         ul: ({ node, ...props }) => (
-          <ul className={`list-disc list-inside mb-3 space-y-1 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
+          <ul className={`list-disc list-inside mb-3 space-y-0.5 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
         ),
         ol: ({ node, ...props }) => (
           <ol className={`list-decimal list-inside mb-3 space-y-1 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
         ),
-        li: ({ node, ...props }) => (
-          <li className="ml-2" {...props} />
-        ),
+        li: ({ node, children, ...props }) => {
+          // Filter out empty li nodes (caused by remarkGfm misparse of "- 1. text" mixed lists)
+          const hasContent = Array.isArray(children)
+            ? children.some(c => c !== null && c !== undefined && c !== '' && !(typeof c === 'string' && c.trim() === ''))
+            : children !== null && children !== undefined && children !== '';
+          if (!hasContent) return null;
+          return (
+            <li className="ml-2 leading-snug" {...props}>
+              {Array.isArray(children)
+                ? children.map((child, i) =>
+                    child?.type === 'p'
+                      ? <span key={i}>{child.props.children}</span>
+                      : child
+                  )
+                : children}
+            </li>
+          );
+        },
 
         // Emphasis
         strong: ({ node, ...props }) => (
@@ -164,7 +184,7 @@ const MarkdownMessage = ({ content, isUser = false }) => {
         ),
       }}
       >
-        {content}
+        {safeContent}
       </ReactMarkdown>
     </div>
   );

@@ -200,7 +200,10 @@ def calculate_adaptive_threshold(total_pages: int) -> float:
     Returns:
         Threshold ratio (0.0 to 1.0)
     """
-    if total_pages <= 5:
+    if total_pages <= 1:
+        # Single-page docs: disable watermark detection (everything appears 100%)
+        return 1.1
+    elif total_pages <= 5:
         # Short documents: be conservative
         return 0.8
     elif total_pages <= 20:
@@ -295,6 +298,10 @@ def is_likely_heading(text: str) -> bool:
     
     # Ends with punctuation (unlikely for headings)
     if text.endswith(('.', ',', ';', ':')):
+        return False
+    
+    # Starts with a number (numbered list item, not a heading)
+    if re.match(r'^\d+[\.\)]', text):
         return False
     
     # Common heading patterns
@@ -484,8 +491,9 @@ def detect_heading_threshold(loader_result) -> Tuple[float, Dict[int, float]]:
             if level > 6:  # Max 6 heading levels
                 break
     
-    logger.info(f"Detected body text size: {body_size:.1f}pt")
-    logger.info(f"Detected heading levels: {heading_levels}")
+    logger.info(f"All font sizes in document: {all_sizes}")
+    logger.info(f"Detected body text size (avg): {body_size:.1f}pt")
+    logger.info(f"Detected heading levels (must be > {body_size:.1f} + 1.5 = {body_size+1.5:.1f}pt): {heading_levels}")
     
     return body_size, heading_levels
 
@@ -604,27 +612,49 @@ def process_text_group(
     # Determine if this is a heading based on font size
     is_heading = False
     heading_level = 0
-    
+    reason = "none"
+
     # Check exact size match first
     if font_size in size_to_level:
         is_heading = True
         heading_level = size_to_level[font_size]
+        reason = "exact_size_match"
     # Check if size is close to any heading level (within 0.5 points)
     else:
         for size, level in size_to_level.items():
             if abs(font_size - size) <= 0.5:
                 is_heading = True
                 heading_level = level
+                reason = f"near_size_match({size}pt)"
                 break
     
     # Additional heuristics for headings
     if not is_heading and font_size > body_size + 1.0:
         # Larger than body text
-        if is_bold or is_likely_heading(cleaned):
+        likely = is_likely_heading(cleaned)
+        if is_bold or likely:
             is_heading = True
             heading_level = 3  # Default to h3 if not in predefined levels
+            reason = f"heuristic(bold={is_bold}, likely_heading={likely})"
+
+    # General case: bold + short line = heading (covers "Compliance with the Code", section titles, etc.)
+    # Exclude: numbered points (e.g. "34. Every ACM..."), lines ending with colon (bold bullet titles)
+    if not is_heading and is_bold and len(cleaned) <= 80 and '\n' not in cleaned:
+        starts_with_number = bool(re.match(r'^\d+[\.\)]', cleaned))
+        ends_with_colon = cleaned.endswith(':')
+        if not starts_with_number and not ends_with_colon:
+            is_heading = True
+            heading_level = 3
+            reason = "bold_short_line"
     
     element_type = "heading" if is_heading else "paragraph"
+
+    logger.debug(
+        f"[process_text_group] '{cleaned[:60]}' | "
+        f"font={font_size:.1f}pt body={body_size:.1f}pt bold={is_bold} | "
+        f"→ {element_type} (reason={reason}) | "
+        f"size_to_level={size_to_level}"
+    )
     
     return {
         "text": cleaned,
