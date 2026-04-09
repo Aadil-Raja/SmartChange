@@ -31,7 +31,8 @@ const AdminCourseDetails = () => {
   const { id } = useParams();
   const {
     currentCourse, contentItems, quizzes, loading, error, success,
-    fetchCourseDetails, uploadThumbnail, deleteContent, reorderContent, clearMessages,
+    fetchCourseDetails, uploadThumbnail, deleteContent, reorderContent,
+    clearMessages, setCourseDeadlineWeeks, activateExistingCourse, deactivateExistingCourse,
   } = useAdminTraining();
 
   const [quizError, setQuizError] = useState(null);
@@ -52,6 +53,12 @@ const AdminCourseDetails = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
   const hasFetchedCourse = useRef(null);
 
+  // Deadline config state
+  const [deadlineInput, setDeadlineInput] = useState('');
+  const [savingDeadline, setSavingDeadline] = useState(false);
+
+  const isPublished = Boolean(currentCourse?.is_active);
+
   const clearQuizMessages = () => { setQuizError(null); setQuizSuccess(null); };
 
   useEffect(() => {
@@ -62,7 +69,34 @@ const AdminCourseDetails = () => {
     return () => { clearMessages(); clearQuizMessages(); };
   }, [id]);
 
+  // Sync deadline input when course loads
+  useEffect(() => {
+    if (currentCourse) {
+      setDeadlineInput(currentCourse.deadline_weeks != null ? String(currentCourse.deadline_weeks) : '');
+    }
+  }, [currentCourse?.id]);
+
   useEffect(() => { console.log('Quizzes updated:', quizzes); }, [quizzes]);
+
+  const [publishingCourse, setPublishingCourse] = useState(false);
+
+  const handleTogglePublish = async () => {
+    setPublishingCourse(true);
+    if (isPublished) {
+      await deactivateExistingCourse(parseInt(id));
+    } else {
+      await activateExistingCourse(parseInt(id));
+    }
+    await fetchCourseDetails(id);
+    setPublishingCourse(false);
+  };
+
+  const handleSaveDeadline = async () => {
+    setSavingDeadline(true);
+    const weeks = deadlineInput === '' ? null : parseInt(deadlineInput, 10);
+    await setCourseDeadlineWeeks(parseInt(id), weeks);
+    setSavingDeadline(false);
+  };
 
   const handleThumbnailUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -206,20 +240,22 @@ const AdminCourseDetails = () => {
               <span className="font-semibold truncate max-w-xs" style={{ color: '#1a1209' }}>{currentCourse.title}</span>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate(`/admin/training/edit/${id}`)}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all"
-                style={{ borderColor: '#e0d8ce', color: '#3d3228', background: 'white' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#f7953f'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#f7953f'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#3d3228'; e.currentTarget.style.borderColor = '#e0d8ce'; }}
-              >
-                <Edit size={13} /> Edit
-              </button>
+              {!isPublished && (
+                <button
+                  onClick={() => navigate(`/admin/training/edit/${id}`)}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold border transition-all"
+                  style={{ borderColor: '#e0d8ce', color: '#3d3228', background: 'white' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#f7953f'; e.currentTarget.style.color = 'white'; e.currentTarget.style.borderColor = '#f7953f'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#3d3228'; e.currentTarget.style.borderColor = '#e0d8ce'; }}
+                >
+                  <Edit size={13} /> Edit
+                </button>
+              )}
               <span className="px-4 py-1.5 rounded-full text-xs font-semibold"
-                style={currentCourse.is_active
+                style={isPublished
                   ? { background: '#e6f4f1', color: '#0d9488', border: '1px solid #99e6da' }
-                  : { background: '#f0ede8', color: '#78716c', border: '1px solid #d6cfc6' }}>
-                {currentCourse.is_active ? '● Active' : '● Inactive'}
+                  : { background: '#fff4e8', color: '#b45309', border: '1px solid #fcd9b8' }}>
+                {isPublished ? '● Published' : '● Draft'}
               </span>
             </div>
           </div>
@@ -231,6 +267,31 @@ const AdminCourseDetails = () => {
 
             {success && <Alert variant="success" onClose={clearMessages}>{success}</Alert>}
             {error   && <Alert variant="error"   onClose={clearMessages}>{error}</Alert>}
+
+            {/* Publish / Draft banner */}
+            <div className="flex items-center justify-between px-5 py-3 rounded-2xl border"
+              style={isPublished
+                ? { background: '#f0fdf4', borderColor: '#bbf7d0' }
+                : { background: '#fff9f0', borderColor: '#fde68a' }}>
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-semibold" style={{ color: isPublished ? '#15803d' : '#92400e' }}>
+                  {isPublished ? '✓ Published — visible to employees' : '✎ Draft — not visible to employees'}
+                </span>
+                {isPublished && <span className="text-xs" style={{ color: '#6b7280' }}>Unpublish to edit content, quizzes, or deadline</span>}
+              </div>
+              <button
+                onClick={handleTogglePublish}
+                disabled={publishingCourse}
+                className="px-4 py-1.5 rounded-full text-xs font-semibold border transition-all disabled:opacity-50"
+                style={isPublished
+                  ? { background: 'white', color: '#b45309', borderColor: '#fcd9b8' }
+                  : { background: '#15803d', color: 'white', borderColor: '#15803d' }}
+                onMouseEnter={e => { if (!publishingCourse) e.currentTarget.style.opacity = '0.85'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+              >
+                {publishingCourse ? '…' : isPublished ? 'Unpublish' : 'Publish'}
+              </button>
+            </div>
 
             {/* Hero card */}
             <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 4px 24px rgba(26,18,9,0.08)' }}>
@@ -262,11 +323,66 @@ const AdminCourseDetails = () => {
               </div>
             </div>
 
+            {/* Course Configuration */}
+            <SectionCard title="Course Configuration" subtitle="Set completion deadline for enrolled employees">
+              <div className="flex items-end gap-4">
+                <div className="flex-1 max-w-xs">
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#6b5e4e' }}>
+                    Completion Deadline (weeks)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="No deadline"
+                      value={deadlineInput}
+                      onChange={e => setDeadlineInput(e.target.value)}
+                      disabled={isPublished}
+                      className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ borderColor: '#e0d8ce', background: 'white', color: '#1a1209' }}
+                      onFocus={e => { e.target.style.borderColor = '#f7953f'; e.target.style.boxShadow = '0 0 0 3px rgba(247,149,63,0.12)'; }}
+                      onBlur={e => { e.target.style.borderColor = '#e0d8ce'; e.target.style.boxShadow = 'none'; }}
+                    />
+                  </div>
+                  <p className="text-xs mt-1.5" style={{ color: '#a89880' }}>
+                    {deadlineInput
+                      ? `Employees must complete within ${deadlineInput} week${deadlineInput === '1' ? '' : 's'} of enrollment`
+                      : 'Leave empty to remove the deadline'}
+                  </p>
+                </div>
+                <div className="flex gap-2 pb-6">
+                  <PillBtn
+                    primary
+                    disabled={savingDeadline || isPublished}
+                    onClick={handleSaveDeadline}
+                  >
+                    <Clock size={13} /> {savingDeadline ? 'Saving…' : 'Save'}
+                  </PillBtn>
+                  {currentCourse.deadline_weeks && (
+                    <PillBtn
+                      disabled={savingDeadline || isPublished}
+                      onClick={() => { setDeadlineInput(''); }}
+                    >
+                      Clear
+                    </PillBtn>
+                  )}
+                </div>
+              </div>
+              {currentCourse.deadline_weeks && (
+                <div className="mt-1 flex items-center gap-2 px-3 py-2 rounded-xl w-fit" style={{ background: '#fff0e8', border: '1px solid #fdd5b0' }}>
+                  <Clock size={13} style={{ color: '#E0741C' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#E0741C' }}>
+                    Current: {currentCourse.deadline_weeks} week{currentCourse.deadline_weeks !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              )}
+            </SectionCard>
+
             {/* Content section */}
             <SectionCard title="Course Content" subtitle={isReordering ? 'Reordering…' : 'Drag items to reorder'}
               actions={<>
                 <PillBtn onClick={() => navigate('/admin/training/library')} disabled={isReordering}><FileText size={13} /> Library</PillBtn>
-                <PillBtn primary onClick={handleAddContent} disabled={isReordering}><Plus size={13} /> Add Content</PillBtn>
+                <PillBtn primary onClick={handleAddContent} disabled={isReordering || isPublished}><Plus size={13} /> Add Content</PillBtn>
               </>}>
               {quizSuccess && <Alert variant="success" className="mb-4" onClose={clearQuizMessages}>{quizSuccess}</Alert>}
               {quizError   && <Alert variant="error"   className="mb-4" onClose={clearQuizMessages}>{quizError}</Alert>}
@@ -309,8 +425,8 @@ const AdminCourseDetails = () => {
                         </div>
                         <TypeBadge type={item.type} />
                         <div className="flex gap-1 flex-shrink-0">
-                          <IconAction onClick={() => handleEditContent(item)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
-                          <IconAction onClick={() => setDeleteConfirm(item)} title="Delete" danger><Trash2 size={15} /></IconAction>
+                          <IconAction onClick={() => handleEditContent(item)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50" disabled={isPublished}><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => setDeleteConfirm(item)} title="Delete" danger disabled={isPublished}><Trash2 size={15} /></IconAction>
                         </div>
                       </div>
                     ))}
@@ -319,7 +435,7 @@ const AdminCourseDetails = () => {
 
             {/* Quizzes section */}
             <SectionCard title="Course Quizzes" subtitle="Manage assessments and evaluations"
-              actions={<PillBtn primary onClick={handleCreateQuiz}><Plus size={13} /> Create Quiz</PillBtn>}>
+              actions={<PillBtn primary onClick={handleCreateQuiz} disabled={isPublished}><Plus size={13} /> Create Quiz</PillBtn>}>
               {quizzes.length === 0
                 ? <EmptyState icon={<HelpCircle size={40} className="text-[#78BE20]" />} title="No quizzes yet" sub="Create assessments to test student knowledge">
                     <PillBtn primary onClick={handleCreateQuiz}><Plus size={13} /> Create First Quiz</PillBtn>
@@ -343,9 +459,9 @@ const AdminCourseDetails = () => {
                           {quiz.status?.toLowerCase()||'draft'}
                         </span>
                         <div className="flex gap-1 flex-shrink-0">
-                          {quiz.status==='DRAFT' && <IconAction onClick={() => handlePublishQuiz(quiz.id)} title="Publish" hoverClass="hover:text-teal-600 hover:bg-teal-50"><CheckCircle size={15} /></IconAction>}
-                          <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50"><Edit3 size={15} /></IconAction>
-                          <IconAction onClick={() => setDeleteQuizConfirm(quiz)} title={quiz.status==='PUBLISHED'?'Cannot delete a published quiz':'Delete'} danger disabled={quiz.status==='PUBLISHED'}><Trash2 size={15} /></IconAction>
+                          {quiz.status==='DRAFT' && <IconAction onClick={() => handlePublishQuiz(quiz.id)} title="Publish" hoverClass="hover:text-teal-600 hover:bg-teal-50" disabled={isPublished}><CheckCircle size={15} /></IconAction>}
+                          <IconAction onClick={() => handleEditQuiz(quiz)} title="Edit" hoverClass="hover:text-[#f7953f] hover:bg-orange-50" disabled={isPublished}><Edit3 size={15} /></IconAction>
+                          <IconAction onClick={() => setDeleteQuizConfirm(quiz)} title={quiz.status==='PUBLISHED'?'Cannot delete a published quiz':'Delete'} danger disabled={quiz.status==='PUBLISHED' || isPublished}><Trash2 size={15} /></IconAction>
                         </div>
                       </div>
                     ))}

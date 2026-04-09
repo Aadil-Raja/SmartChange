@@ -55,7 +55,25 @@ def get_courses_with_enrollment(db: Session, *, user_id: int) -> Dict[str, Any]:
         enrollment_status = enrollment_repo.get_enrollment_with_status(
             db, user_id=user_id, course_id=course_id
         )
-        
+
+        # Self-heal: if marked completed but new content was added since, reopen
+        if enrollment_status["completed_at"] and enrollment_status["is_enrolled"]:
+            from shared.models.course_content import ContentItem
+            from app.repositories import progress_repo as _prog_repo
+            content_ids = [i.id for i in db.query(ContentItem).filter(ContentItem.course_id == course_id).all()]
+            if content_ids:
+                rows = _prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
+                done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
+                if not (done_ids >= set(content_ids)):
+                    enrollment = enrollment_repo.get_enrollment(db, user_id=user_id, course_id=course_id)
+                    if enrollment:
+                        enrollment.completed_at = None
+                        db.commit()
+                        # Refresh enrollment_status
+                        enrollment_status = enrollment_repo.get_enrollment_with_status(
+                            db, user_id=user_id, course_id=course_id
+                        )
+
         # Determine category based on enrollment status
         category = _determine_category(enrollment_status)
         

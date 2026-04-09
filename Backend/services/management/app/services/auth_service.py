@@ -6,6 +6,7 @@ from app.repositories import auth_repo
 from shared.repos import users_repo
 from app.core.config import get_settings
 from app.services.email_service import send_otp_email, send_welcome_email, send_password_reset_email
+from app.services.queue.factory import get_queue
 from app.utils.response_utils import make_response
 
 from app.utils.shared_utils import (
@@ -23,6 +24,16 @@ from app.utils.shared_utils import (
 
 settings = get_settings()
 ALLOWED_DOMAINS = ['gmail.com', 'yahoo.com','nu.edu.pk']  # Example allowed domains; replace with settings.allowed_domains_raw.split(',')
+
+RQ_DEADLINE_TASK = "tasks.check_deadline_notifications"
+
+
+def _enqueue_deadline_check(user_id: int):
+    """Fire-and-forget: enqueue deadline notification check for a user."""
+    try:
+        get_queue().enqueue(RQ_DEADLINE_TASK, user_id=user_id)
+    except Exception:
+        pass  # Never block login if queue is unavailable
 
 # ----------------------------------------------------------------------
 # SIGNUP & VERIFICATION
@@ -206,7 +217,9 @@ async def login_password(
         jwt_secret=settings.jwt_secret,
         jwt_algorithm=settings.jwt_algorithm,
     )
-    
+
+    _enqueue_deadline_check(user.id)
+
     return make_response(
         True,
         "Login successful",
@@ -290,7 +303,9 @@ async def login_verify_code(
         jwt_secret=settings.jwt_secret,
         jwt_algorithm=settings.jwt_algorithm,
     )
-    
+
+    _enqueue_deadline_check(user.id)
+
     return make_response(
         True,
         "Login successful",

@@ -12,12 +12,11 @@ import { AnnouncementProvider } from './context/AnnouncementContext.jsx'
 import { ChatbotProvider } from './context/ChatbotContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,       // 1 min default — override per query
+      staleTime: 60_000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -31,22 +30,21 @@ createRoot(document.getElementById('root')).render(
         <AdminAuthProvider>
           <AdminProvider>
             <AdminTrainingProvider>
-            <TeamProvider>
-              <AnnouncementProvider>
-              <CourseProvider>
-                <ChatbotProvider>
-                  <NotificationProvider>
-                    <App />
-                  </NotificationProvider>
-                </ChatbotProvider>
-              </CourseProvider>
-              </AnnouncementProvider>
-            </TeamProvider>
+              <TeamProvider>
+                <AnnouncementProvider>
+                  <CourseProvider>
+                    <ChatbotProvider>
+                      <NotificationProvider>
+                        <App />
+                      </NotificationProvider>
+                    </ChatbotProvider>
+                  </CourseProvider>
+                </AnnouncementProvider>
+              </TeamProvider>
             </AdminTrainingProvider>
           </AdminProvider>
         </AdminAuthProvider>
       </AuthProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </StrictMode>
 )

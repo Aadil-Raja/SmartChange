@@ -7,6 +7,7 @@ from app.core.firebase import ensure_firebase_initialized
 from app.core.config import get_settings
 from shared.repos import users_repo
 from app.utils.response_utils import make_response
+from app.services.queue.factory import get_queue
 
 from app.utils.shared_utils import (
     normalize_email,
@@ -16,6 +17,15 @@ from app.utils.shared_utils import (
 
 settings = get_settings()
 ALLOWED_DOMAINS = ["gmail.com", "nu.edu.pk"]
+
+RQ_DEADLINE_TASK = "tasks.check_deadline_notifications"
+
+
+def _enqueue_deadline_check(user_id: int):
+    try:
+        get_queue().enqueue(RQ_DEADLINE_TASK, user_id=user_id)
+    except Exception:
+        pass
 
 def login_with_google(db: Session, *, id_token: str):
     ensure_firebase_initialized()
@@ -93,7 +103,9 @@ def login_with_google(db: Session, *, id_token: str):
         )
     except Exception:
         return make_response(False, "Failed to generate access token", status_code=500)
-    
+
+    _enqueue_deadline_check(user.id)
+
     return make_response(
         True,
         "Login successful",

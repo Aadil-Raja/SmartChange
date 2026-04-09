@@ -4,6 +4,7 @@ import {
   createCourse,
   getCourseDetails,
   updateCourse,
+  setCourseDeadline,
   setCourseThumbnail,
   deleteCourseThumbnail,
   activateCourse,
@@ -138,6 +139,28 @@ export const AdminTrainingProvider = ({ children }) => {
       return { success: false, message: errorMsg };
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Set / remove course deadline
+  const setCourseDeadlineWeeks = async (courseId, deadline_weeks) => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await setCourseDeadline(courseId, deadline_weeks);
+      if (res?.success) {
+        setSuccess(deadline_weeks ? "Deadline updated" : "Deadline removed");
+        if (currentCourse?.id === courseId) {
+          setCurrentCourse(prev => ({ ...prev, deadline_weeks: deadline_weeks ?? null }));
+        }
+        return { success: true };
+      } else {
+        throw new Error(res.message || "Failed to update deadline");
+      }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || err.message;
+      setError(errorMsg);
+      return { success: false, message: errorMsg };
     }
   };
 
@@ -566,6 +589,7 @@ export const AdminTrainingProvider = ({ children }) => {
         createNewCourse,
         fetchCourseDetails,
         updateExistingCourse,
+        setCourseDeadlineWeeks,
         uploadThumbnail,
         deleteThumbnail,
         activateExistingCourse,

@@ -1,7 +1,7 @@
 // src/components/ui/EmployeeSidebar.jsx
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GraduationCap, Users, MessageSquare, User, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
+import { GraduationCap, Users, MessageSquare, User, ChevronLeft, ChevronRight, LogOut, Trophy } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 
 const EmployeeSidebar = ({ collapsed = true, onToggle }) => {

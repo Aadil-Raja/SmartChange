@@ -26,6 +26,7 @@ import QuizTaking from './pages/employee/QuizTaking';
 import QuizResults from './pages/employee/QuizResults';
 import Notifications from './pages/employee/Notifications';
 import TeamMemberInfo from "./pages/employee/TeamMemberInfo.jsx";
+import TeamLeaderboard from "./pages/employee/TeamLeaderboard.jsx";
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -148,6 +149,7 @@ function AppRoutes() {
         <Route path="/employee/chatbot" element={<Chatbot />} />
         <Route path="/employee/profile" element={<EmployeeProfile />} />
         <Route path="/employee/team/:teamId/member/:memberId" element={<TeamMemberInfo />} />
+        <Route path="/employee/team/:teamId/leaderboard" element={<TeamLeaderboard />} />
         <Route path="/employee/quiz/:quizId" element={<QuizTaking />} />
         <Route path="/employee/quiz/:quizId/results" element={<QuizResults />} />
         <Route path="/employee/notifications" element={<Notifications />} />

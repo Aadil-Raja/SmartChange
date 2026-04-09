@@ -27,6 +27,12 @@ export const updateCourse = async (courseId, courseData) => {
   return response.data;
 };
 
+// Set / remove course deadline (deadline_weeks: number | null)
+export const setCourseDeadline = async (courseId, deadline_weeks) => {
+  const response = await api.patch(`/admin-training/courses/${courseId}/deadline`, { deadline_weeks });
+  return response.data;
+};
+
 // Set course thumbnail
 export const setCourseThumbnail = async (courseId, file) => {
   const maxSize = 100 * 1024 * 1024; // 100MB

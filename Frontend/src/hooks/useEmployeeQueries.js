@@ -13,6 +13,8 @@ import {
   getCourseProgress,
   getCourseItemsProgress,
   getUserProfile,
+  getTeamLeaderboard,
+  getTeamEngagement,
 } from '../services/courseApi';
 import { submitQuizAttempt } from '../services/courseApi';
 
@@ -24,6 +26,8 @@ export const employeeKeys = {
   courseProgress: (id) => ['employee', 'course', id, 'progress'],
   courseItemsProgress: (id) => ['employee', 'course', id, 'items-progress'],
   profile: () => ['employee', 'profile'],
+  leaderboard: (teamId, period) => ['employee', 'leaderboard', teamId, period],
+  engagement: (teamId, period) => ['employee', 'engagement', teamId, period],
 };
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -162,8 +166,7 @@ export const useUnenrollCourse = () => {
   });
 };
 
-export const useSubmitQuiz = (courseId) => {
-  const qc = useQueryClient();
+export const useSubmitQuiz = (courseId) => {  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ quizId, answers }) => submitQuizAttempt(quizId, answers),
     onSuccess: () => {
@@ -174,3 +177,27 @@ export const useSubmitQuiz = (courseId) => {
     },
   });
 };
+
+export const useTeamLeaderboard = (teamId, period = '7d') =>
+  useQuery({
+    queryKey: employeeKeys.leaderboard(teamId, period),
+    queryFn: async () => {
+      const res = await getTeamLeaderboard(teamId, period);
+      if (!res.success) throw new Error(res.message || 'Failed to fetch leaderboard');
+      return res.data;
+    },
+    enabled: !!teamId,
+    staleTime: 5 * 60_000, // 5 min — matches backend cache TTL
+  });
+
+export const useTeamEngagement = (teamId, period = '7d') =>
+  useQuery({
+    queryKey: employeeKeys.engagement(teamId, period),
+    queryFn: async () => {
+      const res = await getTeamEngagement(teamId, period);
+      if (!res.success) throw new Error(res.message || 'Failed to fetch engagement');
+      return res.data;
+    },
+    enabled: !!teamId,
+    staleTime: 5 * 60_000,
+  });

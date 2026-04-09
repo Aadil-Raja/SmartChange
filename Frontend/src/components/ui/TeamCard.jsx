@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ArrowUpRight } from 'lucide-react';
+import { Users, Copy, RefreshCw, Check, Crown, UserCheck, Megaphone, ArrowUpRight, Trophy } from 'lucide-react';
 
 const TeamCard = ({ team, onRegenerateCode, loading }) => {
   const navigate = useNavigate();
@@ -107,19 +107,32 @@ const TeamCard = ({ team, onRegenerateCode, loading }) => {
 
         <div className="flex items-center justify-between">
           <span className="text-xs" style={{ color: '#9c8e80' }}>View Announcements</span>
-          <button
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
-            style={{ background: arrowHovered ? '#f7953f' : '#1a1209' }}
-            onMouseEnter={() => setArrowHovered(true)}
-            onMouseLeave={() => setArrowHovered(false)}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick();
-            }}
-            title="Open team"
-          >
-            <ArrowUpRight size={14} color="#fff" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={{ background: '#fff0e8', color: '#E0741C', border: '1px solid #fde0c8' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/employee/team/${team.team_id}/leaderboard`);
+              }}
+              title="View leaderboard"
+            >
+              <Trophy size={12} /> Leaderboard
+            </button>
+            <button
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
+              style={{ background: arrowHovered ? '#f7953f' : '#1a1209' }}
+              onMouseEnter={() => setArrowHovered(true)}
+              onMouseLeave={() => setArrowHovered(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCardClick();
+              }}
+              title="Open team"
+            >
+              <ArrowUpRight size={14} color="#fff" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

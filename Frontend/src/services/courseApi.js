@@ -106,6 +106,20 @@ export const getUserProfile = async () => {
   return response.data;
 };
 
+// ===== LEADERBOARD APIs =====
+
+// Get ranked leaderboard for a team. period: "7d" | "all"
+export const getTeamLeaderboard = async (teamId, period = "7d") => {
+  const response = await api.get(`/employee/teams/${teamId}/leaderboard?period=${period}`);
+  return response.data;
+};
+
+// Get team engagement summary stats
+export const getTeamEngagement = async (teamId, period = "7d") => {
+  const response = await api.get(`/employee/teams/${teamId}/engagement?period=${period}`);
+  return response.data;
+};
+
 // ===== QUIZ TAKING APIs =====
 
 // Get quiz for taking (only if status is "can_take")

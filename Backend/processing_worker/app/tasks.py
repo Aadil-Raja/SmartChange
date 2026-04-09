@@ -389,3 +389,98 @@ def generate_quiz_from_prompt(quiz_id: int, prompt_text: str, num_questions: int
         return {"success": False, "error": str(e), "quiz_id": quiz_id, "questions_created": 0}
     finally:
         db.close()
+
+
+def check_deadline_notifications(user_id: int) -> dict:
+    """
+    Check a user's enrolled courses for upcoming deadlines and create
+    system notifications for 7-day and 15-day thresholds.
+    Skips if a notification for the same course+threshold was already sent today.
+
+    Args:
+        user_id: ID of the user who just logged in
+
+    Returns:
+        Dict with count of notifications created
+    """
+    from datetime import timedelta, date, timezone as dt_timezone
+    from sqlalchemy import and_
+    from shared.models.course_enrollment import CourseEnrollment
+    from shared.models.course import Course
+    from shared.models.notification import Notification, NotificationType
+    from shared.repos import notification_repo
+
+    THRESHOLDS = [7, 15]  # days
+
+    db = _SessionLocal()
+    created = 0
+
+    try:
+        # Fetch all active (not completed) enrollments for this user
+        enrollments = (
+            db.query(CourseEnrollment, Course)
+            .join(Course, Course.id == CourseEnrollment.course_id)
+            .filter(
+                and_(
+                    CourseEnrollment.user_id == user_id,
+                    CourseEnrollment.completed_at.is_(None),
+                    Course.deadline_weeks.isnot(None),
+                )
+            )
+            .all()
+        )
+
+        today = date.today()
+        today_start = datetime.now(dt_timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+
+        for enrollment, course in enrollments:
+            deadline_at = enrollment.enrolled_at + timedelta(weeks=course.deadline_weeks)
+            days_remaining = (deadline_at.date() - today).days
+
+            for threshold in THRESHOLDS:
+                # Only fire when days_remaining is within [threshold-1, threshold]
+                if not (threshold - 1 <= days_remaining <= threshold):
+                    continue
+
+                # Deduplicate: skip if we already sent this threshold notification today
+                already_sent = (
+                    db.query(Notification)
+                    .filter(
+                        and_(
+                            Notification.user_id == user_id,
+                            Notification.related_course_id == course.id,
+                            Notification.type == NotificationType.SYSTEM,
+                            Notification.title == f"Deadline in {threshold} days",
+                            Notification.created_at >= today_start,
+                        )
+                    )
+                    .first()
+                )
+
+                if already_sent:
+                    continue
+
+                notification_repo.create_notification(
+                    db,
+                    user_id=user_id,
+                    type=NotificationType.SYSTEM,
+                    title=f"Deadline in {threshold} days",
+                    message=(
+                        f'Your deadline for "{course.title}" is approaching. '
+                        f"You have {days_remaining} day{'s' if days_remaining != 1 else ''} left to complete it."
+                    ),
+                    related_course_id=course.id,
+                )
+                created += 1
+                logger.info(
+                    f"[deadline_notify] user={user_id} course={course.id} threshold={threshold}d"
+                )
+
+        return {"ok": True, "notifications_created": created}
+
+    except Exception as e:
+        logger.error(f"check_deadline_notifications failed for user {user_id}: {e}", exc_info=True)
+        return {"ok": False, "error": str(e)}
+
+    finally:
+        db.close()

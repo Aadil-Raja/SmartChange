@@ -57,8 +57,8 @@ const AdminTrainingList = () => {
         course.department.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter =
       filter === "all" ||
-      (filter === "active" && course.is_active) ||
-      (filter === "inactive" && !course.is_active);
+      (filter === "published" && course.is_active) ||
+      (filter === "draft" && !course.is_active);
     return matchesSearch && matchesFilter;
   });
 
@@ -118,8 +118,8 @@ const AdminTrainingList = () => {
 
           <div className="flex items-center gap-3 flex-wrap">
             <StatPill label="Total" count={totalCount} dotColor="#1a1918" />
-            <StatPill label="Active" count={activeCount} dotColor="#4ade80" />
-            <StatPill label="Inactive" count={inactiveCount} dotColor="#9ca3af" />
+            <StatPill label="Published" count={activeCount} dotColor="#4ade80" />
+            <StatPill label="Draft" count={inactiveCount} dotColor="#9ca3af" />
           </div>
         </div>
 
@@ -159,7 +159,7 @@ const AdminTrainingList = () => {
                 className="flex rounded-full p-1 gap-1"
                 style={{ background: "#e8e0d4" }}
               >
-                {["all", "active", "inactive"].map((f) => (
+                {["all", "published", "draft"].map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
@@ -345,14 +345,14 @@ const CourseCardNew = ({ course, onNavigate, onEdit, onToggle, onDelete, formatD
             style={
               course.is_active
                 ? { background: "#e6f4f1", color: "#0d9488" }
-                : { background: "#f0ede8", color: "#78716c" }
+                : { background: "#fff4e8", color: "#b45309" }
             }
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
-              style={{ background: course.is_active ? "#0d9488" : "#9ca3af" }}
+              style={{ background: course.is_active ? "#0d9488" : "#f59e0b" }}
             />
-            {course.is_active ? "Active" : "Inactive"}
+            {course.is_active ? "Published" : "Draft"}
           </span>
         </div>
 
@@ -420,11 +420,11 @@ const CardMenu = ({ onEdit, onToggle, onDelete, isActive }) => {
 
       {open && (
         <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-30">
-          <MenuItem onClick={() => { onEdit(); setOpen(false); }} icon={<Edit size={13} />} label="Edit Course" />
+          {!isActive && <MenuItem onClick={() => { onEdit(); setOpen(false); }} icon={<Edit size={13} />} label="Edit Course" />}
           <MenuItem
             onClick={() => { onToggle(); setOpen(false); }}
             icon={isActive ? <PowerOff size={13} /> : <Power size={13} />}
-            label={isActive ? "Deactivate" : "Activate"}
+            label={isActive ? "Unpublish" : "Publish"}
           />
           <hr className="my-1 border-gray-100" />
           <MenuItem

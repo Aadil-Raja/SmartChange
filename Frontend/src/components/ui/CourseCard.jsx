@@ -278,7 +278,15 @@ const CourseCard = ({
         )}
 
         <div className="flex items-center justify-between pt-1">
-          <span className="text-xs" style={{ color: '#9b8c7b' }}>{formatDate(course.created_at || course.enrolled_at)}</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs" style={{ color: '#9b8c7b' }}>{formatDate(course.created_at || course.enrolled_at)}</span>
+            {(variant || course.category) === 'in_progress' && course.deadline_at && (
+              <span className="text-xs font-medium" style={{ color: course.days_remaining <= 7 ? '#dc2626' : course.days_remaining <= 15 ? '#b45309' : '#6b7280' }}>
+                Due {formatDate(course.deadline_at)}
+                {course.days_remaining != null && ` · ${course.days_remaining}d left`}
+              </span>
+            )}
+          </div>
           <button
             className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
             style={{

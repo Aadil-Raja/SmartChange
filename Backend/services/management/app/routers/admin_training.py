@@ -41,8 +41,15 @@ def create_course(body: CourseCreateIn, db: Session = Depends(get_db), _admin=De
 @router.patch("/courses/{course_id}", status_code=status.HTTP_200_OK)
 def update_course(course_id: int, body: CourseUpdateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
     try:
+        # Allow is_active toggle (publish/unpublish) even when published
+        # Block all other field edits when published
+        non_status_fields = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k != "is_active"}
+        if non_status_fields:
+            _assert_course_is_draft(db, course_id)
         return make_response(True, "Course updated", data=svc.update_course(db, course_id=course_id, body=body))
     except ValueError as e:
+        if "published" in str(e).lower():
+            return make_response(False, str(e), status_code=status.HTTP_409_CONFLICT, error=str(e))
         if "not found" in str(e).lower():
             return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
         return make_response(False, "Invalid course data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
@@ -161,12 +168,15 @@ def set_course_deadline_route(
         Updated course with deadline information
     """
     try:
+        _assert_course_is_draft(db, course_id)
         return make_response(
-            True, 
-            "Deadline updated" if body.deadline_weeks else "Deadline removed", 
+            True,
+            "Deadline updated" if body.deadline_weeks else "Deadline removed",
             data=svc.set_course_deadline(db, course_id=course_id, deadline_weeks=body.deadline_weeks)
         )
     except ValueError as e:
+        if "published" in str(e).lower():
+            return make_response(False, str(e), status_code=status.HTTP_409_CONFLICT, error=str(e))
         if "not found" in str(e).lower():
             return make_response(False, "Course not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
         return make_response(False, "Invalid deadline value", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
@@ -176,12 +186,24 @@ def set_course_deadline_route(
 
 # --------------------------- CONTENT ITEMS ---------------------------
 
+def _assert_course_is_draft(db: Session, course_id: int):
+    """Raise ValueError if course is published (active). Used to guard edit endpoints."""
+    from shared.models.course import Course
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise ValueError("Course not found")
+    if course.is_active:
+        raise ValueError("Course is published. Unpublish it before making changes.")
+
+
 @router.post("/courses/{course_id}/content", status_code=status.HTTP_201_CREATED)
 def add_content_item(course_id: int, body: ContentItemCreateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
     try:
+        _assert_course_is_draft(db, course_id)
         return make_response(True, "Content added", data=svc.add_content_item(db, course_id=course_id, body=body))
     except ValueError as e:
-        return make_response(False, "Invalid content data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+        code = status.HTTP_409_CONFLICT if "published" in str(e).lower() else status.HTTP_400_BAD_REQUEST
+        return make_response(False, str(e), status_code=code, error=str(e))
     except Exception as e:
         return make_response(False, "Failed to add content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
@@ -189,11 +211,16 @@ def add_content_item(course_id: int, body: ContentItemCreateIn, db: Session = De
 @router.patch("/content/{content_id}", status_code=status.HTTP_200_OK)
 def update_content_item(content_id: int, body: ContentItemUpdateIn, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
     try:
+        from shared.models.course_content import ContentItem
+        item = db.query(ContentItem).filter(ContentItem.id == content_id).first()
+        if item:
+            _assert_course_is_draft(db, item.course_id)
         return make_response(True, "Content updated", data=svc.update_content_item(db, content_id=content_id, body=body))
     except ValueError as e:
         if "not found" in str(e).lower():
             return make_response(False, "Content not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
-        return make_response(False, "Invalid content data provided", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
+        code = status.HTTP_409_CONFLICT if "published" in str(e).lower() else status.HTTP_400_BAD_REQUEST
+        return make_response(False, str(e), status_code=code, error=str(e))
     except Exception as e:
         return make_response(False, "Failed to update content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
@@ -201,39 +228,35 @@ def update_content_item(content_id: int, body: ContentItemUpdateIn, db: Session 
 @router.delete("/content/{content_id}", status_code=status.HTTP_200_OK)
 def delete_content_item(content_id: int, db: Session = Depends(get_db), _admin=Depends(get_current_admin)):
     try:
+        from shared.models.course_content import ContentItem
+        item = db.query(ContentItem).filter(ContentItem.id == content_id).first()
+        if item:
+            _assert_course_is_draft(db, item.course_id)
         return make_response(True, "Content deleted", data=svc.delete_content_item(db, content_id=content_id))
     except ValueError as e:
-        return make_response(False, "Content not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
+        code = status.HTTP_409_CONFLICT if "published" in str(e).lower() else status.HTTP_404_NOT_FOUND
+        return make_response(False, str(e), status_code=code, error=str(e))
     except Exception as e:
         return make_response(False, "Failed to delete content", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
 
 @router.patch("/courses/{course_id}/content/reorder", status_code=status.HTTP_200_OK)
 def reorder_content_items(
-    course_id: int, 
-    body: ContentItemReorderIn, 
-    db: Session = Depends(get_db), 
+    course_id: int,
+    body: ContentItemReorderIn,
+    db: Session = Depends(get_db),
     _admin=Depends(get_current_admin)
 ):
-    """
-    Reorder content items within a course.
-    
-    Body should contain:
-    {
-        "items": [
-            {"id": 1, "order_index": 0},
-            {"id": 3, "order_index": 1}, 
-            {"id": 2, "order_index": 2}
-        ]
-    }
-    """
     try:
+        _assert_course_is_draft(db, course_id)
         return make_response(
-            True, 
-            "Content items reordered", 
+            True,
+            "Content items reordered",
             data=svc.reorder_content_items(db, course_id=course_id, item_orders=body.items)
         )
     except ValueError as e:
+        if "published" in str(e).lower():
+            return make_response(False, str(e), status_code=status.HTTP_409_CONFLICT, error=str(e))
         if "not found" in str(e).lower():
             return make_response(False, "Course or content items not found", status_code=status.HTTP_404_NOT_FOUND, error=str(e))
         return make_response(False, "Invalid reorder data", status_code=status.HTTP_400_BAD_REQUEST, error=str(e))
