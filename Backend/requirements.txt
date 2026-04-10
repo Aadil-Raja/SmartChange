@@ -16,8 +16,8 @@ passlib[bcrypt]==1.7.4
 fastapi-mail==1.4.1
 firebase-admin
 python-multipart
-redis
-rq
+redis==7.2.1
+rq==2.7.0
 PyPDF2
 python-dotenv
 PyMuPDF

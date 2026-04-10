@@ -1,6 +1,11 @@
 import os
 import sys
 import logging
+import multiprocessing.context as _mp_ctx
+
+# Windows doesn't support 'fork' — patch before rq imports
+if sys.platform == "win32" and "fork" not in _mp_ctx._concrete_contexts:
+    _mp_ctx._concrete_contexts["fork"] = _mp_ctx._concrete_contexts["spawn"]
 
 import redis
 from rq import Queue, Worker
@@ -8,14 +13,12 @@ from rq.worker import SimpleWorker
 
 from core.config import get_settings
 
-# Set to True to enable DEBUG logging, False for WARNING (quiet)
 VERBOSE_LOGGING = False
 
 logging.basicConfig(
     level=logging.DEBUG if VERBOSE_LOGGING else logging.WARNING,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
-# Suppress noisy RQ internal debug logs
 logging.getLogger("rq").setLevel(logging.WARNING)
 
 
@@ -39,12 +42,11 @@ def main():
     if os.name == "nt":
         print("[Worker] Using SimpleWorker (Windows - no fork)")
         worker = SimpleWorker([q], connection=conn)
+        worker.work(with_scheduler=False)
     else:
         print("[Worker] Using Worker (Unix/Linux)")
         worker = Worker([q], connection=conn)
-
-    print("[Worker] *** Listening for jobs ***")
-    worker.work(with_scheduler=True)
+        worker.work(with_scheduler=True)
 
 
 if __name__ == "__main__":
