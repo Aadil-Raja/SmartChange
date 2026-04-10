@@ -439,7 +439,7 @@ const CourseContent = () => {
                           </p>
                         )}
                         <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-                          <MarkAsDoneButton itemId={item.id} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} disabled={!isEnrolled} />
+                          <MarkAsDoneButton itemId={item.id} courseId={courseId} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} disabled={!isEnrolled} />
                         </div>
                       </div>
                     </div>

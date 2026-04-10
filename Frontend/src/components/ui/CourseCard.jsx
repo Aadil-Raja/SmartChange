@@ -243,8 +243,10 @@ const CourseCard = ({
                       onMouseEnter={(e) => { e.currentTarget.style.background = isEnrolled ? '#fff5f5' : '#f0fdf4'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                     >
-                      {isEnrolled ? <UserMinus size={15} /> : <UserPlus size={15} />}
-                      {isEnrolled ? 'Unenroll from Course' : 'Enroll in Course'}
+                      {actionLoading ? (
+                        <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+                      ) : isEnrolled ? <UserMinus size={15} /> : <UserPlus size={15} />}
+                      {actionLoading ? (isEnrolled ? 'Unenrolling…' : 'Enrolling…') : isEnrolled ? 'Unenroll from Course' : 'Enroll in Course'}
                     </button>
                   )}
                 </div>

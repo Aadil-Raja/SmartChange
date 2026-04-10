@@ -1,15 +1,18 @@
 import { Check, Loader2, Play } from 'lucide-react';
 import { useState } from 'react';
-import { useCourses } from '../../hooks/useCourses';
+import { useQueryClient } from '@tanstack/react-query';
+import { updateContentProgress } from '../../services/courseApi';
+import { employeeKeys } from '../../hooks/useEmployeeQueries';
 
 const MarkAsDoneButton = ({ 
   itemId, 
+  courseId,
   itemType = 'document', 
   isCompleted = false, 
   progress = 0,
   disabled = false
 }) => {
-  const { markModuleDone, updateVideoProgress } = useCourses();
+  const qc = useQueryClient();
   const [isMarking, setIsMarking] = useState(false);
 
   if (disabled) {
@@ -28,13 +31,49 @@ const MarkAsDoneButton = ({
 
   const handleMarkAsDone = async () => {
     if (isCompleted) return;
-    
     setIsMarking(true);
-    const result = await markModuleDone(itemId, itemType);
-    setIsMarking(false);
-
-    if (!result.success) {
-      alert(result.message || 'Failed to mark as complete');
+    try {
+      const res = await updateContentProgress(itemId, { progress: 100.0, completed: true });
+      if (res.success) {
+        // Update React Query cache immediately — no refetch needed
+        qc.setQueryData(employeeKeys.course(courseId), (old) => {
+          if (!old) return old;
+          const updatedItems = (old.items_progress?.items || []).map(p =>
+            p.content_id === itemId
+              ? { ...p, progress: 100, completed_at: new Date().toISOString() }
+              : p
+          );
+          // If item wasn't in the list yet, add it
+          const exists = updatedItems.some(p => p.content_id === itemId);
+          if (!exists) updatedItems.push({ content_id: itemId, progress: 100, completed_at: new Date().toISOString() });
+          return { ...old, items_progress: { ...old.items_progress, items: updatedItems } };
+        });
+        // Refresh quiz unlock status in background
+        qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(courseId) });
+        // Update courses list cache in place so the card shows updated progress
+        qc.setQueryData(employeeKeys.courses(), (oldCourses) => {
+          if (!oldCourses) return oldCourses;
+          return oldCourses.map(c => {
+            if (c.id !== courseId || !c.progress) return c;
+            const newCompleted = (c.progress.completed_items || 0) + 1;
+            const total = (c.progress.total_items || 0) + (c.progress.total_quizzes || 0);
+            const totalCompleted = newCompleted + (c.progress.completed_quizzes || 0);
+            const percent = total > 0 ? Math.min(100, Math.round((totalCompleted / total) * 100)) : 0;
+            return { ...c, progress: { ...c.progress, completed_items: newCompleted, percent } };
+          });
+        });
+        // If course completed, refresh courses list fully
+        if (res.data?.course_completed) {
+          qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+          qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+        }
+      } else {
+        alert(res.message || 'Failed to mark as complete');
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to mark as complete');
+    } finally {
+      setIsMarking(false);
     }
   };
 

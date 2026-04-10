@@ -47,6 +47,7 @@ const AdminQuizDetail = () => {
   const [referencedSubTab, setReferencedSubTab] = useState("document");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReferencedQuestion, setSelectedReferencedQuestion] = useState(null);
+  const [selectedReferencedQuestions, setSelectedReferencedQuestions] = useState(new Set());
   const [selectedBank, setSelectedBank] = useState(null);
 
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -127,6 +128,7 @@ const AdminQuizDetail = () => {
     setAddQuestionTab("custom");
     setReferencedSubTab("document");
     setSelectedReferencedQuestion(null);
+    setSelectedReferencedQuestions(new Set());
     setSelectedBank(null);
     setShowAddQuestion(true);
     if (isCourseQuiz) loadAvailableQuestions();
@@ -147,9 +149,11 @@ const AdminQuizDetail = () => {
       if (isCourseQuiz) {
         if (editingQuestion) { await quizApi.updateCourseQuizQuestion(editingQuestion.id, questionForm); setSuccess("Question updated"); }
         else if (addQuestionTab === "referenced") {
-          if (!selectedReferencedQuestion) throw new Error("Please select a question");
-          await quizApi.addCourseQuizQuestion(quizId, { question_type: "REFERENCED", source_document_question_id: selectedReferencedQuestion.id });
-          setSuccess("Question added");
+          if (selectedReferencedQuestions.size === 0) throw new Error("Please select at least one question");
+          for (const q of selectedReferencedQuestions) {
+            await quizApi.addCourseQuizQuestion(quizId, { question_type: "REFERENCED", source_document_question_id: q.id });
+          }
+          setSuccess(`${selectedReferencedQuestions.size} question${selectedReferencedQuestions.size > 1 ? 's' : ''} added`);
         } else {
           await quizApi.addCourseQuizQuestion(quizId, { question_type: "COURSE_SPECIFIC", ...questionForm });
           setSuccess("Question added");
@@ -543,7 +547,7 @@ const AdminQuizDetail = () => {
                   {[{ key: "document", label: "Documents" }, { key: "prompt", label: "Prompt Quizzes" }].map(({ key, label }) => (
                     <button
                       key={key}
-                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); setSelectedBank(null); setSearchTerm(""); }}
+                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); setSelectedReferencedQuestions(new Set()); setSelectedBank(null); setSearchTerm(""); }}
                       style={{ flex: 1, padding: "6px 0", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: referencedSubTab === key ? "#fff" : "transparent", color: referencedSubTab === key ? C.ink : C.muted, boxShadow: referencedSubTab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}
                     >
                       {label}
@@ -594,7 +598,7 @@ const AdminQuizDetail = () => {
                   /* Level 2 — questions inside selected bank */
                   <>
                     <button
-                      onClick={() => { setSelectedBank(null); setSelectedReferencedQuestion(null); setSearchTerm(""); }}
+                      onClick={() => { setSelectedBank(null); setSelectedReferencedQuestion(null); setSelectedReferencedQuestions(new Set()); setSearchTerm(""); }}
                       style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 13, fontWeight: 600, padding: 0 }}
                     >
                       <ArrowLeft size={14} /> {selectedBank.title}
@@ -606,26 +610,38 @@ const AdminQuizDetail = () => {
                     <div style={{ maxHeight: 300, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, border: `1px solid ${C.border}`, borderRadius: 12, padding: 10, background: C.bg }}>
                       {filteredAvailableQuestions.length === 0 ? (
                         <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No questions found</p>
-                      ) : filteredAvailableQuestions.map((q) => (
-                        <div key={q.id} onClick={() => setSelectedReferencedQuestion(q)} style={{ padding: "12px 14px", borderRadius: 10, border: selectedReferencedQuestion?.id === q.id ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: selectedReferencedQuestion?.id === q.id ? "#fff7ed" : "#fff", cursor: "pointer" }}>
-                          <p style={{ fontWeight: 600, fontSize: 13, color: C.ink, margin: "0 0 8px" }}>{q.question_text}</p>
-                          <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 4 }}>
-                            {q.options?.map((opt, idx) => (
-                              <span key={idx} style={{ fontSize: 12, color: idx === q.correct_answer_index ? "#15803d" : C.muted, fontWeight: idx === q.correct_answer_index ? 600 : 400 }}>
-                                {String.fromCharCode(65 + idx)}. {opt.option_text}
-                              </span>
-                            ))}
+                      ) : filteredAvailableQuestions.map((q) => {
+                        const isSelected = selectedReferencedQuestions.has(q);
+                        return (
+                        <div key={q.id} onClick={() => {
+                          setSelectedReferencedQuestions(prev => {
+                            const next = new Set(prev);
+                            if (next.has(q)) next.delete(q); else next.add(q);
+                            return next;
+                          });
+                        }} style={{ padding: "12px 14px", borderRadius: 10, border: isSelected ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: isSelected ? "#fff7ed" : "#fff", cursor: "pointer", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <input type="checkbox" checked={isSelected} readOnly style={{ marginTop: 2, accentColor: C.orange, flexShrink: 0 }} />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontWeight: 600, fontSize: 13, color: C.ink, margin: "0 0 8px" }}>{q.question_text}</p>
+                            <div style={{ paddingLeft: 12, borderLeft: `2px solid ${C.border}`, display: "flex", flexDirection: "column", gap: 4 }}>
+                              {q.options?.map((opt, idx) => (
+                                <span key={idx} style={{ fontSize: 12, color: idx === q.correct_answer_index ? "#15803d" : C.muted, fontWeight: idx === q.correct_answer_index ? 600 : 400 }}>
+                                  {String.fromCharCode(65 + idx)}. {opt.option_text}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 )}
 
                 <div style={{ display: "flex", gap: 10 }}>
                   <button type="button" onClick={() => setShowAddQuestion(false)} disabled={submitting} style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: `1.5px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                  <button type="button" onClick={submitQuestion} disabled={submitting || !selectedReferencedQuestion} style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: "none", background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, cursor: (!selectedReferencedQuestion || submitting) ? "not-allowed" : "pointer", opacity: (!selectedReferencedQuestion || submitting) ? 0.6 : 1 }}>
-                    {submitting ? "Adding..." : "Add Selected Question"}
+                  <button type="button" onClick={submitQuestion} disabled={submitting || selectedReferencedQuestions.size === 0} style={{ flex: 1, padding: "10px 0", borderRadius: 999, border: "none", background: C.orange, color: "#fff", fontSize: 14, fontWeight: 600, cursor: (selectedReferencedQuestions.size === 0 || submitting) ? "not-allowed" : "pointer", opacity: (selectedReferencedQuestions.size === 0 || submitting) ? 0.6 : 1 }}>
+                    {submitting ? "Adding..." : selectedReferencedQuestions.size > 0 ? `Add ${selectedReferencedQuestions.size} Question${selectedReferencedQuestions.size > 1 ? 's' : ''}` : "Add Selected Questions"}
                   </button>
                 </div>
               </div>

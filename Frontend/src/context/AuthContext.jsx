@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { resetNotificationCache } from './NotificationContext';
 import {
     loginWithPassword,
     requestLoginCode,
@@ -42,6 +43,7 @@ export const AuthProvider = ({ children }) => {
                     setToken(res.token);
                     setUser({ email, authenticated: true });
                     localStorage.setItem('token', res.data.access_token);
+                    resetNotificationCache();
                     return { success: true };
                 }
             } else {
@@ -79,6 +81,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', res.token);
                 localStorage.removeItem('adminToken'); // clear stale admin token
                 setUser({ email, authenticated: true });
+                resetNotificationCache();
                 return { success: true };
             } else {
                 setError(res.message || 'Invalid code');
@@ -159,7 +162,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', token);
                 localStorage.removeItem('adminToken'); // clear stale admin token
                 setUser({ authenticated: true }); // Backend doesn't return user object in this response
-
+                resetNotificationCache();
                 return { success: true };
             } else {
                 setError(res.message || 'Firebase login failed');

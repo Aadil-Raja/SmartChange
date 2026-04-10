@@ -9,6 +9,8 @@ import {
   deleteNotification
 } from '../services/notificationApi';
 
+// Exported so AuthContext can reset it on login to force an immediate fetch
+export const resetNotificationCache = () => { _lastFetchTime = 0; };
 export const NotificationContext = createContext(null);
 
 // Module-level timestamp — persists across re-mounts, resets on full page reload
