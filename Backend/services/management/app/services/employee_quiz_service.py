@@ -41,6 +41,7 @@ def get_quiz_for_taking(db: Session, *, quiz_id: int, user_id: int):
     # Serialize quiz for employee (NO answers or explanations)
     quiz_data = {
         "id": quiz.id,
+        "course_id": quiz.course_id,
         "title": quiz.title,
         "questions": [],
         "attempt_number": attempt_number,

@@ -93,9 +93,9 @@ const QuizTaking = () => {
 
   // Handle answer selection
   const handleAnswerSelect = (questionId, optionId) => {
-    // Find the option to get its order
-    const currentQuestion = quiz.questions[currentQuestionIndex];
-    const selectedOption = currentQuestion.options.find(opt => opt.id === optionId);
+    // Find the question by ID (not by currentQuestionIndex — avoids stale index bugs)
+    const question = quiz.questions.find(q => q.id === questionId);
+    const selectedOption = question?.options.find(opt => opt.id === optionId);
     
     setAnswers(prev => ({
       ...prev,
@@ -141,7 +141,7 @@ const QuizTaking = () => {
       if (response.success) {
         // Navigate to results page with the results data
         navigate(`/employee/quiz/${quizId}/results`, {
-          state: { results: response.data },
+          state: { results: response.data, courseId: quiz?.course_id },
           replace: true
         });
       } else {

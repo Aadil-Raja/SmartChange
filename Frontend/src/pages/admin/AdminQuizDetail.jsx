@@ -47,7 +47,8 @@ const AdminQuizDetail = () => {
   const [referencedSubTab, setReferencedSubTab] = useState("document");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReferencedQuestion, setSelectedReferencedQuestion] = useState(null);
-  const [selectedReferencedQuestions, setSelectedReferencedQuestions] = useState(new Set());
+  // Map of id -> question object so selections survive tab/bank switches
+  const [selectedReferencedQuestions, setSelectedReferencedQuestions] = useState(new Map());
   const [selectedBank, setSelectedBank] = useState(null);
 
   const [showConfigModal, setShowConfigModal] = useState(false);
@@ -128,8 +129,9 @@ const AdminQuizDetail = () => {
     setAddQuestionTab("custom");
     setReferencedSubTab("document");
     setSelectedReferencedQuestion(null);
-    setSelectedReferencedQuestions(new Set());
+    setSelectedReferencedQuestions(new Map());
     setSelectedBank(null);
+    setSearchTerm("");
     setShowAddQuestion(true);
     if (isCourseQuiz) loadAvailableQuestions();
   };
@@ -143,43 +145,99 @@ const AdminQuizDetail = () => {
 
   const submitQuestion = async (e) => {
     e?.preventDefault();
-    setSubmitting(true);
     setError(null);
     try {
       if (isCourseQuiz) {
-        if (editingQuestion) { await quizApi.updateCourseQuizQuestion(editingQuestion.id, questionForm); setSuccess("Question updated"); }
-        else if (addQuestionTab === "referenced") {
-          if (selectedReferencedQuestions.size === 0) throw new Error("Please select at least one question");
-          for (const q of selectedReferencedQuestions) {
-            await quizApi.addCourseQuizQuestion(quizId, { question_type: "REFERENCED", source_document_question_id: q.id });
-          }
-          setSuccess(`${selectedReferencedQuestions.size} question${selectedReferencedQuestions.size > 1 ? 's' : ''} added`);
+        if (editingQuestion) {
+          setSubmitting(true);
+          await quizApi.updateCourseQuizQuestion(editingQuestion.id, questionForm);
+          setSuccess("Question updated");
+          setShowAddQuestion(false);
+          setSubmitting(false);
+          loadQuiz(); // need fresh data after edit
+        } else if (addQuestionTab === "referenced") {
+          const selected = [...selectedReferencedQuestions.values()];
+          if (selected.length === 0) throw new Error("Please select at least one question");
+
+          // Optimistic — close modal and show questions immediately
+          const optimisticQuestions = selected.map((q, i) => ({
+            id: `optimistic-${q.id}`,
+            question_text: q.question_text,
+            question_order: (quiz.questions?.length || 0) + i,
+            question_type: "REFERENCED",
+            options: q.options || [],
+            correct_answer_index: q.correct_answer_index,
+            explanation: q.explanation,
+            _optimistic: true,
+          }));
+          setQuiz(prev => ({ ...prev, questions: [...(prev.questions || []), ...optimisticQuestions] }));
+          setShowAddQuestion(false);
+
+          // Fire API fully detached — no reload on success
+          (async () => {
+            let added = 0;
+            for (const q of selected) {
+              try {
+                await quizApi.addCourseQuizQuestion(quizId, { question_type: "REFERENCED", source_document_question_id: q.id });
+                added++;
+              } catch {}
+            }
+            setSuccess(`${added} question${added !== 1 ? "s" : ""} added`);
+            // Only reload if something failed (count mismatch)
+            if (added !== selected.length) loadQuiz();
+          })();
         } else {
+          setSubmitting(true);
           await quizApi.addCourseQuizQuestion(quizId, { question_type: "COURSE_SPECIFIC", ...questionForm });
           setSuccess("Question added");
+          setShowAddQuestion(false);
+          setSubmitting(false);
+          loadQuiz(); // need fresh data with real ID
         }
       } else {
-        if (editingQuestion) { await quizApi.updateQuestion(editingQuestion.id, questionForm); setSuccess("Question updated"); }
-        else { await quizApi.addQuestion(quizId, { ...questionForm, question_order: quiz.questions.length }); setSuccess("Question added"); }
+        setSubmitting(true);
+        if (editingQuestion) {
+          await quizApi.updateQuestion(editingQuestion.id, questionForm);
+          setSuccess("Question updated");
+        } else {
+          await quizApi.addQuestion(quizId, { ...questionForm, question_order: quiz.questions.length });
+          setSuccess("Question added");
+        }
+        setShowAddQuestion(false);
+        setSubmitting(false);
+        loadQuiz(); // need fresh data with real IDs
       }
-      setShowAddQuestion(false);
-      loadQuiz();
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to save question");
-    } finally {
       setSubmitting(false);
+      setError(err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to save question");
     }
   };
 
-  const handleDeleteQuestion = async (questionId) => {
-    try {
-      isCourseQuiz ? await quizApi.deleteCourseQuizQuestion(questionId) : await quizApi.deleteQuestion(questionId);
-      setSuccess("Question deleted");
-      setDeleteConfirm(null);
-      loadQuiz();
-    } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.detail || "Failed to delete question");
-    }
+  const handleDeleteQuestion = (questionId) => {
+    // Snapshot for revert
+    const snapshot = quiz.questions;
+
+    // Optimistic — remove immediately, close dialog
+    setQuiz(prev => ({
+      ...prev,
+      questions: prev.questions.filter(q => q.id !== questionId),
+    }));
+    setDeleteConfirm(null);
+    setSuccess("Question deleted");
+
+    // Fire API detached
+    (async () => {
+      try {
+        isCourseQuiz
+          ? await quizApi.deleteCourseQuizQuestion(questionId)
+          : await quizApi.deleteQuestion(questionId);
+      } catch (err) {
+        // Revert on failure
+        setQuiz(prev => ({ ...prev, questions: snapshot }));
+        setSuccess(null);
+        setError(err.response?.data?.message || err.response?.data?.detail || "Failed to delete question");
+      }
+    })();
   };
 
   const handlePublishQuiz = async () => {
@@ -236,11 +294,10 @@ const AdminQuizDetail = () => {
   const filteredAvailableQuestions = Array.isArray(availableQuestions)
     ? availableQuestions.filter((q) => {
         const matchesSearch = q.question_text.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesTab = referencedSubTab === "prompt"
-          ? q.source_type === "PROMPT"
-          : q.source_type !== "PROMPT";
+        // When inside a bank, show all questions from that bank regardless of source type
+        // The sub-tab only filters the bank list, not the questions inside a bank
         const matchesBank = selectedBank ? q.quiz_id === selectedBank.quiz_id : true;
-        return matchesSearch && matchesTab && matchesBank;
+        return matchesSearch && matchesBank;
       })
     : [];
 
@@ -547,7 +604,7 @@ const AdminQuizDetail = () => {
                   {[{ key: "document", label: "Documents" }, { key: "prompt", label: "Prompt Quizzes" }].map(({ key, label }) => (
                     <button
                       key={key}
-                      onClick={() => { setReferencedSubTab(key); setSelectedReferencedQuestion(null); setSelectedReferencedQuestions(new Set()); setSelectedBank(null); setSearchTerm(""); }}
+                      onClick={() => { setReferencedSubTab(key); setSelectedBank(null); setSearchTerm(""); }}
                       style={{ flex: 1, padding: "6px 0", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", background: referencedSubTab === key ? "#fff" : "transparent", color: referencedSubTab === key ? C.ink : C.muted, boxShadow: referencedSubTab === key ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}
                     >
                       {label}
@@ -555,42 +612,66 @@ const AdminQuizDetail = () => {
                   ))}
                 </div>
 
+                {/* Selection summary bar */}
+                {selectedReferencedQuestions.size > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: "#fff7ed", border: `1.5px solid ${C.orange}`, borderRadius: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: C.orange }}>
+                      {selectedReferencedQuestions.size} question{selectedReferencedQuestions.size > 1 ? "s" : ""} selected
+                    </span>
+                    <button
+                      onClick={() => setSelectedReferencedQuestions(new Map())}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 12, fontWeight: 600 }}
+                    >
+                      Clear all
+                    </button>
+                  </div>
+                )}
+
                 {loadingAvailable ? (
                   <div style={{ display: "flex", justifyContent: "center", padding: 32 }}><LoadingSpinner size="sm" /></div>
                 ) : !selectedBank ? (
-                  /* Level 1 — bank list */
+                  /* Level 1 — bank list (all banks, sub-tab just highlights active type) */
                   (() => {
-                    const banks = Object.values(
-                      availableQuestions
-                        .filter(q => referencedSubTab === "prompt" ? q.source_type === "PROMPT" : q.source_type !== "PROMPT")
-                        .reduce((acc, q) => {
-                          if (!acc[q.quiz_id]) acc[q.quiz_id] = {
-                            quiz_id: q.quiz_id,
-                            title: referencedSubTab === "prompt" ? (q.quiz_title || "Prompt Quiz") : (q.document_title || q.quiz_title || "Unknown"),
-                            count: 0,
-                          };
-                          acc[q.quiz_id].count++;
-                          return acc;
-                        }, {})
+                    const allBanks = Object.values(
+                      availableQuestions.reduce((acc, q) => {
+                        if (!acc[q.quiz_id]) acc[q.quiz_id] = {
+                          quiz_id: q.quiz_id,
+                          source_type: q.source_type,
+                          title: q.source_type === "PROMPT" ? (q.quiz_title || "Prompt Quiz") : (q.document_title || q.quiz_title || "Unknown"),
+                          count: 0,
+                        };
+                        acc[q.quiz_id].count++;
+                        return acc;
+                      }, {})
                     );
+                    // Filter by sub-tab
+                    const banks = allBanks.filter(b => referencedSubTab === "prompt" ? b.source_type === "PROMPT" : b.source_type !== "PROMPT");
                     return banks.length === 0 ? (
                       <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No question banks available</p>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {banks.map(bank => (
+                        {banks.map(bank => {
+                          const selectedFromBank = [...selectedReferencedQuestions.values()].filter(q => q.quiz_id === bank.quiz_id).length;
+                          return (
                           <div key={bank.quiz_id}
-                            onClick={() => { setSelectedBank(bank); setSelectedReferencedQuestion(null); setSearchTerm(""); }}
-                            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: `1px solid ${C.border}`, background: "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor = C.orange}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                            onClick={() => { setSelectedBank(bank); setSearchTerm(""); }}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 12, border: selectedFromBank > 0 ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: selectedFromBank > 0 ? "#fff7ed" : "#fff", cursor: "pointer", transition: "border-color 0.15s" }}
+                            onMouseEnter={e => { if (!selectedFromBank) e.currentTarget.style.borderColor = C.orange; }}
+                            onMouseLeave={e => { if (!selectedFromBank) e.currentTarget.style.borderColor = selectedFromBank > 0 ? C.orange : C.border; }}
                           >
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <FileText size={15} color={C.muted} />
+                              <FileText size={15} color={selectedFromBank > 0 ? C.orange : C.muted} />
                               <span style={{ fontSize: 13, fontWeight: 600, color: C.ink }}>{bank.title}</span>
                             </div>
-                            <span style={{ fontSize: 12, color: C.muted, background: "#f5f0ea", padding: "2px 10px", borderRadius: 999 }}>{bank.count} questions</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              {selectedFromBank > 0 && (
+                                <span style={{ fontSize: 12, color: "#fff", background: C.orange, padding: "2px 10px", borderRadius: 999, fontWeight: 700 }}>{selectedFromBank} selected</span>
+                              )}
+                              <span style={{ fontSize: 12, color: C.muted, background: "#f5f0ea", padding: "2px 10px", borderRadius: 999 }}>{bank.count} questions</span>
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()
@@ -598,7 +679,7 @@ const AdminQuizDetail = () => {
                   /* Level 2 — questions inside selected bank */
                   <>
                     <button
-                      onClick={() => { setSelectedBank(null); setSelectedReferencedQuestion(null); setSelectedReferencedQuestions(new Set()); setSearchTerm(""); }}
+                      onClick={() => { setSelectedBank(null); setSearchTerm(""); }}
                       style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 13, fontWeight: 600, padding: 0 }}
                     >
                       <ArrowLeft size={14} /> {selectedBank.title}
@@ -611,12 +692,12 @@ const AdminQuizDetail = () => {
                       {filteredAvailableQuestions.length === 0 ? (
                         <p style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: 24 }}>No questions found</p>
                       ) : filteredAvailableQuestions.map((q) => {
-                        const isSelected = selectedReferencedQuestions.has(q);
+                        const isSelected = selectedReferencedQuestions.has(q.id);
                         return (
                         <div key={q.id} onClick={() => {
                           setSelectedReferencedQuestions(prev => {
-                            const next = new Set(prev);
-                            if (next.has(q)) next.delete(q); else next.add(q);
+                            const next = new Map(prev);
+                            if (next.has(q.id)) next.delete(q.id); else next.set(q.id, q);
                             return next;
                           });
                         }} style={{ padding: "12px 14px", borderRadius: 10, border: isSelected ? `1.5px solid ${C.orange}` : `1px solid ${C.border}`, background: isSelected ? "#fff7ed" : "#fff", cursor: "pointer", display: "flex", gap: 10, alignItems: "flex-start" }}>

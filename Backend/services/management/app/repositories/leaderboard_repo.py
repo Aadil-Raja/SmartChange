@@ -235,31 +235,41 @@ def _compute_engagement(
     if since:
         params["since"] = since
 
-    sf = "AND up.completed_at >= :since" if since else ""
-    qf = "AND qa.completed_at >= :since" if since else ""
-    cf = "AND ce.completed_at >= :since" if since else ""
-
     sql = f"""
         SELECT
             (SELECT COUNT(*) FROM team_members WHERE team_id = :team_id) AS total_members,
-            COUNT(DISTINCT up.user_id)  AS active_learners,
-            COUNT(up.id)                AS total_content_done,
-            COUNT(DISTINCT qa.id)       AS quizzes_passed,
-            COUNT(DISTINCT ce.id)       AS courses_completed
-        FROM team_members tm
-        LEFT JOIN user_progress up
-            ON up.user_id = tm.user_id
-            AND up.completed_at IS NOT NULL
-            {sf}
-        LEFT JOIN quiz_attempts qa
-            ON qa.user_id = tm.user_id
-            AND qa.passed = TRUE
-            {qf}
-        LEFT JOIN course_enrollments ce
-            ON ce.user_id = tm.user_id
-            AND ce.completed_at IS NOT NULL
-            {cf}
-        WHERE tm.team_id = :team_id
+            (
+                SELECT COUNT(DISTINCT up2.user_id)
+                FROM team_members tm2
+                JOIN user_progress up2 ON up2.user_id = tm2.user_id
+                WHERE tm2.team_id = :team_id
+                  AND up2.completed_at IS NOT NULL
+                  {"AND up2.completed_at >= :since" if since else ""}
+            ) AS active_learners,
+            (
+                SELECT COUNT(up3.id)
+                FROM team_members tm3
+                JOIN user_progress up3 ON up3.user_id = tm3.user_id
+                WHERE tm3.team_id = :team_id
+                  AND up3.completed_at IS NOT NULL
+                  {"AND up3.completed_at >= :since" if since else ""}
+            ) AS total_content_done,
+            (
+                SELECT COUNT(DISTINCT qa2.id)
+                FROM team_members tm4
+                JOIN quiz_attempts qa2 ON qa2.user_id = tm4.user_id
+                WHERE tm4.team_id = :team_id
+                  AND qa2.passed = TRUE
+                  {"AND qa2.completed_at >= :since" if since else ""}
+            ) AS quizzes_passed,
+            (
+                SELECT COUNT(DISTINCT ce2.id)
+                FROM team_members tm5
+                JOIN course_enrollments ce2 ON ce2.user_id = tm5.user_id
+                WHERE tm5.team_id = :team_id
+                  AND ce2.completed_at IS NOT NULL
+                  {"AND ce2.completed_at >= :since" if since else ""}
+            ) AS courses_completed
     """
 
     row = db.execute(text(sql), params).fetchone()

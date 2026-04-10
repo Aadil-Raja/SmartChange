@@ -34,6 +34,7 @@ const MarkAsDoneButton = ({
 
     // Snapshot current cache for rollback
     const prevCourse = qc.getQueryData(employeeKeys.course(courseId));
+    const prevQuizzes = qc.getQueryData(employeeKeys.courseQuizzes(courseId));
 
     // 1. Update course detail — mark item as completed instantly
     qc.setQueryData(employeeKeys.course(courseId), (old) => {
@@ -50,14 +51,54 @@ const MarkAsDoneButton = ({
       return { ...old, items_progress: { ...old.items_progress, items: updatedItems } };
     });
 
-    // 2. Refetch courses list now in background — ready before user navigates back
-    qc.refetchQueries({ queryKey: employeeKeys.courses() });
+    // 2. Optimistically unlock any quizzes whose prerequisites are now all met
+    qc.setQueryData(employeeKeys.courseQuizzes(courseId), (oldQuizzes) => {
+      if (!Array.isArray(oldQuizzes)) return oldQuizzes;
 
-    return { prevCourse };
+      // Build the set of completed content IDs after this completion
+      const courseCache = qc.getQueryData(employeeKeys.course(courseId));
+      const alreadyCompleted = new Set(
+        (courseCache?.items_progress?.items || [])
+          .filter(p => p.completed_at)
+          .map(p => p.content_id)
+      );
+      alreadyCompleted.add(itemId); // include the one just completed
+
+      return oldQuizzes.map(quiz => {
+        if (quiz.status !== 'locked') return quiz;
+        const prereqs = quiz.prerequisite_content_ids || [];
+        if (prereqs.length === 0) return quiz;
+        const stillMissing = prereqs.filter(id => !alreadyCompleted.has(id));
+        if (stillMissing.length === 0) {
+          // All prerequisites now met — unlock optimistically
+          return { ...quiz, status: 'can_take', missing_prerequisites: [] };
+        }
+        // Update missing list to remove the just-completed item
+        return { ...quiz, missing_prerequisites: stillMissing };
+      });
+    });
+
+    // 3. Update courses list cache in place so progress card is correct immediately on nav back
+    const prevCourses = qc.getQueryData(employeeKeys.courses());
+    qc.setQueryData(employeeKeys.courses(), (oldCourses) => {
+      if (!Array.isArray(oldCourses)) return oldCourses;
+      return oldCourses.map(c => {
+        if (c.id !== courseId || !c.progress) return c;
+        const newCompleted = (c.progress.completed_items || 0) + 1;
+        const total = (c.progress.total_items || 0) + (c.progress.total_quizzes || 0);
+        const totalCompleted = newCompleted + (c.progress.completed_quizzes || 0);
+        const percent = total > 0 ? Math.min(100, Math.round((totalCompleted / total) * 100)) : 0;
+        return { ...c, progress: { ...c.progress, completed_items: newCompleted, percent } };
+      });
+    });
+
+    return { prevCourse, prevQuizzes, prevCourses };
   };
 
-  const rollback = ({ prevCourse }) => {
+  const rollback = ({ prevCourse, prevQuizzes, prevCourses }) => {
     if (prevCourse !== undefined) qc.setQueryData(employeeKeys.course(courseId), prevCourse);
+    if (prevQuizzes !== undefined) qc.setQueryData(employeeKeys.courseQuizzes(courseId), prevQuizzes);
+    if (prevCourses !== undefined) qc.setQueryData(employeeKeys.courses(), prevCourses);
   };
 
   const handleMarkAsDone = async () => {

@@ -518,9 +518,11 @@ const CourseContent = () => {
                             </span>
                           </div>
                           <div className="flex items-center gap-3 flex-wrap">
-                            <span className="text-xs" style={{ color: '#9c8e80' }}>
-                              Attempts: <span className="font-semibold" style={{ color: '#6b5e4e' }}>{quiz.attempts_remaining}/3</span>
-                            </span>
+                            {quiz.status !== 'completed' && (
+                              <span className="text-xs" style={{ color: '#9c8e80' }}>
+                                Attempts: <span className="font-semibold" style={{ color: '#6b5e4e' }}>{quiz.max_attempts != null ? `${quiz.max_attempts - (quiz.attempts_remaining ?? 0)}/${quiz.max_attempts}` : `${quiz.attempts_remaining ?? 0} left`}</span>
+                              </span>
+                            )}
                             {quiz.best_score !== null && quiz.best_score !== undefined && (
                               <span className="text-xs" style={{ color: '#9c8e80' }}>
                                 Best: <span className="font-semibold" style={{ color: '#d97706' }}>{quiz.best_score}%</span>

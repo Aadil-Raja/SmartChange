@@ -15,7 +15,7 @@ export const NotificationContext = createContext(null);
 
 // Module-level timestamp — persists across re-mounts, resets on full page reload
 let _lastFetchTime = 0;
-const STALE_MS = 60_000;
+const STALE_MS = 40_000;
 
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
@@ -168,7 +168,7 @@ export const NotificationProvider = ({ children }) => {
     refreshIntervalRef.current = setInterval(() => {
       _lastFetchTime = Date.now();
       fetchUnreadCount();
-    }, 2 * 60_000);
+    }, 40_000);
 
     return () => {
       if (refreshIntervalRef.current) {

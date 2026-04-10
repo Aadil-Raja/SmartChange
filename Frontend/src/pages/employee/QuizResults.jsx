@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { employeeKeys } from '../../hooks/useEmployeeQueries';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import {
@@ -16,9 +18,11 @@ const QuizResults = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const qc = useQueryClient();
   
   // Get results from navigation state
   const resultsData = location.state?.results;
+  const courseId = location.state?.courseId;
   
   useEffect(() => {
     // If no results data, redirect back
@@ -26,6 +30,14 @@ const QuizResults = () => {
       navigate(`/employee/quiz/${quizId}`, { replace: true });
     }
   }, [resultsData, navigate, quizId]);
+
+  // Invalidate course cache so best score, prereqs, and progress are fresh on nav back
+  useEffect(() => {
+    if (!resultsData || !courseId) return;
+    qc.invalidateQueries({ queryKey: employeeKeys.course(courseId) });
+    qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(courseId) });
+    qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+  }, []);
 
   if (!resultsData) {
     return null;
