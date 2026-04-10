@@ -26,4 +26,4 @@ class RQClient:
             failure_ttl=int(os.getenv("RQ_FAILURE_TTL", "604800")),
             ttl=int(os.getenv("RQ_TTL", "86400")),
         )
-        return job.get_id()
+        return job.id
