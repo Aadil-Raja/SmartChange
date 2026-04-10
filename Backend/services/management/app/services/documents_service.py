@@ -201,15 +201,22 @@ def queue_document(db, *, document_id: int):
     q = get_queue()
 
     job_id = q.enqueue(RQ_TASK, document_id=doc.id)
+    print(f"[queue_document] Enqueued job_id={job_id!r} (type={type(job_id).__name__}) for doc_id={doc.id}", file=sys.stderr)
 
     documents_repo.update_status(db, document_id=doc.id, status=DocStatus.QUEUED)
-    audit_repo.create_audit_record(
-        db,
-        document_id=doc.id,
-        job_id=job_id,
-        status=ProcessingStatus.QUEUED,
-        current_stage=ProcessingStage.QUEUED
-    )
+
+    try:
+        audit = audit_repo.create_audit_record(
+            db,
+            document_id=doc.id,
+            job_id=str(job_id),
+            status=ProcessingStatus.QUEUED,
+            current_stage=ProcessingStage.QUEUED
+        )
+        print(f"[queue_document] Audit record created id={audit.id} for doc_id={doc.id}", file=sys.stderr)
+    except Exception as audit_err:
+        print(f"[queue_document] ERROR creating audit record: {audit_err}", file=sys.stderr)
+        traceback.print_exc()
 
     return make_response(
         True,
@@ -305,17 +312,14 @@ def resume_processing(db, *, document_id: int):
     chunks_deleted = 0
     
     if failed_stage in [ProcessingStage.QUEUED, ProcessingStage.LOADING, ProcessingStage.PREPROCESSING]:
-        # Early stages - just restart from beginning
         resume_from = ProcessingStage.LOADING
         documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
         
     elif failed_stage == ProcessingStage.CHUNKING:
-        # Chunking failed - restart chunking
         resume_from = ProcessingStage.CHUNKING
         documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
         
     elif failed_stage in [ProcessingStage.EMBEDDING, ProcessingStage.STORING]:
-        # Embedding or storing failed - delete partial chunks and restart from chunking
         chunks_deleted = chunks_repo.delete_by_document(db, document_id)
         resume_from = ProcessingStage.CHUNKING
         documents_repo.update_status(db, document_id=doc.id, status=DocStatus.STORED)
@@ -323,7 +327,7 @@ def resume_processing(db, *, document_id: int):
     else:
         return make_response(
             False,
-            f"Cannot resume from stage: {failed_stage.value}",
+            f"Cannot resume from stage: {failed_stage}",
             status_code=400
         )
     
@@ -418,9 +422,7 @@ def list_processing_jobs(db: Session):
         progress = stage_progress.get(audit.current_stage, 0)
         
         jobs.append({
-          
             "document_title": document.title,
-          
             "status": audit.status.value,
             "current_stage": audit.current_stage.value,
             "progress_percentage": progress,
@@ -435,7 +437,9 @@ def list_processing_jobs(db: Session):
         })
         
         # Update stats
-        stats[audit.status.value.lower()] += 1
+        status_key = audit.status.value.lower() if audit.status else "failed"
+        if status_key in stats:
+            stats[status_key] += 1
     
     return make_response(
         True,

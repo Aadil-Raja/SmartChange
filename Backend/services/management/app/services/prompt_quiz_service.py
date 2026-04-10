@@ -47,8 +47,11 @@ def generate_prompt_quiz(
             "quiz_id": quiz.id, "job_id": str(job_id), "status": "GENERATING"
         }, status_code=202)
     except Exception as e:
+        import traceback, sys
+        traceback.print_exc(file=sys.stderr)
+        print(f"[generate_prompt_quiz] enqueue error type={type(e).__name__} detail={e!r}", file=sys.stderr)
         quiz_repo.update_quiz_status(db, quiz.id, QuizStatus.DRAFT)
-        return make_response(False, "Failed to enqueue job", status_code=500, error=str(e))
+        return make_response(False, "Failed to enqueue job", status_code=500, error=f"{type(e).__name__}: {e}")
 
 
 def list_prompt_quizzes(db: Session):
