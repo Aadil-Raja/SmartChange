@@ -67,9 +67,10 @@ class LinkUpdate(BaseModel):
 class CourseDeadlineUpdate(BaseModel):
     """Schema for setting or removing course deadline"""
     deadline_weeks: Optional[int] = Field(
-        None, 
-        ge=1, 
-        description="Number of weeks to complete the course. Set to null to remove deadline."
+        None,
+        ge=1,
+        le=10,
+        description="Number of weeks to complete the course (1–10). Set to null to remove deadline."
     )
     
     class Config:

@@ -251,6 +251,31 @@ def get_enrollment_with_status(db: Session, *, user_id: int, course_id: int) -> 
     }
 
 
+def reopen_completed_enrollments(db: Session, *, course_id: int) -> int:
+    """
+    Clear completed_at for all users who have completed this course.
+    Called when admin publishes a course, so employees must complete
+    any new material before being considered done.
+
+    Returns the number of enrollments reopened.
+    """
+    count = (
+        db.query(CourseEnrollment)
+        .filter(
+            CourseEnrollment.course_id == course_id,
+            CourseEnrollment.completed_at.isnot(None),
+        )
+        .update({"completed_at": None}, synchronize_session=False)
+    )
+    db.commit()
+    return count
+
+
+def get_all_enrollments_for_user(db: Session, *, user_id: int) -> list[CourseEnrollment]:
+    """Fetch all enrollment records for a user in one query."""
+    return db.query(CourseEnrollment).filter(CourseEnrollment.user_id == user_id).all()
+
+
 def mark_course_completed(db: Session, *, user_id: int, course_id: int) -> bool:
     """
     Mark course as completed by setting completed_at timestamp.

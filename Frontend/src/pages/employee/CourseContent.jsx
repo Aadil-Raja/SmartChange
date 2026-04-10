@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCourses } from '../../hooks/useCourses';
-import { useEmployeeCourse } from '../../hooks/useEmployeeQueries';
+import { useEmployeeCourse, useEmployeeCourseQuizzes } from '../../hooks/useEmployeeQueries';
 import CourseContentPreview from '../../components/ui/CourseContentPreview';
 import MarkAsDoneButton from '../../components/ui/MarkAsDoneButton';
 import {
@@ -98,19 +98,14 @@ const getQuizStatus = (status) => QUIZ_STATUS[status] || {
 const CourseContent = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {
-    selectedCourse,
-    loading,
-    error,
-    fetchCourseDetails,
-    getItemProgress,
-    isItemCompleted,
-    unenrollFromCourse,
-    enrollInCourse,
-  } = useCourses();
+  const courseId = parseInt(id);
 
-  // Use React Query for cache warming — prefetches course data into cache
-  useEmployeeCourse(parseInt(id));
+  // Single source of truth — React Query with caching
+  // placeholderData renders the page shell immediately, real data fills in
+  const { data: courseData, isLoading, isPlaceholderData, error: queryError } = useEmployeeCourse(courseId);
+  // Quizzes fetched separately — fires in parallel but page renders without waiting
+  const { data: quizzes = [], isLoading: quizzesLoading } = useEmployeeCourseQuizzes(courseId);
+  const { enrollInCourse, unenrollFromCourse } = useCourses();
 
   const contentRefs = useRef({});
   const [activeItemId, setActiveItemId] = useState(null);
@@ -118,13 +113,6 @@ const CourseContent = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
   const menuRef = useRef(null);
-
-  // Sync React Query cache into context selectedCourse — only on initial load or course change
-  useEffect(() => {
-    if (id && (!selectedCourse || selectedCourse.id !== parseInt(id))) {
-      fetchCourseDetails(parseInt(id));
-    }
-  }, [id]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -140,7 +128,7 @@ const CourseContent = () => {
     setShowMenu(false);
     if (!window.confirm('Are you sure you want to unenroll? This will delete all your progress and quiz attempts for this course.')) return;
     setIsUnenrolling(true);
-    const result = await unenrollFromCourse(parseInt(id));
+    const result = await unenrollFromCourse(courseId);
     setIsUnenrolling(false);
     if (result.success) navigate('/employee/mycourses');
   };
@@ -164,20 +152,60 @@ const CourseContent = () => {
     }
   };
 
-  /* ─── Loading / Error states ─── */
-  if (loading && !selectedCourse) {
+  // Show skeleton only on true first load (no cached data at all)
+  const isContentLoading = isLoading || (isPlaceholderData && !courseData?.id);
+
+  /* ─── Loading — show skeleton instead of blank spinner ─── */
+  if (isContentLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf6ef' }}>
-        <Loader2 size={40} className="animate-spin" style={{ color: '#f7953f' }} />
+      <div className="min-h-screen" style={{ background: '#faf6ef' }}>
+        {/* nav skeleton */}
+        <div className="bg-white sticky top-0 z-10" style={{ borderBottom: '1px solid #e8e0d4' }}>
+          <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3">
+            <div className="h-7 w-20 rounded-full animate-pulse" style={{ background: '#e8e0d4' }} />
+            <div className="h-4 w-4 rounded animate-pulse" style={{ background: '#e8e0d4' }} />
+            <div className="h-5 w-48 rounded animate-pulse" style={{ background: '#e8e0d4' }} />
+          </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+          {/* hero skeleton */}
+          <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100">
+            <div className="h-52 animate-pulse" style={{ background: '#e8e0d4' }} />
+            <div className="px-8 py-6 space-y-3">
+              <div className="h-8 w-2/3 rounded animate-pulse" style={{ background: '#e8e0d4' }} />
+              <div className="h-4 w-full rounded animate-pulse" style={{ background: '#ede8e0' }} />
+              <div className="flex gap-2 pt-1">
+                {[1,2,3].map(i => <div key={i} className="h-7 w-28 rounded-full animate-pulse" style={{ background: '#ede8e0' }} />)}
+              </div>
+            </div>
+          </div>
+          {/* content items skeleton */}
+          <div className="bg-white rounded-[24px] border p-6 space-y-3" style={{ borderColor: '#e8e0d4' }}>
+            <div className="h-6 w-40 rounded animate-pulse mb-4" style={{ background: '#e8e0d4' }} />
+            {[1,2,3].map(i => (
+              <div key={i} className="rounded-2xl border overflow-hidden" style={{ borderColor: '#e8e0d4' }}>
+                <div className="flex items-center gap-3 px-4 py-3" style={{ background: '#faf6ef' }}>
+                  <div className="w-6 h-6 rounded-full animate-pulse" style={{ background: '#e8e0d4' }} />
+                  <div className="w-9 h-9 rounded-xl animate-pulse" style={{ background: '#e8e0d4' }} />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-4 w-1/2 rounded animate-pulse" style={{ background: '#e8e0d4' }} />
+                    <div className="h-3 w-1/3 rounded animate-pulse" style={{ background: '#ede8e0' }} />
+                  </div>
+                </div>
+                <div className="h-16 animate-pulse" style={{ background: '#faf6ef' }} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (queryError) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#faf6ef' }}>
         <div className="rounded-2xl border px-8 py-10 text-center" style={{ background: '#fff5f5', borderColor: '#fecaca', maxWidth: 400 }}>
-          <p className="text-lg font-semibold" style={{ color: '#991b1b' }}>{error}</p>
+          <p className="text-lg font-semibold" style={{ color: '#991b1b' }}>{queryError?.message || 'Course not found'}</p>
           <button
             onClick={() => navigate('/employee/mycourses')}
             className="mt-4 rounded-full px-5 py-2 text-sm font-semibold text-white"
@@ -190,23 +218,22 @@ const CourseContent = () => {
     );
   }
 
-  if (!selectedCourse) return null;
+  // Derive everything from React Query data — works even with placeholder
+  const selectedCourse = courseData || { id: null, title: '', items: [], items_progress: null, is_enrolled: false, enrollment_status: 'not_enrolled' };
+  const itemsProgressList = courseData?.items_progress?.items || [];
+  const progressByContentId = Object.fromEntries(itemsProgressList.map(p => [p.content_id, p]));
 
-  const isCorrectCourse = selectedCourse.id === parseInt(id);
-  const showLoadingOverlay = loading || !isCorrectCourse;
+  const isItemCompleted = (itemId) => {
+    const p = progressByContentId[itemId];
+    return p ? (p.completed_at != null || p.progress >= 100) : false;
+  };
+  const getItemProgress = (itemId) => progressByContentId[itemId] || null;
+
   const isEnrolled = selectedCourse.is_enrolled !== false;
   const isCourseCompleted = selectedCourse.enrollment_status === 'completed';
 
   return (
     <div className="min-h-screen" style={{ background: '#faf6ef' }}>
-      {showLoadingOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(250,246,239,0.92)' }}>
-          <div className="text-center">
-            <Loader2 size={44} className="animate-spin mx-auto mb-4" style={{ color: '#f7953f' }} />
-            <p style={{ color: '#6b5e4e', fontWeight: 600 }}>Loading course…</p>
-          </div>
-        </div>
-      )}
 
       {/* ── Sticky top nav ── */}
       <div className="bg-white sticky top-0 z-10" style={{ borderBottom: '1px solid #e8e0d4' }}>
@@ -257,7 +284,7 @@ const CourseContent = () => {
                   </button>
                   ) : (
                   <button
-                    onClick={async () => { setShowMenu(false); await enrollInCourse(parseInt(id)); fetchCourseDetails(parseInt(id)); }}
+                    onClick={async () => { setShowMenu(false); await enrollInCourse(courseId); }}
                     className="w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 transition-colors"
                     style={{ color: '#f7953f' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#fff7ed'; }}
@@ -323,7 +350,7 @@ const CourseContent = () => {
               </div>
             </div>
             <button
-              onClick={async () => { await enrollInCourse(parseInt(id)); fetchCourseDetails(parseInt(id)); }}
+              onClick={async () => { await enrollInCourse(courseId); }}
               className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-semibold text-white transition-all"
               style={{ background: '#f7953f' }}
               onMouseEnter={e => e.currentTarget.style.background = '#e0741c'}
@@ -342,7 +369,7 @@ const CourseContent = () => {
             <div className="flex rounded-full p-1 gap-1" style={{ background: '#e8e0d4' }}>
               {[
                 { key: 'content', label: `Content (${selectedCourse.items?.length || 0})` },
-                { key: 'quizzes', label: `Quizzes (${selectedCourse.quizzes?.length || 0})` },
+                { key: 'quizzes', label: `Quizzes (${quizzesLoading ? '…' : quizzes.length})` },
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -363,7 +390,7 @@ const CourseContent = () => {
             selectedCourse.items?.length > 0 ? (
               <div className="space-y-3">
                 {selectedCourse.items.map((item, index) => {
-                  const itemProgress = getItemProgress(selectedCourse.id, item.id);
+                  const itemProgress = getItemProgress(item.id);
                   const isCompleted = isItemCompleted(item.id);
                   const progressPercent = itemProgress?.progress || 0;
 
@@ -425,9 +452,25 @@ const CourseContent = () => {
 
           ) : (
             /* ── Quizzes Tab ── */
-            selectedCourse.quizzes?.length > 0 ? (
+            quizzesLoading ? (
               <div className="space-y-3">
-                {selectedCourse.quizzes.map((quiz, index) => {
+                {[1, 2].map(i => (
+                  <div key={i} className="rounded-2xl border overflow-hidden" style={{ borderColor: '#e8e0d4' }}>
+                    <div className="flex items-center gap-3 px-4 py-3" style={{ background: '#faf6ef' }}>
+                      <div className="w-5 h-5 rounded-full animate-pulse" style={{ background: '#e8e0d4' }} />
+                      <div className="w-8 h-8 rounded-lg animate-pulse" style={{ background: '#e8e0d4' }} />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-4 w-1/3 rounded animate-pulse" style={{ background: '#e8e0d4' }} />
+                        <div className="h-3 w-1/4 rounded animate-pulse" style={{ background: '#ede8e0' }} />
+                      </div>
+                    </div>
+                    <div className="h-12 animate-pulse" style={{ background: '#faf6ef' }} />
+                  </div>
+                ))}
+              </div>
+            ) : quizzes.length > 0 ? (
+              <div className="space-y-3">
+                {quizzes.map((quiz, index) => {
                   const s = getQuizStatus(quiz.status);
                   const StatusIcon = s.icon;
                   const BtnIcon = s.btn.icon;

@@ -434,38 +434,70 @@ def check_quiz_unlock_status(db: Session, user_id: int, quiz: CourseQuiz) -> dic
 
 
 def get_course_quizzes_with_unlock_status(
-    db: Session, 
-    course_id: int, 
+    db: Session,
+    course_id: int,
     user_id: int,
     status: Optional[QuizStatus] = None
 ) -> List[dict]:
-    """Get course quizzes with smart status for specific user"""
-    from shared.services.quiz_status_service import calculate_quiz_status
+    """Get course quizzes with smart status for a user — fully batched, no N+1."""
+    from shared.services.quiz_status_service import calculate_quiz_status_from_data
     from shared.repos.quiz_configuration_repo import get_quiz_configs_for_course
-    
+    from shared.repos.quiz_attempt_repo import get_user_attempts_for_quizzes
+    from shared.models import ContentItem
+    from shared.models.progress import UserProgress
+
     quizzes = get_course_quizzes_by_course(db, course_id, status)
-    
-    # Batch load configurations for performance
-    quiz_ids = [quiz.id for quiz in quizzes]
+    if not quizzes:
+        return []
+
+    quiz_ids = [q.id for q in quizzes]
+
+    # ── Batch 1: configs ──────────────────────────────────────────────────────
     configs_map = get_quiz_configs_for_course(db, quiz_ids)
-    
+
+    # ── Batch 2: all attempts for this user across all quizzes ────────────────
+    attempts_map = get_user_attempts_for_quizzes(db, user_id, quiz_ids)
+
+    # ── Batch 3: completed content IDs for unlock checks ─────────────────────
+    completed_content_ids = set(
+        row[0] for row in (
+            db.query(ContentItem.id)
+            .join(UserProgress, ContentItem.id == UserProgress.content_id)
+            .filter(
+                ContentItem.course_id == course_id,
+                UserProgress.user_id == user_id,
+                UserProgress.completed_at.isnot(None),
+            )
+            .all()
+        )
+    )
+
     quiz_list = []
     for quiz in quizzes:
-        # Get smart status information
-        status_info = calculate_quiz_status(db, user_id, quiz)
-        
-        quiz_data = {
+        config = configs_map[quiz.id]
+        attempts = attempts_map.get(quiz.id, [])
+
+        # Compute unlock status from already-fetched data
+        if quiz.prerequisite_content_ids:
+            missing = [pid for pid in quiz.prerequisite_content_ids if pid not in completed_content_ids]
+            is_unlocked = len(missing) == 0
+        else:
+            missing = []
+            is_unlocked = True
+
+        unlock_status = {"is_unlocked": is_unlocked, "missing_prerequisites": missing}
+
+        status_info = calculate_quiz_status_from_data(quiz, config, attempts, unlock_status)
+
+        quiz_list.append({
             "id": quiz.id,
             "title": quiz.title,
-            
-            # Smart status information (minimal for quiz cards)
             "status": status_info["status"],
             "attempts_remaining": status_info["attempts_remaining"],
             "best_score": status_info["best_score"],
             "next_attempt_at": status_info["next_attempt_at"],
-            "missing_prerequisites": status_info["missing_prerequisites"]
-        }
-        
-        quiz_list.append(quiz_data)
-    
+            "missing_prerequisites": status_info["missing_prerequisites"],
+            "prerequisite_content_ids": quiz.prerequisite_content_ids or [],
+        })
+
     return quiz_list

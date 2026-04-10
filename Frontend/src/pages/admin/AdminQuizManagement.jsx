@@ -436,12 +436,14 @@ const AdminQuizManagement = () => {
                     }}>
                       {course.is_active ? "Active" : "Inactive"}
                     </span>
+                    {!course.is_active && (
                     <button
                       onClick={() => handleCreateCourseQuiz(course)}
                       style={{ background: C.orange, color: "#fff", border: "none", borderRadius: 999, padding: "7px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
                     >
                       <Plus size={14} /> Create Quiz
                     </button>
+                    )}
                   </div>
                   {expandedCourses.has(course.id) && (
                     <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px 12px 52px", display: "flex", flexDirection: "column", gap: 8 }}>

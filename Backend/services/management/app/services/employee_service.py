@@ -31,66 +31,152 @@ def get_my_teams(db, user):
 def get_courses_with_enrollment(db: Session, *, user_id: int) -> Dict[str, Any]:
     """
     Get all active courses with enrollment status, progress, and category for a user.
-    
-    Returns courses with:
-    - Basic course info
-    - Enrollment status (category, enrolled_at, deadline_at, etc.)
-    - Progress data (only for enrolled courses)
-    - Starred status
-    - can_interact flag
+    Uses batch queries to avoid N+1 performance issues.
     """
-    # Get all active courses
+    from shared.models.course_content import ContentItem
+    from shared.models.progress import UserProgress
+    from shared.models.course_quiz import CourseQuiz, QuizStatus
+    from shared.models.quiz_attempt import QuizAttempt
+    from sqlalchemy import and_
+
+    # ── 1. Fetch all active courses ──────────────────────────────────────────
     courses_data = courseContent_service.list_courses(db, active_only=True)
     all_courses = courses_data.get("courses", [])
-    
-    # Get starred course IDs
+    all_course_ids = [c["id"] for c in all_courses]
+
+    if not all_course_ids:
+        return {"courses": []}
+
+    # ── 2. Batch fetch starred IDs ───────────────────────────────────────────
     starred_ids = set(course_stars_repo.list_starred_course_ids(db, user_id=user_id))
-    
+
+    # ── 3. Batch fetch all enrollments for this user ─────────────────────────
+    enrollments = enrollment_repo.get_all_enrollments_for_user(db, user_id=user_id)
+    enrollment_map = {e.course_id: e for e in enrollments}
+
+    # Build a course lookup from the already-fetched list (avoids per-course Course query)
+    course_map = {c["id"]: c for c in all_courses}
+
+    # ── 4. Batch fetch all content items for all courses ─────────────────────
+    all_items = (
+        db.query(ContentItem)
+        .filter(ContentItem.course_id.in_(all_course_ids))
+        .all()
+    )
+    items_by_course: Dict[int, list] = {}
+    all_content_ids = []
+    for item in all_items:
+        items_by_course.setdefault(item.course_id, []).append(item)
+        all_content_ids.append(item.id)
+
+    # ── 5. Batch fetch all progress rows for this user ───────────────────────
+    progress_rows = (
+        db.query(UserProgress)
+        .filter(
+            UserProgress.user_id == user_id,
+            UserProgress.content_id.in_(all_content_ids),
+        )
+        .all()
+        if all_content_ids else []
+    )
+    progress_map = {r.content_id: r for r in progress_rows}
+
+    # ── 6. Batch fetch all published quizzes for all courses ─────────────────
+    published_quizzes = (
+        db.query(CourseQuiz)
+        .filter(
+            CourseQuiz.course_id.in_(all_course_ids),
+            CourseQuiz.status == QuizStatus.PUBLISHED,
+        )
+        .all()
+    )
+    quizzes_by_course: Dict[int, list] = {}
+    all_quiz_ids = []
+    for q in published_quizzes:
+        quizzes_by_course.setdefault(q.course_id, []).append(q)
+        all_quiz_ids.append(q.id)
+
+    # ── 7. Batch fetch all quiz attempts for this user ───────────────────────
+    quiz_attempts = (
+        db.query(QuizAttempt)
+        .filter(
+            QuizAttempt.user_id == user_id,
+            QuizAttempt.quiz_id.in_(all_quiz_ids),
+        )
+        .all()
+        if all_quiz_ids else []
+    )
+    attempts_by_quiz: Dict[int, list] = {}
+    for a in quiz_attempts:
+        attempts_by_quiz.setdefault(a.quiz_id, []).append(a)
+
+    # ── 8. Build response in Python (no more per-course DB calls) ────────────
     result = []
-    
     for course in all_courses:
         course_id = course["id"]
-        
-        # Get enrollment status
-        enrollment_status = enrollment_repo.get_enrollment_with_status(
-            db, user_id=user_id, course_id=course_id
-        )
+        enrollment = enrollment_map.get(course_id)
+        course_obj = course_map[course_id]
 
-        # Self-heal: if marked completed but new content was added since, reopen
-        if enrollment_status["completed_at"] and enrollment_status["is_enrolled"]:
-            from shared.models.course_content import ContentItem
-            from app.repositories import progress_repo as _prog_repo
-            content_ids = [i.id for i in db.query(ContentItem).filter(ContentItem.course_id == course_id).all()]
-            if content_ids:
-                rows = _prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
-                done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
-                if not (done_ids >= set(content_ids)):
-                    enrollment = enrollment_repo.get_enrollment(db, user_id=user_id, course_id=course_id)
-                    if enrollment:
-                        enrollment.completed_at = None
-                        db.commit()
-                        # Refresh enrollment_status
-                        enrollment_status = enrollment_repo.get_enrollment_with_status(
-                            db, user_id=user_id, course_id=course_id
-                        )
+        # Compute enrollment status from in-memory data
+        if not enrollment:
+            enrollment_status = {
+                "is_enrolled": False, "status": "not_enrolled",
+                "enrolled_at": None, "completed_at": None,
+                "deadline_at": None, "is_expired": False,
+                "days_remaining": None, "can_interact": False,
+            }
+        else:
+            deadline_at = enrollment_repo.calculate_deadline(enrollment, type("C", (), {"deadline_weeks": course_obj.get("deadline_weeks")})())
+            is_expired = enrollment_repo.is_deadline_expired(deadline_at)
+            if enrollment.completed_at:
+                status = "completed"
+            elif is_expired:
+                status = "expired"
+            else:
+                status = "active"
+            days_remaining = enrollment_repo.calculate_days_remaining(deadline_at)
+            enrollment_status = {
+                "is_enrolled": True, "status": status,
+                "enrolled_at": enrollment.enrolled_at,
+                "completed_at": enrollment.completed_at,
+                "deadline_at": deadline_at,
+                "is_expired": is_expired,
+                "days_remaining": days_remaining,
+                "can_interact": status == "active",
+            }
 
-        # Determine category based on enrollment status
         category = _determine_category(enrollment_status)
-        
-        # Calculate progress only for enrolled courses
+
+        # Compute progress from batched data
         progress_data = None
         if enrollment_status["is_enrolled"]:
-            progress_calc = calculate_course_progress(db, user_id=user_id, course_id=course_id)
+            items = items_by_course.get(course_id, [])
+            content_ids = [i.id for i in items]
+            completed_items = sum(
+                1 for cid in content_ids
+                if cid in progress_map and (
+                    progress_map[cid].completed_at is not None or
+                    (progress_map[cid].progress or 0) >= 100.0
+                )
+            )
+            quizzes = quizzes_by_course.get(course_id, [])
+            completed_quizzes = sum(
+                1 for q in quizzes
+                if any(a.passed for a in attempts_by_quiz.get(q.id, []))
+            )
+            total_items = len(content_ids)
+            total_quizzes = len(quizzes)
+            total = total_items + total_quizzes
+            percent = round((completed_items + completed_quizzes) / total * 100.0, 2) if total > 0 else 0.0
             progress_data = {
-                "completed_items": progress_calc["completed_items"],
-                "total_items": progress_calc["total_items"],
-                "completed_quizzes": progress_calc["completed_quizzes"],
-                "total_quizzes": progress_calc["total_quizzes"],
-                "percent": progress_calc["percent"]
+                "completed_items": completed_items,
+                "total_items": total_items,
+                "completed_quizzes": completed_quizzes,
+                "total_quizzes": total_quizzes,
+                "percent": percent,
             }
-        
-        # Build course response
-        course_info = {
+
+        result.append({
             "id": course_id,
             "title": course["title"],
             "description": course.get("description"),
@@ -98,24 +184,16 @@ def get_courses_with_enrollment(db: Session, *, user_id: int) -> Dict[str, Any]:
             "thumbnail_url": course.get("thumbnail_url"),
             "deadline_weeks": course.get("deadline_weeks"),
             "created_at": course.get("created_at"),
-            
-            # Enrollment info
             "category": category,
             "enrolled_at": enrollment_status["enrolled_at"],
             "completed_at": enrollment_status["completed_at"],
             "deadline_at": enrollment_status["deadline_at"],
             "days_remaining": enrollment_status["days_remaining"],
             "can_interact": enrollment_status["can_interact"],
-            
-            # Progress (null if not enrolled)
             "progress": progress_data,
-            
-            # Starred status
-            "is_starred": course_id in starred_ids
-        }
-        
-        result.append(course_info)
-    
+            "is_starred": course_id in starred_ids,
+        })
+
     return {"courses": result}
 
 
@@ -227,24 +305,65 @@ def update_progress(
             from app.repositories.course_enrollment_repo import get_enrollment, mark_course_completed
             from shared.repos.course_quiz_repo import get_course_quizzes_by_course
             from shared.models.course_quiz import QuizStatus as CQStatus
-            from shared.services.quiz_status_service import calculate_quiz_status
+            from shared.services.quiz_status_service import calculate_quiz_status_from_data
+            from shared.repos.quiz_configuration_repo import get_quiz_configs_for_course
+            from shared.repos.quiz_attempt_repo import get_user_attempts_for_quizzes
+            from shared.models import ContentItem as CI
+            from shared.models.progress import UserProgress
 
             enrollment = get_enrollment(db, user_id=user_id, course_id=item.course_id)
             if enrollment and not enrollment.completed_at:
-                items = db.query(ContentItem).filter(ContentItem.course_id == item.course_id).all()
-                content_ids = [i.id for i in items]
+                # Batch: all content items + progress rows
+                all_items = db.query(CI).filter(CI.course_id == item.course_id).all()
+                content_ids = [i.id for i in all_items]
                 rows = prog_repo.list_for_user_and_content_ids(db, user_id=user_id, content_ids=content_ids)
                 done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
                 all_content_done = done_ids >= set(content_ids)
 
-                published_quizzes = get_course_quizzes_by_course(db, item.course_id, CQStatus.PUBLISHED)
-                all_quizzes_done = all(
-                    calculate_quiz_status(db, user_id, q)["status"] in ("completed", "max_attempts_reached")
-                    for q in published_quizzes
-                ) if published_quizzes else True
+                if all_content_done:
+                    published_quizzes = get_course_quizzes_by_course(db, item.course_id, CQStatus.PUBLISHED)
+                    if published_quizzes:
+                        quiz_ids = [q.id for q in published_quizzes]
+                        configs_map = get_quiz_configs_for_course(db, quiz_ids)
+                        attempts_map = get_user_attempts_for_quizzes(db, user_id, quiz_ids)
+                        # Batch: completed content for unlock checks
+                        completed_content_ids = set(
+                            row[0] for row in (
+                                db.query(CI.id)
+                                .join(UserProgress, CI.id == UserProgress.content_id)
+                                .filter(
+                                    CI.course_id == item.course_id,
+                                    UserProgress.user_id == user_id,
+                                    UserProgress.completed_at.isnot(None),
+                                )
+                                .all()
+                            )
+                        )
+                        all_quizzes_done = all(
+                            calculate_quiz_status_from_data(
+                                q,
+                                configs_map[q.id],
+                                attempts_map.get(q.id, []),
+                                {
+                                    "is_unlocked": not q.prerequisite_content_ids or
+                                        all(pid in completed_content_ids for pid in q.prerequisite_content_ids),
+                                    "missing_prerequisites": [],
+                                }
+                            )["status"] in ("completed", "max_attempts_reached")
+                            for q in published_quizzes
+                        )
+                    else:
+                        all_quizzes_done = True
 
-                if all_content_done and all_quizzes_done:
-                    mark_course_completed(db, user_id=user_id, course_id=item.course_id)
+                    if all_quizzes_done:
+                        mark_course_completed(db, user_id=user_id, course_id=item.course_id)
+                        return {
+                            "content_id": row.content_id,
+                            "progress": float(row.progress),
+                            "completed_at": row.completed_at,
+                            "last_viewed_at": row.last_viewed_at,
+                            "course_completed": True,
+                        }
         except Exception:
             pass
     return {
@@ -252,6 +371,7 @@ def update_progress(
         "progress": float(row.progress),
         "completed_at": row.completed_at,
         "last_viewed_at": row.last_viewed_at,
+        "course_completed": False,
     }
 
 

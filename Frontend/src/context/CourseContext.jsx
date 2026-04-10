@@ -74,24 +74,28 @@ export const CourseProvider = ({ children }) => {
                 // Update local completed items state
                 setCompletedItems(prev => new Set([...prev, itemId]));
 
-                // Re-fetch course to update quiz unlock statuses (lightweight, no loading state)
                 if (selectedCourse) {
-                    try {
-                        const courseRes = await getCourseById(selectedCourse.id);
-                        if (courseRes.success) {
-                            setSelectedCourse(prev => prev ? {
-                                ...prev,
-                                quizzes: courseRes.data.quizzes || prev.quizzes,
-                            } : prev);
-                        }
-                    } catch {}
-                    await Promise.all([
-                        fetchActualCourseProgress(selectedCourse.id),
-                        fetchCourseItemsProgress(selectedCourse.id)
-                    ]);
-                    // Invalidate React Query cache so MyCourses card updates
-                    qc.invalidateQueries({ queryKey: employeeKeys.courses() });
-                    qc.invalidateQueries({ queryKey: employeeKeys.course(selectedCourse.id) });
+                    // Update the course detail cache directly — no extra network calls
+                    qc.setQueryData(employeeKeys.course(selectedCourse.id), (old) => {
+                        if (!old) return old;
+                        const updatedProgress = (old.items_progress?.items || []).map(p =>
+                            p.content_id === itemId
+                                ? { ...p, progress: 100, completed_at: new Date().toISOString() }
+                                : p
+                        );
+                        return {
+                            ...old,
+                            items_progress: { ...old.items_progress, items: updatedProgress },
+                        };
+                    });
+
+                    // Invalidate quiz status (unlock may have changed) and courses list
+                    qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(selectedCourse.id) });
+                    // Only invalidate courses list if course just completed
+                    if (res.data?.course_completed) {
+                        qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+                        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+                    }
                 }
 
                 return { success: true, data: res.data };
@@ -232,11 +236,21 @@ export const CourseProvider = ({ children }) => {
 
                 setSelectedCourse(courseData);
 
-                // Fetch both overall progress and detailed items progress
-                await Promise.all([
-                    fetchActualCourseProgress(courseId),
-                    fetchCourseItemsProgress(courseId)
-                ]);
+                // Use bundled progress data if available, otherwise fall back to separate calls
+                if (res.data.items_progress) {
+                    const itemsProgressData = res.data.items_progress;
+                    setCourseItemsProgress(prev => ({ ...prev, [courseId]: itemsProgressData }));
+                    const completedItemIds = itemsProgressData.items
+                        ?.filter(item => item.completed_at || item.progress >= 100)
+                        ?.map(item => item.content_id) || [];
+                    setCompletedItems(prev => {
+                        const newSet = new Set(prev);
+                        completedItemIds.forEach(id => newSet.add(id));
+                        return newSet;
+                    });
+                } else {
+                    await fetchCourseItemsProgress(courseId);
+                }
 
                 return { success: true, data: res.data };
             } else {

@@ -77,7 +77,7 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
     if (!availableDocuments || availableDocuments.length === 0) {
       fetchDocuments();
     }
-  }, [availableDocuments, fetchDocuments]);
+  }, []);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !hasDocuments || sending) return;

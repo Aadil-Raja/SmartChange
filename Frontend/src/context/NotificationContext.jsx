@@ -11,6 +11,10 @@ import {
 
 export const NotificationContext = createContext(null);
 
+// Module-level timestamp — persists across re-mounts, resets on full page reload
+let _lastFetchTime = 0;
+const STALE_MS = 60_000;
+
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -131,34 +135,45 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
-  // Auto-refresh unread count every 30 seconds (only when employee is logged in and admin is not)
+  const hasMountedRef = useRef(false);
+
+  // Auto-refresh unread count every 2 minutes (only when employee is logged in)
   useEffect(() => {
-    // Only run polling when employee is logged in and admin is NOT logged in
     if (!shouldPoll) {
-      // Clear any existing interval
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
         refreshIntervalRef.current = null;
       }
-      // Reset state when not polling
-      setNotifications([]);
-      setUnreadCount(0);
+      if (hasMountedRef.current) {
+        setNotifications([]);
+        setUnreadCount(0);
+        hasMountedRef.current = false;
+      }
       return;
     }
 
-    // Initial fetch
-    fetchUnreadCount();
+    // Skip if already set up — prevents re-running on unrelated re-renders
+    if (hasMountedRef.current) return;
+    hasMountedRef.current = true;
 
-    // Set up interval
-    refreshIntervalRef.current = setInterval(() => {
+    // Only fetch if stale
+    const now = Date.now();
+    if (now - _lastFetchTime > STALE_MS) {
+      _lastFetchTime = now;
       fetchUnreadCount();
-    }, 30000); // 30 seconds
+    }
 
-    // Cleanup
+    refreshIntervalRef.current = setInterval(() => {
+      _lastFetchTime = Date.now();
+      fetchUnreadCount();
+    }, 2 * 60_000);
+
     return () => {
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
       }
+      hasMountedRef.current = false;
     };
   }, [shouldPoll]);
 

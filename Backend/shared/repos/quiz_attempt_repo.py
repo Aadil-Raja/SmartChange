@@ -55,9 +55,32 @@ def get_user_quiz_attempts(
     )
 
 
+def get_user_attempts_for_quizzes(
+    db: Session,
+    user_id: int,
+    quiz_ids: List[int]
+) -> Dict[int, List[QuizAttempt]]:
+    """Batch-fetch all attempts for a user across multiple quizzes. Returns dict keyed by quiz_id."""
+    if not quiz_ids:
+        return {}
+    attempts = (
+        db.query(QuizAttempt)
+        .filter(
+            QuizAttempt.user_id == user_id,
+            QuizAttempt.quiz_id.in_(quiz_ids)
+        )
+        .order_by(QuizAttempt.completed_at.desc())
+        .all()
+    )
+    result: Dict[int, List[QuizAttempt]] = {qid: [] for qid in quiz_ids}
+    for a in attempts:
+        result[a.quiz_id].append(a)
+    return result
+
+
 def get_user_best_attempt(
-    db: Session, 
-    user_id: int, 
+    db: Session,
+    user_id: int,
     quiz_id: int
 ) -> Optional[QuizAttempt]:
     """Get user's best attempt for a quiz (highest score)"""

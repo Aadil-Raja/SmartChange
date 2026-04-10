@@ -126,6 +126,12 @@ def activate_course(db: Session, *, course_id: int) -> dict:
     ok = repo.set_course_active(db, course_id=course_id, is_active=True)
     if not ok:
         raise ValueError("Course not found")
+
+    # Reopen any completed enrollments — course was edited while unpublished,
+    # so employees who were marked done must complete the new material.
+    from app.repositories import course_enrollment_repo as enrollment_repo
+    enrollment_repo.reopen_completed_enrollments(db, course_id=course_id)
+
     return {"updated": True, "is_active": True}
 
 def delete_course(db: Session, *, course_id: int) -> dict:
@@ -176,6 +182,7 @@ def add_content_item(db: Session, *, course_id: int, body: ContentItemCreateIn):
         video_id=body.video_id if body.type == "video" else None,
         external_link_id=body.external_link_id if body.type == "link" else None,
     )
+
     return {"item": repo.item_to_dict(item)}
 
 
@@ -273,8 +280,11 @@ def set_course_deadline(db: Session, *, course_id: int, deadline_weeks: Optional
         Updated course data
     """
     # Validate deadline_weeks if provided
-    if deadline_weeks is not None and deadline_weeks < 1:
-        raise ValueError("Deadline must be at least 1 week")
+    if deadline_weeks is not None:
+        if deadline_weeks <= 0:
+            raise ValueError("Deadline must be at least 1 week")
+        if deadline_weeks > 10:
+            raise ValueError("Deadline cannot exceed 10 weeks")
     
     course = repo.set_course_deadline(db, course_id=course_id, deadline_weeks=deadline_weeks)
     if not course:

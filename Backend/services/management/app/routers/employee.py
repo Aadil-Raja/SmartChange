@@ -134,43 +134,53 @@ def get_course_route(
     user=Depends(get_current_user),
 ):
     """
-    Get a single active course with its content items and quizzes.
-    
-    Response includes:
-    - course: Course details
-    - items: Content items (documents, videos, links) with access URLs
-    - quizzes: Published quizzes only (for employees)
-    
-    Content item URLs:
-      - document  -> document.cloudinary_url
-      - video     -> video.cloudinary_url  
-      - link      -> external_link.url
+    Fast endpoint — returns course info, content items, and progress.
+    Quizzes with unlock status are fetched separately via /courses/{id}/quizzes.
     """
     try:
-        # Employee sees only published quizzes
-        data = svc.get_course_with_items(db, course_id=course_id, published_only=True, user_role="employee", user_id=user.id)
-        course = data.get("course")
-        if not course or not course.get("is_active"):
+        course = svc.repo.get_course(db, course_id=course_id)
+        if not course or not course.is_active:
             return make_response(False, "Course not found", status_code=404)
 
-        items = data.get("items", [])
-        quizzes = data.get("quizzes", [])
+        items = svc.repo.list_items_for_course(db, course_id=course_id)
 
-        # Add enrollment status
         from app.repositories.course_enrollment_repo import get_enrollment, get_enrollment_status
         enrollment = get_enrollment(db, user_id=user.id, course_id=course_id)
-        course["is_enrolled"] = enrollment is not None
-        if enrollment:
-            from shared.models.course import Course as CourseModel
-            course_obj = db.query(CourseModel).filter(CourseModel.id == course_id).first()
-            course["enrollment_status"] = get_enrollment_status(enrollment, course_obj) if course_obj else "active"
-        else:
-            course["enrollment_status"] = "not_enrolled"
 
-        return make_response(True, "OK", data={"course": course, "items": items, "quizzes": quizzes})
+        course_dict = svc.repo.course_to_dict(course)
+        course_dict["is_enrolled"] = enrollment is not None
+        if enrollment:
+            course_dict["enrollment_status"] = get_enrollment_status(enrollment, course)
+        else:
+            course_dict["enrollment_status"] = "not_enrolled"
+
+        items_progress_data = employee_service.course_items_progress(db, user_id=user.id, course_id=course_id)
+
+        return make_response(True, "OK", data={
+            "course": course_dict,
+            "items": [svc.repo.item_to_dict(i) for i in items],
+            "items_progress": items_progress_data,
+        })
     except Exception as e:
         return make_response(False, "Could not fetch course details", status_code=500, error=str(e))
 
+
+@router.get("/courses/{course_id}/quizzes", status_code=status.HTTP_200_OK)
+def get_course_quizzes_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """
+    Separate endpoint for quiz status — heavier due to per-quiz unlock/attempt checks.
+    Called after the main course page has already rendered.
+    """
+    try:
+        from app.repositories.courseContent_repo import list_quizzes_for_course
+        quizzes = list_quizzes_for_course(db, course_id=course_id, user_id=user.id, published_only=True)
+        return make_response(True, "OK", data={"quizzes": quizzes})
+    except Exception as e:
+        return make_response(False, "Could not fetch quizzes", status_code=500, error=str(e))
 
 @router.get("/documents/processed", status_code=status.HTTP_200_OK)
 def list_processed_documents_route(

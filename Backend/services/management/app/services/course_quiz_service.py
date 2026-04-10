@@ -254,7 +254,11 @@ def publish_course_quiz(db: Session, *, quiz_id: int, user_id: int):
         return make_response(False, "Cannot publish quiz with no questions", status_code=400, error="Quiz has no questions")
     
     updated_quiz = course_quiz_repo.publish_course_quiz(db, quiz_id)
-    
+
+    # Reopen any completed enrollments — new quiz means employees must complete it
+    from app.repositories import course_enrollment_repo as enrollment_repo
+    enrollment_repo.reopen_completed_enrollments(db, course_id=updated_quiz.course_id)
+
     # Serialize the updated quiz
     quiz_data = {
         "id": updated_quiz.id,

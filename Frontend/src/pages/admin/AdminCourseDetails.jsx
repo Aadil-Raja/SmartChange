@@ -92,6 +92,17 @@ const AdminCourseDetails = () => {
   };
 
   const handleSaveDeadline = async () => {
+    if (deadlineInput !== '') {
+      const weeks = parseInt(deadlineInput, 10);
+      if (isNaN(weeks) || weeks <= 0) {
+        alert('Deadline must be at least 1 week.');
+        return;
+      }
+      if (weeks > 10) {
+        alert('Deadline cannot exceed 10 weeks.');
+        return;
+      }
+    }
     setSavingDeadline(true);
     const weeks = deadlineInput === '' ? null : parseInt(deadlineInput, 10);
     await setCourseDeadlineWeeks(parseInt(id), weeks);
@@ -334,6 +345,7 @@ const AdminCourseDetails = () => {
                     <input
                       type="number"
                       min="1"
+                      max="10"
                       placeholder="No deadline"
                       value={deadlineInput}
                       onChange={e => setDeadlineInput(e.target.value)}

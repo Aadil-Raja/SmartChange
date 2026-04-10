@@ -7,6 +7,7 @@ import {
   getEmployeeCourses,
   getEmployeeCoursesOverview,
   getCourseById,
+  getCourseQuizzes,
   updateContentProgress,
   enrollCourse,
   unenrollCourse,
@@ -23,6 +24,7 @@ export const employeeKeys = {
   courses: () => ['employee', 'courses'],
   coursesOverview: () => ['employee', 'courses-overview'],
   course: (id) => ['employee', 'course', id],
+  courseQuizzes: (id) => ['employee', 'course', id, 'quizzes'],
   courseProgress: (id) => ['employee', 'course', id, 'progress'],
   courseItemsProgress: (id) => ['employee', 'course', id, 'items-progress'],
   profile: () => ['employee', 'profile'],
@@ -40,7 +42,7 @@ export const useEmployeeCourses = () =>
       if (!res.success) throw new Error(res.message || 'Failed to fetch courses');
       return res.data.courses || [];
     },
-    staleTime: 60_000,
+    staleTime: 5 * 60_000, // 5 min
   });
 
 export const useEmployeeCoursesOverview = () =>
@@ -51,7 +53,7 @@ export const useEmployeeCoursesOverview = () =>
       if (!res.success) throw new Error(res.message || 'Failed to fetch overview');
       return res.data;
     },
-    staleTime: 60_000,
+    staleTime: 5 * 60_000, // 5 min
   });
 
 export const useEmployeeCourse = (courseId) =>
@@ -63,11 +65,24 @@ export const useEmployeeCourse = (courseId) =>
       return {
         ...res.data.course,
         items: res.data.items || [],
-        quizzes: res.data.quizzes || [],
+        items_progress: res.data.items_progress || null,
       };
     },
     enabled: !!courseId,
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
+  });
+
+// Separate query for quizzes — fired after content is shown
+export const useEmployeeCourseQuizzes = (courseId) =>
+  useQuery({
+    queryKey: employeeKeys.courseQuizzes(courseId),
+    queryFn: async () => {
+      const res = await getCourseQuizzes(courseId);
+      if (!res.success) throw new Error(res.message || 'Failed to fetch quizzes');
+      return res.data.quizzes || [];
+    },
+    enabled: !!courseId,
+    staleTime: 2 * 60_000,
   });
 
 export const useEmployeeCourseProgress = (courseId) =>
@@ -79,7 +94,7 @@ export const useEmployeeCourseProgress = (courseId) =>
       return res.data;
     },
     enabled: !!courseId,
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
   });
 
 export const useEmployeeCourseItemsProgress = (courseId) =>
@@ -91,7 +106,7 @@ export const useEmployeeCourseItemsProgress = (courseId) =>
       return res.data;
     },
     enabled: !!courseId,
-    staleTime: 30_000,
+    staleTime: 2 * 60_000,
   });
 
 export const useEmployeeProfile = () =>
@@ -102,7 +117,7 @@ export const useEmployeeProfile = () =>
       if (!res.success) throw new Error('Failed to fetch profile');
       return res.data;
     },
-    staleTime: 5 * 60_000,
+    staleTime: 10 * 60_000, // 10 min
   });
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
@@ -112,14 +127,24 @@ export const useMarkContentDone = (courseId) => {
   return useMutation({
     mutationFn: ({ contentId }) =>
       updateContentProgress(contentId, { progress: 100.0, completed: true }),
-    onSuccess: () => {
-      // Invalidate course detail (quiz unlock status) + progress + courses list
-      qc.invalidateQueries({ queryKey: employeeKeys.course(courseId) });
-      qc.invalidateQueries({ queryKey: employeeKeys.courseProgress(courseId) });
-      qc.invalidateQueries({ queryKey: employeeKeys.courseItemsProgress(courseId) });
-      qc.invalidateQueries({ queryKey: employeeKeys.courses() });
-      qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
-      qc.invalidateQueries({ queryKey: employeeKeys.profile() });
+    onSuccess: (data, { contentId }) => {
+      // Update course detail cache in place — no refetch needed
+      qc.setQueryData(employeeKeys.course(courseId), (old) => {
+        if (!old) return old;
+        const updatedProgress = (old.items_progress?.items || []).map(p =>
+          p.content_id === contentId
+            ? { ...p, progress: 100, completed_at: new Date().toISOString() }
+            : p
+        );
+        return { ...old, items_progress: { ...old.items_progress, items: updatedProgress } };
+      });
+      // Quiz unlock status may have changed — refetch quizzes only
+      qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(courseId) });
+      // Only invalidate courses list if backend says course is now completed
+      if (data?.data?.course_completed) {
+        qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+      }
     },
   });
 };

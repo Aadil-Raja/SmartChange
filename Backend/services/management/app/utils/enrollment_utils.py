@@ -41,60 +41,120 @@ def build_enrollment_based_overview(
 ) -> Dict[str, Any]:
     """
     Build course overview based on enrollment status.
-    
-    Args:
-        db: Database session
-        user_id: User ID to build overview for
-        include_starred: Whether to include starred courses category
-        starred_ids: Set of starred course IDs (required if include_starred=True)
-    
-    Returns:
-        Dictionary with categorized courses and statistics
+    Uses batch queries to avoid N+1 performance issues.
     """
-    # Get all active courses
+    from shared.models.course_content import ContentItem
+    from shared.models.progress import UserProgress
+    from shared.models.course_quiz import CourseQuiz, QuizStatus
+    from shared.models.quiz_attempt import QuizAttempt
+
+    # ── 1. All active courses ────────────────────────────────────────────────
     courses_data = courseContent_service.list_courses(db, active_only=True)
     all_courses = courses_data.get("courses", [])
-    
-    # Initialize categories
+    all_course_ids = [c["id"] for c in all_courses]
+
+    if not all_course_ids:
+        result = {"stats": _empty_stats(include_starred), "in_progress": [], "completed": [], "expired": []}
+        if include_starred:
+            result["starred"] = []
+        return result
+
+    # ── 2. Batch fetch enrollments ───────────────────────────────────────────
+    enrollments = enrollment_repo.get_all_enrollments_for_user(db, user_id=user_id)
+    enrollment_map = {e.course_id: e for e in enrollments}
+    course_map = {c["id"]: c for c in all_courses}
+
+    # ── 3. Batch fetch content items ─────────────────────────────────────────
+    all_items = (
+        db.query(ContentItem)
+        .filter(ContentItem.course_id.in_(all_course_ids))
+        .all()
+    )
+    items_by_course: Dict[int, list] = {}
+    all_content_ids = []
+    for item in all_items:
+        items_by_course.setdefault(item.course_id, []).append(item)
+        all_content_ids.append(item.id)
+
+    # ── 4. Batch fetch progress rows ─────────────────────────────────────────
+    progress_rows = (
+        db.query(UserProgress)
+        .filter(UserProgress.user_id == user_id, UserProgress.content_id.in_(all_content_ids))
+        .all()
+        if all_content_ids else []
+    )
+    progress_map = {r.content_id: r for r in progress_rows}
+
+    # ── 5. Batch fetch published quizzes ─────────────────────────────────────
+    published_quizzes = (
+        db.query(CourseQuiz)
+        .filter(CourseQuiz.course_id.in_(all_course_ids), CourseQuiz.status == QuizStatus.PUBLISHED)
+        .all()
+    )
+    quizzes_by_course: Dict[int, list] = {}
+    all_quiz_ids = []
+    for q in published_quizzes:
+        quizzes_by_course.setdefault(q.course_id, []).append(q)
+        all_quiz_ids.append(q.id)
+
+    # ── 6. Batch fetch quiz attempts ─────────────────────────────────────────
+    quiz_attempts = (
+        db.query(QuizAttempt)
+        .filter(QuizAttempt.user_id == user_id, QuizAttempt.quiz_id.in_(all_quiz_ids))
+        .all()
+        if all_quiz_ids else []
+    )
+    attempts_by_quiz: Dict[int, list] = {}
+    for a in quiz_attempts:
+        attempts_by_quiz.setdefault(a.quiz_id, []).append(a)
+
+    # ── 7. Build response in Python ──────────────────────────────────────────
     starred_courses = [] if include_starred else None
-    in_progress_courses = []
-    completed_courses = []
-    expired_courses = []
-    
-    # Initialize stats
+    in_progress_courses: list = []
+    completed_courses: list = []
+    expired_courses: list = []
+
     total_enrolled = 0
     total_progress_sum = 0.0
     total_items_completed = 0
-    total_items = 0
+    total_items_count = 0
     total_quizzes_completed = 0
-    total_quizzes = 0
-    
+    total_quizzes_count = 0
+
     for course in all_courses:
         course_id = course["id"]
-        
-        # Get enrollment status
-        enrollment_status = enrollment_repo.get_enrollment_with_status(
-            db, user_id=user_id, course_id=course_id
-        )
-        
-        # Determine category
+        enrollment = enrollment_map.get(course_id)
+        course_obj = course_map[course_id]
+
+        if not enrollment:
+            enrollment_status = {
+                "is_enrolled": False, "status": "not_enrolled",
+                "enrolled_at": None, "completed_at": None,
+                "deadline_at": None, "days_remaining": None, "can_interact": False,
+            }
+        else:
+            deadline_at = enrollment_repo.calculate_deadline(
+                enrollment,
+                type("C", (), {"deadline_weeks": course_obj.get("deadline_weeks")})()
+            )
+            is_expired = enrollment_repo.is_deadline_expired(deadline_at)
+            if enrollment.completed_at:
+                status = "completed"
+            elif is_expired:
+                status = "expired"
+            else:
+                status = "active"
+            enrollment_status = {
+                "is_enrolled": True, "status": status,
+                "enrolled_at": enrollment.enrolled_at,
+                "completed_at": enrollment.completed_at,
+                "deadline_at": deadline_at,
+                "days_remaining": enrollment_repo.calculate_days_remaining(deadline_at),
+                "can_interact": status == "active",
+            }
+
         category = determine_category(enrollment_status)
-        
-        # Calculate progress only for enrolled courses
-        progress_data = None
-        if enrollment_status["is_enrolled"]:
-            total_enrolled += 1
-            progress_calc = calculate_course_progress(db, user_id=user_id, course_id=course_id)
-            progress_data = progress_calc
-            
-            # Accumulate stats
-            total_progress_sum += progress_calc["percent"]
-            total_items_completed += progress_calc["completed_items"]
-            total_items += progress_calc["total_items"]
-            total_quizzes_completed += progress_calc["completed_quizzes"]
-            total_quizzes += progress_calc["total_quizzes"]
-        
-        # Build course info
+
         course_info = {
             "id": course_id,
             "title": course["title"],
@@ -108,81 +168,104 @@ def build_enrollment_based_overview(
             "days_remaining": enrollment_status["days_remaining"],
             "can_interact": enrollment_status["can_interact"],
         }
-        
-        # Add progress data if enrolled
-        if progress_data:
-            # Get per-quiz scores for manager view
-            from shared.repos.course_quiz_repo import get_course_quizzes_by_course
-            from shared.models.course_quiz import QuizStatus as CQStatus
-            from shared.repos import quiz_attempt_repo
-            from shared.services.quiz_status_service import calculate_quiz_status
 
-            published_quizzes = get_course_quizzes_by_course(db, course_id, CQStatus.PUBLISHED)
+        if enrollment_status["is_enrolled"]:
+            total_enrolled += 1
+            items = items_by_course.get(course_id, [])
+            content_ids = [i.id for i in items]
+            completed_items = sum(
+                1 for cid in content_ids
+                if cid in progress_map and (
+                    progress_map[cid].completed_at is not None or
+                    (progress_map[cid].progress or 0) >= 100.0
+                )
+            )
+            quizzes = quizzes_by_course.get(course_id, [])
+            completed_quizzes = sum(
+                1 for q in quizzes
+                if any(a.passed for a in attempts_by_quiz.get(q.id, []))
+            )
+            total_q = len(quizzes)
+            total_c = len(content_ids)
+            total = total_c + total_q
+            percent = round((completed_items + completed_quizzes) / total * 100.0, 2) if total > 0 else 0.0
+
+            # Per-quiz scores
             quiz_scores = []
-            for q in published_quizzes:
-                attempts = quiz_attempt_repo.get_user_quiz_attempts(db, user_id, q.id)
+            for q in quizzes:
+                attempts = attempts_by_quiz.get(q.id, [])
                 best_score = max((float(a.percentage) for a in attempts), default=None)
-                passed = any(a.passed for a in attempts)
                 quiz_scores.append({
                     "quiz_id": q.id,
                     "title": q.title,
                     "best_score": best_score,
-                    "passed": passed,
+                    "passed": any(a.passed for a in attempts),
                     "attempts_used": len(attempts),
                 })
 
             course_info.update({
-                "progress": progress_data["percent"],
-                "completed_items": progress_data["completed_items"],
-                "total_items": progress_data["total_items"],
-                "completed_quizzes": progress_data["completed_quizzes"],
-                "total_quizzes": progress_data["total_quizzes"],
+                "progress": percent,
+                "completed_items": completed_items,
+                "total_items": total_c,
+                "completed_quizzes": completed_quizzes,
+                "total_quizzes": total_q,
                 "quiz_scores": quiz_scores,
             })
-        
-        # Add starred flag if requested
-        if include_starred:
-            course_info["is_starred"] = course_id in starred_ids
-        
-        # Categorize courses
+
+            total_progress_sum += percent
+            total_items_completed += completed_items
+            total_items_count += total_c
+            total_quizzes_completed += completed_quizzes
+            total_quizzes_count += total_q
+
         if include_starred and starred_ids and course_id in starred_ids:
+            course_info["is_starred"] = True
             starred_courses.append(course_info)
-        
+        elif include_starred:
+            course_info["is_starred"] = False
+
         if category == "in_progress":
             in_progress_courses.append(course_info)
         elif category == "completed":
             completed_courses.append(course_info)
         elif category == "expired":
             expired_courses.append(course_info)
-    
-    # Calculate overall progress (average of enrolled courses)
+
     overall_progress = round(total_progress_sum / total_enrolled, 2) if total_enrolled > 0 else 0.0
-    
-    # Build statistics
+
     stats = {
         "total_enrolled": total_enrolled,
-        "total_courses_started": total_enrolled,  # Alias for frontend compatibility
+        "total_courses_started": total_enrolled,
         "total_in_progress": len(in_progress_courses),
         "total_completed": len(completed_courses),
         "total_expired": len(expired_courses),
         "overall_progress": overall_progress,
         "total_items_completed": total_items_completed,
-        "total_items": total_items,
+        "total_items": total_items_count,
         "total_quizzes_completed": total_quizzes_completed,
-        "total_quizzes": total_quizzes,
+        "total_quizzes": total_quizzes_count,
     }
-    
     if include_starred:
         stats["total_starred"] = len(starred_courses)
-    
+
     result = {
         "stats": stats,
         "in_progress": in_progress_courses,
         "completed": completed_courses,
         "expired": expired_courses,
     }
-    
     if include_starred:
         result["starred"] = starred_courses
-    
     return result
+
+
+def _empty_stats(include_starred: bool) -> Dict[str, Any]:
+    stats = {
+        "total_enrolled": 0, "total_courses_started": 0,
+        "total_in_progress": 0, "total_completed": 0, "total_expired": 0,
+        "overall_progress": 0.0, "total_items_completed": 0, "total_items": 0,
+        "total_quizzes_completed": 0, "total_quizzes": 0,
+    }
+    if include_starred:
+        stats["total_starred"] = 0
+    return stats

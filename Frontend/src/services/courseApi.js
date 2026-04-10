@@ -26,9 +26,15 @@ export const getEmployeeCoursesOverview = async () => {
   return response.data;
 };
 
-// Get single active course with its items/modules
+// Get single active course with its items/modules (fast — no quiz status)
 export const getCourseById = async (courseId) => {
   const response = await api.get(`/employee/courses/${courseId}`);
+  return response.data;
+};
+
+// Get quiz status for a course (separate — heavier query)
+export const getCourseQuizzes = async (courseId) => {
+  const response = await api.get(`/employee/courses/${courseId}/quizzes`);
   return response.data;
 };
 
