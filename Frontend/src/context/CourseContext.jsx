@@ -122,13 +122,29 @@ export const CourseProvider = ({ children }) => {
             const res = await updateContentProgress(itemId, payload);
 
             if (res.success && selectedCourse) {
-                // Refresh course items progress to show updated progress
-                await fetchCourseItemsProgress(selectedCourse.id);
+                const completedAt = progressPercent >= 100 ? new Date().toISOString() : undefined;
+                // Update React Query cache in place — no extra network calls
+                qc.setQueryData(employeeKeys.course(selectedCourse.id), (old) => {
+                    if (!old) return old;
+                    const items = old.items_progress?.items || [];
+                    const exists = items.some(p => p.content_id === itemId);
+                    const updatedItems = exists
+                        ? items.map(p =>
+                            p.content_id === itemId
+                                ? { ...p, progress: payload.progress, ...(completedAt ? { completed_at: completedAt } : {}) }
+                                : p
+                          )
+                        : [...items, { content_id: itemId, progress: payload.progress, ...(completedAt ? { completed_at: completedAt } : {}) }];
+                    return { ...old, items_progress: { ...old.items_progress, items: updatedItems } };
+                });
 
-                // If completed, also refresh overall course progress
                 if (progressPercent >= 100) {
-                    await fetchActualCourseProgress(selectedCourse.id);
                     setCompletedItems(prev => new Set([...prev, itemId]));
+                    qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(selectedCourse.id) });
+                    if (res.data?.course_completed) {
+                        qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+                        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+                    }
                 }
             }
 

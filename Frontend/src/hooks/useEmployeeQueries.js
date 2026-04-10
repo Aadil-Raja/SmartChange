@@ -128,15 +128,20 @@ export const useMarkContentDone = (courseId) => {
     mutationFn: ({ contentId }) =>
       updateContentProgress(contentId, { progress: 100.0, completed: true }),
     onSuccess: (data, { contentId }) => {
+      const completedAt = new Date().toISOString();
       // Update course detail cache in place — no refetch needed
       qc.setQueryData(employeeKeys.course(courseId), (old) => {
         if (!old) return old;
-        const updatedProgress = (old.items_progress?.items || []).map(p =>
-          p.content_id === contentId
-            ? { ...p, progress: 100, completed_at: new Date().toISOString() }
-            : p
-        );
-        return { ...old, items_progress: { ...old.items_progress, items: updatedProgress } };
+        const items = old.items_progress?.items || [];
+        const exists = items.some(p => p.content_id === contentId);
+        const updatedItems = exists
+          ? items.map(p =>
+              p.content_id === contentId
+                ? { ...p, progress: 100, completed_at: completedAt }
+                : p
+            )
+          : [...items, { content_id: contentId, progress: 100, completed_at: completedAt }];
+        return { ...old, items_progress: { ...old.items_progress, items: updatedItems } };
       });
       // Quiz unlock status may have changed — refetch quizzes only
       qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(courseId) });
@@ -154,13 +159,40 @@ export const useUpdateVideoProgress = (courseId) => {
   return useMutation({
     mutationFn: ({ contentId, progress }) =>
       updateContentProgress(contentId, { progress, completed: progress >= 100 }),
-    onSuccess: (_, { progress }) => {
-      qc.invalidateQueries({ queryKey: employeeKeys.courseItemsProgress(courseId) });
+    onSuccess: (data, { contentId, progress }) => {
+      const completedAt = progress >= 100 ? new Date().toISOString() : undefined;
+      // Update course detail cache in place — no refetch needed
+      qc.setQueryData(employeeKeys.course(courseId), (old) => {
+        if (!old) return old;
+        const items = old.items_progress?.items || [];
+        const exists = items.some(p => p.content_id === contentId);
+        const updatedItems = exists
+          ? items.map(p =>
+              p.content_id === contentId
+                ? { ...p, progress, ...(completedAt ? { completed_at: completedAt } : {}) }
+                : p
+            )
+          : [...items, { content_id: contentId, progress, ...(completedAt ? { completed_at: completedAt } : {}) }];
+        return { ...old, items_progress: { ...old.items_progress, items: updatedItems } };
+      });
+      // Also update courses list card progress if video just completed
       if (progress >= 100) {
-        qc.invalidateQueries({ queryKey: employeeKeys.course(courseId) });
-        qc.invalidateQueries({ queryKey: employeeKeys.courseProgress(courseId) });
-        qc.invalidateQueries({ queryKey: employeeKeys.courses() });
-        qc.invalidateQueries({ queryKey: employeeKeys.profile() });
+        qc.setQueryData(employeeKeys.courses(), (oldCourses) => {
+          if (!oldCourses) return oldCourses;
+          return oldCourses.map(c => {
+            if (c.id !== courseId || !c.progress) return c;
+            const newCompleted = (c.progress.completed_items || 0) + 1;
+            const total = (c.progress.total_items || 0) + (c.progress.total_quizzes || 0);
+            const totalCompleted = newCompleted + (c.progress.completed_quizzes || 0);
+            const percent = total > 0 ? Math.min(100, Math.round((totalCompleted / total) * 100)) : 0;
+            return { ...c, progress: { ...c.progress, completed_items: newCompleted, percent } };
+          });
+        });
+        qc.invalidateQueries({ queryKey: employeeKeys.courseQuizzes(courseId) });
+        if (data?.data?.course_completed) {
+          qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+          qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+        }
       }
     },
   });
