@@ -195,6 +195,7 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
             "total_questions": score_data["total_questions"],
             "percentage": score_data["percentage"],
             "passed": score_data["passed"],
+            "passing_score": float(config["passing_score"]),
             "can_retake": can_retake,
             "results": score_data["question_results"],
             # Updated quiz status after this attempt

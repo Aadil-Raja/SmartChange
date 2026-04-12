@@ -48,6 +48,7 @@ const QuizResults = () => {
     total_questions,
     percentage,
     passed,
+    passing_score,
     can_retake,
     results,
     quiz_status
@@ -139,7 +140,7 @@ const QuizResults = () => {
                 <p className="text-sm" style={{ color: '#be123c' }}>Incorrect</p>
               </div>
               <div className="rounded-2xl p-3 border" style={{ background: '#f3ede4', borderColor: '#eadfce' }}>
-                <p className="text-2xl font-bold" style={{ color: '#1a1209' }}>70%</p>
+                <p className="text-2xl font-bold" style={{ color: '#1a1209' }}>{passing_score ?? 70}%</p>
                 <p className="text-sm" style={{ color: '#6b5e4e' }}>Required</p>
               </div>
             </div>
