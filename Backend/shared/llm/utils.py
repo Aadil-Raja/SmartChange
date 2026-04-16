@@ -5,7 +5,6 @@ Shared helper functions for LLM provider initialization and embedding generation
 
 import logging
 from typing import List
-import numpy as np
 import google.generativeai as genai
 
 from .factory import get_llm_provider
@@ -112,31 +111,10 @@ def create_llm_provider(
 
 def normalize_embeddings(embeddings: List[List[float]]) -> List[List[float]]:
     """
-    Normalize embeddings to unit length for accurate cosine similarity.
-    Required for 768 and 1536 dimensions according to Google's documentation.
-    
-    Args:
-        embeddings: List of embedding vectors
-        
-    Returns:
-        List of normalized embedding vectors
-        
-    Example:
-        >>> from shared.llm.utils import normalize_embeddings
-        >>> embeddings = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
-        >>> normalized = normalize_embeddings(embeddings)
+    No-op for gemini-embedding-001 — vectors are already unit-normalized by the API.
+    Kept for interface compatibility in case other models are introduced later.
     """
-    normalized = []
-    for emb in embeddings:
-        emb_array = np.array(emb)
-        norm = np.linalg.norm(emb_array)
-        if norm > 0:
-            normalized_emb = (emb_array / norm).tolist()
-        else:
-            normalized_emb = emb  # Keep original if norm is 0
-            logger.warning("Embedding norm is 0, keeping original")
-        normalized.append(normalized_emb)
-    return normalized
+    return embeddings
 
 
 def embed_single(
@@ -145,7 +123,6 @@ def embed_single(
     embedding_model: str = "models/gemini-embedding-001",
     task_type: str = "retrieval_query",
     output_dimensionality: int = 3072,
-    normalize: bool = True
 ) -> List[float]:
     """
     Generate embedding for a single text using Google Gemini.
@@ -159,10 +136,9 @@ def embed_single(
         embedding_model: Gemini embedding model name (default: models/gemini-embedding-001)
         task_type: "retrieval_query" for queries, "retrieval_document" for documents
         output_dimensionality: Embedding dimension (3072 for high quality, 768 for faster)
-        normalize: Whether to normalize to unit length (recommended for 768/3072)
         
     Returns:
-        List of floats representing the embedding vector
+        List of floats representing the embedding vector (already unit-normalized by the API)
         
     Raises:
         ValueError: If embedding generation fails or response format is unexpected
@@ -215,16 +191,7 @@ def embed_single(
                 logger.error(f"Available keys: {result.keys()}")
             raise ValueError(f"Unexpected embedding response structure: {type(result)}")
         
-        # Normalize if requested (recommended for 768 and 1536 dimensions)
-        if normalize:
-            emb_array = np.array(embedding)
-            norm = np.linalg.norm(emb_array)
-            if norm > 0:
-                embedding = (emb_array / norm).tolist()
-                logger.debug(f"Normalized embedding to unit length")
-            else:
-                logger.warning("Embedding norm is 0, skipping normalization")
-        
+        # gemini-embedding-001 returns unit-normalized vectors — no manual normalization needed
         logger.debug(f"Successfully generated embedding (dimension: {len(embedding)})")
         return embedding
         

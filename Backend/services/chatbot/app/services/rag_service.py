@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
+import sqlalchemy as sa
 import sys
 import json
 
@@ -294,10 +295,7 @@ def retrieve_chunks_with_scores(
     question: str,
     top_k: int = 5
 ) -> List[Dict[str, Any]]:
-    import numpy as np
     try:
-        # embed_single is already imported from shared.llm at top of file
-        # use retrieval_query task type for questions
         q_emb = embed_single(
             text=question,
             api_key=settings.google_api_key,
@@ -307,39 +305,38 @@ def retrieve_chunks_with_scores(
         )
 
         from shared.models.Document import DocumentChunk
+        from pgvector.sqlalchemy import HALFVEC
 
-        chunks = (
-            chunk_db.query(DocumentChunk)
+        # Cast both stored embedding and query to halfvec(3072) to use the HNSW index.
+        # The index was created on (embedding::halfvec(3072)) so the query must match.
+        q_half = sa.cast(sa.literal(str(q_emb)), HALFVEC(3072))
+        emb_half = sa.cast(DocumentChunk.embedding, HALFVEC(3072))
+        distance_col = sa.cast(
+            emb_half.op("<=>")(q_half), sa.Float
+        ).label("distance")
+
+        rows = (
+            chunk_db.query(DocumentChunk, distance_col)
             .filter(DocumentChunk.document_id == document_id)
-            .order_by(DocumentChunk.embedding.cosine_distance(q_emb))
+            .order_by(distance_col)
             .limit(top_k)
             .all()
         )
 
-        if not chunks:
+        if not rows:
             return []
 
-        q_emb_np = np.array(q_emb)
         results = []
-
-        for chunk in chunks:
-            try:
-                c_emb_np = np.array(chunk.embedding)
-                cosine_sim = np.dot(q_emb_np, c_emb_np) / (
-                    np.linalg.norm(q_emb_np) * np.linalg.norm(c_emb_np)
-                )
-                results.append({
-                    'text': chunk.text,
-                    'score': float(cosine_sim),
-                    'chunk_index': chunk.chunk_index,
-                    'section_title': getattr(chunk, 'section_title', None),
-                    'start_page_num': getattr(chunk, 'start_page_num', None),
-                    'end_page_num': getattr(chunk, 'end_page_num', None),
-                    'document_id': chunk.document_id,
-                })
-            except Exception as e:
-                print(f"[retrieve_chunks_with_scores] Score error for chunk {chunk.chunk_index}: {e}", file=sys.stderr)
-                continue
+        for chunk, dist in rows:
+            results.append({
+                'text': chunk.text,
+                'score': float(1.0 - dist),
+                'chunk_index': chunk.chunk_index,
+                'section_title': getattr(chunk, 'section_title', None),
+                'start_page_num': getattr(chunk, 'start_page_num', None),
+                'end_page_num': getattr(chunk, 'end_page_num', None),
+                'document_id': chunk.document_id,
+            })
 
         return results
 

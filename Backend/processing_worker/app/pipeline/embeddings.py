@@ -8,7 +8,6 @@ import logging
 import time
 from typing import List, Optional, Any
 
-from shared.llm.utils import normalize_embeddings
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +208,8 @@ class EmbeddingService:
                     
                     embeddings.append(values)
                 
-                # Always normalize
-                return normalize_embeddings(embeddings)
+                # gemini-embedding-001 returns unit-normalized vectors already
+                return embeddings
 
             except Exception as e:
                 error_str = str(e).lower()
