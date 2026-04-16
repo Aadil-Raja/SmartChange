@@ -9,10 +9,8 @@ from app.models import MessageRole  # ← Import the enum
 import sys, traceback
 
 def ensure_chathead(db: Session, *, user_id: int, chathead_id: int | None, title: str | None) -> int:
-    print(f"[ensure_chathead] user_id={user_id}, chathead_id={chathead_id}, title={title}", file=sys.stderr)
     if chathead_id is not None:
         chat = chat_repo.get_chathead(db, chathead_id)
-        print(f"[ensure_chathead] loaded chat: {chat}", file=sys.stderr)
         if chat is None:
             raise PermissionError("Chat not found")
         if chat.user_id != user_id:
@@ -21,8 +19,52 @@ def ensure_chathead(db: Session, *, user_id: int, chathead_id: int | None, title
 
     chat = chat_repo.create_chathead(db, user_id=user_id, title=title)
     db.flush()
-    print(f"[ensure_chathead] created new chat id={chat.id}", file=sys.stderr)
     return chat.id
+
+def load_doc_summaries_and_messages(
+    db: Session,
+    management_db: Session,
+    chathead_id: int,
+    active_doc_ids: List[int],
+    n: int = 5
+) -> dict:
+    """
+    Load per-document summaries and last N messages.
+    
+    Args:
+        db: Chatbot database session
+        management_db: Management database session
+        chathead_id: Chat ID
+        active_doc_ids: List of active document IDs
+        n: Number of recent messages to keep verbatim (default 5)
+    
+    Returns:
+        Dict[doc_id, {doc_title, summary, last_n_messages}]
+    """
+    from shared.repos import documents_repo
+    
+    doc_histories = {}
+    
+    for doc_id in active_doc_ids:
+        # Get summary
+        summary_obj = chat_repo.get_summary(db, chathead_id, doc_id)
+        summary = summary_obj.summary if summary_obj else None
+        
+        # Get last N messages for this doc
+        last_n_messages = chat_repo.get_last_n_messages_for_doc(db, chathead_id, doc_id, n)
+        
+        # Get doc title
+        doc = documents_repo.get_by_id(management_db, doc_id)
+        doc_title = doc.title if doc else f"Document {doc_id}"
+        
+        doc_histories[doc_id] = {
+            "doc_title": doc_title,
+            "summary": summary,
+            "last_n_messages": last_n_messages
+        }
+    
+    return doc_histories
+
 
 def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
     """
@@ -36,12 +78,8 @@ def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
     Returns:
         List of LangChain messages (HumanMessage and AIMessage objects)
     """
-    print(f"[load_chat_history] Loading history for chathead_id={chathead_id}, limit={limit}", file=sys.stderr)
-    
     # Get messages from repository
     messages = chat_repo.get_messages(db, chathead_id=chathead_id, limit=limit * 2)
-    
-    print(f"[load_chat_history] Loaded {len(messages)} messages from DB", file=sys.stderr)
     
     # Convert to LangChain format
     chat_history = []
@@ -49,12 +87,9 @@ def load_chat_history(db: Session, chathead_id: int, limit: int = 10):
         # Use enum comparison instead of string comparison
         if msg.role == MessageRole.USER:
             chat_history.append(HumanMessage(content=msg.message))
-            print(f"  [USER] {msg.message[:50]}...", file=sys.stderr)
         elif msg.role == MessageRole.ASSISTANT:
             chat_history.append(AIMessage(content=msg.message))
-            print(f"  [ASST] {msg.message[:50]}...", file=sys.stderr)
     
-    print(f"[load_chat_history] Converted to {len(chat_history)} LangChain messages", file=sys.stderr)
     return chat_history
 
 def respond_turn(
@@ -68,15 +103,11 @@ def respond_turn(
     title: str | None = None
 ) -> dict:
     try:
-        print(f"[respond_turn] start user_id={user_id} chathead_id={chathead_id} docs={active_doc_ids}", file=sys.stderr)
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
 
         # Load chat history BEFORE saving the new user message
-        print("[respond_turn] loading chat history", file=sys.stderr)
         chat_history = load_chat_history(db, chathead_id=cid, limit=10)  # Last 10 exchanges
-        print(chat_history)
         
-        print("[respond_turn] saving user message", file=sys.stderr)
         # Pass MessageRole enum instead of string
         chat_repo.add_message(
             db, 
@@ -86,16 +117,13 @@ def respond_turn(
             active_doc_ids=active_doc_ids
         )
 
-        print("[respond_turn] running agent", file=sys.stderr)
         agent = DocumentAgent(db, management_db)
         out = agent.get_response(
             active_doc_ids=active_doc_ids, 
             user_message=message,
             chat_history=chat_history  # ← Pass history to agent
         )
-        print(f"[respond_turn] agent result keys={list(out.keys())}", file=sys.stderr)
 
-        print("[respond_turn] saving assistant message", file=sys.stderr)
         # Pass MessageRole enum instead of string
         chat_repo.add_message(
             db, 
@@ -112,7 +140,6 @@ def respond_turn(
         # ✅ One commit only
         db.commit()
         db.refresh(chat)
-        print("[respond_turn] committed", file=sys.stderr)
         return {"chathead_id": cid, "answer": out["answer"]}
 
     except Exception:

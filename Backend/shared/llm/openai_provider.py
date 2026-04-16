@@ -12,6 +12,12 @@ try:
 except ImportError:
     OPENAI_AVAILABLE = False
 
+try:
+    from langchain_openai import ChatOpenAI
+    LANGCHAIN_OPENAI_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_OPENAI_AVAILABLE = False
+
 from .base import BaseLLMProvider
 
 logger = logging.getLogger(__name__)
@@ -37,8 +43,19 @@ class OpenAIProvider(BaseLLMProvider):
         
         super().__init__(api_key, model, **kwargs)
         
-        # Create OpenAI client
+        # Create OpenAI client for generate() and generate_json()
         self.client = OpenAI(api_key=self.api_key)
+        
+        # Create LangChain chat model for advanced features (structured output)
+        if LANGCHAIN_OPENAI_AVAILABLE:
+            self.chat_model = ChatOpenAI(
+                model=self.model,
+                api_key=self.api_key,
+                temperature=kwargs.get('temperature', 0)
+            )
+        else:
+            self.chat_model = None
+            logger.warning("langchain-openai not installed. Structured output features unavailable.")
         
         logger.info(f"Initialized OpenAI provider with model: {self.model}")
     
@@ -104,3 +121,29 @@ class OpenAIProvider(BaseLLMProvider):
         except Exception as e:
             logger.error(f"OpenAI JSON generation failed: {e}")
             raise
+    
+    def get_langchain_model(self) -> ChatOpenAI:
+        """
+        Return the underlying LangChain ChatOpenAI model.
+        
+        This enables advanced LangChain features like structured output
+        via with_structured_output().
+        
+        Returns:
+            ChatOpenAI instance
+            
+        Raises:
+            RuntimeError: If langchain-openai is not installed
+            
+        Example:
+            >>> llm = OpenAIProvider(api_key="...", model="gpt-4")
+            >>> langchain_model = llm.get_langchain_model()
+            >>> structured_llm = langchain_model.with_structured_output(MySchema)
+            >>> result = structured_llm.invoke("prompt")
+        """
+        if self.chat_model is None:
+            raise RuntimeError(
+                "LangChain OpenAI model not available. "
+                "Install langchain-openai: pip install langchain-openai"
+            )
+        return self.chat_model

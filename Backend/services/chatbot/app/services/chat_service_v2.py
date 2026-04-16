@@ -29,42 +29,56 @@ def respond_turn_v2(
     Saves only the answer text to DB (citations are generated fresh each time).
     """
     try:
-        print(f"[respond_turn_v2] user_id={user_id} chathead_id={chathead_id} docs={active_doc_ids}", file=sys.stderr)
-
         # Ensure chathead exists
-        from app.services.chat_service import ensure_chathead, load_chat_history
+        from app.services.chat_service import ensure_chathead, load_doc_summaries_and_messages
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
 
-        # Load history before saving new message
-        chat_history = load_chat_history(db, chathead_id=cid, limit=10)
+        # Load document-wise histories (summaries + last N messages)
+        doc_histories = load_doc_summaries_and_messages(
+            db=db,
+            management_db=management_db,
+            chathead_id=cid,
+            active_doc_ids=active_doc_ids,
+            n=5  # Last 5 messages verbatim
+        )
 
-        # Save user message
+        # Run v2 agent FIRST to get validated doc IDs
+        agent = DocumentAgentV2(db, management_db)
+        out = agent.get_response(
+            active_doc_ids=active_doc_ids,
+            user_message=message,
+            doc_histories=doc_histories  # Pass document-wise histories
+        )
+
+        answer_text = out["answer"]
+        citations = out.get("citations", [])
+
+        # Extract validated doc IDs from citations (docs that LLM actually used)
+        validated_doc_ids = []
+        if citations:
+            # Citations are grouped by doc: [{doc_id, doc_title, references: [...]}]
+            validated_doc_ids = list(set([c["doc_id"] for c in citations if "doc_id" in c]))
+        
+        # If no citations, fall back to active_doc_ids (edge case)
+        if not validated_doc_ids:
+            validated_doc_ids = active_doc_ids
+        
+        # NOW save BOTH user and assistant messages with VALIDATED doc IDs only
         chat_repo.add_message(
             db,
             chathead_id=cid,
             role=MessageRole.USER,
             message=message,
-            active_doc_ids=active_doc_ids
+            active_doc_ids=validated_doc_ids  # Only validated docs
         )
-
-        # Run v2 agent
-        agent = DocumentAgentV2(db, management_db)
-        out = agent.get_response(
-            active_doc_ids=active_doc_ids,
-            user_message=message,
-            chat_history=chat_history
-        )
-
-        answer_text = out["answer"]
-
-        # Save only the answer text and citations to DB
+        
         chat_repo.add_message(
             db,
             chathead_id=cid,
             role=MessageRole.ASSISTANT,
             message=answer_text,
-            active_doc_ids=active_doc_ids,
-            citations=out.get("citations", [])
+            active_doc_ids=validated_doc_ids,  # Only docs that were actually used
+            citations=citations
         )
 
         chat = chat_repo.get_chathead(db, cid)
@@ -72,8 +86,6 @@ def respond_turn_v2(
         db.add(chat)
         db.commit()
         db.refresh(chat)
-
-        print(f"[respond_turn_v2] committed, citations={len(out.get('citations', []))}", file=sys.stderr)
 
         return {
             "chathead_id": cid,

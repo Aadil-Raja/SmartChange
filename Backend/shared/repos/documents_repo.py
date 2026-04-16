@@ -74,6 +74,20 @@ def get_by_id(db: Session, document_id: int) -> Optional[Document]:
     return db.query(Document).filter(Document.id == document_id).first()
 
 
+def get_by_ids(db: Session, ids: List[int]) -> List[Document]:
+    """
+    Get multiple documents by IDs in a single query.
+    
+    Args:
+        db: SQLAlchemy session
+        ids: List of document IDs
+        
+    Returns:
+        List of documents (may be fewer than requested if some IDs don't exist)
+    """
+    return db.query(Document).filter(Document.id.in_(ids)).all()
+
+
 def get_document(db: Session, document_id: int) -> Optional[Document]:
     """
     Alias for get_by_id for backward compatibility.

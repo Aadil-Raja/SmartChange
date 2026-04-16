@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Dict, Any, Optional
 import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from .base import BaseLLMProvider
 
@@ -29,8 +30,15 @@ class GeminiProvider(BaseLLMProvider):
         # Configure Gemini
         genai.configure(api_key=self.api_key)
         
-        # Create model instance
+        # Create model instance for generate() and generate_json()
         self.client = genai.GenerativeModel(self.model)
+        
+        # Create LangChain chat model for advanced features (structured output)
+        self.chat_model = ChatGoogleGenerativeAI(
+            model=self.model,
+            google_api_key=self.api_key,
+            temperature=kwargs.get('temperature', 0)
+        )
         
         logger.info(f"Initialized Gemini provider with model: {self.model}")
     
@@ -89,3 +97,21 @@ class GeminiProvider(BaseLLMProvider):
         except Exception as e:
             logger.error(f"Gemini JSON generation failed: {e}")
             raise
+    
+    def get_langchain_model(self) -> ChatGoogleGenerativeAI:
+        """
+        Return the underlying LangChain ChatGoogleGenerativeAI model.
+        
+        This enables advanced LangChain features like structured output
+        via with_structured_output().
+        
+        Returns:
+            ChatGoogleGenerativeAI instance
+            
+        Example:
+            >>> llm = GeminiProvider(api_key="...", model="gemini-1.5-pro")
+            >>> langchain_model = llm.get_langchain_model()
+            >>> structured_llm = langchain_model.with_structured_output(MySchema)
+            >>> result = structured_llm.invoke("prompt")
+        """
+        return self.chat_model

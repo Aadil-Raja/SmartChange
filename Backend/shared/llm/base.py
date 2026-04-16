@@ -58,6 +58,26 @@ class BaseLLMProvider(ABC):
         """
         pass
     
+    @abstractmethod
+    def get_langchain_model(self):
+        """
+        Return the underlying LangChain chat model for advanced features.
+        
+        This method exposes the native LangChain chat model (ChatOpenAI or
+        ChatGoogleGenerativeAI) to enable advanced features like structured
+        output via with_structured_output().
+        
+        Returns:
+            The underlying LangChain chat model instance
+            
+        Example:
+            >>> llm = create_llm_provider("openai", "gpt-4", ...)
+            >>> langchain_model = llm.get_langchain_model()
+            >>> structured_llm = langchain_model.with_structured_output(MySchema)
+            >>> result = structured_llm.invoke("prompt")
+        """
+        pass
+    
     def _clean_json_response(self, text: str) -> str:
         """
         Clean up JSON response by removing markdown code blocks.

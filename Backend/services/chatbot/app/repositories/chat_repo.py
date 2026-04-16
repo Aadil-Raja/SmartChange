@@ -1,8 +1,8 @@
 # services/chatbot/app/repositories/chat_repo.py
 from typing import Optional, Tuple, List
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-from app.models import ChatHead, ChatMessage, MessageRole
+from sqlalchemy import func, desc, any_
+from app.models import ChatHead, ChatMessage, MessageRole, ChatSummary
 
 def create_chathead(db: Session, *, user_id: int, title: Optional[str]) -> ChatHead:
     chat = ChatHead(user_id=user_id, title=title or None)
@@ -96,3 +96,104 @@ def get_messages_window(
     rows = query.all()
     
     return list(reversed(rows))
+
+
+# ============================================================================
+# CHAT SUMMARY OPERATIONS
+# ============================================================================
+
+def get_summary(db: Session, chathead_id: int, doc_id: int) -> Optional[ChatSummary]:
+    """Get summary for a specific chathead + doc combination."""
+    return db.query(ChatSummary).filter(
+        ChatSummary.chathead_id == chathead_id,
+        ChatSummary.doc_id == doc_id
+    ).first()
+
+
+def get_all_summaries(db: Session, chathead_id: int) -> List[ChatSummary]:
+    """Get all summaries for a chathead."""
+    return db.query(ChatSummary).filter(
+        ChatSummary.chathead_id == chathead_id
+    ).all()
+
+
+def upsert_summary(
+    db: Session,
+    chathead_id: int,
+    doc_id: int,
+    summary: str
+) -> ChatSummary:
+    """Insert or update summary for chathead + doc."""
+    existing = get_summary(db, chathead_id, doc_id)
+    if existing:
+        existing.summary = summary
+        existing.updated_at = func.now()
+        db.flush()
+        return existing
+    else:
+        new_summary = ChatSummary(
+            chathead_id=chathead_id,
+            doc_id=doc_id,
+            summary=summary
+        )
+        db.add(new_summary)
+        db.flush()
+        return new_summary
+
+
+# ============================================================================
+# MESSAGE OPERATIONS FOR HISTORY
+# ============================================================================
+
+def get_last_n_messages_for_doc(
+    db: Session,
+    chathead_id: int,
+    doc_id: int,
+    n: int
+) -> List[ChatMessage]:
+    """
+    Get last N messages where doc_id appears in active_doc_ids array.
+    Returns messages in chronological order (oldest first).
+    """
+    messages = (
+        db.query(ChatMessage)
+        .filter(
+            ChatMessage.chathead_id == chathead_id,
+            ChatMessage.active_doc_ids.any(doc_id)  # PostgreSQL array contains
+        )
+        .order_by(ChatMessage.created_at.desc())
+        .limit(n)
+        .all()
+    )
+    
+    return list(reversed(messages))  # Chronological order
+
+
+def get_all_messages_except_last_n(
+    db: Session,
+    chathead_id: int,
+    exclude_last_n: int
+) -> List[ChatMessage]:
+    """
+    Get all messages except the last N.
+    Returns messages in chronological order.
+    Used for summarization.
+    """
+    all_messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.chathead_id == chathead_id)
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+    
+    if len(all_messages) <= exclude_last_n:
+        return []
+    
+    return all_messages[:-exclude_last_n]
+
+
+def count_total_messages(db: Session, chathead_id: int) -> int:
+    """Count total messages in chathead."""
+    return db.query(func.count(ChatMessage.id)).filter(
+        ChatMessage.chathead_id == chathead_id
+    ).scalar()
