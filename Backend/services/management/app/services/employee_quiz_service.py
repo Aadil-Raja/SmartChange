@@ -184,7 +184,33 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
     config = quiz_configuration_repo.get_quiz_config(db, quiz_id)
     can_retake = (score_data["percentage"] < config["passing_score"] and 
                   attempts_after_this < config["max_attempts"])
-    
+
+    # Build recommendation if failed
+    recommendation = None
+    if not score_data["passed"]:
+        recommendation = _build_recommendation(db, quiz_with_questions, quiz.course_id, can_retake)
+
+    # Decide whether to reveal correct answers and explanations:
+    # - passed → always reveal
+    # - failed + no retakes left → reveal (nothing to game anymore)
+    # - failed + retakes remaining → hide (prevent answer memorization)
+    reveal_answers = score_data["passed"] or not can_retake
+
+    # Strip sensitive fields from results if not revealing
+    question_results = score_data["question_results"]
+    if not reveal_answers:
+        question_results = [
+            {
+                "question_id": r["question_id"],
+                "question_text": r["question_text"],
+                "user_answer": r["user_answer"],
+                "user_option_id": r["user_option_id"],
+                "is_correct": r["is_correct"],
+                # correct_answer, correct_option_id, explanation intentionally omitted
+            }
+            for r in question_results
+        ]
+
     # Return streamlined results for learning with updated quiz status
     return make_response(
         True, 
@@ -197,7 +223,9 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
             "passed": score_data["passed"],
             "passing_score": float(config["passing_score"]),
             "can_retake": can_retake,
-            "results": score_data["question_results"],
+            "reveal_answers": reveal_answers,
+            "results": question_results,
+            "recommendation": recommendation,
             # Updated quiz status after this attempt
             "quiz_status": {
                 "status": updated_status_info["status"],
@@ -209,6 +237,70 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
         },
         status_code=201
     )
+
+
+def _build_recommendation(db: Session, quiz, course_id: int, can_retake: bool) -> dict:
+    """
+    Build a review recommendation for a failed quiz attempt.
+    - If quiz has REFERENCED questions → link to the source document
+    - Otherwise → link to the course items page
+    """
+    message = (
+        "Review the material and try again before your next attempt."
+        if can_retake
+        else "You've used all attempts. Review the material to strengthen your knowledge."
+    )
+
+    # Check if any question is REFERENCED (linked to a document quiz question)
+    has_referenced = any(
+        q.question_type == QuestionType.REFERENCED
+        for q in quiz.questions
+    )
+
+    if has_referenced:
+        # Trace: CourseQuizQuestion → QuizQuestion → Quiz → Document
+        # Collect ALL unique documents across all referenced questions
+        from shared.models.quiz_question import QuizQuestion
+        from shared.models.quiz import Quiz as DocumentQuiz
+        from shared.models.Document import Document
+
+        seen_doc_ids = set()
+        documents = []
+
+        for q in quiz.questions:
+            if q.question_type != QuestionType.REFERENCED:
+                continue
+            doc_question = q.source_document_question
+            if not doc_question:
+                continue
+            doc_quiz = db.query(DocumentQuiz).filter(DocumentQuiz.id == doc_question.quiz_id).first()
+            if not doc_quiz or not doc_quiz.document_id:
+                continue
+            if doc_quiz.document_id in seen_doc_ids:
+                continue
+            doc = db.query(Document).filter(Document.id == doc_quiz.document_id).first()
+            if doc:
+                seen_doc_ids.add(doc.id)
+                documents.append({
+                    "id": doc.id,
+                    "title": doc.title,
+                    "thumbnail_url": doc.cloudinary_thumbnail_url,
+                })
+
+        if documents:
+            return {
+                "type": "document",
+                "message": message,
+                "documents": documents,
+                "course_id": course_id,
+            }
+
+    # Fallback: point to course items
+    return {
+        "type": "course",
+        "message": message,
+        "course_id": course_id,
+    }
 
 
 def calculate_quiz_score(quiz, user_answers: Dict[str, int]) -> Dict[str, Any]:

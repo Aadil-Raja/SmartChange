@@ -11,7 +11,9 @@ import {
   Trophy,
   RotateCcw,
   BookOpen,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  RefreshCw
 } from 'lucide-react';
 
 const QuizResults = () => {
@@ -50,8 +52,10 @@ const QuizResults = () => {
     passed,
     passing_score,
     can_retake,
+    reveal_answers,
     results,
-    quiz_status
+    quiz_status,
+    recommendation,
   } = resultsData;
 
   const {
@@ -168,6 +172,55 @@ const QuizResults = () => {
           </div>
         </Card>
 
+        {/* Recommendation Card — only shown when failed */}
+        {recommendation && (
+          <div
+            className="mb-6 rounded-[24px] border p-5"
+            style={{ background: '#fff7eb', borderColor: '#f6dec1' }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#fde8c8' }}>
+                <RefreshCw size={20} style={{ color: '#c2620a' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#7c3a0a' }}>
+                  {can_retake ? 'Review before your next attempt' : 'Strengthen your knowledge'}
+                </p>
+                <p className="text-sm" style={{ color: '#9a5800' }}>{recommendation.message}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              {recommendation.type === 'document' ? (
+                recommendation.documents.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-80"
+                    style={{ background: '#1a1209', color: '#fff9ef' }}
+                  >
+                    {doc.thumbnail_url ? (
+                      <img src={doc.thumbnail_url} alt="" className="w-5 h-5 rounded object-cover" />
+                    ) : (
+                      <FileText size={15} />
+                    )}
+                    {doc.title}
+                  </button>
+                ))
+              ) : (
+                <button
+                  onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-80"
+                  style={{ background: '#1a1209', color: '#fff9ef' }}
+                >
+                  <BookOpen size={15} />
+                  Review Course Items
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <Card
           className="p-6 sm:p-7 rounded-[24px] border bg-white"
           style={{ borderColor: '#e8e0d4', boxShadow: '0 10px 24px rgba(26,18,9,0.08)' }}
@@ -238,7 +291,7 @@ const QuizResults = () => {
                       </div>
                     </div>
                     
-                    {!isCorrect && (
+                    {!isCorrect && reveal_answers && (
                       <div className="p-3 border rounded-xl" style={{ borderColor: '#86d59f', background: '#edf8ea' }}>
                         <div className="flex items-center gap-3">
                           <CheckCircle size={16} className="text-[#3f8e1b]" />
@@ -249,9 +302,19 @@ const QuizResults = () => {
                         </div>
                       </div>
                     )}
+                    {!isCorrect && !reveal_answers && (
+                      <div className="p-3 border rounded-xl" style={{ borderColor: '#fcd34d', background: '#fffbeb' }}>
+                        <div className="flex items-center gap-2">
+                          <AlertCircle size={15} className="text-amber-500 flex-shrink-0" />
+                          <p className="text-sm" style={{ color: '#92400e' }}>
+                            Review the material and retry to see the correct answer.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {questionResult.explanation && (
+                  {reveal_answers && questionResult.explanation && (
                     <div className="mt-4 p-3 rounded-xl" style={{ background: '#fff7eb', border: '1px solid #f6dec1' }}>
                       <p className="text-sm font-medium mb-1" style={{ color: '#9a5800' }}>Explanation:</p>
                       <p className="text-sm" style={{ color: '#8a5a2d' }}>{questionResult.explanation}</p>
