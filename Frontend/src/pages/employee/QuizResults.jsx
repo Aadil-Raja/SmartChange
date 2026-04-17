@@ -131,7 +131,11 @@ const QuizResults = () => {
               className="text-lg font-semibold mb-5"
               style={{ color: passed ? '#26401b' : '#9f1239' }}
             >
-              {passed ? 'Congratulations! You passed!' : 'Keep trying! You can do better!'}
+              {passed
+                ? 'Congratulations! You passed!'
+                : can_retake
+                ? 'Keep trying! You can do better!'
+                : 'No attempts remaining. Review the material to improve.'}
             </p>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
@@ -191,22 +195,35 @@ const QuizResults = () => {
             </div>
 
             <div className="flex flex-wrap gap-2 mt-3">
-              {recommendation.type === 'document' ? (
-                recommendation.documents.map((doc) => (
-                  <button
-                    key={doc.id}
-                    onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-80"
-                    style={{ background: '#1a1209', color: '#fff9ef' }}
-                  >
-                    {doc.thumbnail_url ? (
-                      <img src={doc.thumbnail_url} alt="" className="w-5 h-5 rounded object-cover" />
-                    ) : (
+              {recommendation.type === 'combined' ? (
+                <>
+                  {recommendation.documents.map((doc) => (
+                    <button
+                      key={`doc-${doc.id}`}
+                      onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-80"
+                      style={{ background: '#1a1209', color: '#fff9ef' }}
+                    >
+                      {doc.thumbnail_url ? (
+                        <img src={doc.thumbnail_url} alt="" className="w-5 h-5 rounded object-cover" />
+                      ) : (
+                        <FileText size={15} />
+                      )}
+                      {doc.title}
+                    </button>
+                  ))}
+                  {recommendation.prereq_items.map((item) => (
+                    <button
+                      key={`prereq-${item.id}`}
+                      onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all hover:opacity-80"
+                      style={{ background: '#3d2c1c', color: '#fff9ef' }}
+                    >
                       <FileText size={15} />
-                    )}
-                    {doc.title}
-                  </button>
-                ))
+                      {item.title}
+                    </button>
+                  ))}
+                </>
               ) : (
                 <button
                   onClick={() => navigate(`/employee/course/${recommendation.course_id}`)}

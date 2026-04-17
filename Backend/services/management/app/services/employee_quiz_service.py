@@ -188,7 +188,9 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
     # Build recommendation if failed
     recommendation = None
     if not score_data["passed"]:
-        recommendation = _build_recommendation(db, quiz_with_questions, quiz.course_id, can_retake)
+        recommendation = _build_recommendation(
+            db, quiz_with_questions, quiz.course_id, can_retake, score_data["question_results"]
+        )
 
     # Decide whether to reveal correct answers and explanations:
     # - passed → always reveal
@@ -239,11 +241,12 @@ def submit_quiz_attempt(db: Session, *, quiz_id: int, user_id: int, answers: Dic
     )
 
 
-def _build_recommendation(db: Session, quiz, course_id: int, can_retake: bool) -> dict:
+def _build_recommendation(db: Session, quiz, course_id: int, can_retake: bool, question_results: list) -> dict:
     """
     Build a review recommendation for a failed quiz attempt.
-    - If quiz has REFERENCED questions → link to the source document
-    - Otherwise → link to the course items page
+    - Documents: from failed REFERENCED questions
+    - Prereq items: from quiz.prerequisite_content_ids (videos, links, docs not already listed)
+    Both are combined and returned together.
     """
     message = (
         "Review the material and try again before your next attempt."
@@ -251,23 +254,19 @@ def _build_recommendation(db: Session, quiz, course_id: int, can_retake: bool) -
         else "You've used all attempts. Review the material to strengthen your knowledge."
     )
 
-    # Check if any question is REFERENCED (linked to a document quiz question)
-    has_referenced = any(
-        q.question_type == QuestionType.REFERENCED
-        for q in quiz.questions
-    )
+    failed_question_ids = {r["question_id"] for r in question_results if not r["is_correct"]}
+    failed_questions = [q for q in quiz.questions if q.id in failed_question_ids]
 
+    # ── 1. Collect source documents from failed REFERENCED questions ──────
+    documents = []
+    seen_doc_ids = set()
+
+    has_referenced = any(q.question_type == QuestionType.REFERENCED for q in failed_questions)
     if has_referenced:
-        # Trace: CourseQuizQuestion → QuizQuestion → Quiz → Document
-        # Collect ALL unique documents across all referenced questions
-        from shared.models.quiz_question import QuizQuestion
         from shared.models.quiz import Quiz as DocumentQuiz
         from shared.models.Document import Document
 
-        seen_doc_ids = set()
-        documents = []
-
-        for q in quiz.questions:
+        for q in failed_questions:
             if q.question_type != QuestionType.REFERENCED:
                 continue
             doc_question = q.source_document_question
@@ -287,15 +286,33 @@ def _build_recommendation(db: Session, quiz, course_id: int, can_retake: bool) -
                     "thumbnail_url": doc.cloudinary_thumbnail_url,
                 })
 
-        if documents:
-            return {
-                "type": "document",
-                "message": message,
-                "documents": documents,
-                "course_id": course_id,
-            }
+    # ── 2. Collect prereq content items (skip doc-type items already listed) ──
+    prereq_items = []
+    prereq_ids = quiz.prerequisite_content_ids or []
+    if prereq_ids:
+        from shared.models.course_content import ContentItem, ContentType
+        items = db.query(ContentItem).filter(ContentItem.id.in_(prereq_ids)).all()
+        for item in items:
+            # Skip document-type prereqs whose document is already in the documents list
+            if item.type == ContentType.DOCUMENT and item.document_id in seen_doc_ids:
+                continue
+            prereq_items.append({
+                "id": item.id,
+                "title": item.title,
+                "type": item.type.value,
+            })
 
-    # Fallback: point to course items
+    # ── 3. Return combined result ─────────────────────────────────────────
+    if documents or prereq_items:
+        return {
+            "type": "combined",
+            "message": message,
+            "documents": documents,
+            "prereq_items": prereq_items,
+            "course_id": course_id,
+        }
+
+    # Final fallback: just link to the course
     return {
         "type": "course",
         "message": message,
@@ -352,6 +369,8 @@ def calculate_quiz_score(quiz, user_answers: Dict[str, int]) -> Dict[str, Any]:
         # Get option IDs for display
         user_option_id = None
         correct_option_id = None
+        user_answer_text = "No answer selected"
+        correct_answer_text = "Unknown"
         
         for opt in options:
             if opt["option_order"] == user_answer:
@@ -364,7 +383,7 @@ def calculate_quiz_score(quiz, user_answers: Dict[str, int]) -> Dict[str, Any]:
         question_results.append({
             "question_id": question.id,
             "question_text": question_text,
-            "user_answer": user_answer_text or "No answer selected",
+            "user_answer": user_answer_text,
             "user_option_id": user_option_id,
             "correct_answer": correct_answer_text,
             "correct_option_id": correct_option_id,
