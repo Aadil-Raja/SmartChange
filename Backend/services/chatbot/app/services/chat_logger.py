@@ -124,24 +124,40 @@ class ChatLogger:
             for doc_id in passing_doc_ids:
                 if doc_id in doc_histories:
                     history = doc_histories[doc_id]
-                    f.write(f"│\n│ Document {doc_id}: {history.get('doc_title', 'Unknown')}\n")
+                    f.write(f"│\n│ ╔══════════════════════════════════════════════════════════════════════════════\n")
+                    f.write(f"│ ║ Document {doc_id}: {history.get('doc_title', 'Unknown')}\n")
+                    f.write(f"│ ╚══════════════════════════════════════════════════════════════════════════════\n")
                     
-                    # Summary
+                    # Summary (all previously summarized messages)
                     if history.get('summary'):
-                        f.write(f"│   Summary: {history['summary']}\n")
+                        f.write(f"│\n│   📝 SUMMARY (All Previously Summarized Messages):\n")
+                        f.write(f"│   ┌─────────────────────────────────────────────────────────────────────────\n")
+                        summary_lines = history['summary'].split('\n')
+                        for line in summary_lines:
+                            f.write(f"│   │ {line}\n")
+                        f.write(f"│   └─────────────────────────────────────────────────────────────────────────\n")
                     else:
-                        f.write(f"│   Summary: None\n")
+                        f.write(f"│\n│   📝 SUMMARY: None (No messages summarized yet)\n")
                     
-                    # Recent messages
+                    # Unsummarized messages (all messages NOT in summary)
                     messages = history.get('last_n_messages', [])
                     if messages:
-                        f.write(f"│   Recent Messages ({len(messages)}):\n")
-                        for msg in messages:
-                            role = "USER" if hasattr(msg, 'role') and str(msg.role) == "MessageRole.USER" else "ASST"
+                        f.write(f"│\n│   💬 UNSUMMARIZED MESSAGES (All messages NOT in summary - {len(messages)} messages):\n")
+                        f.write(f"│   ┌─────────────────────────────────────────────────────────────────────────\n")
+                        for idx, msg in enumerate(messages, 1):
+                            role = "USER" if hasattr(msg, 'role') and str(msg.role) == "MessageRole.USER" else "ASSISTANT"
                             msg_text = msg.message if hasattr(msg, 'message') else str(msg)
-                            f.write(f"│     [{role}]: {msg_text[:80]}...\n")
+                            msg_id = msg.id if hasattr(msg, 'id') else '?'
+                            f.write(f"│   │ [{idx}] Message ID: {msg_id} | Role: {role}\n")
+                            # Write full message, line by line
+                            for line in msg_text.split('\n'):
+                                f.write(f"│   │     {line}\n")
+                            f.write(f"│   │ ─────────────────────────────────────────────────────────────────────\n")
+                        f.write(f"│   └─────────────────────────────────────────────────────────────────────────\n")
                     else:
-                        f.write(f"│   Recent Messages: None\n")
+                        f.write(f"│\n│   💬 UNSUMMARIZED MESSAGES: None (All messages are in summary)\n")
+                    
+                    f.write(f"│\n")
             f.write("└─\n\n")
             
             # LLM Response

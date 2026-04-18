@@ -121,12 +121,14 @@ def upsert_summary(
     db: Session,
     chathead_id: int,
     doc_id: int,
-    summary: str
+    summary: str,
+    last_summarized_message_id: int = None
 ) -> ChatSummary:
     """Insert or update summary for chathead + doc."""
     existing = get_summary(db, chathead_id, doc_id)
     if existing:
         existing.summary = summary
+        existing.last_summarized_message_id = last_summarized_message_id
         existing.updated_at = func.now()
         db.flush()
         return existing
@@ -134,7 +136,8 @@ def upsert_summary(
         new_summary = ChatSummary(
             chathead_id=chathead_id,
             doc_id=doc_id,
-            summary=summary
+            summary=summary,
+            last_summarized_message_id=last_summarized_message_id
         )
         db.add(new_summary)
         db.flush()
@@ -192,8 +195,78 @@ def get_all_messages_except_last_n(
     return all_messages[:-exclude_last_n]
 
 
+def get_all_messages(
+    db: Session,
+    chathead_id: int
+) -> List[ChatMessage]:
+    """
+    Get all messages for a chathead.
+    Returns messages in chronological order (oldest first).
+    """
+    messages = (
+        db.query(ChatMessage)
+        .filter(ChatMessage.chathead_id == chathead_id)
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+    
+    return messages
+
+
+def get_messages_since_last_summary(
+    db: Session,
+    chathead_id: int,
+    last_summarized_message_id: int,
+    exclude_last_n: int
+) -> List[ChatMessage]:
+    """
+    Get messages after last_summarized_message_id, excluding the last N messages.
+    Returns messages in chronological order.
+    Used for incremental summarization.
+    """
+    all_messages = (
+        db.query(ChatMessage)
+        .filter(
+            ChatMessage.chathead_id == chathead_id,
+            ChatMessage.id > last_summarized_message_id
+        )
+        .order_by(ChatMessage.created_at.asc())
+        .all()
+    )
+    
+    if len(all_messages) <= exclude_last_n:
+        return []
+    
+    return all_messages[:-exclude_last_n]
+
+
 def count_total_messages(db: Session, chathead_id: int) -> int:
     """Count total messages in chathead."""
     return db.query(func.count(ChatMessage.id)).filter(
         ChatMessage.chathead_id == chathead_id
     ).scalar()
+
+
+def get_unsummarized_messages_for_doc(
+    db: Session,
+    chathead_id: int,
+    doc_id: int,
+    last_summarized_message_id: int = None
+) -> List[ChatMessage]:
+    """
+    Get all messages that have NOT been summarized yet for a specific document.
+    If last_summarized_message_id is provided, returns messages after that ID.
+    Otherwise, returns all messages.
+    Returns messages in chronological order (oldest first).
+    """
+    query = db.query(ChatMessage).filter(
+        ChatMessage.chathead_id == chathead_id,
+        ChatMessage.active_doc_ids.any(doc_id)
+    )
+    
+    if last_summarized_message_id:
+        query = query.filter(ChatMessage.id > last_summarized_message_id)
+    
+    messages = query.order_by(ChatMessage.created_at.asc()).all()
+    
+    return messages

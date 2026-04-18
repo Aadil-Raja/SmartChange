@@ -46,26 +46,78 @@ Conversation History:
 {chat_history}
 
 Available tools:
-- doc_qa_tool: For specific questions about document content (FINAL - returns complete answer)
-- list_document_sections_tool: For listing all sections available for summarization
-- generate_section_summary_tool: For generating summary of a specific section
+- doc_qa_tool: For specific factual questions about document content
+- list_document_sections_tool: FIRST STEP for any summary/overview request — lists sections so the user can pick one
+- generate_section_summary_tool: SECOND STEP — generates summary of a specific named section
 
-CRITICAL INSTRUCTIONS:
+## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
+
+Before selecting a tool, always check if the user's message is a short or vague
+follow-up (e.g. "can you tell me in detail", "what about his projects?", "tell me more", "elaborate", "and?", "what else?", "in detail", "explain further").
+
+If it is, reconstruct a FULL, self-contained question by:
+1. Looking at the Conversation History above to find what topic was last discussed
+2. Identifying the specific entity, section, or topic in focus
+3. Appending relevant context from the history to make the question complete
+
+Examples of enrichment:
+- User says: "can you tell me in detail"
+  History shows: last answer was about Aadil Raja's FYP (Digital Adoption Platform)
+  Enriched question: "Tell me in detail about Aadil Raja's Digital Adoption Platform final year project, including its features, tech stack, and architecture"
+
+- User says: "what about his experience?"
+  History shows: conversation is about Aadil Raja's resume
+  Enriched question: "What is Aadil Raja's work experience and internships?"
+
+- User says: "elaborate on that"
+  History shows: last answer discussed the PSL's impact on Pakistan cricket
+  Enriched question: "Elaborate on PSL's impact on Pakistan cricket"
+
+- User says: "and the chatbot?"
+  History shows: previous message was about Aadil's Digital Adoption Platform
+  Enriched question: "What are the details of the chatbot in Aadil Raja's Digital Adoption Platform?"
+
+RULE: Never pass a vague short message directly to a tool. Always enrich it first. The enriched question is what you pass as the `question` argument to the tool. This enrichment happens silently — do not tell the user you are enriching the query.
+
+## TOOL SELECTION — READ THIS CAREFULLY
+
+### ALWAYS use list_document_sections_tool when the user says ANY of:
+- "summarize", "summary", "summarise"
+- "overview", "give me an overview"
+- "what is this document about", "explain this document"
+- "what topics", "what sections", "table of contents"
+- "tell me about [document/topic]" when asking about the document as a whole
+- Anything that sounds like they want a high-level digest of the document
+- Examples: "Can you summarize this?", "Give me an overview", "What topics are covered?"
+
+### ALWAYS use generate_section_summary_tool when:
+- User names a SPECIFIC section title (e.g. "summarize Day 3", "tell me about Chapter 2")
+- This usually happens AFTER list_document_sections_tool has shown them the section list
+- Examples: "Summarize Day 1", "Tell me about the Introduction section"
+
+### ALWAYS use doc_qa_tool when:
+- User asks a specific factual question: "What is X?", "Who is Y?", "How does Z work?"
+- User asks for details about a named person, project, achievement, or event
+- User asks "does X include Y?", "what did X do at Y?"
+- The question has a specific answer extractable from the document
+- Examples: "What is the tournament format?", "Who are the notable players?", "How many teams participated?"
+
+### NEVER use doc_qa_tool for:
+- Summary or overview requests — even if the user says "can you tell me more" or "in detail" after asking about a topic
+- Follow-ups about summaries should go to list_document_sections_tool
+- If the previous context was about summaries/overviews, stay with section tools
+
+## CRITICAL INSTRUCTIONS:
 1. Every tool returns a JSON string with keys: "answer", "has_contradiction", "citations".
 2. You MUST return the tool's JSON output EXACTLY as-is without any modification.
 3. Do NOT rewrite, summarize, or reformat the tool output.
 4. Do NOT strip or remove the citations or has_contradiction fields.
 5. If the tool returns JSON, your final response must be that exact JSON string.
 
-Tool selection rules:
-- Use list_document_sections_tool ONLY when user explicitly asks for: "list sections", "show topics", "what sections are there", "give me an overview/table of contents". NOT for factual questions.
-- Use generate_section_summary_tool when user names a specific section they want summarized.
-- Use doc_qa_tool for ALL other questions — any question asking for facts, names, details, explanations, or specific information from the document. When in doubt, use doc_qa_tool.
-
-STRICT TOOL CHAINING RULES - READ CAREFULLY:
-- doc_qa_tool is FINAL. After calling it, STOP IMMEDIATELY. Do NOT call any other tool.
-- list_document_sections_tool is FINAL. After calling it, STOP IMMEDIATELY. Do NOT call doc_qa_tool or any other tool.
-- generate_section_summary_tool is FINAL. After calling it, STOP IMMEDIATELY. Do NOT call any other tool.
+## STRICT TOOL CHAINING RULES:
+- doc_qa_tool is FINAL. After calling it, STOP IMMEDIATELY.
+- list_document_sections_tool is FINAL. After calling it, STOP IMMEDIATELY.
+- generate_section_summary_tool is FINAL. After calling it, STOP IMMEDIATELY.
 - NEVER chain tools. One tool call per turn. The tool output is complete and needs no enhancement.
 - If list_document_sections_tool returns "Multiple documents selected", return that message as-is. Do NOT try another tool.
 - CRITICAL: If user asks multiple questions in one message (e.g. "tell tournament format and notable players"), combine them into ONE single call to doc_qa_tool with the full question. Never call doc_qa_tool more than once per turn.
@@ -113,8 +165,8 @@ class DocumentAgentV2:
         
         Format:
         [Doc Title 1]:
-        Summary: ...
-        Recent messages:
+        Summary: ... (all previously summarized conversation)
+        Recent messages: (all messages NOT in summary)
         User: ...
         Assistant: ...
         
@@ -137,7 +189,7 @@ class DocumentAgentV2:
             if doc_data.get('summary'):
                 doc_section += f"Summary: {doc_data['summary']}\n"
             
-            # Add last N messages
+            # Add all unsummarized messages
             if doc_data.get('last_n_messages'):
                 doc_section += "Recent messages:\n"
                 from app.models import MessageRole

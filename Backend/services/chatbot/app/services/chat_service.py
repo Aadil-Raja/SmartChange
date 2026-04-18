@@ -29,17 +29,18 @@ def load_doc_summaries_and_messages(
     n: int = 5
 ) -> dict:
     """
-    Load per-document summaries and last N messages.
+    Load per-document summaries and all unsummarized messages.
     
     Args:
         db: Chatbot database session
         management_db: Management database session
         chathead_id: Chat ID
         active_doc_ids: List of active document IDs
-        n: Number of recent messages to keep verbatim (default 5)
+        n: Not used anymore - kept for backward compatibility
     
     Returns:
         Dict[doc_id, {doc_title, summary, last_n_messages}]
+        where last_n_messages contains ALL messages not included in the summary
     """
     from shared.repos import documents_repo
     
@@ -49,9 +50,15 @@ def load_doc_summaries_and_messages(
         # Get summary
         summary_obj = chat_repo.get_summary(db, chathead_id, doc_id)
         summary = summary_obj.summary if summary_obj else None
+        last_summarized_message_id = summary_obj.last_summarized_message_id if summary_obj else None
         
-        # Get last N messages for this doc
-        last_n_messages = chat_repo.get_last_n_messages_for_doc(db, chathead_id, doc_id, n)
+        # Get ALL unsummarized messages for this doc
+        unsummarized_messages = chat_repo.get_unsummarized_messages_for_doc(
+            db, 
+            chathead_id, 
+            doc_id, 
+            last_summarized_message_id
+        )
         
         # Get doc title
         doc = documents_repo.get_by_id(management_db, doc_id)
@@ -60,7 +67,7 @@ def load_doc_summaries_and_messages(
         doc_histories[doc_id] = {
             "doc_title": doc_title,
             "summary": summary,
-            "last_n_messages": last_n_messages
+            "last_n_messages": unsummarized_messages  # All unsummarized messages
         }
     
     return doc_histories

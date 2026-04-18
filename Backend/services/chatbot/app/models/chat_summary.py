@@ -18,6 +18,7 @@ class ChatSummary(Base):
     chathead_id = Column(BigInteger, ForeignKey("chatheads.id", ondelete="CASCADE"), nullable=False)
     doc_id = Column(BigInteger, nullable=False, index=True)  # No FK - different database
     summary = Column(Text, nullable=True)
+    last_summarized_message_id = Column(BigInteger, nullable=True)  # Track last message included in summary
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     def __repr__(self):

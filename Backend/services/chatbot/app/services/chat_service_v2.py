@@ -54,13 +54,12 @@ def respond_turn_v2(
             print(f"[LOGGER] Failed to initialize: {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
 
-        # Load document-wise histories (summaries + last N messages)
+        # Load document-wise histories (summaries + all unsummarized messages)
         doc_histories = load_doc_summaries_and_messages(
             db=db,
             management_db=management_db,
             chathead_id=cid,
-            active_doc_ids=active_doc_ids,
-            n=5  # Last 5 messages verbatim
+            active_doc_ids=active_doc_ids
         )
 
         # Run v2 agent FIRST to get validated doc IDs
