@@ -6,6 +6,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
 import DocumentCitationViewer from "./DocumentCitationViewer";
+import TokenUsageBar from "./TokenUsageBar";
 import { getDocumentSuggestedQuestions } from "../../services/documentService";
 
 /* Quick-prompt suggestions shown on empty state */
@@ -358,6 +359,9 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* ── Token usage bar ── */}
+      <TokenUsageBar />
 
       {/* ── Input area ── */}
       <div

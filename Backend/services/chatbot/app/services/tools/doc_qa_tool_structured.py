@@ -22,7 +22,10 @@ from .schemas import LLMDocQAOutput
 ABSOLUTE_FLOOR   = 0.60   # Hard minimum cosine similarity for any chunk
 SAME_DOC_RATIO   = 0.75   # Threshold ratio for the best-scoring document
 OTHER_DOC_RATIO  = 0.85   # Stricter threshold ratio for all other documents
-TOP_K_PER_DOC    = 5      # Retrieve more candidates per doc
+
+def _get_top_k() -> int:
+    from app.core.config import get_settings
+    return get_settings().max_chunks_per_doc
 
 
 class DocQAToolArgs(BaseModel):
@@ -57,7 +60,7 @@ def retrieve_chunks_for_all_docs(chunk_db, document_ids: List[int], question: st
                 chunk_db,
                 document_id=doc_id,
                 question=question,
-                top_k=TOP_K_PER_DOC
+                top_k=_get_top_k()
             )
             
             if not chunks:
@@ -231,14 +234,15 @@ def invoke_llm_with_structured_output(
     chunk_map: Dict
 ) -> Dict:
     """
-    Invoke LLM with structured output and return result.
-    
+    Invoke LLM with structured output and return result + token counts.
+
     Returns:
-        Dict with answer, has_contradiction, citations
+        Dict with answer, has_contradiction, citations, tokens_input, tokens_output
     """
     from shared.llm import create_llm_provider
+    from shared.llm.utils import count_tokens
     from app.core.config import get_settings
-    
+
     settings = get_settings()
     llm = create_llm_provider(
         llm_provider=settings.llm_provider,
@@ -247,61 +251,59 @@ def invoke_llm_with_structured_output(
         openai_api_key=settings.openai_api_key
     )
 
-    # Try structured output first
+    # Count user-variable input tokens: chunk text only (question counted in chat_service_v2)
+    full_context = "\n\n---\n\n".join(context_blocks)
+    tokens_input = count_tokens(full_context)
+
     try:
         langchain_model = llm.get_langchain_model()
         structured_llm = langchain_model.with_structured_output(LLMDocQAOutput)
-        
-        full_context = "\n\n---\n\n".join(context_blocks)
         available_chunk_ids = list(chunk_map.keys())
-        
         prompt = build_prompt(question, conversation_context, full_context, available_chunk_ids)
-        
-        # Invoke with structured output
         result: LLMDocQAOutput = structured_llm.invoke(prompt)
-        
+
         answer = result.answer
         has_contradiction = result.has_contradiction
         used_chunk_ids = result.used_chunk_ids
-        
-        # Build final citations
-        final_citations = []
-        for cid in used_chunk_ids:
-            if cid in chunk_map:
-                final_citations.append(chunk_map[cid])
-        
+        tokens_output = count_tokens(answer)
+
+        final_citations = [chunk_map[cid] for cid in used_chunk_ids if cid in chunk_map]
+
         return {
             "answer": answer,
             "has_contradiction": has_contradiction,
-            "citations": final_citations
+            "citations": final_citations,
+            "tokens_input": tokens_input,
+            "tokens_output": tokens_output,
         }
-        
+
     except Exception:
-        return _fallback_to_generate_json(llm, question, context_blocks, chunk_map, conversation_context)
+        return _fallback_to_generate_json(llm, question, context_blocks, chunk_map, conversation_context, tokens_input)
 
 
-def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], chunk_map: Dict, conversation_context: str = "") -> Dict:
+def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], chunk_map: Dict, conversation_context: str = "", tokens_input: int = 0) -> Dict:
     """Fallback to generate_json() if structured output fails."""
+    from shared.llm.utils import count_tokens
     full_context = "\n\n---\n\n".join(context_blocks)
+    # tokens_input already has chunk text counted; don't re-count
     available_chunk_ids = list(chunk_map.keys())
-    
     prompt = build_prompt(question, conversation_context, full_context, available_chunk_ids)
     prompt += "\n\nRespond with ONLY valid JSON:\n{\n  \"answer\": \"your full answer here\",\n  \"has_contradiction\": true or false,\n  \"used_chunk_ids\": [\"list only chunk IDs you actually used\"]\n}"
-    
+
     result = llm.generate_json(prompt)
     answer = result.get("answer", "Could not generate an answer.")
     has_contradiction = result.get("has_contradiction", False)
     used_chunk_ids = result.get("used_chunk_ids", [])
+    tokens_output = count_tokens(answer)
 
-    final_citations = []
-    for cid in used_chunk_ids:
-        if cid in chunk_map:
-            final_citations.append(chunk_map[cid])
+    final_citations = [chunk_map[cid] for cid in used_chunk_ids if cid in chunk_map]
 
     return {
         "answer": answer,
         "has_contradiction": has_contradiction,
-        "citations": final_citations
+        "citations": final_citations,
+        "tokens_input": tokens_input,
+        "tokens_output": tokens_output,
     }
 
 
@@ -387,8 +389,15 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
 
             # Step 4: Invoke LLM
             result = invoke_llm_with_structured_output(question, conversation_context, context_blocks, chunk_map)
-            
-            return json.dumps(result)
+
+            return json.dumps({
+                "answer": result["answer"],
+                "has_contradiction": result["has_contradiction"],
+                "citations": result["citations"],
+                "tokens_input": result.get("tokens_input", 0),
+                "tokens_output": result.get("tokens_output", 0),
+                "call_type": "doc_qa",
+            })
 
         except Exception:
             import traceback

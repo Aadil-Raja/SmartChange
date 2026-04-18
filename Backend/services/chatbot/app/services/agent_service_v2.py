@@ -209,7 +209,10 @@ class DocumentAgentV2:
             return {
                 "answer": parsed.get("answer", raw_output),
                 "has_contradiction": parsed.get("has_contradiction", False),
-                "citations": _group_citations(flat_citations)
+                "citations": _group_citations(flat_citations),
+                "tokens_input": parsed.get("tokens_input", 0),
+                "tokens_output": parsed.get("tokens_output", 0),
+                "call_type": parsed.get("call_type", None),
             }
         except (json.JSONDecodeError, TypeError):
             # Try to extract and merge multiple JSON objects from concatenated output
@@ -235,11 +238,15 @@ class DocumentAgentV2:
                 return {
                     "answer": merged_answer,
                     "has_contradiction": has_contradiction,
-                    "citations": _group_citations(merged_citations)
+                    "citations": _group_citations(merged_citations),
+                    "tokens_input": sum(o.get("tokens_input", 0) for o in json_objects),
+                    "tokens_output": sum(o.get("tokens_output", 0) for o in json_objects),
                 }
 
             return {
                 "answer": raw_output,
                 "has_contradiction": False,
-                "citations": []
+                "citations": [],
+                "tokens_input": 0,
+                "tokens_output": 0,
             }

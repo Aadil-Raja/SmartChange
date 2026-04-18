@@ -38,6 +38,12 @@ export const deleteChatHead = async (chatHeadId) => {
 
 // ==================== CHAT INTERACTION ====================
 
+// Fetch runtime chat config (e.g. max_active_documents)
+export const getChatConfig = async () => {
+  const response = await chatbotApi.get('/chat/config');
+  return response.data;
+};
+
 // Send message and get response
 export const sendChatMessage = async (messageData) => {
   console.log("🚀 sendChatMessage called with:", messageData);

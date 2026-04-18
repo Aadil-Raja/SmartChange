@@ -17,6 +17,7 @@ from app.services.tools.section_summary_tool import (
     _resolve_intent_prompts,
     _intent_label,
 )
+from shared.llm.utils import count_tokens
 
 
 class ListSectionsToolArgs(BaseModel):
@@ -111,7 +112,8 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
             return json.dumps({
                 "answer": answer,
                 "has_contradiction": False,
-                "citations": citations
+                "citations": citations,
+                "call_type": "list_sections",
             })
 
         except Exception as e:
@@ -264,7 +266,10 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
                 return json.dumps({
                     "answer": answer,
                     "has_contradiction": False,
-                    "citations": citations
+                    "citations": citations,
+                    "tokens_input": 0,   # user message counted in chat_service_v2
+                    "tokens_output": 0,
+                    "call_type": "section_summary",
                 })
 
             if not chunks:
@@ -299,16 +304,21 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             if chunk_count <= 10:
                 full_text = "\n\n".join([c.text for c in chunks])
                 summary = llm.generate(build_prompt(section.section_title, full_text, chunk_count * 55))
+                tokens_input = count_tokens(full_text)
             else:
                 BATCH_SIZE = 10
                 current_summary = ""
+                tokens_input = 0
                 for i in range(0, chunk_count, BATCH_SIZE):
                     batch = chunks[i:i + BATCH_SIZE]
                     batch_text = "\n\n".join([c.text for c in batch])
+                    tokens_input += count_tokens(batch_text)
                     current_summary = llm.generate(
                         build_prompt(section.section_title, batch_text, (i + len(batch)) * 55, current_summary)
                     )
                 summary = current_summary
+
+            tokens_output = count_tokens(summary)
 
             # Cache
             section.summary = summary
@@ -327,7 +337,10 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             return json.dumps({
                 "answer": answer,
                 "has_contradiction": False,
-                "citations": citations
+                "citations": citations,
+                "tokens_input": tokens_input,
+                "tokens_output": tokens_output,
+                "call_type": "section_summary",
             })
 
         except Exception as e:

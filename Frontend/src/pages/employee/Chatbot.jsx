@@ -9,7 +9,7 @@ import Alert from "../../components/ui/Alert";
 import EmployeeSidebar from "../../components/ui/EmployeeSidebar";
 
 const Chatbot = () => {
-  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments, startNewChat } = useChatbot();
+  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments, fetchConfig, startNewChat } = useChatbot();
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -25,6 +25,7 @@ const Chatbot = () => {
       hasFetchedChats.current = true;
       fetchChatHeads();
       fetchDocuments();
+      fetchConfig();
     }
     return () => clearMessages();
   }, []);

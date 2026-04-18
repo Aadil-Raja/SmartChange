@@ -13,6 +13,13 @@ from .base import BaseLLMProvider
 logger = logging.getLogger(__name__)
 
 
+def count_tokens(text: str) -> int:
+    """Count tokens using tiktoken cl100k_base (same encoder used for chunking)."""
+    import tiktoken
+    enc = tiktoken.get_encoding("cl100k_base")
+    return len(enc.encode(text))
+
+
 # ============================================================================
 # LLM Provider Utilities
 # ============================================================================
