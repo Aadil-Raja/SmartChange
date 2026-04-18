@@ -388,6 +388,87 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
             # Step 4: Invoke LLM
             result = invoke_llm_with_structured_output(question, conversation_context, context_blocks, chunk_map)
             
+            # Prepare logging data
+            try:
+                from app.services.chat_logger import get_logger
+                
+                logger = get_logger()
+                print(f"[TOOL] Logger instance: {logger}", file=sys.stderr)
+                
+                if logger:
+                    print(f"[TOOL] Preparing logging data...", file=sys.stderr)
+                    
+                    # Prepare retrieved chunks for logging
+                    retrieved_chunks = {}
+                    for doc_id, data in raw_results.items():
+                        chunks_with_meta = []
+                        for chunk in data['chunks']:
+                            chunks_with_meta.append({
+                                'doc_title': data['doc_title'],
+                                'score': chunk['score'],
+                                'start_page_num': chunk.get('start_page_num'),
+                                'section_title': chunk.get('section_title'),
+                                'text': chunk['text']
+                            })
+                        retrieved_chunks[doc_id] = chunks_with_meta
+                    
+                    # Separate passing and dropped chunks
+                    passing_chunks = {}
+                    dropped_chunks = {}
+                    
+                    for doc_id, data in raw_results.items():
+                        threshold = same_doc_threshold if doc_id == best_doc_id else other_doc_threshold
+                        doc_passing = []
+                        doc_dropped = []
+                        
+                        for chunk in data['chunks']:
+                            chunk_with_meta = {
+                                'doc_title': data['doc_title'],
+                                'score': chunk['score'],
+                                'start_page_num': chunk.get('start_page_num'),
+                                'section_title': chunk.get('section_title'),
+                                'text': chunk['text']
+                            }
+                            if chunk['score'] >= threshold:
+                                doc_passing.append(chunk_with_meta)
+                            else:
+                                doc_dropped.append(chunk_with_meta)
+                        
+                        if doc_passing:
+                            passing_chunks[doc_id] = doc_passing
+                        if doc_dropped:
+                            dropped_chunks[doc_id] = doc_dropped
+                    
+                    print(f"[TOOL] Calling logger.log_turn()...", file=sys.stderr)
+                    
+                    # Log the turn
+                    logger.log_turn(
+                        user_message=question,
+                        active_doc_ids=document_ids,
+                        retrieved_chunks=retrieved_chunks,
+                        dropped_chunks=dropped_chunks,
+                        passing_chunks=passing_chunks,
+                        thresholds={
+                            'best_score': best_score,
+                            'best_doc_id': best_doc_id,
+                            'same_doc_threshold': same_doc_threshold,
+                            'other_doc_threshold': other_doc_threshold
+                        },
+                        doc_histories=doc_histories,
+                        llm_answer=result['answer'],
+                        citations=result['citations'],
+                        has_contradiction=result['has_contradiction']
+                    )
+                    
+                    print(f"[TOOL] Logging completed successfully", file=sys.stderr)
+                else:
+                    print(f"[TOOL] Logger is None - skipping logging", file=sys.stderr)
+            except Exception as log_error:
+                # Don't fail the request if logging fails
+                print(f"[TOOL] Logging error: {log_error}", file=sys.stderr)
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+            
             return json.dumps(result)
 
         except Exception:

@@ -10,6 +10,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from app.repositories import chat_repo
 from app.services.agent_service_v2 import DocumentAgentV2
 from app.models import MessageRole
+from app.services.chat_logger import initialize_logger
 import sys
 import traceback
 
@@ -32,6 +33,26 @@ def respond_turn_v2(
         # Ensure chathead exists
         from app.services.chat_service import ensure_chathead, load_doc_summaries_and_messages
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
+
+        # Initialize logger for this chathead
+        try:
+            from app.services.chat_logger import initialize_logger, get_logger
+            
+            # Always initialize for new chathead, or if logger doesn't match current chathead
+            should_init = False
+            if chathead_id is None:  # New chathead
+                should_init = True
+            else:
+                current_logger = get_logger()
+                if current_logger is None or current_logger.chathead_id != cid:
+                    should_init = True
+            
+            if should_init:
+                initialize_logger(cid)
+                print(f"[LOGGER] Initialized logger for chathead {cid}", file=sys.stderr)
+        except Exception as e:
+            print(f"[LOGGER] Failed to initialize: {e}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
 
         # Load document-wise histories (summaries + last N messages)
         doc_histories = load_doc_summaries_and_messages(
