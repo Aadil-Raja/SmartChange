@@ -12,3 +12,9 @@ export const getProcessedDocumentById = async (documentId) => {
   const response = await api.get(`/employee/documents/processed/${documentId}`);
   return response.data;
 };
+
+// Get suggested questions for a document (chatbot chips)
+export const getDocumentSuggestedQuestions = async (documentId) => {
+  const response = await api.get(`/employee/documents/${documentId}/suggested-questions`);
+  return response.data;
+};

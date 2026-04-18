@@ -6,6 +6,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
 import DocumentCitationViewer from "./DocumentCitationViewer";
+import { getDocumentSuggestedQuestions } from "../../services/documentService";
 
 /* Quick-prompt suggestions shown on empty state */
 const QUICK_PROMPTS = [
@@ -64,6 +65,7 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -78,6 +80,40 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
       fetchDocuments();
     }
   }, []);
+
+  // Fetch suggested questions when document selection changes (single doc only)
+  useEffect(() => {
+    if (selectedDocumentIds?.length === 1) {
+      getDocumentSuggestedQuestions(selectedDocumentIds[0])
+        .then(res => setSuggestedQuestions(res?.data?.questions || []))
+        .catch(() => setSuggestedQuestions([]));
+    } else if (selectedDocumentIds?.length > 1) {
+      // Multiple docs: take up to 2-3 from each, merge, deduplicate, cap at 5
+      Promise.all(selectedDocumentIds.map(id =>
+        getDocumentSuggestedQuestions(id).then(res => res?.data?.questions || []).catch(() => [])
+      )).then(results => {
+        const perDoc = Math.max(1, Math.floor(5 / results.length));
+        const seen = new Set();
+        const merged = [];
+        // First pass: take perDoc from each
+        results.forEach(docQuestions => {
+          docQuestions.slice(0, perDoc).forEach(q => {
+            if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); }
+          });
+        });
+        // Second pass: fill remaining slots from leftovers
+        results.forEach(docQuestions => {
+          docQuestions.slice(perDoc).forEach(q => {
+            if (merged.length >= 5) return;
+            if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); }
+          });
+        });
+        setSuggestedQuestions(merged.slice(0, 5));
+      });
+    } else {
+      setSuggestedQuestions([]);
+    }
+  }, [JSON.stringify(selectedDocumentIds)]);
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !hasDocuments || sending) return;
@@ -175,6 +211,32 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
                 </button>
               ))}
             </div>
+
+            {/* Suggested questions chips */}
+            {suggestedQuestions.length > 0 && (
+              <div className="w-full max-w-sm mt-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-2 text-center" style={{ color: "rgba(65,50,24,0.4)" }}>
+                  Suggested
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {suggestedQuestions.map((q) => (
+                    <button
+                      key={q.id}
+                      onClick={() => {
+                        setInputMessage(q.text);
+                        setTimeout(() => inputRef.current?.focus(), 50);
+                      }}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                      style={{ background: "#fff0e8", color: "#c2620a", border: "1px solid #f6dec1" }}
+                      onMouseEnter={e => { e.currentTarget.style.background = "#ffe4cc"; e.currentTarget.style.borderColor = "#f7953f"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "#fff0e8"; e.currentTarget.style.borderColor = "#f6dec1"; }}
+                    >
+                      {q.text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

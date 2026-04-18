@@ -1,12 +1,13 @@
 // pages/AdminDashboard.jsx
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FileText, Upload, Play, CheckCircle, AlertCircle, Clock, RefreshCw,
-  Edit, Plus, X, ClipboardList, Search, Filter, BookOpen
+  Edit, Plus, X, ClipboardList, Search, Filter, BookOpen, Sparkles
 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import { useAdmin } from '../../hooks/useAdmin';
 import { fetchProcessingJobs, fetchDocumentSections } from '../../services/adminApi';
+import SuggestedQuestionsPanel from '../../components/ui/SuggestedQuestionsPanel';
 
 const C = {
   bg: '#faf6ef',
@@ -91,6 +92,7 @@ const AdminDashboard = () => {
   const [auditStats, setAuditStats] = useState({ queued: 0, processing: 0, completed: 0, failed: 0 });
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   const [auditStatusFilter, setAuditStatusFilter] = useState('all');
+  const [sqDocId, setSqDocId] = useState(null); // doc ID with suggested questions panel open
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -334,7 +336,8 @@ const AdminDashboard = () => {
                     const badge = getStatusBadge(doc.status);
                     const isProcessing = processingDocs.has(doc.id);
                     return (
-                      <div key={doc.id}
+                      <React.Fragment key={doc.id}>
+                      <div
                         style={{ border: `1px solid ${C.border}`, borderRadius: 12, background: C.card }}
                         className="flex items-center justify-between px-4 py-3 hover:shadow-sm transition-shadow">
 
@@ -421,8 +424,32 @@ const AdminDashboard = () => {
                               <BookOpen size={17} />
                             </button>
                           )}
+                          {/* Suggested Questions button — only for PROCESSED docs */}
+                          {doc.status === 'PROCESSED' && (
+                            <button
+                              onClick={() => setSqDocId(sqDocId === doc.id ? null : doc.id)}
+                              style={{
+                                background: sqDocId === doc.id ? C.orangeLight : 'transparent',
+                                border: 'none', cursor: 'pointer',
+                                color: C.orange, padding: 6, borderRadius: 8,
+                                display: 'flex', alignItems: 'center',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = C.orangeLight}
+                              onMouseLeave={e => { if (sqDocId !== doc.id) e.currentTarget.style.background = 'transparent'; }}
+                              title="Suggested Questions"
+                            >
+                              <Sparkles size={17} />
+                            </button>
+                          )}
                         </div>
                       </div>
+                      {/* Suggested Questions Panel — inline below the row */}
+                      {sqDocId === doc.id && (
+                        <div className="px-4 pb-4 pt-1">
+                          <SuggestedQuestionsPanel key={doc.id} documentId={doc.id} documentStatus={doc.status} />
+                        </div>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </div>
