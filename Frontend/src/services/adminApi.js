@@ -148,3 +148,19 @@ export const fetchDocumentSections = async (documentId) => {
   const res = await api.get(`/admin/documents/${documentId}/sections`);
   return res.data;
 };
+
+// ============ SUGGESTED QUESTIONS ============
+export const getSuggestedQuestions = async (documentId) => {
+  const res = await api.get(`/admin-training/documents/${documentId}/suggested-questions`);
+  return res.data;
+};
+
+export const generateSuggestedQuestions = async (documentId) => {
+  const res = await api.post(`/admin-training/documents/${documentId}/suggested-questions/generate`);
+  return res.data;
+};
+
+export const updateSuggestedQuestions = async (documentId, questions) => {
+  const res = await api.patch(`/admin-training/documents/${documentId}/suggested-questions`, { questions });
+  return res.data;
+};

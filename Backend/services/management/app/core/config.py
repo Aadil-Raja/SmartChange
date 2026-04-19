@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-2.5-flash"
     openai_api_key: str | None = None
 
+    # Token quota defaults
+    default_token_limit: int = 100000
+    default_reset_interval_hours: int = 24
+
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()

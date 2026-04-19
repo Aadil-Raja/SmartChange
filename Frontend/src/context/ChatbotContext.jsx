@@ -1,13 +1,15 @@
 // src/context/ChatbotContext.jsx
-import { createContext, useState, useCallback } from "react";
+import { createContext, useState, useCallback, useRef } from "react";
 import {
   getChatHeads,
   getChatMessages,
   sendChatMessage,
   renameChatHead,
   deleteChatHead,
+  getChatConfig,
 } from "../services/chatbotService";
 import { getProcessedDocuments } from "../services/documentService";
+import chatbotApi from "../services/chatbotapi";
 
 export const ChatbotContext = createContext(null);
 
@@ -20,6 +22,8 @@ export const ChatbotProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [maxActiveDocs, setMaxActiveDocs] = useState(5);
+  const [quota, setQuota] = useState(null);
 
   // Clear messages
   const clearMessages = () => {
@@ -189,6 +193,15 @@ export const ChatbotProvider = ({ children }) => {
         const assistantResponse = res.data?.answer;
         const citations = res.data?.citations || [];
         const hasContradiction = Boolean(res.data?.has_contradiction);
+        const quotaUpdate = res.data?.quota || null;
+
+        // Update quota from response inline — no extra API call needed
+        if (quotaUpdate) {
+          setQuota(quotaUpdate);
+        } else {
+          // Fallback: schedule a refresh if quota wasn't in response
+          scheduleQuotaRefresh();
+        }
 
         // Update active chat ID if this was a new chat
         if (!chatHeadId && newChatId) {
@@ -277,16 +290,45 @@ export const ChatbotProvider = ({ children }) => {
     }
   };
 
-  // Select document (now supports multiple)
+  // Fetch chat config (limits etc.)
+  const fetchConfig = async () => {
+    try {
+      const res = await getChatConfig();
+      if (res?.success && res.data?.max_active_documents) {
+        setMaxActiveDocs(res.data.max_active_documents);
+      }
+    } catch {
+      // silently fall back to default
+    }
+  };
+
+  // Fetch token quota for current user — debounced, max once per 30s
+  const quotaFetchTimer = useRef(null);
+  const fetchQuota = async () => {
+    try {
+      const res = await chatbotApi.get("/chat/quota");
+      if (res.data?.success) setQuota(res.data.data);
+    } catch {
+      // silently fail
+    }
+  };
+
+  const scheduleQuotaRefresh = () => {
+    if (quotaFetchTimer.current) return; // already scheduled
+    quotaFetchTimer.current = setTimeout(() => {
+      quotaFetchTimer.current = null;
+      fetchQuota();
+    }, 30000);
+  };
+
+  // Select document (now supports multiple, capped by maxActiveDocs)
   const selectDocument = (documentId) => {
     setSelectedDocumentIds((prev) => {
       if (prev.includes(documentId)) {
-        // Remove if already selected
         return prev.filter((id) => id !== documentId);
-      } else {
-        // Add to selection
-        return [...prev, documentId];
       }
+      if (prev.length >= maxActiveDocs) return prev;
+      return [...prev, documentId];
     });
   };
 
@@ -326,6 +368,8 @@ export const ChatbotProvider = ({ children }) => {
         loading,
         error,
         success,
+        maxActiveDocs,
+        quota,
         // Chat Head Functions
         fetchChatHeads,
         renameChat,
@@ -335,6 +379,8 @@ export const ChatbotProvider = ({ children }) => {
         sendMessage,
         // Document Functions
         fetchDocuments,
+        fetchConfig,
+        fetchQuota,
         selectDocument,
         clearDocumentSelection,
         // Chat Actions

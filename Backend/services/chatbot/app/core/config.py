@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-2.5-flash"
     openai_api_key: str | None = None
 
+    # Chatbot limits
+    max_active_documents: int = 5
+    max_chunks_per_doc: int = 5
+
     # JWT
     jwt_secret: str
     jwt_algorithm: str

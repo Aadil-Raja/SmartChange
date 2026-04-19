@@ -543,3 +543,17 @@ def submit_quiz_attempt(
         )
     except Exception as e:
         return make_response(False, "Could not submit quiz", status_code=500, error=str(e))
+
+
+# ---------------------------
+# Suggested Questions (Chatbot chips)
+# ---------------------------
+@router.get("/documents/{document_id}/suggested-questions", status_code=status.HTTP_200_OK)
+def get_suggested_questions_route(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _user=Depends(get_current_user),
+):
+    """Return active suggested questions for a document (used as chatbot chips)."""
+    from app.services.suggested_questions_service import get_suggested_questions
+    return get_suggested_questions(db, document_id=document_id, active_only=True)

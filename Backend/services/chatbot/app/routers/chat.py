@@ -9,9 +9,72 @@ from app.schemas import ChatTurnIn
 from app.schemas.chat import ChatTurnOutV2
 from app.utils.response_utils import make_response
 from app.deps.auth import get_current_user
+from app.core.config import get_settings
 import sys
 
 router = APIRouter()
+
+
+@router.get("/config", status_code=status.HTTP_200_OK)
+def get_chat_config():
+    """Returns runtime chat configuration values (e.g. document selection limits)."""
+    settings = get_settings()
+    return make_response(True, "OK", data={"max_active_documents": settings.max_active_documents}, status_code=200)
+
+
+@router.get("/quota", status_code=status.HTTP_200_OK)
+def get_my_quota(
+    db: Session = Depends(get_db),
+    management_db: Session = Depends(get_management_db),
+    user=Depends(get_current_user),
+):
+    """Returns the current user's token quota and usage. Serves from cache when fresh."""
+    from shared.repos.token_quota_repo import get_quota, get_current_usage
+    from app.services import quota_cache
+    from datetime import datetime, timezone, timedelta
+
+    user_id = int(user)
+    settings = get_settings()
+
+    # Serve from cache if fresh
+    cached = quota_cache.get(user_id)
+    if cached:
+        return make_response(True, "OK", data=cached, status_code=200)
+
+    # Cache miss — hit DB
+    quota = get_quota(management_db, user_id)
+
+    if not quota:
+        now = datetime.now(timezone.utc)
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        usage = get_current_usage(management_db, user_id, today)
+        snapshot = {
+            "token_limit": None,
+            "tokens_used": usage["total"],
+            "tokens_input": usage["tokens_input"],
+            "tokens_output": usage["tokens_output"],
+            "tokens_remaining": None,
+            "resets_at": None,
+            "note": "No quota configured yet",
+        }
+        quota_cache.set(user_id, snapshot)
+        return make_response(True, "OK", data=snapshot, status_code=200)
+
+    usage = get_current_usage(management_db, user_id, quota.last_reset_at)
+    last_reset = quota.last_reset_at
+    if last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
+    resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
+    snapshot = {
+        "token_limit": quota.token_limit,
+        "tokens_used": usage["total"],
+        "tokens_input": usage["tokens_input"],
+        "tokens_output": usage["tokens_output"],
+        "tokens_remaining": max(0, quota.token_limit - usage["total"]),
+        "resets_at": resets_at.isoformat(),
+    }
+    quota_cache.set(user_id, snapshot)
+    return make_response(True, "OK", data=snapshot, status_code=200)
 
 @router.post("/respond", status_code=status.HTTP_200_OK)
 def respond_route(

@@ -5,9 +5,11 @@ import { X, FileText, Check, Search, RefreshCw, ExternalLink } from "lucide-reac
 import LoadingSpinner from "./LoadingSpinner";
 
 const DocumentSelector = ({ onClose }) => {
-  const { availableDocuments, selectedDocumentIds, loading, selectDocument, fetchDocuments } = useChatbot();
+  const { availableDocuments, selectedDocumentIds, loading, selectDocument, fetchDocuments, maxActiveDocs } = useChatbot();
+  const MAX_DOCS = maxActiveDocs;
   const [searchQuery, setSearchQuery] = useState("");
   const [localSelection, setLocalSelection] = useState(selectedDocumentIds || []);
+  const [limitWarning, setLimitWarning] = useState(false);
 
   useEffect(() => { if (availableDocuments.length === 0) fetchDocuments(); }, []);
 
@@ -16,7 +18,18 @@ const DocumentSelector = ({ onClose }) => {
   );
 
   const handleToggle = (id) => {
-    setLocalSelection(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setLocalSelection(prev => {
+      if (prev.includes(id)) {
+        setLimitWarning(false);
+        return prev.filter(x => x !== id);
+      }
+      if (prev.length >= MAX_DOCS) {
+        setLimitWarning(true);
+        return prev;
+      }
+      setLimitWarning(false);
+      return [...prev, id];
+    });
   };
 
   const handleConfirm = () => {
@@ -59,7 +72,7 @@ const DocumentSelector = ({ onClose }) => {
                   Select Documents
                 </h2>
                 <p className="text-[11px]" style={{ color: "rgba(250,246,239,0.45)", marginTop: 1 }}>
-                  Choose one or more to chat with
+                  Choose up to {MAX_DOCS} documents to chat with
                 </p>
               </div>
             </div>
@@ -97,6 +110,15 @@ const DocumentSelector = ({ onClose }) => {
 
         {/* ── Document list ── */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2" style={{ background: "#FAF6EF" }}>
+          {limitWarning && (
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium mb-1"
+              style={{ background: "#fff3cd", color: "#92400e", border: "1px solid #fcd34d" }}
+            >
+              <span>⚠️</span>
+              <span>Maximum {MAX_DOCS} documents allowed. Deselect one to choose another.</span>
+            </div>
+          )}
           {loading && availableDocuments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <LoadingSpinner size="large" />
@@ -129,17 +151,20 @@ const DocumentSelector = ({ onClose }) => {
             filtered.map(doc => {
               const isSelected = localSelection.includes(doc.id);
               const isActive = selectedDocumentIds.includes(doc.id);
+              const isDisabled = !isSelected && localSelection.length >= MAX_DOCS;
               return (
                 <div
                   key={doc.id}
-                  onClick={() => handleToggle(doc.id)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all"
+                  onClick={() => !isDisabled && handleToggle(doc.id)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
                   style={{
                     background: isSelected ? "#fff0e8" : "#fff",
                     border: `1.5px solid ${isSelected ? "#F58220" : "#e0d8ce"}`,
                     boxShadow: isSelected ? "0 2px 8px rgba(245,130,32,0.1)" : "none",
+                    cursor: isDisabled ? "not-allowed" : "pointer",
+                    opacity: isDisabled ? 0.45 : 1,
                   }}
-                  onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = "#c4b4a0"; }}
+                  onMouseEnter={e => { if (!isSelected && !isDisabled) e.currentTarget.style.borderColor = "#c4b4a0"; }}
                   onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = "#e0d8ce"; }}
                 >
                   <div
@@ -199,7 +224,7 @@ const DocumentSelector = ({ onClose }) => {
           <span className="text-xs" style={{ color: "rgba(65,50,24,0.5)" }}>
             {localSelection.length === 0
               ? "No documents selected"
-              : `${localSelection.length} document${localSelection.length !== 1 ? "s" : ""} selected`}
+              : `${localSelection.length} / ${MAX_DOCS} selected`}
           </span>
           <div className="flex gap-2">
             <button

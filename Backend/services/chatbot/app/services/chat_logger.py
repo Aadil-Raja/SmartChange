@@ -25,13 +25,16 @@ class ChatLogger:
         print(f"[LOGGER INIT] Log directory: {self.log_dir.absolute()}", file=sys.stderr)
         print(f"[LOGGER INIT] Log file: {self.log_file.absolute()}", file=sys.stderr)
         
-        # Overwrite the file when a new chathead is created
-        self._initialize_log()
+        # Initialize the file only if it doesn't exist (append mode)
+        if not self.log_file.exists():
+            self._initialize_log()
+        else:
+            print(f"[LOGGER] Log file exists, will append to it", file=sys.stderr)
     
     def _initialize_log(self):
-        """Initialize/overwrite the log file with header."""
+        """Initialize the log file with header (only for new files)."""
         try:
-            print(f"[LOGGER] Writing to: {self.log_file}", file=sys.stderr)
+            print(f"[LOGGER] Creating new log file: {self.log_file}", file=sys.stderr)
             with open(self.log_file, 'w', encoding='utf-8') as f:
                 f.write("="*100 + "\n")
                 f.write(f"CHAT LOG - Chathead ID: {self.chathead_id}\n")

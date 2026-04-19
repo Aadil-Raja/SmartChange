@@ -141,7 +141,7 @@ Rules:
 - One sentence per exchange: what was asked, what was answered
 - Past tense, third person
 - No elaboration, no background, just the factual core
-- If a previous summary exists, append new info only — do not rewrite
+- CRITICAL: If a previous summary exists above, you MUST include it in your output and add the new exchanges to it. Do NOT discard the previous summary. Your output should be: [Previous summary] + [New exchanges summary]
 
 Summary:"""
     

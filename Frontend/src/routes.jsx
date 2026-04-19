@@ -27,6 +27,7 @@ import QuizResults from './pages/employee/QuizResults';
 import Notifications from './pages/employee/Notifications';
 import TeamMemberInfo from "./pages/employee/TeamMemberInfo.jsx";
 import TeamLeaderboard from "./pages/employee/TeamLeaderboard.jsx";
+import AdminTokenQuota from "./pages/admin/AdminTokenQuota.jsx";
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -137,6 +138,14 @@ function AppRoutes() {
           element={
             <AdminProtectedRoute>
               <AdminQuizDetail />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/token-quota"
+          element={
+            <AdminProtectedRoute>
+              <AdminTokenQuota />
             </AdminProtectedRoute>
           }
         />

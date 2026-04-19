@@ -50,6 +50,12 @@ Available tools:
 - list_document_sections_tool: FIRST STEP for any summary/overview request — lists sections so the user can pick one
 - generate_section_summary_tool: SECOND STEP — generates summary of a specific named section
 
+## CRITICAL: YOU MUST ALWAYS USE A TOOL
+
+You MUST NEVER answer questions directly from your own knowledge or from the conversation history.
+EVERY response MUST come from calling one of the three tools above.
+Even if you think you know the answer from the history, you MUST call a tool to retrieve it from the document.
+
 ## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
 
 Before selecting a tool, always check if the user's message is a short or vague
@@ -108,11 +114,12 @@ RULE: Never pass a vague short message directly to a tool. Always enrich it firs
 - If the previous context was about summaries/overviews, stay with section tools
 
 ## CRITICAL INSTRUCTIONS:
-1. Every tool returns a JSON string with keys: "answer", "has_contradiction", "citations".
-2. You MUST return the tool's JSON output EXACTLY as-is without any modification.
-3. Do NOT rewrite, summarize, or reformat the tool output.
-4. Do NOT strip or remove the citations or has_contradiction fields.
-5. If the tool returns JSON, your final response must be that exact JSON string.
+1. YOU MUST ALWAYS CALL A TOOL. NEVER answer directly without calling a tool.
+2. Every tool returns a JSON string with keys: "answer", "has_contradiction", "citations".
+3. You MUST return the tool's JSON output EXACTLY as-is without any modification.
+4. Do NOT rewrite, summarize, or reformat the tool output.
+5. Do NOT strip or remove the citations or has_contradiction fields.
+6. If the tool returns JSON, your final response must be that exact JSON string.
 
 ## STRICT TOOL CHAINING RULES:
 - doc_qa_tool is FINAL. After calling it, STOP IMMEDIATELY.
@@ -123,7 +130,7 @@ RULE: Never pass a vague short message directly to a tool. Always enrich it firs
 - CRITICAL: If user asks multiple questions in one message (e.g. "tell tournament format and notable players"), combine them into ONE single call to doc_qa_tool with the full question. Never call doc_qa_tool more than once per turn.
 - CRITICAL: If user asks for multiple sections (e.g. "Day 1 and Day 7", "all days", "days 5 to 12"), call generate_section_summary_tool EXACTLY ONCE with selection_type='many'. NEVER call it multiple times.
 
-REMEMBER: Each tool is self-contained and complete. After ANY tool call, your job is done. Return the output immediately.
+REMEMBER: You are a tool-calling agent. You MUST call a tool for every user question. Never answer directly.
 """
 
 
@@ -261,7 +268,10 @@ class DocumentAgentV2:
             return {
                 "answer": parsed.get("answer", raw_output),
                 "has_contradiction": parsed.get("has_contradiction", False),
-                "citations": _group_citations(flat_citations)
+                "citations": _group_citations(flat_citations),
+                "tokens_input": parsed.get("tokens_input", 0),
+                "tokens_output": parsed.get("tokens_output", 0),
+                "call_type": parsed.get("call_type", None),
             }
         except (json.JSONDecodeError, TypeError):
             # Try to extract and merge multiple JSON objects from concatenated output
@@ -287,11 +297,15 @@ class DocumentAgentV2:
                 return {
                     "answer": merged_answer,
                     "has_contradiction": has_contradiction,
-                    "citations": _group_citations(merged_citations)
+                    "citations": _group_citations(merged_citations),
+                    "tokens_input": sum(o.get("tokens_input", 0) for o in json_objects),
+                    "tokens_output": sum(o.get("tokens_output", 0) for o in json_objects),
                 }
 
             return {
                 "answer": raw_output,
                 "has_contradiction": False,
-                "citations": []
+                "citations": [],
+                "tokens_input": 0,
+                "tokens_output": 0,
             }

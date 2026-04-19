@@ -1,6 +1,6 @@
 // src/components/ui/AdminSidebar.jsx
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Users, Settings, ChevronLeft, ChevronRight, LogOut, ClipboardList } from "lucide-react";
+import { Home, Users, Settings, ChevronLeft, ChevronRight, LogOut, ClipboardList, Zap } from "lucide-react";
 
 const AdminSidebar = ({ collapsed = true, onToggle }) => {
   const navigate = useNavigate();
@@ -11,7 +11,8 @@ const AdminSidebar = ({ collapsed = true, onToggle }) => {
     { icon: Users,         label: "Employees",  path: "/admin/employees" },
     { icon: Users,         label: "Teams",      path: "/admin/teams" },
     { icon: Settings,      label: "Training",   path: "/admin/training" },
-    { icon: ClipboardList, label: "Quizzes",    path: "/admin/quiz" },
+    { icon: ClipboardList, label: "Quizzes",     path: "/admin/quiz" },
+    { icon: Zap,           label: "Token Quota", path: "/admin/token-quota" },
   ];
 
   const handleLogout = () => {

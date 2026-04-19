@@ -60,6 +60,9 @@ app.include_router(routers.course_quiz.router,prefix="/admin-course-quizzes",tag
 app.include_router(routers.prompt_quiz.router, prefix="/admin-prompt-quizzes", tags=["prompt-quizzes"])
 app.include_router(routers.notifications.router, prefix="/employee", tags=["notifications"])
 app.include_router(routers.leaderboard.router, prefix="/employee", tags=["leaderboard"])
+app.include_router(routers.token_quota.router, prefix="/admin", tags=["token-quota"])
+from app.routers.suggested_questions import router as suggested_questions_router
+app.include_router(suggested_questions_router, prefix="/admin-training", tags=["Suggested Questions"])
 @app.get("/")
 def root():
     return {"message": "SmartChange API running"}

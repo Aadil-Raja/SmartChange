@@ -212,8 +212,6 @@ const DocCard = ({ doc }) => {
         </span>
         <p className="text-xs" style={{ color: C.muted }}>{formatDate(doc.created_at)}</p>
       </div>
-
-
     </div>
   );
 };

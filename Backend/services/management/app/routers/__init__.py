@@ -12,5 +12,6 @@ from . import course_quiz
 from . import notifications
 from . import prompt_quiz
 from . import leaderboard
+from . import token_quota
 
-__all__ = ["health", "auth", "admin", "employee", "announcements", "admin_training", "quiz", "course_quiz", "notifications", "prompt_quiz", "leaderboard"]
+__all__ = ["health", "auth", "admin", "employee", "announcements", "admin_training", "quiz", "course_quiz", "notifications", "prompt_quiz", "leaderboard", "token_quota"]

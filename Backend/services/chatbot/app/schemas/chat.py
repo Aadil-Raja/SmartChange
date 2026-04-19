@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
+from app.core.config import get_settings
 
 class ChatTurnIn(BaseModel):
     """
@@ -22,8 +23,9 @@ class ChatTurnIn(BaseModel):
     def validate_doc_ids(cls, v):
         if not v or len(v) == 0:
             raise ValueError("At least one document ID is required")
-        if len(v) > 10:
-            raise ValueError("Maximum 10 documents allowed per chat")
+        max_docs = get_settings().max_active_documents
+        if len(v) > max_docs:
+            raise ValueError(f"Maximum {max_docs} documents allowed per chat turn")
         if len(v) != len(set(v)):
             raise ValueError("Duplicate document IDs not allowed")
         return v

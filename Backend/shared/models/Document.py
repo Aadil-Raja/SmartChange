@@ -47,7 +47,14 @@ class Document(Base):
     main_topics = Column(
         JSON,
         nullable=False,
-        server_default="{}"   # ensures it's never null, default empty JSON
+        server_default="{}"
+    )
+
+    # 🔹 Suggested questions for chatbot chips
+    suggested_questions = Column(
+        JSON,
+        nullable=False,
+        server_default='{"questions": []}'
     )
 
     # Relationship
