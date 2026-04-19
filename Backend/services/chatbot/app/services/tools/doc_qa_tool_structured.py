@@ -323,7 +323,7 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
     if doc_histories is None:
         doc_histories = {}
 
-    @tool(args_schema=DocQAToolArgs, return_direct=True)
+    @tool(args_schema=DocQAToolArgs)
     def doc_qa_tool(question: str) -> str:
         """Answer questions by searching across all selected documents.
 

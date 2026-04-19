@@ -9,12 +9,23 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 import sys
 import json
 
 settings = get_settings()
+
+
+class AgentFinalOutput(BaseModel):
+    """Structured output schema for agent's final response."""
+    answer: str = Field(description="The complete answer to the user's question")
+    has_contradiction: bool = Field(default=False, description="Whether contradictions were found")
+    citations: List[dict] = Field(default_factory=list, description="List of citations")
+    tokens_input: int = Field(default=0, description="Total input tokens used")
+    tokens_output: int = Field(default=0, description="Total output tokens used")
+    call_type: str = Field(default="", description="Type of tool call made")
 
 
 def _group_citations(flat_citations: list) -> list:
@@ -46,7 +57,7 @@ Conversation History:
 {chat_history}
 
 Available tools:
-- doc_qa_tool: For specific factual questions about document content
+- doc_qa_multi_tool: For specific factual questions about document content (handles multi-document questions automatically)
 - list_document_sections_tool: FIRST STEP for any summary/overview request — lists sections so the user can pick one
 - generate_section_summary_tool: SECOND STEP — generates summary of a specific named section
 
@@ -55,6 +66,20 @@ Available tools:
 You MUST NEVER answer questions directly from your own knowledge or from the conversation history.
 EVERY response MUST come from calling one of the three tools above.
 Even if you think you know the answer from the history, you MUST call a tool to retrieve it from the document.
+
+## CRITICAL: PASS FULL QUESTIONS TO TOOLS
+
+When calling doc_qa_multi_tool:
+- ALWAYS pass the COMPLETE user question as-is
+- DO NOT break the question into parts yourself
+- DO NOT call the tool multiple times for one question
+- The tool will automatically handle multi-document questions internally
+- Let the tool decide if decomposition is needed
+
+Examples:
+✅ CORRECT: doc_qa_multi_tool(question="What is Aadil's GPA and what are the PSL team names?")
+❌ WRONG: Call doc_qa_multi_tool twice with separate questions
+❌ WRONG: Rewrite or simplify the user's question
 
 ## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
 
@@ -101,36 +126,43 @@ RULE: Never pass a vague short message directly to a tool. Always enrich it firs
 - This usually happens AFTER list_document_sections_tool has shown them the section list
 - Examples: "Summarize Day 1", "Tell me about the Introduction section"
 
-### ALWAYS use doc_qa_tool when:
+### ALWAYS use doc_qa_multi_tool when:
 - User asks a specific factual question: "What is X?", "Who is Y?", "How does Z work?"
 - User asks for details about a named person, project, achievement, or event
 - User asks "does X include Y?", "what did X do at Y?"
 - The question has a specific answer extractable from the document
+- User asks multiple questions in one message (the tool handles this automatically)
 - Examples: "What is the tournament format?", "Who are the notable players?", "How many teams participated?"
+- Examples: "What is Aadil's GPA and what are the PSL team names?" (pass as single question)
 
-### NEVER use doc_qa_tool for:
+### NEVER use doc_qa_multi_tool for:
 - Summary or overview requests — even if the user says "can you tell me more" or "in detail" after asking about a topic
 - Follow-ups about summaries should go to list_document_sections_tool
 - If the previous context was about summaries/overviews, stay with section tools
 
 ## CRITICAL INSTRUCTIONS:
 1. YOU MUST ALWAYS CALL A TOOL. NEVER answer directly without calling a tool.
-2. Every tool returns a JSON string with keys: "answer", "has_contradiction", "citations".
-3. You MUST return the tool's JSON output EXACTLY as-is without any modification.
-4. Do NOT rewrite, summarize, or reformat the tool output.
-5. Do NOT strip or remove the citations or has_contradiction fields.
-6. If the tool returns JSON, your final response must be that exact JSON string.
+2. ALWAYS pass the COMPLETE question to doc_qa_multi_tool - do NOT break it into parts.
+3. CALL doc_qa_multi_tool ONLY ONCE per user message, even if there are multiple questions.
+4. Every tool returns a JSON string with keys: "answer", "has_contradiction", "citations".
+5. After the tool returns, you MUST output ONLY the exact JSON string the tool returned.
+6. Do NOT add any text before or after the JSON.
+7. Do NOT rewrite, summarize, or reformat the tool output.
+8. Do NOT strip or remove the citations or has_contradiction fields.
+9. Your ENTIRE final response must be ONLY the JSON string from the tool, nothing else.
+
+CRITICAL: Output ONLY the JSON. No explanations, no formatting, no additional text.
 
 ## STRICT TOOL CHAINING RULES:
-- doc_qa_tool is FINAL. After calling it, STOP IMMEDIATELY.
+- doc_qa_multi_tool is FINAL. After calling it ONCE, STOP IMMEDIATELY.
 - list_document_sections_tool is FINAL. After calling it, STOP IMMEDIATELY.
 - generate_section_summary_tool is FINAL. After calling it, STOP IMMEDIATELY.
 - NEVER chain tools. One tool call per turn. The tool output is complete and needs no enhancement.
 - If list_document_sections_tool returns "Multiple documents selected", return that message as-is. Do NOT try another tool.
-- CRITICAL: If user asks multiple questions in one message (e.g. "tell tournament format and notable players"), combine them into ONE single call to doc_qa_tool with the full question. Never call doc_qa_tool more than once per turn.
+- CRITICAL: If user asks multiple questions in one message (e.g. "What are Aadil's projects and what are PSL teams?"), pass the ENTIRE question to doc_qa_multi_tool in ONE SINGLE call. The tool will handle decomposition internally. DO NOT call the tool multiple times.
 - CRITICAL: If user asks for multiple sections (e.g. "Day 1 and Day 7", "all days", "days 5 to 12"), call generate_section_summary_tool EXACTLY ONCE with selection_type='many'. NEVER call it multiple times.
 
-REMEMBER: You are a tool-calling agent. You MUST call a tool for every user question. Never answer directly.
+REMEMBER: You are a tool-calling agent. You MUST call a tool for every user question. Never answer directly. Always pass complete questions to tools.
 """
 
 
@@ -161,7 +193,7 @@ class DocumentAgentV2:
             agent=agent,
             tools=tools,
             verbose=True,
-            max_iterations=3,
+            max_iterations=1,
             handle_parsing_errors=True
         )
         return executor
@@ -217,7 +249,7 @@ class DocumentAgentV2:
         user_message: str,
         doc_histories: Dict = None  # NEW: per-doc histories
     ) -> Dict[str, Any]:
-        from app.services.tools.doc_qa_tool_structured import make_doc_qa_tool_structured
+        from app.services.tools.doc_qa_multi import make_doc_qa_multi_tool
         from app.services.tools.section_summary_tool_v2 import (
             make_list_sections_tool_v2,
             make_generate_summary_tool_v2,
@@ -230,15 +262,19 @@ class DocumentAgentV2:
         chat_history_string = self._format_doc_histories_for_prompt(doc_histories, active_doc_ids)
 
         tools = [
-            make_doc_qa_tool_structured(self.management_db, active_doc_ids, doc_histories),
+            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories),
             make_list_sections_tool_v2(self.management_db, self.management_db, active_doc_ids),
             make_generate_summary_tool_v2(self.management_db, self.management_db, active_doc_ids),
         ]
 
         executor = self._build(tools)
         
-        # Format system prompt with chat history
-        formatted_system_prompt = SYSTEM_PROMPT_V2.format(chat_history=chat_history_string)
+        # Escape curly braces in chat history to prevent template variable errors
+        # Replace { with {{ and } with }} so they're treated as literal characters
+        escaped_chat_history = chat_history_string.replace('{', '{{').replace('}', '}}')
+        
+        # Format system prompt with escaped chat history
+        formatted_system_prompt = SYSTEM_PROMPT_V2.format(chat_history=escaped_chat_history)
         
         # Create prompt with formatted system message
         prompt_with_history = ChatPromptTemplate.from_messages([
@@ -253,27 +289,49 @@ class DocumentAgentV2:
             agent=agent,
             tools=tools,
             verbose=True,
-            max_iterations=3,
-            handle_parsing_errors=True
+            max_iterations=2,  # Need 2: one to call tool, one to return output
+            handle_parsing_errors=True,
+            early_stopping_method="force"  # Force stop after tool returns to prevent multiple calls
         )
         
         result = executor_with_history.invoke({"input": user_message})
         raw_output = result.get("output", "")
 
-        # Parse structured JSON from tool output
-        # Handle case where agent called tool multiple times and concatenated outputs
+        # Handle both dict and JSON string responses from tools
+        # Tools now return dicts directly, but agent might still stringify them
         try:
-            parsed = json.loads(raw_output)
+            # If raw_output is already a dict, use it directly
+            if isinstance(raw_output, dict):
+                parsed = raw_output
+            else:
+                # Try to parse as JSON string
+                parsed = json.loads(raw_output)
+            
             flat_citations = parsed.get("citations", [])
+            
+            # Use structured output schema for consistency
+            structured_response = AgentFinalOutput(
+                answer=parsed.get("answer", str(raw_output)),
+                has_contradiction=parsed.get("has_contradiction", False),
+                citations=flat_citations,
+                tokens_input=parsed.get("tokens_input", 0),
+                tokens_output=parsed.get("tokens_output", 0),
+                call_type=parsed.get("call_type") or ""
+            )
+            
             return {
-                "answer": parsed.get("answer", raw_output),
-                "has_contradiction": parsed.get("has_contradiction", False),
-                "citations": _group_citations(flat_citations),
-                "tokens_input": parsed.get("tokens_input", 0),
-                "tokens_output": parsed.get("tokens_output", 0),
-                "call_type": parsed.get("call_type", None),
+                "answer": structured_response.answer,
+                "has_contradiction": structured_response.has_contradiction,
+                "citations": _group_citations(structured_response.citations),
+                "tokens_input": structured_response.tokens_input,
+                "tokens_output": structured_response.tokens_output,
+                "call_type": structured_response.call_type,
             }
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, TypeError, ValueError) as e:
+            print(f"[AGENT] Failed to parse tool output: {e}", file=sys.stderr)
+            print(f"[AGENT] Raw output type: {type(raw_output)}", file=sys.stderr)
+            print(f"[AGENT] Raw output: {str(raw_output)[:200]}...", file=sys.stderr)
+            
             # Try to extract and merge multiple JSON objects from concatenated output
             import re
             json_objects = []
@@ -294,14 +352,26 @@ class DocumentAgentV2:
                 for o in json_objects:
                     merged_citations.extend(o.get("citations", []))
                 has_contradiction = any(o.get("has_contradiction", False) for o in json_objects)
+                
+                structured_response = AgentFinalOutput(
+                    answer=merged_answer,
+                    has_contradiction=has_contradiction,
+                    citations=merged_citations,
+                    tokens_input=sum(o.get("tokens_input", 0) for o in json_objects),
+                    tokens_output=sum(o.get("tokens_output", 0) for o in json_objects),
+                    call_type=""
+                )
+                
                 return {
-                    "answer": merged_answer,
-                    "has_contradiction": has_contradiction,
-                    "citations": _group_citations(merged_citations),
-                    "tokens_input": sum(o.get("tokens_input", 0) for o in json_objects),
-                    "tokens_output": sum(o.get("tokens_output", 0) for o in json_objects),
+                    "answer": structured_response.answer,
+                    "has_contradiction": structured_response.has_contradiction,
+                    "citations": _group_citations(structured_response.citations),
+                    "tokens_input": structured_response.tokens_input,
+                    "tokens_output": structured_response.tokens_output,
                 }
 
+            # Last resort: return raw output as answer
+            print(f"[AGENT] Could not parse any JSON, returning raw output", file=sys.stderr)
             return {
                 "answer": raw_output,
                 "has_contradiction": False,

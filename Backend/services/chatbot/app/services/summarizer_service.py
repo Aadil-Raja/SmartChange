@@ -12,7 +12,7 @@ from app.core.config import get_settings
 
 # Configuration
 N = 4  # Trigger summarization every N messages, and keep last N messages as verbatim history
-MAX_SUMMARY_TOKENS = 1000  # Maximum tokens allowed in summary
+MAX_SUMMARY_TOKENS = 300  # Maximum tokens allowed in summary
 
 settings = get_settings()
 
@@ -129,7 +129,7 @@ def _update_summary_for_doc(
     # Build prompt with strict token limit instruction
     existing_block = f"Previous summary:\n{existing_summary}\n\n" if existing_summary else ""
     
-    prompt = f"""Summarize this conversation with a document assistant. Be extremely concise.
+    prompt = f"""Summarize this conversation in 2-3 lines max. Be extremely terse.
 
 Document: {doc_title}
 
@@ -137,11 +137,11 @@ Document: {doc_title}
 {messages_text}
 
 Rules:
-- Max {MAX_SUMMARY_TOKENS} tokens total (hard limit)
-- One sentence per exchange: what was asked, what was answered
-- Past tense, third person
-- No elaboration, no background, just the factual core
-- CRITICAL: If a previous summary exists above, you MUST include it in your output and add the new exchanges to it. Do NOT discard the previous summary. Your output should be: [Previous summary] + [New exchanges summary]
+- Absolute max {MAX_SUMMARY_TOKENS} tokens (hard limit)
+- 2-3 lines total, never more
+- Only the most critical facts: what was asked and what was decided/answered
+- No filler words, no elaboration, telegram-style prose
+- If a previous summary exists, compress it together with new exchanges into 2-3 lines total — do NOT just append
 
 Summary:"""
     
