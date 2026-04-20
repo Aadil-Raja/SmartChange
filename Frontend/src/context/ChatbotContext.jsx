@@ -162,9 +162,15 @@ export const ChatbotProvider = ({ children }) => {
 
     console.log("Temp user message:", tempUserMessage);
     const currentChatId = chatHeadId || activeChatId;
+    const isBrandNewChat = !currentChatId;
     
     // For new chats, we'll use a temporary ID until we get the real one
     const tempChatId = currentChatId || `temp-chat-${Date.now()}`;
+
+    // Make the optimistic user message visible immediately for first message in a new chat.
+    if (isBrandNewChat) {
+      setActiveChatId(tempChatId);
+    }
     
     setMessages((prev) => ({
       ...prev,
@@ -260,6 +266,11 @@ export const ChatbotProvider = ({ children }) => {
           (msg) => msg.id !== tempUserMessage.id
         ),
       }));
+
+      // If a new chat failed before creation, return to empty new-chat state.
+      if (isBrandNewChat) {
+        setActiveChatId(null);
+      }
       
       return { success: false, message: errorMsg };
     } finally {

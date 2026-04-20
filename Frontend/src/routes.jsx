@@ -28,6 +28,7 @@ import Notifications from './pages/employee/Notifications';
 import TeamMemberInfo from "./pages/employee/TeamMemberInfo.jsx";
 import TeamLeaderboard from "./pages/employee/TeamLeaderboard.jsx";
 import AdminTokenQuota from "./pages/admin/AdminTokenQuota.jsx";
+import RAGChatbot from "./pages/employee/RAGChatbot.jsx";
 function AppRoutes() {
   return (
     <BrowserRouter>
@@ -155,7 +156,7 @@ function AppRoutes() {
         <Route path="/employee/mycourses" element={<MyCourses />} />
         <Route path="/employee/course/:id" element={<CourseContent />} />
         <Route path="/employee/team/:teamId/announcements" element={<TeamAnnouncements />} />
-        <Route path="/employee/chatbot" element={<Chatbot />} />
+        <Route path="/employee/chatbot" element={<RAGChatbot />} />
         <Route path="/employee/profile" element={<EmployeeProfile />} />
         <Route path="/employee/team/:teamId/member/:memberId" element={<TeamMemberInfo />} />
         <Route path="/employee/team/:teamId/leaderboard" element={<TeamLeaderboard />} />
