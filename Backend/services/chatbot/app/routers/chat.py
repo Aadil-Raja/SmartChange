@@ -48,14 +48,32 @@ def get_my_quota(
         now = datetime.now(timezone.utc)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         usage = get_current_usage(management_db, user_id, today)
+        default_limit = settings.default_token_limit
+        default_hours = settings.default_reset_interval_hours
+        # resets_at for default users = tomorrow midnight UTC
+        resets_at = (today + timedelta(hours=default_hours)).isoformat()
         snapshot = {
-            "token_limit": None,
+            "token_limit": default_limit,
             "tokens_used": usage["total"],
             "tokens_input": usage["tokens_input"],
             "tokens_output": usage["tokens_output"],
-            "tokens_remaining": None,
+            "tokens_remaining": max(0, default_limit - usage["total"]),
+            "resets_at": resets_at,
+            "is_default": True,
+        }
+        quota_cache.set(user_id, snapshot)
+        return make_response(True, "OK", data=snapshot, status_code=200)
+
+    # quota exists but window not started yet (last_reset_at is NULL)
+    if quota.last_reset_at is None:
+        snapshot = {
+            "token_limit": quota.token_limit,
+            "tokens_used": 0,
+            "tokens_input": 0,
+            "tokens_output": 0,
+            "tokens_remaining": quota.token_limit,
             "resets_at": None,
-            "note": "No quota configured yet",
+            "is_default": False,
         }
         quota_cache.set(user_id, snapshot)
         return make_response(True, "OK", data=snapshot, status_code=200)
@@ -98,6 +116,17 @@ def respond_route(
             title=payload.title,
         )
         return make_response(True, "OK", data=result, status_code=200)
+
+    except chat_service_v2.QuotaExceededError as e:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={
+                "success": False,
+                "message": "Token quota exceeded. Your limit resets soon.",
+                "data": {"quota": e.quota_snapshot},
+            }
+        )
 
     except Exception as e:
         return make_response(False, "Could not process chat response", status_code=500, error=str(e))
@@ -143,6 +172,17 @@ def respond_route_v2(
             )
         
         return make_response(True, "OK", data=result, status_code=200)
+
+    except chat_service_v2.QuotaExceededError as e:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={
+                "success": False,
+                "message": "Token quota exceeded. Your limit resets soon.",
+                "data": {"quota": e.quota_snapshot},
+            }
+        )
 
     except Exception as e:
         return make_response(False, "Could not process chat response", status_code=500, error=str(e))

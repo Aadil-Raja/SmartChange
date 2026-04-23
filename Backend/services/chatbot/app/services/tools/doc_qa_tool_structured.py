@@ -275,6 +275,7 @@ def invoke_llm_with_structured_output(
             "citations": final_citations,
             "tokens_input": tokens_input,
             "tokens_output": tokens_output,
+            "call_type": "doc_qa",
         }
 
     except Exception:
@@ -304,6 +305,7 @@ def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], ch
         "citations": final_citations,
         "tokens_input": tokens_input,
         "tokens_output": tokens_output,
+        "call_type": "doc_qa",
     }
 
 
@@ -479,7 +481,10 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
             return json.dumps({
                 "answer": "Something went wrong while searching the documents. Please try again.",
                 "has_contradiction": False,
-                "citations": []
+                "citations": [],
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "call_type": "doc_qa",
             })
 
     return doc_qa_tool

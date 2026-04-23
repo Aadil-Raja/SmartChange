@@ -123,7 +123,8 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
             return json.dumps({
                 "answer": "Something went wrong while retrieving sections.",
                 "has_contradiction": False,
-                "citations": []
+                "citations": [],
+                "call_type": "list_sections",
             })
 
     return list_document_sections_tool
@@ -350,7 +351,8 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             return json.dumps({
                 "answer": "Something went wrong while generating the summary.",
                 "has_contradiction": False,
-                "citations": []
+                "citations": [],
+                "call_type": "section_summary",
             })
 
     return generate_section_summary_tool

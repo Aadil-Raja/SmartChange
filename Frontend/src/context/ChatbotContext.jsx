@@ -257,6 +257,13 @@ export const ChatbotProvider = ({ children }) => {
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message;
+
+      // If quota exceeded (429), update the bar with the returned snapshot
+      if (err.response?.status === 429) {
+        const quotaSnapshot = err.response?.data?.data?.quota;
+        if (quotaSnapshot) setQuota(quotaSnapshot);
+      }
+
       setError(errorMsg);
       
       // Remove optimistic message on error
@@ -320,7 +327,13 @@ export const ChatbotProvider = ({ children }) => {
       const res = await chatbotApi.get("/chat/quota");
       if (res.data?.success) setQuota(res.data.data);
     } catch {
-      // silently fail
+      // retry once after 3s if initial load fails
+      setTimeout(async () => {
+        try {
+          const res = await chatbotApi.get("/chat/quota");
+          if (res.data?.success) setQuota(res.data.data);
+        } catch { /* silently fail */ }
+      }, 3000);
     }
   };
 

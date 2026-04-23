@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     max_active_documents: int = 5
     max_chunks_per_doc: int = 5
 
+    # Token quota defaults (must match management service defaults)
+    default_token_limit: int = 100000
+    default_reset_interval_hours: int = 24
+
     # JWT
     jwt_secret: str
     jwt_algorithm: str

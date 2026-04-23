@@ -1,6 +1,6 @@
 // src/pages/admin/AdminTokenQuota.jsx
 import { useState, useEffect, useRef } from "react";
-import { Zap, Search, RefreshCw, Edit2, RotateCcw, Check, X } from "lucide-react";
+import { Zap, Search, RefreshCw, Edit2, RotateCcw, X } from "lucide-react";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import api from "../../services/api";
 
@@ -28,11 +28,16 @@ function UsageBar({ used, limit }) {
   );
 }
 
-function EditQuotaModal({ user, onClose, onSaved }) {
-  const [limit, setLimit] = useState(user.token_limit || 100000);
-  const [hours, setHours] = useState(user.reset_interval_hours || 24);
+function EditQuotaModal({ user, onClose, onSaved, defaultLimit, defaultHours }) {
+  const [limit, setLimit] = useState(user.token_limit || defaultLimit);
+  const [hours, setHours] = useState(user.reset_interval_hours || defaultHours);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
+
+  const applyDefaults = () => {
+    setLimit(defaultLimit);
+    setHours(defaultHours);
+  };
 
   const save = async () => {
     setSaving(true);
@@ -72,12 +77,18 @@ function EditQuotaModal({ user, onClose, onSaved }) {
 
         {err && <p style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{err}</p>}
 
-        <div className="flex gap-2 justify-end">
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.muted, background: "#f3ede4" }}>Cancel</button>
-          <button onClick={save} disabled={saving}
-            style={{ padding: "8px 18px", borderRadius: 8, background: C.ink, color: "#faf6ef", fontSize: 13, fontWeight: 600, opacity: saving ? 0.7 : 1 }}>
-            {saving ? "Saving…" : "Save"}
+        <div className="flex gap-2 justify-between">
+          <button onClick={applyDefaults}
+            style={{ padding: "8px 12px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, color: C.muted, background: "#f3ede4" }}>
+            Use Defaults
           </button>
+          <div className="flex gap-2">
+            <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.muted, background: "#f3ede4" }}>Cancel</button>
+            <button onClick={save} disabled={saving}
+              style={{ padding: "8px 18px", borderRadius: 8, background: C.ink, color: "#faf6ef", fontSize: 13, fontWeight: 600, opacity: saving ? 0.7 : 1 }}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -88,6 +99,7 @@ const AdminTokenQuota = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [employees, setEmployees] = useState([]);
   const [quotas, setQuotas] = useState({});
+  const [defaults, setDefaults] = useState({ token_limit: 100000, reset_interval_hours: 24 });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(null);
@@ -109,7 +121,15 @@ const AdminTokenQuota = () => {
         emps.map(e => api.get(`/admin/users/${e.id}/quota`).then(r => ({ id: e.id, data: r.data?.data })))
       );
       const map = {};
-      quotaResults.forEach(r => { if (r.status === "fulfilled") map[r.value.id] = r.value.data; });
+      quotaResults.forEach(r => {
+        if (r.status === "fulfilled") {
+          map[r.value.id] = r.value.data;
+          // Extract system defaults from any response that has them
+          if (r.value.data?.note && r.value.data?.token_limit) {
+            setDefaults({ token_limit: r.value.data.token_limit, reset_interval_hours: r.value.data.reset_interval_hours });
+          }
+        }
+      });
       setQuotas(map);
     } catch (e) {
       console.error(e);
@@ -194,7 +214,7 @@ const AdminTokenQuota = () => {
                     const isDefault = !!q?.note; // has "note" = using system defaults, no real row
                     const resetsAt = q?.resets_at
                       ? new Date(q.resets_at).toLocaleString()
-                      : isDefault ? "Not set yet" : "—";
+                      : "Not set yet";
                     return (
                       <tr key={emp.id} style={{ borderBottom: i < filtered.length - 1 ? `1px solid ${C.border}` : "none" }}>
                         <td style={{ padding: "14px 16px" }}>
@@ -242,7 +262,7 @@ const AdminTokenQuota = () => {
         </div>
       </div>
 
-      {editing && <EditQuotaModal user={editing} onClose={() => setEditing(null)} onSaved={loadData} />}
+      {editing && <EditQuotaModal user={editing} onClose={() => setEditing(null)} onSaved={loadData} defaultLimit={defaults.token_limit} defaultHours={defaults.reset_interval_hours} />}
     </div>
   );
 };

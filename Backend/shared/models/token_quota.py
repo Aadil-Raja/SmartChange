@@ -14,7 +14,7 @@ class UserTokenQuota(Base):
     user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
     token_limit = Column(Integer, nullable=False)               # total tokens allowed per window
     reset_interval_hours = Column(Integer, nullable=False)      # e.g. 3, 24, 168
-    last_reset_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    last_reset_at = Column(DateTime(timezone=True), nullable=True, default=None)  # NULL until first message
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

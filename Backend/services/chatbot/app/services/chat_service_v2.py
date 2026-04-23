@@ -15,6 +15,13 @@ import sys
 import traceback
 
 
+class QuotaExceededError(Exception):
+    """Raised when a user has exhausted their token quota for the current window."""
+    def __init__(self, quota_snapshot: dict):
+        self.quota_snapshot = quota_snapshot
+        super().__init__("Token quota exceeded")
+
+
 def respond_turn_v2(
     db: Session,
     management_db: Session,
@@ -30,6 +37,54 @@ def respond_turn_v2(
     Saves only the answer text to DB (citations are generated fresh each time).
     """
     try:
+        # ── Quota enforcement ──────────────────────────────────────────────
+        from shared.repos.token_quota_repo import get_quota, get_current_usage
+        from app.services import quota_cache
+        from app.core.config import get_settings
+        from datetime import datetime as dt, timezone, timedelta
+
+        _settings = get_settings()
+        _quota = get_quota(management_db, user_id)
+
+        # Determine limit and window_start
+        if _quota:
+            _limit = _quota.token_limit
+            _window_start = _quota.last_reset_at  # may be None if window not started yet
+            _reset_hours = _quota.reset_interval_hours
+        else:
+            _limit = _settings.default_token_limit
+            _now = dt.now(timezone.utc)
+            _window_start = _now.replace(hour=0, minute=0, second=0, microsecond=0)
+            _reset_hours = _settings.default_reset_interval_hours
+
+        # Check cache first, fall back to DB
+        _cached = quota_cache.get(user_id)
+        if _cached:
+            _used = _cached.get("tokens_used", 0)
+        elif _window_start is None:
+            _used = 0  # window not started yet, no usage possible
+        else:
+            _usage = get_current_usage(management_db, user_id, _window_start)
+            _used = _usage["total"]
+
+        if _used >= _limit:
+            if _quota and _quota.last_reset_at:
+                _last = _quota.last_reset_at
+                if _last.tzinfo is None:
+                    _last = _last.replace(tzinfo=timezone.utc)
+                _resets_at = (_last + timedelta(hours=_reset_hours)).isoformat()
+            else:
+                _resets_at = None
+            _snapshot = {
+                "token_limit": _limit,
+                "tokens_used": _used,
+                "tokens_remaining": 0,
+                "resets_at": _resets_at,
+                "is_default": _quota is None,
+            }
+            raise QuotaExceededError(_snapshot)
+        # ── End quota enforcement ──────────────────────────────────────────
+
         # Ensure chathead exists
         from app.services.chat_service import ensure_chathead, load_doc_summaries_and_messages
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
@@ -79,17 +134,13 @@ def respond_turn_v2(
         msg_tokens = count_tokens(message)
         tokens_input = msg_tokens + tool_tokens_input
 
-        # Determine call_type — read from tool output if present, else infer
-        tool_call_type = out.get("call_type", None)
-        if tool_call_type in ("doc_qa", "list_sections", "section_summary"):
+        # Determine call_type — every tool sets this explicitly, trust it completely.
+        # Only fall back to "doc_qa" if the agent somehow lost the field.
+        tool_call_type = out.get("call_type") or ""
+        if tool_call_type in ("doc_qa", "list_sections", "section_summary", "direct"):
             call_type = tool_call_type
-        elif tool_tokens_input == 0 and tool_tokens_output == 0 and not citations:
-            call_type = "direct"
-        elif tool_tokens_output == 0 and citations:
-            call_type = "list_sections"
-        elif tool_tokens_output == 0 and not citations:
-            call_type = "section_summary"
         else:
+            # Should never happen — all tools set call_type. Default to doc_qa.
             call_type = "doc_qa"
 
         # Count output tokens:
@@ -104,15 +155,31 @@ def respond_turn_v2(
 
         # Log usage — always log if tokens were consumed, quota row optional
         try:
-            from shared.repos.token_quota_repo import get_quota, log_usage
-            from datetime import datetime, timezone
+            from shared.repos.token_quota_repo import get_quota, log_usage, upsert_quota
+            from datetime import datetime as dt, timezone
             from app.services import quota_cache
             quota = get_quota(management_db, user_id)
-            if quota:
-                window_start = quota.last_reset_at
-            else:
-                now = datetime.now(timezone.utc)
-                window_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            is_default_quota = False
+            if not quota:
+                # No row at all — auto-create with defaults, window starts now
+                quota = upsert_quota(
+                    management_db,
+                    user_id=user_id,
+                    token_limit=_settings.default_token_limit,
+                    reset_interval_hours=_settings.default_reset_interval_hours,
+                )
+                is_default_quota = True
+
+            if quota.last_reset_at is None:
+                # Admin set a custom quota but user hasn't messaged yet — start window now
+                quota.last_reset_at = dt.now(timezone.utc).replace(tzinfo=None)
+                quota.updated_at = dt.now(timezone.utc).replace(tzinfo=None)
+                management_db.commit()
+                management_db.refresh(quota)
+                # Invalidate stale cache (had resets_at=None) so snapshot is rebuilt fresh
+                quota_cache.invalidate(user_id)
+
+            window_start = quota.last_reset_at
             log_usage(
                 management_db,
                 user_id=user_id,
@@ -128,30 +195,21 @@ def respond_turn_v2(
             if not cached:
                 # Cache miss — build from DB and store
                 from shared.repos.token_quota_repo import get_current_usage
+                from datetime import timedelta
                 usage = get_current_usage(management_db, user_id, window_start)
-                if quota:
-                    from datetime import timedelta
-                    last_reset = quota.last_reset_at
-                    if last_reset.tzinfo is None:
-                        last_reset = last_reset.replace(tzinfo=timezone.utc)
-                    resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
-                    cached = {
-                        "token_limit": quota.token_limit,
-                        "tokens_used": usage["total"],
-                        "tokens_input": usage["tokens_input"],
-                        "tokens_output": usage["tokens_output"],
-                        "tokens_remaining": max(0, quota.token_limit - usage["total"]),
-                        "resets_at": resets_at.isoformat(),
-                    }
-                else:
-                    cached = {
-                        "token_limit": None,
-                        "tokens_used": usage["total"],
-                        "tokens_input": usage["tokens_input"],
-                        "tokens_output": usage["tokens_output"],
-                        "tokens_remaining": None,
-                        "resets_at": None,
-                    }
+                last_reset = quota.last_reset_at
+                if last_reset.tzinfo is None:
+                    last_reset = last_reset.replace(tzinfo=timezone.utc)
+                resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
+                cached = {
+                    "token_limit": quota.token_limit,
+                    "tokens_used": usage["total"],
+                    "tokens_input": usage["tokens_input"],
+                    "tokens_output": usage["tokens_output"],
+                    "tokens_remaining": max(0, quota.token_limit - usage["total"]),
+                    "resets_at": resets_at.isoformat(),
+                    "is_default": is_default_quota,
+                }
                 quota_cache.set(user_id, cached)
             quota_snapshot = cached
         except Exception:

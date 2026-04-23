@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime, timezone, timedelta
 
 from app.deps.db import get_db
@@ -16,23 +15,36 @@ router = APIRouter()
 settings = get_settings()
 
 
+def _invalidate_chatbot_cache(user_id: int):
+    try:
+        import requests
+        url = f"{settings.chatbot_service_url}/internal/quota/invalidate/{user_id}"
+        requests.post(url, timeout=2.0)
+    except Exception:
+        pass
+
+
 class QuotaSetIn(BaseModel):
     token_limit: int = Field(..., gt=0)
     reset_interval_hours: int = Field(..., gt=0)
 
 
 def _quota_response(quota, usage: dict) -> dict:
-    now = datetime.now(timezone.utc)
-    last_reset = quota.last_reset_at
-    if last_reset.tzinfo is None:
-        last_reset = last_reset.replace(tzinfo=timezone.utc)
-    resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
+    if quota.last_reset_at:
+        last_reset = quota.last_reset_at
+        if last_reset.tzinfo is None:
+            last_reset = last_reset.replace(tzinfo=timezone.utc)
+        resets_at = (last_reset + timedelta(hours=quota.reset_interval_hours)).isoformat()
+        last_reset_str = last_reset.isoformat()
+    else:
+        resets_at = None
+        last_reset_str = None
     return {
         "user_id": quota.user_id,
         "token_limit": quota.token_limit,
         "reset_interval_hours": quota.reset_interval_hours,
-        "last_reset_at": last_reset.isoformat(),
-        "resets_at": resets_at.isoformat(),
+        "last_reset_at": last_reset_str,
+        "resets_at": resets_at,
         "tokens_used": usage["total"],
         "tokens_input": usage["tokens_input"],
         "tokens_output": usage["tokens_output"],
@@ -48,8 +60,6 @@ def get_user_quota(
 ):
     quota = get_quota(db, user_id)
     if not quota:
-        # No quota row — query today's daily bucket (same window used when logging without quota)
-        from datetime import datetime, timezone
         now = datetime.now(timezone.utc)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
         usage = get_current_usage(db, user_id, today)
@@ -64,7 +74,11 @@ def get_user_quota(
             "note": "Using system defaults — no custom quota set yet",
         }, status_code=200)
 
-    usage = get_current_usage(db, user_id, quota.last_reset_at)
+    # quota exists but window not started yet (last_reset_at is NULL)
+    if quota.last_reset_at is None:
+        usage = {"total": 0, "tokens_input": 0, "tokens_output": 0}
+    else:
+        usage = get_current_usage(db, user_id, quota.last_reset_at)
     return make_response(True, "OK", data=_quota_response(quota, usage), status_code=200)
 
 
@@ -81,7 +95,8 @@ def set_user_quota(
         token_limit=payload.token_limit,
         reset_interval_hours=payload.reset_interval_hours,
     )
-    usage = get_current_usage(db, user_id, quota.last_reset_at)
+    usage = get_current_usage(db, user_id, quota.last_reset_at) if quota.last_reset_at else {"total": 0, "tokens_input": 0, "tokens_output": 0}
+    _invalidate_chatbot_cache(user_id)
     return make_response(True, "Quota updated", data=_quota_response(quota, usage), status_code=200)
 
 
@@ -94,4 +109,5 @@ def reset_user_quota(
     quota = reset_quota(db, user_id)
     if not quota:
         raise HTTPException(404, "No quota found for this user. Set one first via PUT.")
+    _invalidate_chatbot_cache(user_id)
     return make_response(True, "Quota reset", data={"user_id": user_id, "last_reset_at": quota.last_reset_at.isoformat()}, status_code=200)

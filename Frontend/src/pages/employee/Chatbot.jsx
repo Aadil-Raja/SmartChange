@@ -4,12 +4,13 @@ import { useChatbot } from "../../hooks/useChatbot";
 import ChatSidebar from "../../components/ui/ChatSidebar";
 import ChatWindow from "../../components/ui/ChatWindow";
 import DocumentSelector from "../../components/ui/DocumentSelector";
+import TokenUsageBar from "../../components/ui/TokenUsageBar";
 import { MessageSquare, FileText, PanelLeftOpen, PanelLeftClose, X } from "lucide-react";
 import Alert from "../../components/ui/Alert";
 import EmployeeSidebar from "../../components/ui/EmployeeSidebar";
 
 const Chatbot = () => {
-  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments, fetchConfig, startNewChat } = useChatbot();
+  const { selectedDocumentIds, error, success, clearMessages, fetchChatHeads, fetchDocuments, fetchConfig, fetchQuota, startNewChat } = useChatbot();
   const [showDocumentSelector, setShowDocumentSelector] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -26,6 +27,7 @@ const Chatbot = () => {
       fetchChatHeads();
       fetchDocuments();
       fetchConfig();
+      fetchQuota(); // load quota on page open/reload so bar is accurate immediately
     }
     return () => clearMessages();
   }, []);
@@ -133,6 +135,7 @@ const Chatbot = () => {
             style={{ background: "#fff", border: "1px solid #e0d8ce", boxShadow: "0 2px 12px rgba(26,18,9,0.06)" }}
           >
             <ChatWindow onOpenDocumentSelector={() => setShowDocumentSelector(true)} minimal={true} />
+            <TokenUsageBar />
           </div>
         </div>
       </div>

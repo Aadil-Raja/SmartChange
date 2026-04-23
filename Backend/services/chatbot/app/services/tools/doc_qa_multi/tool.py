@@ -154,7 +154,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 "has_contradiction": merged.has_contradiction,
                 "citations": merged.citations,
                 "tokens_input": merged.tokens_input,
-                "tokens_output": merged.tokens_output
+                "tokens_output": merged.tokens_output,
+                "call_type": "doc_qa",
             }
             
             print(f"[MULTI-DOC TOOL] Complete! Returning merged answer with {len(merged.citations)} citations", file=sys.stderr)
@@ -214,7 +215,8 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
             "has_contradiction": False,
             "citations": [],
             "tokens_input": 0,
-            "tokens_output": 0
+            "tokens_output": 0,
+            "call_type": "doc_qa",
         }
 
 

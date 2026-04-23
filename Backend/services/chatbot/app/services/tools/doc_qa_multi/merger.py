@@ -124,15 +124,10 @@ Respond with a JSON-compatible structure containing:
         
         result.citations = _dedup_citations(all_citations)
         
-        # Post-process: aggregate token counts
+        # Token counts: sum sub-answer tokens only (chunks + LLM output per sub-question)
+        # chat_service_v2 adds the user message tokens on top — no double counting here
         result.tokens_input = sum(sa.tokens_input for sa in sub_answers)
         result.tokens_output = sum(sa.tokens_output for sa in sub_answers)
-        
-        # Add merger's own token usage (estimate based on prompt/response length)
-        merger_input_tokens = len(prompt.split()) * 1.3  # Rough estimate
-        merger_output_tokens = len(result.answer.split()) * 1.3
-        result.tokens_input += int(merger_input_tokens)
-        result.tokens_output += int(merger_output_tokens)
         
         # Post-process: add error notes from failed sub-answers
         failed_notes = [sa.error_note for sa in sub_answers if sa.failed and sa.error_note]

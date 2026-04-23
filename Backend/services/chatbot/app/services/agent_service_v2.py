@@ -297,6 +297,21 @@ class DocumentAgentV2:
         result = executor_with_history.invoke({"input": user_message})
         raw_output = result.get("output", "")
 
+        # Try to recover tool metadata (tokens, call_type) from intermediate_steps
+        # when the LLM rewrites the tool output as plain text (losing the structured data)
+        tool_metadata = {}
+        for action, observation in result.get("intermediate_steps", []):
+            obs = observation
+            # observation may be a dict, JSON string, or plain string
+            if isinstance(obs, str):
+                try:
+                    obs = json.loads(obs)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+            if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input")):
+                tool_metadata = obs
+                break
+
         # Handle both dict and JSON string responses from tools
         # Tools now return dicts directly, but agent might still stringify them
         try:
@@ -307,16 +322,28 @@ class DocumentAgentV2:
                 # Try to parse as JSON string
                 parsed = json.loads(raw_output)
             
-            flat_citations = parsed.get("citations", [])
-            
+            flat_citations = parsed.get("citations", []) or tool_metadata.get("citations", [])
+
             # Use structured output schema for consistency
+            # Prefer parsed values, fall back to tool_metadata from intermediate_steps
+            raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or ""
+            if not raw_call_type:
+                raw_call_type = "direct"
+
+            # Ensure answer is always a string
+            raw_answer = parsed.get("answer", str(raw_output))
+            if not isinstance(raw_answer, str):
+                raw_answer = str(raw_answer)
+
             structured_response = AgentFinalOutput(
-                answer=parsed.get("answer", str(raw_output)),
-                has_contradiction=parsed.get("has_contradiction", False),
+                answer=raw_answer,
+                has_contradiction=parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False),
                 citations=flat_citations,
-                tokens_input=parsed.get("tokens_input", 0),
-                tokens_output=parsed.get("tokens_output", 0),
-                call_type=parsed.get("call_type") or ""
+                # Always prefer tool_metadata for tokens — it comes directly from the tool,
+                # not from the LLM's rewrite which may zero them out
+                tokens_input=tool_metadata.get("tokens_input") or parsed.get("tokens_input", 0),
+                tokens_output=tool_metadata.get("tokens_output") or parsed.get("tokens_output", 0),
+                call_type=raw_call_type,
             )
             
             return {
@@ -347,7 +374,13 @@ class DocumentAgentV2:
                     idx += 1
 
             if json_objects:
-                merged_answer = "\n\n".join(o.get("answer", "") for o in json_objects)
+                merged_parts = []
+                for o in json_objects:
+                    ans = o.get("answer", "")
+                    if isinstance(ans, list):
+                        ans = " ".join(str(x) for x in ans)
+                    merged_parts.append(str(ans))
+                merged_answer = "\n\n".join(merged_parts)
                 merged_citations = []
                 for o in json_objects:
                     merged_citations.extend(o.get("citations", []))
@@ -357,9 +390,9 @@ class DocumentAgentV2:
                     answer=merged_answer,
                     has_contradiction=has_contradiction,
                     citations=merged_citations,
-                    tokens_input=sum(o.get("tokens_input", 0) for o in json_objects),
-                    tokens_output=sum(o.get("tokens_output", 0) for o in json_objects),
-                    call_type=""
+                    tokens_input=tool_metadata.get("tokens_input") or sum(o.get("tokens_input", 0) for o in json_objects),
+                    tokens_output=tool_metadata.get("tokens_output") or sum(o.get("tokens_output", 0) for o in json_objects),
+                    call_type=next((o.get("call_type") for o in json_objects if o.get("call_type")), tool_metadata.get("call_type") or "doc_qa")
                 )
                 
                 return {
@@ -368,14 +401,17 @@ class DocumentAgentV2:
                     "citations": _group_citations(structured_response.citations),
                     "tokens_input": structured_response.tokens_input,
                     "tokens_output": structured_response.tokens_output,
+                    "call_type": structured_response.call_type,
                 }
 
-            # Last resort: return raw output as answer
+            # Last resort: return raw output as answer, use tool_metadata if available
             print(f"[AGENT] Could not parse any JSON, returning raw output", file=sys.stderr)
+            raw_answer_str = raw_output if isinstance(raw_output, str) else str(raw_output)
             return {
-                "answer": raw_output,
-                "has_contradiction": False,
-                "citations": [],
-                "tokens_input": 0,
-                "tokens_output": 0,
+                "answer": raw_answer_str,
+                "has_contradiction": tool_metadata.get("has_contradiction", False),
+                "citations": tool_metadata.get("citations", []),
+                "tokens_input": tool_metadata.get("tokens_input", 0),
+                "tokens_output": tool_metadata.get("tokens_output", 0),
+                "call_type": tool_metadata.get("call_type") or "direct",
             }

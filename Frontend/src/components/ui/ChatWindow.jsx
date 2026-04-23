@@ -6,7 +6,6 @@ import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
 import DocumentCitationViewer from "./DocumentCitationViewer";
-import TokenUsageBar from "./TokenUsageBar";
 import { getDocumentSuggestedQuestions } from "../../services/documentService";
 
 /* Quick-prompt suggestions shown on empty state */
@@ -62,7 +61,7 @@ const getCitationRefs = (message) => {
 };
 
 const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
-  const { activeChatId, messages, selectedDocumentIds, availableDocuments, loading, sendMessage, fetchMessages, fetchDocuments } = useChatbot();
+  const { activeChatId, messages, selectedDocumentIds, availableDocuments, loading, sendMessage, fetchMessages, fetchDocuments, quota } = useChatbot();
   const [inputMessage, setInputMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
@@ -118,6 +117,7 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
 
   const handleSend = async () => {
     if (!inputMessage.trim() || !hasDocuments || sending) return;
+    if (quota?.token_limit != null && quota?.tokens_remaining === 0) return;
     const text = inputMessage.trim();
     setInputMessage("");
     setSending(true);
@@ -125,6 +125,8 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
     setSending(false);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
+
+  const isExhausted = quota?.token_limit != null && quota?.tokens_remaining === 0;
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -360,9 +362,6 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* ── Token usage bar ── */}
-      <TokenUsageBar />
-
       {/* ── Input area ── */}
       <div
         className="flex-shrink-0 px-5 py-4"
@@ -407,8 +406,8 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
                 value={inputMessage}
                 onChange={e => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything about your documents…"
-                disabled={sending || !hasDocuments}
+                placeholder={isExhausted ? "Token limit reached. Contact your admin to reset." : "Ask me anything about your documents…"}
+                disabled={sending || !hasDocuments || isExhausted}
                 maxRows={4}
                 className="flex-1 px-4 py-3 resize-none text-sm outline-none bg-transparent"
                 style={{ color: "#1A1209", fontFamily: "inherit", minHeight: 44 }}
@@ -416,14 +415,14 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
               <div className="flex items-end p-2 flex-shrink-0">
                 <button
                   onClick={handleSend}
-                  disabled={!inputMessage.trim() || sending || !hasDocuments}
+                  disabled={!inputMessage.trim() || sending || !hasDocuments || isExhausted}
                   className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
-                    background: (!inputMessage.trim() || sending || !hasDocuments) ? "#e8dfd2" : "#1A1209",
-                    color: (!inputMessage.trim() || sending || !hasDocuments) ? "#b0a090" : "#faf6ef",
-                    cursor: (!inputMessage.trim() || sending || !hasDocuments) ? "not-allowed" : "pointer",
+                    background: (!inputMessage.trim() || sending || !hasDocuments || isExhausted) ? "#e8dfd2" : "#1A1209",
+                    color: (!inputMessage.trim() || sending || !hasDocuments || isExhausted) ? "#b0a090" : "#faf6ef",
+                    cursor: (!inputMessage.trim() || sending || !hasDocuments || isExhausted) ? "not-allowed" : "pointer",
                   }}
-                  onMouseEnter={e => { if (inputMessage.trim() && !sending && hasDocuments) e.currentTarget.style.opacity = "0.85"; }}
+                  onMouseEnter={e => { if (inputMessage.trim() && !sending && hasDocuments && !isExhausted) e.currentTarget.style.opacity = "0.85"; }}
                   onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
                 >
                   {sending ? <LoadingSpinner size="small" /> : <Send size={15} />}

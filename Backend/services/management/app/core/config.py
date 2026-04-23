@@ -55,6 +55,9 @@ class Settings(BaseSettings):
     default_token_limit: int = 100000
     default_reset_interval_hours: int = 24
 
+    # Internal service URLs
+    chatbot_service_url: str = "http://localhost:8001"
+
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
