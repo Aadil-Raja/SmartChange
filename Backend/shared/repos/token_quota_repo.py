@@ -12,10 +12,16 @@ from shared.models.token_quota import UserTokenQuota, UserTokenUsage
 # ── Quota ──────────────────────────────────────────────────────────────────
 
 def get_quota(db: Session, user_id: int) -> Optional[UserTokenQuota]:
+    """Get quota and auto-reset if due. Only call this in the message flow."""
     quota = db.query(UserTokenQuota).filter(UserTokenQuota.user_id == user_id).first()
     if quota:
         quota = _auto_reset_if_due(db, quota)
     return quota
+
+
+def peek_quota(db: Session, user_id: int) -> Optional[UserTokenQuota]:
+    """Get quota WITHOUT triggering auto-reset. Use for read-only views (quota bar, admin)."""
+    return db.query(UserTokenQuota).filter(UserTokenQuota.user_id == user_id).first()
 
 
 def _auto_reset_if_due(db: Session, quota: UserTokenQuota) -> UserTokenQuota:
@@ -73,12 +79,12 @@ def upsert_quota(
 
 
 def reset_quota(db: Session, user_id: int) -> Optional[UserTokenQuota]:
-    """Admin-triggered manual reset — moves the window start to now."""
-    quota = get_quota(db, user_id)
+    """Admin-triggered manual reset — clears the window so it starts fresh on next message."""
+    quota = peek_quota(db, user_id)  # peek, not get — avoid auto-reset side effect
     if not quota:
         return None
-    quota.last_reset_at = datetime.now(timezone.utc)
-    quota.updated_at = datetime.now(timezone.utc)
+    quota.last_reset_at = None  # NULL = window not started, begins on next user message
+    quota.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(quota)
     return quota

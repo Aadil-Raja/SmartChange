@@ -8,7 +8,7 @@ from app.deps.auth import get_current_admin
 from app.core.config import get_settings
 from app.utils.response_utils import make_response
 from shared.repos.token_quota_repo import (
-    get_quota, upsert_quota, reset_quota, get_current_usage
+    get_quota, peek_quota, upsert_quota, reset_quota, get_current_usage
 )
 
 router = APIRouter()
@@ -58,7 +58,7 @@ def get_user_quota(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ):
-    quota = get_quota(db, user_id)
+    quota = peek_quota(db, user_id)
     if not quota:
         now = datetime.now(timezone.utc)
         today = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -77,8 +77,30 @@ def get_user_quota(
     # quota exists but window not started yet (last_reset_at is NULL)
     if quota.last_reset_at is None:
         usage = {"total": 0, "tokens_input": 0, "tokens_output": 0}
-    else:
-        usage = get_current_usage(db, user_id, quota.last_reset_at)
+        return make_response(True, "OK", data=_quota_response(quota, usage), status_code=200)
+
+    # Check if window has expired — show as reset, don't touch DB
+    last_reset = quota.last_reset_at
+    if last_reset.tzinfo is None:
+        last_reset = last_reset.replace(tzinfo=timezone.utc)
+    resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
+    if datetime.now(timezone.utc) >= resets_at:
+        usage = {"total": 0, "tokens_input": 0, "tokens_output": 0}
+        # Return with null resets_at so admin sees "Not set yet" — window starts on next message
+        return make_response(True, "OK", data={
+            "user_id": quota.user_id,
+            "token_limit": quota.token_limit,
+            "reset_interval_hours": quota.reset_interval_hours,
+            "last_reset_at": None,
+            "resets_at": None,
+            "tokens_used": 0,
+            "tokens_input": 0,
+            "tokens_output": 0,
+            "tokens_remaining": quota.token_limit,
+            "note": "Window expired — resets on next message",
+        }, status_code=200)
+
+    usage = get_current_usage(db, user_id, quota.last_reset_at)
     return make_response(True, "OK", data=_quota_response(quota, usage), status_code=200)
 
 
@@ -110,4 +132,9 @@ def reset_user_quota(
     if not quota:
         raise HTTPException(404, "No quota found for this user. Set one first via PUT.")
     _invalidate_chatbot_cache(user_id)
-    return make_response(True, "Quota reset", data={"user_id": user_id, "last_reset_at": quota.last_reset_at.isoformat()}, status_code=200)
+    return make_response(True, "Quota reset — window will start on next message", data={
+        "user_id": user_id,
+        "last_reset_at": None,
+        "tokens_used": 0,
+        "tokens_remaining": quota.token_limit,
+    }, status_code=200)

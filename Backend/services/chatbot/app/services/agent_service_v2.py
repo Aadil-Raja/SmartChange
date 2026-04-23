@@ -310,7 +310,10 @@ class DocumentAgentV2:
                     pass
             if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input")):
                 tool_metadata = obs
+                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}", file=sys.stderr)
                 break
+        
+        print(f"[AGENT] raw_output type={type(raw_output)}, tool_metadata={bool(tool_metadata)}", file=sys.stderr)
 
         # Handle both dict and JSON string responses from tools
         # Tools now return dicts directly, but agent might still stringify them
@@ -328,7 +331,7 @@ class DocumentAgentV2:
             # Prefer parsed values, fall back to tool_metadata from intermediate_steps
             raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or ""
             if not raw_call_type:
-                raw_call_type = "direct"
+                raw_call_type = "doc_qa"
 
             # Ensure answer is always a string
             raw_answer = parsed.get("answer", str(raw_output))
@@ -339,12 +342,15 @@ class DocumentAgentV2:
                 answer=raw_answer,
                 has_contradiction=parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False),
                 citations=flat_citations,
-                # Always prefer tool_metadata for tokens — it comes directly from the tool,
-                # not from the LLM's rewrite which may zero them out
-                tokens_input=tool_metadata.get("tokens_input") or parsed.get("tokens_input", 0),
-                tokens_output=tool_metadata.get("tokens_output") or parsed.get("tokens_output", 0),
+                # ALWAYS use tool_metadata for tokens when available — it's the raw tool output
+                # before the LLM potentially rewrites/zeroes them out.
+                # Only fall back to parsed values if tool_metadata has nothing.
+                tokens_input=tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else parsed.get("tokens_input", 0),
+                tokens_output=tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else parsed.get("tokens_output", 0),
                 call_type=raw_call_type,
             )
+            
+            print(f"[AGENT] Happy path: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}, call_type={structured_response.call_type}", file=sys.stderr)
             
             return {
                 "answer": structured_response.answer,
@@ -369,7 +375,7 @@ class DocumentAgentV2:
                     obj, end_idx = decoder.raw_decode(raw_output, idx)
                     if isinstance(obj, dict) and "answer" in obj:
                         json_objects.append(obj)
-                    idx += end_idx
+                    idx = end_idx  # end_idx is absolute position, not delta
                 except json.JSONDecodeError:
                     idx += 1
 
@@ -380,19 +386,27 @@ class DocumentAgentV2:
                     if isinstance(ans, list):
                         ans = " ".join(str(x) for x in ans)
                     merged_parts.append(str(ans))
-                merged_answer = "\n\n".join(merged_parts)
-                merged_citations = []
-                for o in json_objects:
-                    merged_citations.extend(o.get("citations", []))
-                has_contradiction = any(o.get("has_contradiction", False) for o in json_objects)
+                # Use only the FIRST object's answer (tool output), not the LLM's rewrite
+                merged_answer = merged_parts[0] if merged_parts else ""
+                merged_citations = json_objects[0].get("citations", [])
+                has_contradiction = json_objects[0].get("has_contradiction", False)
+                
+                # Always prefer tool_metadata (from intermediate_steps) for tokens
+                # Fall back to first json_object (the actual tool output, not LLM rewrite)
+                first_obj = json_objects[0]
+                ti = tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else first_obj.get("tokens_input", 0)
+                to = tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else first_obj.get("tokens_output", 0)
+                ct = tool_metadata.get("call_type") or first_obj.get("call_type") or "doc_qa"
+                
+                print(f"[AGENT] Multi-JSON path: tokens_input={ti}, tokens_output={to}, call_type={ct}", file=sys.stderr)
                 
                 structured_response = AgentFinalOutput(
                     answer=merged_answer,
                     has_contradiction=has_contradiction,
                     citations=merged_citations,
-                    tokens_input=tool_metadata.get("tokens_input") or sum(o.get("tokens_input", 0) for o in json_objects),
-                    tokens_output=tool_metadata.get("tokens_output") or sum(o.get("tokens_output", 0) for o in json_objects),
-                    call_type=next((o.get("call_type") for o in json_objects if o.get("call_type")), tool_metadata.get("call_type") or "doc_qa")
+                    tokens_input=ti,
+                    tokens_output=to,
+                    call_type=ct,
                 )
                 
                 return {
@@ -413,5 +427,5 @@ class DocumentAgentV2:
                 "citations": tool_metadata.get("citations", []),
                 "tokens_input": tool_metadata.get("tokens_input", 0),
                 "tokens_output": tool_metadata.get("tokens_output", 0),
-                "call_type": tool_metadata.get("call_type") or "direct",
+                "call_type": tool_metadata.get("call_type") or "doc_qa",
             }

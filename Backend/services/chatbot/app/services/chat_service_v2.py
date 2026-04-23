@@ -130,9 +130,12 @@ def respond_turn_v2(
         tool_tokens_input = out.get("tokens_input", 0)
         tool_tokens_output = out.get("tokens_output", 0)
 
+        print(f"[CHAT] Agent returned: tokens_input={tool_tokens_input}, tokens_output={tool_tokens_output}, call_type={out.get('call_type')}", file=sys.stderr)
+
         from shared.llm.utils import count_tokens
         msg_tokens = count_tokens(message)
         tokens_input = msg_tokens + tool_tokens_input
+        print(f"[CHAT] Final token count: msg={msg_tokens} + tool={tool_tokens_input} = {tokens_input} input, {tool_tokens_output} output", file=sys.stderr)
 
         # Determine call_type — every tool sets this explicitly, trust it completely.
         # Only fall back to "doc_qa" if the agent somehow lost the field.

@@ -106,6 +106,8 @@ Respond with a JSON-compatible structure containing:
 """
         
         # Use LangChain structured output with function_calling method for OpenAI compatibility
+        from shared.llm.utils import count_tokens
+        merger_prompt_tokens = count_tokens(prompt)
         try:
             print(f"[MERGER] Calling LLM with structured output...", file=sys.stderr)
             langchain_model = llm.get_langchain_model()
@@ -124,10 +126,12 @@ Respond with a JSON-compatible structure containing:
         
         result.citations = _dedup_citations(all_citations)
         
-        # Token counts: sum sub-answer tokens only (chunks + LLM output per sub-question)
-        # chat_service_v2 adds the user message tokens on top — no double counting here
-        result.tokens_input = sum(sa.tokens_input for sa in sub_answers)
-        result.tokens_output = sum(sa.tokens_output for sa in sub_answers)
+        # Token counts: sum all sub-answer tokens + merger LLM call tokens
+        # Sub-answer tokens = chunks fed to each sub-question LLM call
+        # Merger tokens = the prompt sent to merge + the merged answer output
+        merger_output_tokens = count_tokens(result.answer) if result.answer else 0
+        result.tokens_input = sum(sa.tokens_input for sa in sub_answers) + merger_prompt_tokens
+        result.tokens_output = sum(sa.tokens_output for sa in sub_answers) + merger_output_tokens
         
         # Post-process: add error notes from failed sub-answers
         failed_notes = [sa.error_note for sa in sub_answers if sa.failed and sa.error_note]
@@ -206,6 +210,7 @@ def _dedup_citations(citations: List[dict]) -> List[dict]:
 
 def _create_fallback_merged_answer(sub_answers: List[SubAnswer], original_question: str) -> MergedAnswer:
     """Create a simple fallback merged answer when LLM merge fails."""
+    from shared.llm.utils import count_tokens
     # Concatenate all successful answers
     answer_parts = []
     all_citations = []
@@ -227,8 +232,12 @@ def _create_fallback_merged_answer(sub_answers: List[SubAnswer], original_questi
     if failed_notes:
         answer_parts.extend([f"Note: {note}" for note in failed_notes])
     
+    final_answer = " ".join(answer_parts) if answer_parts else "Unable to generate answer."
+    # Count the concatenated output as output tokens (no extra LLM call in fallback)
+    total_output_tokens += count_tokens(final_answer)
+    
     return MergedAnswer(
-        answer=" ".join(answer_parts) if answer_parts else "Unable to generate answer.",
+        answer=final_answer,
         has_contradiction=has_any_contradiction,
         citations=_dedup_citations(all_citations),
         tokens_input=total_input_tokens,

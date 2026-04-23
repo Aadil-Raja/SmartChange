@@ -40,12 +40,16 @@ function EditQuotaModal({ user, onClose, onSaved, defaultLimit, defaultHours }) 
   };
 
   const save = async () => {
+    const limitNum = Number(limit);
+    const hoursNum = Number(hours);
+    if (!limitNum || limitNum < 1000) { setErr("Token limit must be at least 1,000"); return; }
+    if (!hoursNum || hoursNum < 1) { setErr("Reset interval must be at least 1 hour"); return; }
     setSaving(true);
     setErr(null);
     try {
       await api.put(`/admin/users/${user.user_id}/quota`, {
-        token_limit: Number(limit),
-        reset_interval_hours: Number(hours),
+        token_limit: limitNum,
+        reset_interval_hours: hoursNum,
       });
       onSaved();
       onClose();
@@ -69,11 +73,14 @@ function EditQuotaModal({ user, onClose, onSaved, defaultLimit, defaultHours }) 
 
         <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: "block", marginBottom: 4 }}>Token Limit</label>
         <input type="number" value={limit} onChange={e => setLimit(e.target.value)} min={1000}
-          style={{ width: "100%", padding: "9px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 14, marginBottom: 14, outline: "none" }} />
+          placeholder="min 1,000"
+          style={{ width: "100%", padding: "9px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 14, marginBottom: 4, outline: "none" }} />
+        <p style={{ fontSize: 11, color: C.muted, marginBottom: 10 }}>Minimum: 1,000 tokens</p>
 
         <label style={{ fontSize: 12, fontWeight: 600, color: C.muted, display: "block", marginBottom: 4 }}>Reset Every (hours)</label>
         <input type="number" value={hours} onChange={e => setHours(e.target.value)} min={1}
-          style={{ width: "100%", padding: "9px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 14, marginBottom: 20, outline: "none" }} />
+          style={{ width: "100%", padding: "9px 12px", border: `1.5px solid ${C.border}`, borderRadius: 8, fontSize: 14, marginBottom: 4, outline: "none" }} />
+        <p style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>Minimum: 1 hour</p>
 
         {err && <p style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{err}</p>}
 

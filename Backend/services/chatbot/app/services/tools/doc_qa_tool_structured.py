@@ -378,7 +378,25 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
             context_blocks, chunk_map, passing_doc_ids = filter_chunks_by_threshold(
                 raw_results, best_doc_id, same_doc_threshold, other_doc_threshold
             )
-            
+
+            # ── DEBUG: print all chunks with scores and pass/fail status ──
+            print(f"\n[CHUNKS] Question: '{question}'", file=sys.stderr)
+            print(f"[CHUNKS] Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same_doc_thresh={same_doc_threshold:.4f}, other_doc_thresh={other_doc_threshold:.4f}", file=sys.stderr)
+            total_pass = 0
+            total_drop = 0
+            for doc_id, data in raw_results.items():
+                thresh = same_doc_threshold if doc_id == best_doc_id else other_doc_threshold
+                doc_pass = sum(1 for c in data["chunks"] if c["score"] >= thresh)
+                doc_drop = len(data["chunks"]) - doc_pass
+                total_pass += doc_pass
+                total_drop += doc_drop
+                print(f"[CHUNKS] Doc {doc_id} '{data['doc_title']}' (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", file=sys.stderr)
+                for c in data["chunks"]:
+                    status = "✓ PASS" if c["score"] >= thresh else "✗ DROP"
+                    print(f"[CHUNKS]   [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", file=sys.stderr)
+            print(f"[CHUNKS] TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", file=sys.stderr)
+            # ── END DEBUG ──
+
             if not context_blocks:
                 return json.dumps({
                     "answer": "The selected documents do not contain relevant information for this question.",

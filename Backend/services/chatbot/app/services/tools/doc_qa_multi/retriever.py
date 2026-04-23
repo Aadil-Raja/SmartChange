@@ -99,6 +99,24 @@ def _process_sub_question(
             same_doc_threshold=same_doc_threshold,
             other_doc_threshold=other_doc_threshold
         )
+
+        # ── DEBUG: print chunk scores for this sub-question ──
+        print(f"\n[CHUNKS] Sub-question: '{sub_question.question}' docs={sub_question.doc_ids}", file=sys.stderr)
+        print(f"[CHUNKS] Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same={same_doc_threshold:.4f}, other={other_doc_threshold:.4f}", file=sys.stderr)
+        total_pass = 0
+        total_drop = 0
+        for doc_id, data in raw_results.items():
+            thresh = same_doc_threshold if doc_id == best_doc_id else other_doc_threshold
+            doc_pass = sum(1 for c in data["chunks"] if c["score"] >= thresh)
+            doc_drop = len(data["chunks"]) - doc_pass
+            total_pass += doc_pass
+            total_drop += doc_drop
+            print(f"[CHUNKS] Doc {doc_id} '{data['doc_title']}' (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", file=sys.stderr)
+            for c in data["chunks"]:
+                status = "✓ PASS" if c["score"] >= thresh else "✗ DROP"
+                print(f"[CHUNKS]   [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", file=sys.stderr)
+        print(f"[CHUNKS] TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", file=sys.stderr)
+        # ── END DEBUG ──
         
         if not context_blocks:
             return SubAnswer(

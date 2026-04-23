@@ -29,7 +29,7 @@ def get_my_quota(
     user=Depends(get_current_user),
 ):
     """Returns the current user's token quota and usage. Serves from cache when fresh."""
-    from shared.repos.token_quota_repo import get_quota, get_current_usage
+    from shared.repos.token_quota_repo import peek_quota, get_current_usage
     from app.services import quota_cache
     from datetime import datetime, timezone, timedelta
 
@@ -41,30 +41,24 @@ def get_my_quota(
     if cached:
         return make_response(True, "OK", data=cached, status_code=200)
 
-    # Cache miss — hit DB
-    quota = get_quota(management_db, user_id)
+    # Cache miss — hit DB (peek only, no auto-reset)
+    quota = peek_quota(management_db, user_id)
 
     if not quota:
-        now = datetime.now(timezone.utc)
-        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        usage = get_current_usage(management_db, user_id, today)
-        default_limit = settings.default_token_limit
-        default_hours = settings.default_reset_interval_hours
-        # resets_at for default users = tomorrow midnight UTC
-        resets_at = (today + timedelta(hours=default_hours)).isoformat()
+        # No row yet — show defaults, 0 used, no window started
         snapshot = {
-            "token_limit": default_limit,
-            "tokens_used": usage["total"],
-            "tokens_input": usage["tokens_input"],
-            "tokens_output": usage["tokens_output"],
-            "tokens_remaining": max(0, default_limit - usage["total"]),
-            "resets_at": resets_at,
+            "token_limit": settings.default_token_limit,
+            "tokens_used": 0,
+            "tokens_input": 0,
+            "tokens_output": 0,
+            "tokens_remaining": settings.default_token_limit,
+            "resets_at": None,
             "is_default": True,
         }
         quota_cache.set(user_id, snapshot)
         return make_response(True, "OK", data=snapshot, status_code=200)
 
-    # quota exists but window not started yet (last_reset_at is NULL)
+    # Window not started yet (last_reset_at is NULL)
     if quota.last_reset_at is None:
         snapshot = {
             "token_limit": quota.token_limit,
@@ -78,11 +72,29 @@ def get_my_quota(
         quota_cache.set(user_id, snapshot)
         return make_response(True, "OK", data=snapshot, status_code=200)
 
-    usage = get_current_usage(management_db, user_id, quota.last_reset_at)
     last_reset = quota.last_reset_at
     if last_reset.tzinfo is None:
         last_reset = last_reset.replace(tzinfo=timezone.utc)
     resets_at = last_reset + timedelta(hours=quota.reset_interval_hours)
+    now = datetime.now(timezone.utc)
+
+    # Window expired — show as reset (0 used) but don't touch DB
+    # The actual reset happens on next message via _auto_reset_if_due
+    if now >= resets_at:
+        snapshot = {
+            "token_limit": quota.token_limit,
+            "tokens_used": 0,
+            "tokens_input": 0,
+            "tokens_output": 0,
+            "tokens_remaining": quota.token_limit,
+            "resets_at": None,
+            "is_default": False,
+            "window_expired": True,
+        }
+        # Don't cache this — next message will set the real new window
+        return make_response(True, "OK", data=snapshot, status_code=200)
+
+    usage = get_current_usage(management_db, user_id, quota.last_reset_at)
     snapshot = {
         "token_limit": quota.token_limit,
         "tokens_used": usage["total"],
