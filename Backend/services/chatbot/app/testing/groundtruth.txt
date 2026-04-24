@@ -1,0 +1,119 @@
+Here are the ground truth answers to all 100 compound questions (comprising 300 individual queries) based on the provided sources:
+
+**Aadil's Profile, Harry Potter Basics, and PSL Basics**
+1. Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+2. Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+3. Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.
+4. Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.
+5. Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.
+6. Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.
+7. Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.
+8. Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.
+9. Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.
+10. Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016.
+
+**Aadil's Internships, Harry Potter Characters, and PSL Champions**
+11. Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017.
+12. Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018.
+13. Aadil used Docker and Kubernetes. Harry's loyal friend is Ron Weasley. Quetta Gladiators won the PSL in 2019.
+14. Logs were indexed in Elasticsearch. The main villain is Lord Voldemort. Karachi Kings won the PSL in 2020.
+15. Aadil developed a CLI-based orchestration workflow. Voldemort's dark wizard followers are the Death Eaters. Multan Sultans won the PSL in 2021.
+16. The filters were date ranges, customer/account scope, and keywords. A Time-Turner allows time travel. Lahore Qalandars won the PSL in 2022.
+17. The pipeline was deployed on Kubernetes. An Invisibility cloak makes the wearer unseen. Lahore Qalandars won the PSL in 2023.
+18. Aadil programmed in Python. Harry survived a baby attack from Lord Voldemort. Islamabad United won the PSL in 2024.
+19. Yes, Aadil handled runtime troubleshooting. Horcruxes are magical objects. The defending champions entering 2026 were the Lahore Qalandars.
+20. The CLI workflow improved troubleshooting repeatability. The stage play is *Harry Potter and the Cursed Child*. Islamabad United has the most PSL titles.
+
+**Aadil's Projects, Harry Potter Themes, and PSL Venues/Players**
+21. The FYP title is Digital Adoption Platform. Themes include friendship and loyalty, good vs evil, sacrifice, love and protection, power and corruption, or identity and destiny (any three). Notable players include Babar Azam, Shaheen Shah Afridi, Mohammad Rizwan, Shadab Khan, or Fakhar Zaman (any three).
+22. Aadil used FastAPI. The wizarding government is the Ministry of Magic. PSL matches are played in Karachi, Lahore, Rawalpindi, Multan, Peshawar, and Faisalabad (any three).
+23. The database was PostgreSQL. Warner Bros made 8 Harry Potter movies. Faisalabad was added as a PSL venue.
+24. The job queue used Redis. The second book is *Harry Potter and the Chamber of Secrets*. Young talent, especially fast bowlers, was discovered.
+25. Authentication used Firebase Auth. The third book is *Harry Potter and the Prisoner of Azkaban*. The PSL revived international cricket in Pakistan.
+26. Chatbot guidance was integrated for employee training. The fourth book is *Harry Potter and the Goblet of Fire*. A player auction system replaced the draft.
+27. A microservices-based backend pattern was used. The fifth book is *Harry Potter and the Order of the Phoenix*. Matches were planned without spectators due to logistics.
+28. The microservices separated were management, chatbot, and document processing. The sixth book is *Harry Potter and the Half-Blood Prince*. Fewer venues were planned due to cost-cutting.
+29. Queues were configured to handle asynchronous processing and user lifecycle events. The seventh book is *Harry Potter and the Deathly Hallows*. The text mentions unusual moments during the first match but does not detail what they were.
+30. Yes, the platform featured email notifications. The spin-off series is *Fantastic Beasts and Where to Find Them*. The PSL faces financial and scheduling competition from other leagues.
+
+**Aadil's Cloud & DB Projects, Switchgear Basics, and PSL Rules**
+31. The framework was Blazor Web App. The manual was issued by the National Transmission & Despatch Company (NTDC). Eliminator 1 is played between the 3rd and 4th place teams.
+32. Hosted on Microsoft Azure. Issued by the Distribution department. Eliminator 2 is played by the loser of the Qualifier and the winner of Eliminator 1.
+33. Azure App Service was used. The manual was issued in July 2024. The Qualifier is played between the 1st and 2nd place teams.
+34. The database service was Cosmos DB. The manual was prepared by Luqmaan Barraq. A no result gives 1 point.
+35. He used Azure Key Vault for secrets. Reviewed by Mahmood Damurah. The group stage follows a double round-robin format.
+36. Logs were viewed with Application Insights. Approved by the Head of Distribution. The top 4 teams qualify for the playoffs.
+37. The frontend library was React.js. LOTO stands for Lock-out / tag-out. Early PSL matches were played in the UAE.
+38. The backend used Node.js. PTW stands for Permit-to-Work. The team is Quetta Gladiators.
+39. Powered by MySQL. Work must be supervised by an authorised Maintenance Supervisor. The team is Peshawar Zalmi.
+40. The live URL is maslafix.com. Test instruments must be verified and calibration certificates recorded. The team is Karachi Kings.
+
+**Aadil's Freelance Work, Switchgear Procedures, and Harry Potter Lore**
+41. MaslaFix ranked Top 2 in its section. The procedures are Relay secondary injection procedures, SF6 handling and GIS maintenance, and Circuit breaker contact resistance testing. Translated into 80+ languages.
+42. It was selected for the FAST Think and Create Society (TnC) Open House showcase. RCC-LHR is the regional control centre in LHR. Over 500 million copies sold.
+43. Deployed on a Linux VPS. RCC-KHI is the regional control centre in KHI. The narrative goes from school adventure to dark fantasy to war story.
+44. The hosting provider was Hostinger. RCC-ISB is the regional control centre in ISB. Magic is taught academically with structured classes.
+45. The web server was Nginx. RCC-FSD is the regional control centre in FSD. Draco Malfoy is an antagonist.
+46. The tool used was n8n. LOTO is verified by two authorised personnel. Bellatrix Lestrange is an antagonist.
+47. Pipedrive CRM was integrated. The resistance is 362 MΩ. Followers are called Death Eaters.
+48. The value was reducing manual effort and speeding up deal progression. Page 144 does not contain an insulation resistance example for step 1 of relay injection. Magical creatures include dragons and elves.
+49. Aadil used prompt engineering. The resistance is 326 MΩ. Harry Potter destroys Voldemort.
+50. JSON parsing was used to extract needed outputs so n8n workflows run correctly and consistently. The resistance is 218 MΩ. Harry discovered he survived an attack by Voldemort as a baby.
+
+**Deep Cross-Referencing: Switchgear Specifics, PSL Details, and Aadil's Tech Stack**
+51. The resistance is 101 MΩ. The Kingsmen play in Hyderabad. Python is associated with FastAPI.
+52. The resistance is 494 MΩ. The Qalandars play in Lahore. React.js is listed alongside Node.js, part of a JavaScript stack.
+53. The resistance is 495 MΩ. The Sultans play in Multan. Redis was used as a Job Queue.
+54. The resistance is 240 MΩ. The Zalmi play in Peshawar. Aadil configured cloud media storage for his FYP, but the specific service is unnamed.
+55. The resistance is 306 MΩ. The Gladiators play in Quetta. The Kubernetes pipeline ran on AWS S3 for storage, but the cloud hosting the cluster isn't specified.
+56. The text does not give an insulation resistance example for step 1 on page 240. The defending champion entering 2026 is the Lahore Qalandars. PostgreSQL is a database (type unspecified in source).
+57. The resistance is 334 MΩ. Islamabad United won three titles. Cosmos DB is a database for application data in Azure.
+58. No insulation resistance example is given for step 1 on page 243. Karachi Kings won in 2020. MySQL is a database system.
+59. The resistance is 470 MΩ. Multan Sultans won in 2021. Aadil used Python, Docker, Kubernetes, and Elasticsearch for log parsing.
+60. Step 2 on page 251 does not give an insulation resistance example. 2026 was the first year with 8 teams. He used n8n and Pipedrive for sales automation.
+
+**Deep Cross-Referencing: Switchgear Specifics, Harry Potter Details, and Aadil's Tech Stack**
+61. The resistance is 120 MΩ. Power and corruption is a core theme. Blazor is associated with a Blazor Web App.
+62. The resistance is 300 MΩ. Identity and destiny is a core theme. Microsoft Azure provides Key Vault.
+63. The resistance is 198 MΩ. An invisibility cloak is used for invisibility. Nginx is used as web server software on a Linux VPS.
+64. The resistance is 477 MΩ. A Time-Turner is used to reverse time. Pipedrive is a CRM.
+65. The step on page 259/260 gives 200 MΩ. Horcruxes contain soul fragments (implied by objects list). Docker is a containerization technology.
+66. The resistance is 289 MΩ. Voldemort is Bellatrix's master. Firebase Auth is used for user authentication.
+67. The resistance is 392 MΩ. Albus Dumbledore is the headmaster. Elasticsearch was used for centralized search and analysis of logs.
+68. The resistance is 161 MΩ. Hermione's last name is Granger. AWS S3 was used to download customer logs.
+69. The resistance is 487 MΩ. Ron's last name is Weasley. MaslaFix is a web platform for coordinating services between clients and providers.
+70. The resistance is 342 MΩ. Albus's last name is Dumbledore. The Digital Adoption Platform is a learning management platform for employee training.
+
+**Mixed Mega-Trivia**
+71. RCC-KHI is notified. Fakhar Zaman is a notable player, but his team is unlisted. Aadil's role was as a Freelancer.
+72. RCC-ISB is notified. PCB is the Pakistan Cricket Board. The highest CGPA scale is 4.0.
+73. RCC-KHI is notified. *Deathly Hallows* was published in 2007. TnC stands for Think and Create Society.
+74. No RCC is mentioned for step 1 on page 351. The subtitle is *Philosopher's Stone*. The focus of the Azure project was Cloud Computing.
+75. RCC-KHI is notified. The subtitle is *Chamber of Secrets*. The CLI tool filters by date ranges, customer/account scope, and keywords.
+76. RCC-FSD is notified. The subtitle is *Prisoner of Azkaban*. Aadil has 1 silver medal.
+77. RCC-ISB is notified. The subtitle is *Goblet of Fire*. Aadil deployed on a Linux VPS using Nginx and a terminal-based server setup.
+78. RCC-FSD is notified. The subtitle is *Order of the Phoenix*. Aadil's email is aadil2raja@gmail.com.
+79. RCC-LHR is notified. The subtitle is *Half-Blood Prince*. The FYP backend separated concerns, improving maintainability and enabling independent scaling.
+80. No RCC is notified in step 2 on page 422. The subtitle is *Deathly Hallows* (Parts 1 & 2). Aadil used prompt engineering to get desired AI responses.
+
+**Final Deep Cuts**
+81. The resistance is 261 MΩ. There were 6 original PSL teams. J.K. Rowling is an Author.
+82. The resistance is 374 MΩ. The main villain was Voldemort. Aadil majors in BS Computer Science.
+83. The resistance is 294 MΩ. The year the PSL moved back to Pakistan is not specified. Aadil's university is located in Karachi.
+84. The resistance is 88 MΩ. Gryffindor's theme is bravery. Email notifications were configured alongside background queues without naming a specific separate tool.
+85. The resistance is 106 MΩ. Hufflepuff's theme is loyalty. Background jobs are handled by Redis (Job Queue).
+86. The resistance is 386 MΩ. Ravenclaw's theme is intelligence. Progress tracking is integrated into the Digital Adoption Platform.
+87. The resistance is 220 MΩ. Slytherin's theme is ambition. Aadil used n8n and Pipedrive for meeting scheduling.
+88. The resistance is 85 MΩ. Over 500 million copies were sold. Aadil used JSON parsing snippets.
+89. The resistance is 487 MΩ. Translated into 80+ languages. Azure Application Insights was used to view logs and debug issues.
+90. The resistance is 272 MΩ. Specific theme parks aren't named, just that it "Created theme parks". Azure Key Vault was used to keep secrets.
+91. Luqmaan Barraq prepared the manual. Dragons are also mentioned as magical creatures. Islamabad United won the 2016 PSL.
+92. Mahmood Damurah reviewed the manual. The Ministry of Magic rules the wizarding world. Rawalpindiz plays in Rawalpindi.
+93. The Head of Distribution approved the manual. Charms, curses, and potions are learned as magic. The Hyderabad Kingsmen play in Hyderabad.
+94. Step 3 does not appear on page 306. A Time-Turner is a magical object. A double round-robin format means each team plays the others twice (or simply "each team plays others").
+95. The resistance is 462 MΩ. An invisibility cloak is a magical object. The playoff structure consists of a Qualifier, Eliminator 1, Eliminator 2, and Final.
+96. Step 4 on page 312 does not list an insulation resistance. Horcruxes are magical objects. The Kings play in Karachi.
+97. The resistance is 105 MΩ. Albus Dumbledore is the Headmaster of Hogwarts. United plays in Islamabad.
+98. The resistance is 452 MΩ. Severus Snape is the complex professor. The Qalandars play in Lahore.
+99. Step 1 on page 336 does not contain an insulation resistance example. Hermione Granger is Harry's intelligent best friend. The Sultans play in Multan.
+100. The resistance is 166 MΩ. Ron Weasley is Harry's loyal friend. The Zalmi play in Peshawar.

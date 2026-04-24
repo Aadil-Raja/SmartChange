@@ -25,7 +25,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
     5. Falls back to single-doc tool if not needed or on error
     
     Args:
-        chunk_db: Database session for chunk retrieval
+        chunk_db: Database session for chunk retrieval (management DB)
         document_ids: List of active document IDs
         doc_histories: Dict mapping doc_id to {doc_title, summary, last_n_messages}
         
@@ -108,7 +108,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 question=question,
                 document_ids=document_ids,
                 doc_histories=doc_histories,
-                llm=llm
+                llm=llm,
+                management_db=chunk_db  # Pass management DB for section retrieval
             )
             
             # Step 2: Confidence gate - fall back to single-doc if needed
@@ -124,7 +125,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 sub_questions=decomposed.sub_questions,
                 chunk_db=chunk_db,
                 doc_histories=doc_histories,
-                settings=settings
+                settings=settings,
+                all_active_doc_ids=document_ids  # ✅ NEW: Pass all active docs for fallback retrieval
             )
             
             # Step 4: Merge answers
@@ -187,22 +189,70 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
     try:
         print(f"[MULTI-DOC TOOL] Executing single-doc fallback", file=sys.stderr)
         
-        # Import and use the existing single-doc tool
-        from ..doc_qa_tool_structured import make_doc_qa_tool_structured
-        
-        single_doc_tool = make_doc_qa_tool_structured(
-            chunk_db=chunk_db,
-            document_ids=document_ids,
-            doc_histories=doc_histories
+        # Import and use hybrid retrieval for single-doc fallback
+        from ..hybrid_retrieval import retrieve_chunks_for_all_docs_hybrid
+        from ..doc_qa_tool_structured import (
+            calculate_thresholds,
+            filter_chunks_by_threshold,
+            build_conversation_context,
+            invoke_llm_with_structured_output
         )
         
-        # Invoke the tool - it returns a JSON string, we need to parse it
-        result_str = single_doc_tool.invoke({"question": question})
-        print(f"[MULTI-DOC TOOL] Single-doc fallback complete", file=sys.stderr)
+        # Use hybrid retrieval
+        raw_results = retrieve_chunks_for_all_docs_hybrid(
+            chunk_db=chunk_db,
+            document_ids=document_ids,
+            question=question
+        )
         
-        # Parse the JSON string and return as dict
-        result_dict = json.loads(result_str)
-        return result_dict
+        if not raw_results:
+            return {
+                "answer": "I couldn't find relevant information to answer your question.",
+                "has_contradiction": False,
+                "citations": [],
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "call_type": "doc_qa",
+            }
+        
+        # Calculate thresholds
+        best_score, best_doc_id, same_doc_threshold, other_doc_threshold = calculate_thresholds(raw_results)
+        
+        # Filter chunks by threshold
+        context_blocks, chunk_map, passing_doc_ids = filter_chunks_by_threshold(
+            raw_results=raw_results,
+            best_doc_id=best_doc_id,
+            same_doc_threshold=same_doc_threshold,
+            other_doc_threshold=other_doc_threshold
+        )
+        
+        if not context_blocks:
+            return {
+                "answer": "I couldn't find relevant information to answer your question.",
+                "has_contradiction": False,
+                "citations": [],
+                "tokens_input": 0,
+                "tokens_output": 0,
+                "call_type": "doc_qa",
+            }
+        
+        # Build conversation context
+        conversation_context = build_conversation_context(
+            passing_doc_ids=passing_doc_ids,
+            doc_histories=doc_histories,
+            document_ids=document_ids
+        )
+        
+        # Invoke LLM with structured output
+        result = invoke_llm_with_structured_output(
+            question=question,
+            conversation_context=conversation_context,
+            context_blocks=context_blocks,
+            chunk_map=chunk_map
+        )
+        
+        print(f"[MULTI-DOC TOOL] Single-doc fallback complete", file=sys.stderr)
+        return result
         
     except Exception as e:
         print(f"[MULTI-DOC TOOL] Error in single-doc fallback: {e}", file=sys.stderr)
