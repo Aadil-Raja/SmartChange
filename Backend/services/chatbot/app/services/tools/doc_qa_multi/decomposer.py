@@ -13,7 +13,8 @@ def decompose_question(
     document_ids: List[int],
     doc_histories: Dict[int, Dict],
     llm,
-    management_db: Session = None
+    management_db: Session = None,
+    section_names_map: Dict[int, List[str]] = None  # ✅ NEW: Pre-fetched sections
 ) -> DecomposedQuestions:
     """
     Analyze if the question contains sub-questions targeting different documents.
@@ -24,13 +25,21 @@ def decompose_question(
         doc_histories: Dict mapping doc_id to {doc_title, summary, last_n_messages}
         llm: LLM instance with structured output support
         management_db: Database session for retrieving section names (optional)
+        section_names_map: Pre-fetched section names (optional, for optimization)
         
     Returns:
         DecomposedQuestions object with analysis results
     """
     try:
         # Build document context with section names
-        doc_context = _format_document_context(document_ids, doc_histories, management_db)
+        doc_context = _format_document_context(document_ids, doc_histories, management_db, section_names_map)
+        
+        # ✅ NEW: Log the document context being passed to decomposer
+        print(f"\n[DECOMPOSER] Document context being passed to LLM:", file=sys.stderr)
+        print(f"[DECOMPOSER] {'='*80}", file=sys.stderr)
+        for line in doc_context.split('\n'):
+            print(f"[DECOMPOSER] {line}", file=sys.stderr)
+        print(f"[DECOMPOSER] {'='*80}\n", file=sys.stderr)
         
         # Create decomposition prompt
         prompt = f"""You have access to these documents:
@@ -101,7 +110,8 @@ Respond with:
 def _format_document_context(
     document_ids: List[int], 
     doc_histories: Dict[int, Dict],
-    management_db: Session = None
+    management_db: Session = None,
+    section_names_map: Dict[int, List[str]] = None  # ✅ NEW: Pre-fetched sections
 ) -> str:
     """
     Format document information for the prompt, including section names.
@@ -110,11 +120,38 @@ def _format_document_context(
         document_ids: List of document IDs
         doc_histories: Document histories with summaries
         management_db: Database session for retrieving sections
+        section_names_map: Pre-fetched section names (optional, for optimization)
         
     Returns:
         Formatted string with document context
     """
+    import random
+    
     lines = []
+    
+    # ✅ OPTIMIZATION: Use pre-fetched sections if available, otherwise fetch in parallel
+    if section_names_map is None and management_db:
+        from concurrent.futures import ThreadPoolExecutor
+        
+        print(f"[DECOMPOSER] Fetching section names for {len(document_ids)} docs in parallel", file=sys.stderr)
+        
+        section_names_map = {}
+        with ThreadPoolExecutor(max_workers=len(document_ids)) as executor:
+            # Submit all section retrieval tasks simultaneously
+            futures = {doc_id: executor.submit(_get_section_names, management_db, doc_id) 
+                      for doc_id in document_ids}
+            
+            # Collect results
+            for doc_id, future in futures.items():
+                try:
+                    section_names_map[doc_id] = future.result()
+                except Exception as e:
+                    print(f"[DECOMPOSER] Failed to get sections for doc {doc_id}: {e}", file=sys.stderr)
+                    section_names_map[doc_id] = []
+        
+        print(f"[DECOMPOSER] Section names fetched in parallel", file=sys.stderr)
+    elif section_names_map:
+        print(f"[DECOMPOSER] Using pre-fetched section names", file=sys.stderr)
     
     for doc_id in document_ids:
         # Get document title
@@ -131,22 +168,22 @@ def _format_document_context(
                 summary_preview = summary[:200] + "..." if len(summary) > 200 else summary
                 lines.append(f"  Summary: {summary_preview}")
         
-        # Add section names if database is available
-        if management_db:
-            try:
-                section_names = _get_section_names(management_db, doc_id)
-                if section_names:
-                    # Limit to first 10 sections to avoid prompt bloat
-                    sections_preview = section_names[:10]
-                    sections_str = ", ".join(sections_preview)
-                    if len(section_names) > 10:
-                        sections_str += f" ... ({len(section_names) - 10} more)"
-                    lines.append(f"  Sections: {sections_str}")
-            except Exception as e:
-                print(f"[DECOMPOSER] Failed to get sections for doc {doc_id}: {e}", file=sys.stderr)
+        # Add section names if available
+        if section_names_map and doc_id in section_names_map and section_names_map[doc_id]:
+            section_names = section_names_map[doc_id]
+            
+            # ✅ NEW: Randomly sample 10 sections if more than 10
+            if len(section_names) > 10:
+                sampled_sections = random.sample(section_names, 10)
+                sections_str = ", ".join(sampled_sections)
+                sections_str += f" ... (randomly sampled 10 from {len(section_names)} total sections)"
+            else:
+                sections_str = ", ".join(section_names)
+            
+            lines.append(f"  Sections: {sections_str}")
         
         # If no summary and no sections, indicate no info available
-        if doc_id not in doc_histories and not management_db:
+        if doc_id not in doc_histories and (not section_names_map or doc_id not in section_names_map):
             lines.append(f"  (No information available)")
     
     return "\n".join(lines)
@@ -166,15 +203,15 @@ def _get_section_names(db: Session, document_id: int) -> List[str]:
     try:
         from shared.models import DocumentSection
         
-        sections = db.query(DocumentSection.section_name).filter(
+        sections = db.query(DocumentSection.section_title).filter(
             DocumentSection.document_id == document_id
         ).order_by(DocumentSection.start_chunk_index).all()
         
-        # Extract section names from query result
-        section_names = [s[0] for s in sections if s[0]]
+        # Extract section titles from query result
+        section_titles = [s[0] for s in sections if s[0]]
         
-        print(f"[DECOMPOSER] Retrieved {len(section_names)} sections for doc {document_id}", file=sys.stderr)
-        return section_names
+        print(f"[DECOMPOSER] Retrieved {len(section_titles)} sections for doc {document_id}", file=sys.stderr)
+        return section_titles
         
     except Exception as e:
         print(f"[DECOMPOSER] Error retrieving sections: {e}", file=sys.stderr)

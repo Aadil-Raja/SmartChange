@@ -73,7 +73,7 @@ class ChatLogger:
                 f.write(f"└─ Active Documents: {active_doc_ids}\n\n")
 
                 # Retrieved chunks
-                f.write("┌─ CHUNK RETRIEVAL\n")
+                f.write("┌─ CHUNK RETRIEVAL (HYBRID: Dense + Sparse + Reranking)\n")
                 for doc_id, chunks in retrieved_chunks.items():
                     doc_title = chunks[0].get('doc_title', f'Document {doc_id}') if chunks else f'Document {doc_id}'
                     f.write(f"│\n│ Document {doc_id}: {doc_title}\n")
@@ -81,10 +81,25 @@ class ChatLogger:
 
                     for i, chunk in enumerate(chunks, 1):
                         score = chunk.get('score', 0)
+                        dense_score = chunk.get('dense_score', 0)
+                        sparse_score = chunk.get('sparse_score', 0)
+                        rerank_score = chunk.get('rerank_score', 0)
+                        combined_score = chunk.get('combined_score', 0)
                         page = chunk.get('start_page_num', '?')
                         section = chunk.get('section_title', 'Unknown')
                         preview = chunk.get('text', '')[:100].replace('\n', ' ')
-                        f.write(f"│   {i}. Score: {score:.4f} | Page: {page} | Section: {section}\n")
+                        
+                        f.write(f"│   {i}. Final Score: {score:.4f} | Page: {page} | Section: {section}\n")
+                        
+                        # Show hybrid retrieval breakdown if available
+                        if dense_score or sparse_score or rerank_score:
+                            f.write(f"│      ├─ Dense (Embeddings): {dense_score:.4f}\n")
+                            f.write(f"│      ├─ Sparse (BM25): {sparse_score:.4f}\n")
+                            if combined_score:
+                                f.write(f"│      ├─ Combined: {combined_score:.4f}\n")
+                            if rerank_score:
+                                f.write(f"│      └─ Reranked: {rerank_score:.4f}\n")
+                        
                         f.write(f"│      Preview: {preview}...\n")
 
                 f.write("└─\n\n")
@@ -202,6 +217,94 @@ class ChatLogger:
 
         except Exception as e:
             print(f"[LOGGER ERROR] Failed to write to log file: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+    
+    
+    def log_chunk_retrieval(
+        self,
+        sub_question: str,
+        raw_results: dict,
+        best_score: float,
+        best_doc_id: int,
+        same_doc_threshold: float,
+        other_doc_threshold: float,
+        passing_doc_ids: list
+    ):
+        """Log chunk retrieval details for a sub-question."""
+        try:
+            with open(self.log_file, 'a', encoding='utf-8') as f:
+                f.write("\n┌─ CHUNK RETRIEVAL (HYBRID: Dense + Sparse + Reranking)\n")
+                f.write(f"│ Sub-Question: {sub_question}\n")
+                f.write(f"│ Best Score: {best_score:.4f} from Doc {best_doc_id}\n")
+                f.write(f"│ Thresholds: Same-Doc={same_doc_threshold:.4f}, Other-Doc={other_doc_threshold:.4f}\n")
+                f.write(f"│\n")
+                
+                total_pass = 0
+                total_drop = 0
+                
+                for doc_id, data in raw_results.items():
+                    doc_title = data.get('doc_title', f'Document {doc_id}')
+                    chunks = data.get('chunks', [])
+                    
+                    if not chunks:
+                        continue
+                    
+                    thresh = same_doc_threshold if doc_id == best_doc_id else other_doc_threshold
+                    passing_chunks = [c for c in chunks if c.get('score', 0) >= thresh]
+                    dropped_chunks = [c for c in chunks if c.get('score', 0) < thresh]
+                    
+                    total_pass += len(passing_chunks)
+                    total_drop += len(dropped_chunks)
+                    
+                    f.write(f"│ Document {doc_id}: {doc_title}\n")
+                    f.write(f"│   Retrieved: {len(chunks)} chunks | Passed: {len(passing_chunks)} | Dropped: {len(dropped_chunks)}\n")
+                    f.write(f"│   Threshold: {thresh:.4f}\n")
+                    f.write(f"│\n")
+                    
+                    # Show passing chunks
+                    if passing_chunks:
+                        f.write(f"│   ✅ PASSING CHUNKS:\n")
+                        for i, chunk in enumerate(passing_chunks[:5], 1):  # Show top 5
+                            score = chunk.get('score', 0)
+                            dense = chunk.get('dense_score', 0)
+                            sparse = chunk.get('sparse_score', 0)
+                            rerank = chunk.get('rerank_score', 0)
+                            page = chunk.get('start_page_num', '?')
+                            section = chunk.get('section_title', 'Unknown')[:40]
+                            text_preview = chunk.get('text', '')[:100].replace('\n', ' ')
+                            
+                            f.write(f"│     {i}. Score: {score:.4f} | Page: {page} | Section: {section}\n")
+                            if rerank:
+                                f.write(f"│        Rerank: {rerank:.4f} | Dense: {dense:.4f} | Sparse: {sparse:.4f}\n")
+                            f.write(f"│        Text: {text_preview}...\n")
+                        
+                        if len(passing_chunks) > 5:
+                            f.write(f"│     ... and {len(passing_chunks) - 5} more passing chunks\n")
+                        f.write(f"│\n")
+                    
+                    # Show dropped chunks (first 3)
+                    if dropped_chunks:
+                        f.write(f"│   ❌ DROPPED CHUNKS (below threshold):\n")
+                        for i, chunk in enumerate(dropped_chunks[:3], 1):
+                            score = chunk.get('score', 0)
+                            page = chunk.get('start_page_num', '?')
+                            section = chunk.get('section_title', 'Unknown')[:40]
+                            
+                            f.write(f"│     {i}. Score: {score:.4f} < {thresh:.4f} | Page: {page} | Section: {section}\n")
+                        
+                        if len(dropped_chunks) > 3:
+                            f.write(f"│     ... and {len(dropped_chunks) - 3} more dropped chunks\n")
+                        f.write(f"│\n")
+                
+                f.write(f"│ TOTAL: {total_pass} chunks passed, {total_drop} chunks dropped\n")
+                f.write(f"│ Passing Documents: {passing_doc_ids}\n")
+                f.write("└─\n\n")
+                
+                f.flush()
+                
+        except Exception as e:
+            print(f"[LOGGER ERROR] Failed to log chunk retrieval: {e}", file=sys.stderr)
             import traceback
             traceback.print_exc(file=sys.stderr)
 

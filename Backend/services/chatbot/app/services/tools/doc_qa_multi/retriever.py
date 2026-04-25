@@ -3,7 +3,7 @@
 Parallel retrieval and answering of sub-questions.
 """
 import sys
-from typing import List
+from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor
 from .schemas import SubQuestion, SubAnswer
 
@@ -137,6 +137,26 @@ def _process_sub_question(
                 print(f"[CHUNKS]   [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", file=sys.stderr)
         print(f"[CHUNKS] TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", file=sys.stderr)
         # ── END DEBUG ──
+        
+        # ── LOG CHUNKS TO FILE ──
+        try:
+            from app.services.chat_logger import get_logger
+            logger = get_logger()
+            if logger:
+                logger.log_chunk_retrieval(
+                    sub_question=sub_question.question,
+                    raw_results=raw_results,
+                    best_score=best_score,
+                    best_doc_id=best_doc_id,
+                    same_doc_threshold=same_doc_threshold,
+                    other_doc_threshold=other_doc_threshold,
+                    passing_doc_ids=passing_doc_ids
+                )
+        except Exception as log_err:
+            print(f"[RETRIEVER] Logging error: {log_err}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+        # ── END LOG ──
         
         if not context_blocks:
             return SubAnswer(

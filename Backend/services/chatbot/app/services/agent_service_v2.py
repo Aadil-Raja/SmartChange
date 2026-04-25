@@ -30,8 +30,10 @@ class AgentFinalOutput(BaseModel):
 
 def _group_citations(flat_citations: list) -> list:
     """
-    Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippet}
-    into grouped list of {doc_id, doc_title, cloudinary_url, references: [{page, section, snippet}]}.
+    Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippets}
+    into grouped list of {doc_id, doc_title, cloudinary_url, references: [{page, section, snippets}]}.
+    
+    Note: snippets is now an array of strings from the LLM, not a single string.
     """
     grouped = {}
     for c in flat_citations:
@@ -46,7 +48,7 @@ def _group_citations(flat_citations: list) -> list:
         grouped[doc_id]["references"].append({
             "page": c.get("page"),
             "section": c.get("section"),
-            "snippet": c.get("snippet")
+            "snippets": c.get("snippets", [])  # ✅ Array of snippets from LLM
         })
     return list(grouped.values())
 
@@ -247,7 +249,8 @@ class DocumentAgentV2:
         *,
         active_doc_ids: List[int],
         user_message: str,
-        doc_histories: Dict = None  # NEW: per-doc histories
+        doc_histories: Dict = None,  # NEW: per-doc histories
+        section_names_map: Dict[int, List[str]] = None  # NEW: pre-fetched sections
     ) -> Dict[str, Any]:
         from app.services.tools.doc_qa_multi import make_doc_qa_multi_tool
         from app.services.tools.section_summary_tool_v2 import (
@@ -262,7 +265,7 @@ class DocumentAgentV2:
         chat_history_string = self._format_doc_histories_for_prompt(doc_histories, active_doc_ids)
 
         tools = [
-            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories),
+            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories, section_names_map),
             make_list_sections_tool_v2(self.management_db, self.management_db, active_doc_ids),
             make_generate_summary_tool_v2(self.management_db, self.management_db, active_doc_ids),
         ]

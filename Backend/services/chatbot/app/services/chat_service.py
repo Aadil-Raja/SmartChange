@@ -29,7 +29,7 @@ def load_doc_summaries_and_messages(
     n: int = 5
 ) -> dict:
     """
-    Load per-document summaries and all unsummarized messages.
+    Load per-document summaries and all unsummarized messages IN PARALLEL.
     
     Args:
         db: Chatbot database session
@@ -43,32 +43,52 @@ def load_doc_summaries_and_messages(
         where last_n_messages contains ALL messages not included in the summary
     """
     from shared.repos import documents_repo
+    from concurrent.futures import ThreadPoolExecutor
+    import sys
     
-    doc_histories = {}
+    def load_single_doc_history(doc_id: int) -> tuple:
+        """Load history for a single document."""
+        try:
+            # Get summary
+            summary_obj = chat_repo.get_summary(db, chathead_id, doc_id)
+            summary = summary_obj.summary if summary_obj else None
+            last_summarized_message_id = summary_obj.last_summarized_message_id if summary_obj else None
+            
+            # Get ALL unsummarized messages for this doc
+            unsummarized_messages = chat_repo.get_unsummarized_messages_for_doc(
+                db, 
+                chathead_id, 
+                doc_id, 
+                last_summarized_message_id
+            )
+            
+            # Get doc title
+            doc = documents_repo.get_by_id(management_db, doc_id)
+            doc_title = doc.title if doc else f"Document {doc_id}"
+            
+            return doc_id, {
+                "doc_title": doc_title,
+                "summary": summary,
+                "last_n_messages": unsummarized_messages
+            }
+        except Exception as e:
+            print(f"[DOC_HISTORY] Error loading history for doc {doc_id}: {e}", file=sys.stderr)
+            return doc_id, {
+                "doc_title": f"Document {doc_id}",
+                "summary": None,
+                "last_n_messages": []
+            }
     
-    for doc_id in active_doc_ids:
-        # Get summary
-        summary_obj = chat_repo.get_summary(db, chathead_id, doc_id)
-        summary = summary_obj.summary if summary_obj else None
-        last_summarized_message_id = summary_obj.last_summarized_message_id if summary_obj else None
-        
-        # Get ALL unsummarized messages for this doc
-        unsummarized_messages = chat_repo.get_unsummarized_messages_for_doc(
-            db, 
-            chathead_id, 
-            doc_id, 
-            last_summarized_message_id
-        )
-        
-        # Get doc title
-        doc = documents_repo.get_by_id(management_db, doc_id)
-        doc_title = doc.title if doc else f"Document {doc_id}"
-        
-        doc_histories[doc_id] = {
-            "doc_title": doc_title,
-            "summary": summary,
-            "last_n_messages": unsummarized_messages  # All unsummarized messages
-        }
+    # ✅ OPTIMIZATION: Load all document histories in parallel
+    print(f"[DOC_HISTORY] Loading histories for {len(active_doc_ids)} docs in parallel", file=sys.stderr)
+    
+    with ThreadPoolExecutor(max_workers=len(active_doc_ids)) as executor:
+        futures = [executor.submit(load_single_doc_history, doc_id) for doc_id in active_doc_ids]
+        results = [future.result() for future in futures]
+    
+    doc_histories = dict(results)
+    
+    print(f"[DOC_HISTORY] Loaded {len(doc_histories)} document histories", file=sys.stderr)
     
     return doc_histories
 

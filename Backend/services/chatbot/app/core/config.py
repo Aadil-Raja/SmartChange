@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # Chatbot limits
     max_active_documents: int = 5
-    max_chunks_per_doc: int = 5
+    max_chunks_per_doc: int = 10  # ✅ Changed from 5 to 10
 
     # Token quota defaults (must match management service defaults)
     default_token_limit: int = 100000

@@ -18,10 +18,19 @@ Usage:
     )
 """
 import sys
+import os
 from typing import List, Dict, Tuple
 from sqlalchemy.orm import Session
 from rank_bm25 import BM25Okapi
 import numpy as np
+
+# Load environment variables (for HF_TOKEN)
+from dotenv import load_dotenv
+load_dotenv()
+
+# Set HuggingFace token if available
+if os.getenv('HF_TOKEN'):
+    os.environ['HUGGING_FACE_HUB_TOKEN'] = os.getenv('HF_TOKEN')
 
 
 # ============================================================================
@@ -29,17 +38,40 @@ import numpy as np
 # ============================================================================
 
 # Retrieval strategy weights
-DENSE_WEIGHT = 0.6   # 60% weight to vector similarity
-SPARSE_WEIGHT = 0.4  # 40% weight to BM25 keyword matching
+DENSE_WEIGHT = 0.7   # 70% weight to vector similarity
+SPARSE_WEIGHT = 0.3  # 30% weight to BM25 keyword matching
 
 # Retrieval pool sizes
 DENSE_TOP_K = 20     # Fetch top 20 from vector search
 SPARSE_TOP_K = 20    # Fetch top 20 from BM25 search
-FINAL_TOP_K = 5      # After reranking, keep top 5
+FINAL_TOP_K = 10     # After reranking, keep top 10
 
 # Reranking model
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # Fast, good quality
 # Alternative: "cross-encoder/ms-marco-MiniLM-L-12-v2" (slower, better quality)
+
+# Global model cache (loaded once, reused for all requests)
+_reranker_model = None
+
+
+def _get_reranker_model(model_name: str = RERANKER_MODEL):
+    """Get or load the reranker model (cached globally)."""
+    global _reranker_model
+    
+    if _reranker_model is None:
+        from sentence_transformers import CrossEncoder
+        import os
+        
+        # Set HuggingFace token if available
+        hf_token = os.environ.get('HF_TOKEN')
+        if hf_token:
+            os.environ['HUGGING_FACE_HUB_TOKEN'] = hf_token
+        
+        print(f"[HYBRID] Loading reranker model: {model_name} (first time only)", file=sys.stderr)
+        _reranker_model = CrossEncoder(model_name)
+        print(f"[HYBRID] Reranker model loaded and cached", file=sys.stderr)
+    
+    return _reranker_model
 
 
 # ============================================================================
@@ -317,19 +349,10 @@ def rerank_chunks(
         Dict[doc_id, {doc_title, cloudinary_url, chunks}] with top-k chunks per doc
     """
     try:
-        from sentence_transformers import CrossEncoder
-        import os
-        
-        # Set HuggingFace token if available (for faster downloads)
-        hf_token = os.environ.get('HF_TOKEN')
-        if hf_token:
-            os.environ['HUGGING_FACE_HUB_TOKEN'] = hf_token
-            print(f"[HYBRID] Using HF_TOKEN for authenticated downloads", file=sys.stderr)
-        
         print(f"[HYBRID] Reranking with {model_name}", file=sys.stderr)
         
-        # Load cross-encoder model (cached after first load)
-        reranker = CrossEncoder(model_name)
+        # Load cross-encoder model (cached globally, loaded only once)
+        reranker = _get_reranker_model(model_name)
         
         reranked = {}
         
@@ -367,6 +390,18 @@ def rerank_chunks(
             }
             
             print(f"[HYBRID] Doc {doc_id}: reranked to top {len(sorted_chunks)} chunks, best score={sorted_chunks[0]['rerank_score']:.4f}", file=sys.stderr)
+            
+            # ✅ NEW: Print detailed chunk information
+            print(f"[HYBRID] Doc {doc_id} - Top {min(3, len(sorted_chunks))} chunks after reranking:", file=sys.stderr)
+            for i, chunk in enumerate(sorted_chunks[:3], 1):
+                print(f"[HYBRID]   Chunk {i}:", file=sys.stderr)
+                print(f"[HYBRID]     Rerank score: {chunk['rerank_score']:.4f}", file=sys.stderr)
+                print(f"[HYBRID]     Dense score:  {chunk.get('dense_score', 0):.4f}", file=sys.stderr)
+                print(f"[HYBRID]     Sparse score: {chunk.get('sparse_score', 0):.4f}", file=sys.stderr)
+                print(f"[HYBRID]     Page: {chunk.get('start_page_num', '?')}", file=sys.stderr)
+                print(f"[HYBRID]     Section: {chunk.get('section_title', 'Unknown')[:50]}", file=sys.stderr)
+                print(f"[HYBRID]     Text preview: {chunk['text'][:150].replace(chr(10), ' ')}...", file=sys.stderr)
+                print(f"[HYBRID]", file=sys.stderr)
         
         return reranked
         
@@ -400,8 +435,8 @@ def hybrid_retrieve_chunks(
     Hybrid retrieval combining dense + sparse + reranking.
     
     Pipeline:
-    1. Dense retrieval (vector similarity) → top 20 per doc
-    2. Sparse retrieval (BM25 keywords) → top 20 per doc
+    1. Dense retrieval (vector similarity) → top 20 per doc (PARALLEL with sparse)
+    2. Sparse retrieval (BM25 keywords) → top 20 per doc (PARALLEL with dense)
     3. Merge with weighted scores → deduplicated pool
     4. Rerank with cross-encoder → final top-k per doc
     
@@ -419,11 +454,21 @@ def hybrid_retrieve_chunks(
     print(f"\n[HYBRID] Starting hybrid retrieval for {len(document_ids)} docs", file=sys.stderr)
     print(f"[HYBRID] Question: {question[:100]}...", file=sys.stderr)
     
-    # Step 1: Dense retrieval
-    dense_results = dense_retrieve(chunk_db, document_ids, question, top_k=DENSE_TOP_K)
+    # ✅ OPTIMIZATION 1: Parallelize Dense + Sparse retrieval
+    from concurrent.futures import ThreadPoolExecutor
     
-    # Step 2: Sparse retrieval
-    sparse_results = sparse_retrieve(chunk_db, document_ids, question, top_k=SPARSE_TOP_K)
+    print(f"[HYBRID] Running Dense + Sparse retrieval in parallel...", file=sys.stderr)
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Submit both tasks simultaneously
+        dense_future = executor.submit(dense_retrieve, chunk_db, document_ids, question, DENSE_TOP_K)
+        sparse_future = executor.submit(sparse_retrieve, chunk_db, document_ids, question, SPARSE_TOP_K)
+        
+        # Wait for both to complete
+        dense_results = dense_future.result()
+        sparse_results = sparse_future.result()
+    
+    print(f"[HYBRID] Dense + Sparse retrieval completed in parallel", file=sys.stderr)
     
     # Step 3: Merge results
     merged_results = merge_results(dense_results, sparse_results)
