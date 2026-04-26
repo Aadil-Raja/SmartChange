@@ -1,6 +1,6 @@
 # services/chatbot/app/models/chathead.py
 from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, DateTime, func
+from sqlalchemy import Column, BigInteger, String, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
 from .base import Base
 
@@ -11,6 +11,7 @@ class ChatHead(Base):
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, nullable=False, index=True)
     title = Column(String, nullable=True)  # user-defined chat name
+    use_deep_reranker = Column(Boolean, nullable=False, server_default='false')  # Use deep reranker model
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_active_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)

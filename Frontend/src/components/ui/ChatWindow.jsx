@@ -31,7 +31,7 @@ const getCitationGroups = (message) => {
             key: `${citationDoc?.doc_id || docIndex}-${pageNumber}`,
             page: pageNumber,
             section: ref?.section ?? null,
-            snippet: ref?.snippet ?? null,
+            snippets: Array.isArray(ref?.snippets) ? ref.snippets : [],  // ✅ Array of snippets
           });
         }
       });
@@ -90,6 +90,8 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
   const [sending, setSending] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+  const [rerankerModel, setRerankerModel] = useState("fast"); // "fast" or "deep"
+  const [updatingReranker, setUpdatingReranker] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -98,6 +100,55 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
   const hasDocuments = selectedDocumentIds && selectedDocumentIds.length > 0;
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages]);
+
+  // Fetch reranker setting when chat changes
+  useEffect(() => {
+    if (!activeChatId) return;
+    
+    const fetchRerankerSetting = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8001/chat/chatheads/${activeChatId}/reranker`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setRerankerModel(data.data.use_deep_reranker ? "deep" : "fast");
+        }
+      } catch (error) {
+        console.error("Failed to fetch reranker setting:", error);
+      }
+    };
+    
+    fetchRerankerSetting();
+  }, [activeChatId]);
+
+  const handleRerankerChange = async (newModel) => {
+    if (!activeChatId || updatingReranker) return;
+    
+    setUpdatingReranker(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:8001/chat/chatheads/${activeChatId}/reranker`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ use_deep_reranker: newModel === "deep" })
+      });
+      
+      if (response.ok) {
+        setRerankerModel(newModel);
+      } else {
+        console.error("Failed to update reranker setting");
+      }
+    } catch (error) {
+      console.error("Error updating reranker:", error);
+    } finally {
+      setUpdatingReranker(false);
+    }
+  };
   useEffect(() => { if (activeChatId && !messages[activeChatId]) fetchMessages(activeChatId); }, [activeChatId]);
   useEffect(() => {
     if (!availableDocuments || availableDocuments.length === 0) {
@@ -396,6 +447,30 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
         className="flex-shrink-0 px-5 py-4"
         style={{ borderTop: "1px solid #e0d8ce", background: "#fff" }}
       >
+        {/* Reranker Model Selector - Always show when chat is active */}
+        {activeChatId && (
+          <div className="flex items-center justify-end gap-2 mb-3">
+            <span className="text-[10px] font-medium" style={{ color: "#9c8e80" }}>
+              Reranker:
+            </span>
+            <select
+              value={rerankerModel}
+              onChange={(e) => handleRerankerChange(e.target.value)}
+              disabled={updatingReranker}
+              className="text-[11px] px-2 py-1 rounded-lg border outline-none transition-all"
+              style={{
+                background: "#FAF6EF",
+                border: "1px solid #e0d8ce",
+                color: "#1A1209",
+                cursor: updatingReranker ? "wait" : "pointer"
+              }}
+            >
+              <option value="fast">⚡ Fast (ms-marco)</option>
+              <option value="deep">🎯 Deep (jina-v3)</option>
+            </select>
+          </div>
+        )}
+        
         {isReadOnlyMode ? (
           /* Read-only CTA */
           <div

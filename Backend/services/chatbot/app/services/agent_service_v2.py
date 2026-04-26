@@ -28,6 +28,67 @@ class AgentFinalOutput(BaseModel):
     call_type: str = Field(default="", description="Type of tool call made")
 
 
+def _format_dict_answer(answer: str) -> str:
+    """
+    Format Python dict-like answers into readable markdown.
+    Converts {'key': 'value', 'list': [1, 2, 3]} into formatted text.
+    """
+    # Check if it looks like a Python dict
+    if not (answer.strip().startswith('{') and ':' in answer):
+        return answer
+    
+    try:
+        # Try to parse as Python literal
+        import ast
+        obj = ast.literal_eval(answer)
+        
+        # Convert to readable markdown
+        return _format_object_to_markdown(obj)
+    except:
+        # If parsing fails, return original
+        return answer
+
+
+def _format_object_to_markdown(obj, depth=0) -> str:
+    """Recursively format Python objects to markdown."""
+    if obj is None:
+        return ""
+    
+    if not isinstance(obj, (dict, list)):
+        return str(obj)
+    
+    result = []
+    
+    if isinstance(obj, list):
+        # Format arrays as bullet points
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                result.append(_format_object_to_markdown(item, depth))
+            else:
+                result.append(f"- {item}")
+        return '\n'.join(result)
+    
+    # Format dict with bold keys
+    for key, value in obj.items():
+        # Make key readable (replace underscores with spaces, capitalize)
+        readable_key = key.replace('_', ' ').title()
+        
+        if isinstance(value, list):
+            result.append(f"\n**{readable_key}:**")
+            for item in value:
+                if isinstance(item, (dict, list)):
+                    result.append(_format_object_to_markdown(item, depth + 1))
+                else:
+                    result.append(f"- {item}")
+        elif isinstance(value, dict):
+            result.append(f"\n**{readable_key}:**")
+            result.append(_format_object_to_markdown(value, depth + 1))
+        else:
+            result.append(f"**{readable_key}:** {value}")
+    
+    return '\n'.join(result)
+
+
 def _group_citations(flat_citations: list) -> list:
     """
     Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippets}
@@ -48,7 +109,7 @@ def _group_citations(flat_citations: list) -> list:
         grouped[doc_id]["references"].append({
             "page": c.get("page"),
             "section": c.get("section"),
-            "snippets": c.get("snippets", [])  # ✅ Array of snippets from LLM
+            "snippets": c.get("snippets", [])
         })
     return list(grouped.values())
 
@@ -72,16 +133,21 @@ Even if you think you know the answer from the history, you MUST call a tool to 
 ## CRITICAL: PASS FULL QUESTIONS TO TOOLS
 
 When calling doc_qa_multi_tool:
-- ALWAYS pass the COMPLETE user question as-is
+- ALWAYS pass the COMPLETE user question as-is in a SINGLE tool call
 - DO NOT break the question into parts yourself
 - DO NOT call the tool multiple times for one question
-- The tool will automatically handle multi-document questions internally
+- Even if the user asks multiple questions (e.g., "What is X and what is Y?"), pass the ENTIRE question as ONE string
+- The tool will automatically handle multi-part and multi-document questions internally
 - Let the tool decide if decomposition is needed
 
 Examples:
-✅ CORRECT: doc_qa_multi_tool(question="What is Aadil's GPA and what are the PSL team names?")
-❌ WRONG: Call doc_qa_multi_tool twice with separate questions
+✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's GPA and what are the PSL team names?"])
+✅ CORRECT: doc_qa_multi_tool(questions=["What are teams in PSL and tell me about FYP?"])
+❌ WRONG: Call doc_qa_multi_tool twice with questions=["What is Aadil's GPA?"] then questions=["What are PSL team names?"]
+❌ WRONG: Call doc_qa_multi_tool with questions=["What is Aadil's GPA?", "What are PSL team names?"]
 ❌ WRONG: Rewrite or simplify the user's question
+
+CRITICAL RULE: ONE user message = ONE tool call with ONE question string, no matter how many sub-questions it contains.
 
 ## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
 
@@ -169,9 +235,10 @@ REMEMBER: You are a tool-calling agent. You MUST call a tool for every user ques
 
 
 class DocumentAgentV2:
-    def __init__(self, db: Session, management_db: Session):
+    def __init__(self, db: Session, management_db: Session, chathead=None):
         self.db = db
         self.management_db = management_db
+        self.chathead = chathead  # NEW: Store chathead to access use_deep_reranker
 
         provider = settings.llm_provider.lower()
         model = settings.llm_model
@@ -264,8 +331,13 @@ class DocumentAgentV2:
         # Format doc histories for system prompt
         chat_history_string = self._format_doc_histories_for_prompt(doc_histories, active_doc_ids)
 
+        # Get use_deep_reranker flag from chathead
+        use_deep_reranker = self.chathead.use_deep_reranker if self.chathead else False
+        
+        print(f"[AGENT V2] Using deep reranker: {use_deep_reranker}", file=sys.stderr)
+
         tools = [
-            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories, section_names_map),
+            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories, section_names_map, use_deep_reranker),
             make_list_sections_tool_v2(self.management_db, self.management_db, active_doc_ids),
             make_generate_summary_tool_v2(self.management_db, self.management_db, active_doc_ids),
         ]
@@ -318,8 +390,7 @@ class DocumentAgentV2:
         
         print(f"[AGENT] raw_output type={type(raw_output)}, tool_metadata={bool(tool_metadata)}", file=sys.stderr)
 
-        # Handle both dict and JSON string responses from tools
-        # Tools now return dicts directly, but agent might still stringify them
+        # Try normal JSON parsing first
         try:
             # If raw_output is already a dict, use it directly
             if isinstance(raw_output, dict):
@@ -328,13 +399,60 @@ class DocumentAgentV2:
                 # Try to parse as JSON string
                 parsed = json.loads(raw_output)
             
+            # Handle case where parsed is a list (multiple tool calls returned as array)
+            if isinstance(parsed, list):
+                print(f"[AGENT] Parsed output is a list with {len(parsed)} items, merging...", file=sys.stderr)
+                
+                # Merge all items in the list
+                merged_answers = []
+                all_citations = []
+                has_any_contradiction = False
+                total_tokens_input = 0
+                total_tokens_output = 0
+                
+                for item in parsed:
+                    if not isinstance(item, dict):
+                        continue
+                    
+                    # Collect answers
+                    ans = item.get("answer", "")
+                    if isinstance(ans, list):
+                        merged_answers.extend(ans)
+                    else:
+                        merged_answers.append(str(ans))
+                    
+                    # Deduplicate citations
+                    existing_keys = {
+                        (c.get('doc_id'), c.get('page'), c.get('section'))
+                        for c in all_citations
+                    }
+                    for citation in item.get("citations", []):
+                        key = (citation.get('doc_id'), citation.get('page'), citation.get('section'))
+                        if key not in existing_keys:
+                            all_citations.append(citation)
+                            existing_keys.add(key)
+                    
+                    # Track contradictions and tokens
+                    if item.get("has_contradiction"):
+                        has_any_contradiction = True
+                    total_tokens_input += item.get("tokens_input", 0)
+                    total_tokens_output += item.get("tokens_output", 0)
+                
+                # Create merged dict
+                parsed = {
+                    "answer": "\n\n".join(str(a) for a in merged_answers if a),
+                    "citations": all_citations,
+                    "has_contradiction": has_any_contradiction,
+                    "tokens_input": total_tokens_input,
+                    "tokens_output": total_tokens_output,
+                    "call_type": "doc_qa"
+                }
+                print(f"[AGENT] Merged list into single response with {len(all_citations)} citations", file=sys.stderr)
+            
             flat_citations = parsed.get("citations", []) or tool_metadata.get("citations", [])
 
             # Use structured output schema for consistency
-            # Prefer parsed values, fall back to tool_metadata from intermediate_steps
-            raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or ""
-            if not raw_call_type:
-                raw_call_type = "doc_qa"
+            raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or "doc_qa"
 
             # Ensure answer is always a string
             raw_answer = parsed.get("answer", str(raw_output))
@@ -345,15 +463,12 @@ class DocumentAgentV2:
                 answer=raw_answer,
                 has_contradiction=parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False),
                 citations=flat_citations,
-                # ALWAYS use tool_metadata for tokens when available — it's the raw tool output
-                # before the LLM potentially rewrites/zeroes them out.
-                # Only fall back to parsed values if tool_metadata has nothing.
                 tokens_input=tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else parsed.get("tokens_input", 0),
                 tokens_output=tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else parsed.get("tokens_output", 0),
                 call_type=raw_call_type,
             )
             
-            print(f"[AGENT] Happy path: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}, call_type={structured_response.call_type}", file=sys.stderr)
+            print(f"[AGENT] Structured parsing: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}", file=sys.stderr)
             
             return {
                 "answer": structured_response.answer,
@@ -363,72 +478,102 @@ class DocumentAgentV2:
                 "tokens_output": structured_response.tokens_output,
                 "call_type": structured_response.call_type,
             }
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
-            print(f"[AGENT] Failed to parse tool output: {e}", file=sys.stderr)
-            print(f"[AGENT] Raw output type: {type(raw_output)}", file=sys.stderr)
-            print(f"[AGENT] Raw output: {str(raw_output)[:200]}...", file=sys.stderr)
-            
-            # Try to extract and merge multiple JSON objects from concatenated output
+        
+        except (json.JSONDecodeError, TypeError, ValueError, AttributeError) as e:
+            # Fallback: Use regex extraction for malformed output
+            print(f"[AGENT] JSON parsing failed: {e}, using regex fallback", file=sys.stderr)
             import re
-            json_objects = []
-            decoder = json.JSONDecoder()
-            idx = 0
-            while idx < len(raw_output):
-                try:
-                    obj, end_idx = decoder.raw_decode(raw_output, idx)
-                    if isinstance(obj, dict) and "answer" in obj:
-                        json_objects.append(obj)
-                    idx = end_idx  # end_idx is absolute position, not delta
-                except json.JSONDecodeError:
-                    idx += 1
-
-            if json_objects:
-                merged_parts = []
-                for o in json_objects:
-                    ans = o.get("answer", "")
-                    if isinstance(ans, list):
-                        ans = " ".join(str(x) for x in ans)
-                    merged_parts.append(str(ans))
-                # Use only the FIRST object's answer (tool output), not the LLM's rewrite
-                merged_answer = merged_parts[0] if merged_parts else ""
-                merged_citations = json_objects[0].get("citations", [])
-                has_contradiction = json_objects[0].get("has_contradiction", False)
+            
+            # Convert to string if it's a dict
+            if isinstance(raw_output, dict):
+                raw_str = str(raw_output)
+            else:
+                raw_str = raw_output
+            
+            print(f"[AGENT] Using regex extraction for raw output", file=sys.stderr)
+            
+            # Extract all answers (handles both "answer": and 'answer':)
+            answer_pattern = r'["\']answer["\']\s*:\s*["\']([^"\']*(?:["\']["\']|\\["\'])*[^"\']*)["\']'
+            answers = re.findall(answer_pattern, raw_str, re.DOTALL)
+            
+            # If no answers found with quotes, try without quotes (for multiline strings)
+            if not answers:
+                # Try to find answer values more broadly
+                answer_pattern2 = r'["\']answer["\']\s*:\s*(["\'])(((?!\1).)*)\1'
+                matches = re.finditer(answer_pattern2, raw_str, re.DOTALL)
+                answers = [m.group(2) for m in matches]
+            
+            # Extract has_contradiction
+            contradiction_pattern = r'["\']has_contradiction["\']\s*:\s*(true|false|True|False)'
+            contradictions = re.findall(contradiction_pattern, raw_str, re.IGNORECASE)
+            has_contradiction = any(c.lower() == 'true' for c in contradictions)
+            
+            # Extract tokens
+            tokens_input_pattern = r'["\']tokens_input["\']\s*:\s*(\d+)'
+            tokens_inputs = [int(x) for x in re.findall(tokens_input_pattern, raw_str)]
+            total_tokens_input = sum(tokens_inputs) if tokens_inputs else tool_metadata.get("tokens_input", 0)
+            
+            tokens_output_pattern = r'["\']tokens_output["\']\s*:\s*(\d+)'
+            tokens_outputs = [int(x) for x in re.findall(tokens_output_pattern, raw_str)]
+            total_tokens_output = sum(tokens_outputs) if tokens_outputs else tool_metadata.get("tokens_output", 0)
+            
+            # Build citations from extracted data
+            citations = []
+            seen_citations = set()
+            
+            # Try to extract full citation objects
+            citation_pattern = r'\{[^}]*["\']doc_id["\']\s*:\s*(\d+)[^}]*["\']doc_title["\']\s*:\s*["\']([^"\']+)["\'][^}]*\}'
+            for match in re.finditer(citation_pattern, raw_str):
+                doc_id = int(match.group(1))
+                doc_title = match.group(2)
                 
-                # Always prefer tool_metadata (from intermediate_steps) for tokens
-                # Fall back to first json_object (the actual tool output, not LLM rewrite)
-                first_obj = json_objects[0]
-                ti = tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else first_obj.get("tokens_input", 0)
-                to = tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else first_obj.get("tokens_output", 0)
-                ct = tool_metadata.get("call_type") or first_obj.get("call_type") or "doc_qa"
+                # Extract other citation fields from this block
+                block = match.group(0)
+                page_match = re.search(r'["\']page["\']\s*:\s*(\d+)', block)
+                section_match = re.search(r'["\']section["\']\s*:\s*["\']([^"\']+)["\']', block)
+                url_match = re.search(r'["\']cloudinary_url["\']\s*:\s*["\']([^"\']+)["\']', block)
                 
-                print(f"[AGENT] Multi-JSON path: tokens_input={ti}, tokens_output={to}, call_type={ct}", file=sys.stderr)
+                page = int(page_match.group(1)) if page_match else None
+                section = section_match.group(1) if section_match else None
+                url = url_match.group(1) if url_match else None
                 
-                structured_response = AgentFinalOutput(
-                    answer=merged_answer,
-                    has_contradiction=has_contradiction,
-                    citations=merged_citations,
-                    tokens_input=ti,
-                    tokens_output=to,
-                    call_type=ct,
-                )
-                
-                return {
-                    "answer": structured_response.answer,
-                    "has_contradiction": structured_response.has_contradiction,
-                    "citations": _group_citations(structured_response.citations),
-                    "tokens_input": structured_response.tokens_input,
-                    "tokens_output": structured_response.tokens_output,
-                    "call_type": structured_response.call_type,
-                }
-
-            # Last resort: return raw output as answer, use tool_metadata if available
-            print(f"[AGENT] Could not parse any JSON, returning raw output", file=sys.stderr)
-            raw_answer_str = raw_output if isinstance(raw_output, str) else str(raw_output)
+                # Deduplicate
+                key = (doc_id, page, section)
+                if key not in seen_citations:
+                    citations.append({
+                        "doc_id": doc_id,
+                        "doc_title": doc_title,
+                        "cloudinary_url": url,
+                        "page": page,
+                        "section": section
+                    })
+                    seen_citations.add(key)
+            
+            # Merge all answers
+            merged_answer = "\n\n".join(answers) if answers else str(raw_output)
+            
+            print(f"[AGENT] Regex extracted: {len(answers)} answers, {len(citations)} citations", file=sys.stderr)
+            
+            structured_response = AgentFinalOutput(
+                answer=merged_answer,
+                has_contradiction=has_contradiction or tool_metadata.get("has_contradiction", False),
+                citations=citations or tool_metadata.get("citations", []),
+                tokens_input=total_tokens_input,
+                tokens_output=total_tokens_output,
+                call_type=tool_metadata.get("call_type", "doc_qa"),
+            )
+            
+            print(f"[AGENT] Regex fallback: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}", file=sys.stderr)
+            
+            # Format dict-like answers to readable markdown
+            formatted_answer = _format_dict_answer(structured_response.answer)
+            
             return {
-                "answer": raw_answer_str,
-                "has_contradiction": tool_metadata.get("has_contradiction", False),
-                "citations": tool_metadata.get("citations", []),
-                "tokens_input": tool_metadata.get("tokens_input", 0),
-                "tokens_output": tool_metadata.get("tokens_output", 0),
-                "call_type": tool_metadata.get("call_type") or "doc_qa",
+                "answer": formatted_answer,
+                "has_contradiction": structured_response.has_contradiction,
+                "citations": _group_citations(structured_response.citations),
+                "tokens_input": structured_response.tokens_input,
+                "tokens_output": structured_response.tokens_output,
+                "call_type": structured_response.call_type,
             }
+

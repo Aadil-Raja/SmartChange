@@ -44,7 +44,7 @@ def _prefetch_section_names(chunk_db, document_ids: List[int]) -> Dict[int, List
     return dict(results)
 
 
-def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dict, section_names_map: Dict[int, List[str]] = None):
+def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dict, section_names_map: Dict[int, List[str]] = None, use_deep_reranker: bool = False):
     """
     Create a multi-document QA tool with intelligent question decomposition.
     
@@ -120,6 +120,15 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             
             print(f"[MULTI-DOC TOOL] Active documents: {document_ids}", file=sys.stderr)
             
+            # ✅ NEW: Log user turn at the start
+            try:
+                from app.services.chat_logger import get_logger
+                logger = get_logger()
+                if logger:
+                    logger.log_user_turn(question, document_ids)
+            except Exception as log_err:
+                print(f"[MULTI-DOC TOOL] Failed to log user turn: {log_err}", file=sys.stderr)
+            
             # Optimization: Skip decomposition if only 1 document
             if len(document_ids) == 1:
                 print(f"[MULTI-DOC TOOL] Only 1 document active, skipping decomposition", file=sys.stderr)
@@ -168,7 +177,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 chunk_db=chunk_db,
                 doc_histories=doc_histories,
                 settings=settings,
-                all_active_doc_ids=document_ids  # ✅ NEW: Pass all active docs for fallback retrieval
+                all_active_doc_ids=document_ids,  # ✅ NEW: Pass all active docs for fallback retrieval
+                use_deep_reranker=use_deep_reranker  # NEW: Pass deep flag
             )
             
             # Step 4: Merge answers
@@ -179,7 +189,16 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 llm=llm
             )
             
-            # Step 5: Log the multi-doc flow (if logger is available)
+            # ✅ NEW: Log merged answer
+            try:
+                from app.services.chat_logger import get_logger
+                logger = get_logger()
+                if logger:
+                    logger.log_merged_answer(merged.answer, merged.citations)
+            except Exception as log_err:
+                print(f"[MULTI-DOC TOOL] Failed to log merged answer: {log_err}", file=sys.stderr)
+            
+            # Step 5: Log the multi-doc flow (if logger is available) - OLD LOGGING, KEEP FOR NOW
             try:
                 _log_multi_doc_flow(
                     question=question,

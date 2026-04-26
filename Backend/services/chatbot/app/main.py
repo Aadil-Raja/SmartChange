@@ -44,6 +44,7 @@ app.add_middleware(
 app.include_router(routers.health.router, prefix="/health", tags=["health"])
 app.include_router(routers.chat.router, prefix="/chat", tags=["chat"])
 app.include_router(routers.chat_manage.router, prefix="/chat/manage", tags=["chat_manage"])
+app.include_router(routers.chathead_settings.router, prefix="/chat/chatheads", tags=["chathead_settings"])
 from app.routers import internal
 app.include_router(internal.router, prefix="/internal", tags=["internal"])
 @app.get("/")

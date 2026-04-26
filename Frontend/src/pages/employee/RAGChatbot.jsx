@@ -217,7 +217,12 @@ const getCitationGroups = (message) => {
     refs.forEach(r => {
       const pg = r?.page === null || r?.page === undefined ? null : Number(r.page);
       if (!Number.isFinite(pg) || pg <= 0) return;
-      if (!pageMap.has(pg)) pageMap.set(pg, { key: `${doc?.doc_id || i}-${pg}`, page: pg, section: r?.section ?? null, snippet: r?.snippet ?? null });
+      if (!pageMap.has(pg)) pageMap.set(pg, { 
+        key: `${doc?.doc_id || i}-${pg}`, 
+        page: pg, 
+        section: r?.section ?? null, 
+        snippets: Array.isArray(r?.snippets) ? r.snippets : []  // ✅ Array of snippets
+      });
     });
     const pages = Array.from(pageMap.values());
     if (!pages.length) return null;
@@ -901,6 +906,8 @@ const RAGChatbot = () => {
   const [suggestedQuestions, setSuggestedQuestions] = useState([]); // flat, for empty state
   const [suggestedByDoc, setSuggestedByDoc] = useState([]); // [{docId, docTitle, questions}] for panel
   const [inputFocused, setInputFocused] = useState(false);
+  const [rerankerModel, setRerankerModel] = useState("fast"); // "fast" or "deep"
+  const [updatingReranker, setUpdatingReranker] = useState(false);
   const hasFetched = useRef(false);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -908,6 +915,11 @@ const RAGChatbot = () => {
   const currentMessages = activeChatId ? messages[activeChatId] || [] : [];
   const isReadOnly = activeChatId && (!selectedDocumentIds || !selectedDocumentIds.length);
   const hasDocs = selectedDocumentIds && selectedDocumentIds.length > 0;
+
+  // Debug logging
+  console.log('[DEBUG] activeChatId:', activeChatId);
+  console.log('[DEBUG] hasDocs:', hasDocs);
+  console.log('[DEBUG] selectedDocumentIds:', selectedDocumentIds);
 
   useEffect(() => {
     if (!hasFetched.current) {
@@ -935,6 +947,83 @@ const RAGChatbot = () => {
     source.active_doc_ids.forEach(id => selectDocument(id));
   }, [activeChatId, messages[activeChatId]?.length]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages, sending]);
+
+  // Fetch reranker setting when chat changes
+  useEffect(() => {
+    if (!activeChatId) {
+      console.log('[RERANKER] No active chat ID');
+      return;
+    }
+    
+    console.log('[RERANKER] Fetching setting for chathead:', activeChatId);
+    
+    const fetchRerankerSetting = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8001/chat/chatheads/${activeChatId}/reranker?token=${token}`, {
+          headers: { 
+            "Content-Type": "application/json",
+            "token": token
+          }
+        });
+        console.log('[RERANKER] Response status:', response.status);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[RERANKER] Data received:', data);
+          setRerankerModel(data.data.use_deep_reranker ? "deep" : "fast");
+        } else {
+          console.error('[RERANKER] Failed to fetch:', response.status);
+        }
+      } catch (error) {
+        console.error("[RERANKER] Failed to fetch reranker setting:", error);
+      }
+    };
+    
+    fetchRerankerSetting();
+  }, [activeChatId]);
+
+  const handleRerankerChange = async (newModel) => {
+    if (!activeChatId || updatingReranker) {
+      console.log('[RERANKER] Cannot update - activeChatId:', activeChatId, 'updatingReranker:', updatingReranker);
+      return;
+    }
+    
+    console.log('[RERANKER] Updating to:', newModel, 'for chathead:', activeChatId);
+    setUpdatingReranker(true);
+    try {
+      const token = localStorage.getItem("token");
+      const url = `http://localhost:8001/chat/chatheads/${activeChatId}/reranker?token=${token}`;
+      console.log('[RERANKER] PATCH to:', url);
+      
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "token": token
+        },
+        body: JSON.stringify({ use_deep_reranker: newModel === "deep" })
+      });
+      
+      console.log('[RERANKER] Response status:', response.status);
+      const responseData = await response.json();
+      console.log('[RERANKER] Response data:', responseData);
+      
+      if (response.ok) {
+        setRerankerModel(newModel);
+        console.log('[RERANKER] Successfully updated to:', newModel);
+      } else {
+        console.error("[RERANKER] Failed to update:", response.status, responseData);
+        // Show the actual validation error
+        const errorMsg = responseData.detail?.[0]?.msg || responseData.message || JSON.stringify(responseData);
+        alert(`Failed to update reranker: ${errorMsg}`);
+      }
+    } catch (error) {
+      console.error("[RERANKER] Error updating reranker:", error);
+      alert(`Error updating reranker: ${error.message}`);
+    } finally {
+      setUpdatingReranker(false);
+    }
+  };
 
   useEffect(() => {
     if (!selectedDocumentIds?.length) {
@@ -1749,6 +1838,41 @@ const RAGChatbot = () => {
                   </div>
 
                   <TokenUsageBar />
+
+                  {/* ── Reranker Model Selector ── */}
+                  {hasDocs && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10,
+                      padding: '12px 20px', background: 'var(--parchment)',
+                      borderTop: '1px solid var(--parchment-3)'
+                    }}>
+                      <span style={{ 
+                        fontSize: 11, fontWeight: 600, color: 'var(--ink-5)', 
+                        fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' 
+                      }}>
+                        Reranker:
+                      </span>
+                      <select
+                        value={rerankerModel}
+                        onChange={(e) => handleRerankerChange(e.target.value)}
+                        disabled={updatingReranker || !activeChatId}
+                        style={{
+                          fontSize: 12, padding: '6px 12px', borderRadius: 8,
+                          border: '1.5px solid var(--parchment-3)', background: 'var(--canvas)',
+                          color: 'var(--ink)', fontFamily: 'var(--font-body)', fontWeight: 500,
+                          cursor: (updatingReranker || !activeChatId) ? 'not-allowed' : 'pointer', 
+                          outline: 'none', transition: 'all 0.15s',
+                          opacity: !activeChatId ? 0.5 : 1
+                        }}
+                        onMouseEnter={e => { if (!updatingReranker && activeChatId) e.currentTarget.style.borderColor = 'var(--gold)'; }}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--parchment-3)'}
+                        title={!activeChatId ? 'Send a message first to enable reranker selection' : ''}
+                      >
+                        <option value="fast">⚡ Fast (ms-marco)</option>
+                        <option value="deep">🎯 Deep (jina-v3)</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* ── Input area ── */}
                   <div className="input-zone">

@@ -118,7 +118,12 @@ def respond_turn_v2(
 
         # Ensure chathead exists
         from app.services.chat_service import ensure_chathead, load_doc_summaries_and_messages
+        from app.models.chathead import ChatHead
+        
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
+        
+        # Fetch the chathead object to access use_deep_reranker
+        chathead_obj = db.query(ChatHead).filter(ChatHead.id == cid).first()
 
         # Initialize logger for this chathead
         try:
@@ -168,7 +173,7 @@ def respond_turn_v2(
         print(f"[CHAT] Loaded {len(doc_histories)} doc histories and {len(section_names_map)} section maps in parallel", file=sys.stderr)
 
         # Run v2 agent FIRST to get validated doc IDs
-        agent = DocumentAgentV2(db, management_db)
+        agent = DocumentAgentV2(db, management_db, chathead_obj)  # Pass chathead
         out = agent.get_response(
             active_doc_ids=active_doc_ids,
             user_message=message,
