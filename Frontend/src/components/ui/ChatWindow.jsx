@@ -1,7 +1,7 @@
 // src/components/ui/ChatWindow.jsx
 import { useState, useEffect, useRef } from "react";
 import { useChatbot } from "../../hooks/useChatbot";
-import { Send, Bot, User, Sparkles, FileText, MessageCircle, Zap, BookOpen, Quote } from "lucide-react";
+import { Send, Bot, User, Sparkles, FileText, MessageCircle, Zap, BookOpen, Quote, Copy, Check } from "lucide-react";
 import LoadingSpinner from "./LoadingSpinner";
 import ChatTextArea from "./ChatTextArea";
 import MarkdownMessage from "./MarkdownMessage";
@@ -57,6 +57,30 @@ const getCitationRefs = (message) => {
       docId: group.docId,
       docTitle: group.docTitle,
     }))
+  );
+};
+
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* silently fail */ }
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy message"}
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-all"
+      style={{ color: copied ? "#22c55e" : "#c4b8a8", background: "transparent" }}
+      onMouseEnter={e => { if (!copied) e.currentTarget.style.color = "#9c8e80"; }}
+      onMouseLeave={e => { if (!copied) e.currentTarget.style.color = "#c4b8a8"; }}
+    >
+      {copied ? <Check size={11} /> : <Copy size={11} />}
+      <span style={{ fontSize: 10 }}>{copied ? "Copied" : "Copy"}</span>
+    </button>
   );
 };
 
@@ -319,12 +343,17 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
                     </div>
                   )}
 
-                  <span
-                    className="text-[10px] mt-1.5 block"
-                    style={{ color: isUser ? "rgba(250,246,239,0.5)" : "#c4b8a8" }}
-                  >
-                    {new Date(message.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <span
+                      className="text-[10px]"
+                      style={{ color: isUser ? "rgba(250,246,239,0.5)" : "#c4b8a8" }}
+                    >
+                      {new Date(message.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    {!isUser && (
+                      <CopyButton text={message.message} />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

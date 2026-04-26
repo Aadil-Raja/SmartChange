@@ -135,3 +135,145 @@ def get_current_usage(db: Session, user_id: int, window_start: datetime) -> dict
         "tokens_output": int(result.total_output),
         "total": int(result.total_input) + int(result.total_output),
     }
+
+
+# ── Usage history (for admin graph) ───────────────────────────────────────
+
+# Simple in-process cache: {user_id:days -> (data, computed_at)}
+_usage_history_cache: dict = {}
+_HISTORY_CACHE_TTL = 300  # 5 minutes
+
+
+def get_usage_history(db: Session, user_id: int, days: int = 7) -> list:
+    """
+    Returns daily token usage for the last N days.
+    Each entry: {date: 'YYYY-MM-DD', tokens_input: int, tokens_output: int, total: int}
+    Cached for 5 minutes.
+    """
+    cache_key = f"{user_id}:{days}"
+    entry = _usage_history_cache.get(cache_key)
+    if entry:
+        data, computed_at = entry
+        if (datetime.now(timezone.utc) - computed_at).total_seconds() < _HISTORY_CACHE_TTL:
+            return data
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    from sqlalchemy import cast, Date as SADate
+    rows = db.query(
+        cast(UserTokenUsage.created_at, SADate).label("day"),
+        func.coalesce(func.sum(UserTokenUsage.tokens_input), 0).label("tokens_input"),
+        func.coalesce(func.sum(UserTokenUsage.tokens_output), 0).label("tokens_output"),
+    ).filter(
+        UserTokenUsage.user_id == user_id,
+        UserTokenUsage.created_at >= since,
+    ).group_by(
+        cast(UserTokenUsage.created_at, SADate)
+    ).order_by(
+        cast(UserTokenUsage.created_at, SADate)
+    ).all()
+
+    # Fill in missing days with 0
+    result = []
+    day_map = {str(r.day): r for r in rows}
+    for i in range(days):
+        d = (datetime.now(timezone.utc) - timedelta(days=days - 1 - i)).date()
+        day_str = str(d)
+        r = day_map.get(day_str)
+        result.append({
+            "date": day_str,
+            "tokens_input": int(r.tokens_input) if r else 0,
+            "tokens_output": int(r.tokens_output) if r else 0,
+            "total": int(r.tokens_input + r.tokens_output) if r else 0,
+        })
+
+    _usage_history_cache[cache_key] = (result, datetime.now(timezone.utc))
+    return result
+
+
+def invalidate_usage_history_cache(user_id: int):
+    for days in (7, 15, 30):
+        _usage_history_cache.pop(f"{user_id}:{days}", None)
+
+
+# ── Overall stats + top users (for admin dashboard) ───────────────────────
+
+_overview_cache: dict = {}
+_OVERVIEW_CACHE_TTL = 300  # 5 minutes
+
+
+def get_usage_overview(db: Session, days: int = 7) -> dict:
+    """
+    Returns org-wide token usage stats for the last N days.
+    {total_tokens, total_input, total_output, active_users, total_calls}
+    Cached 5 min.
+    """
+    cache_key = f"overview:{days}"
+    entry = _overview_cache.get(cache_key)
+    if entry:
+        data, computed_at = entry
+        if (datetime.now(timezone.utc) - computed_at).total_seconds() < _OVERVIEW_CACHE_TTL:
+            return data
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    result = db.query(
+        func.coalesce(func.sum(UserTokenUsage.tokens_input), 0).label("total_input"),
+        func.coalesce(func.sum(UserTokenUsage.tokens_output), 0).label("total_output"),
+        func.count(UserTokenUsage.id).label("total_calls"),
+        func.count(func.distinct(UserTokenUsage.user_id)).label("active_users"),
+    ).filter(UserTokenUsage.created_at >= since).one()
+
+    data = {
+        "days": days,
+        "total_input": int(result.total_input),
+        "total_output": int(result.total_output),
+        "total_tokens": int(result.total_input) + int(result.total_output),
+        "total_calls": int(result.total_calls),
+        "active_users": int(result.active_users),
+    }
+    _overview_cache[cache_key] = (data, datetime.now(timezone.utc))
+    return data
+
+
+def get_top_users_by_usage(db: Session, days: int = 7, limit: int = 10) -> list:
+    """
+    Returns top N users by total token usage in the last N days.
+    Each entry: {user_id, total_tokens, total_input, total_output, total_calls}
+    Cached 5 min per (days, limit).
+    """
+    limit = min(limit, 20)  # hard cap at 20
+    cache_key = f"top:{days}:{limit}"
+    entry = _overview_cache.get(cache_key)
+    if entry:
+        data, computed_at = entry
+        if (datetime.now(timezone.utc) - computed_at).total_seconds() < _OVERVIEW_CACHE_TTL:
+            return data
+
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    rows = db.query(
+        UserTokenUsage.user_id,
+        func.coalesce(func.sum(UserTokenUsage.tokens_input), 0).label("total_input"),
+        func.coalesce(func.sum(UserTokenUsage.tokens_output), 0).label("total_output"),
+        func.count(UserTokenUsage.id).label("total_calls"),
+    ).filter(
+        UserTokenUsage.created_at >= since
+    ).group_by(
+        UserTokenUsage.user_id
+    ).order_by(
+        (func.sum(UserTokenUsage.tokens_input) + func.sum(UserTokenUsage.tokens_output)).desc()
+    ).limit(limit).all()
+
+    data = [
+        {
+            "user_id": r.user_id,
+            "total_input": int(r.total_input),
+            "total_output": int(r.total_output),
+            "total_tokens": int(r.total_input) + int(r.total_output),
+            "total_calls": int(r.total_calls),
+        }
+        for r in rows
+    ]
+    _overview_cache[cache_key] = (data, datetime.now(timezone.utc))
+    return data

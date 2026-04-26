@@ -102,6 +102,124 @@ function EditQuotaModal({ user, onClose, onSaved, defaultLimit, defaultHours }) 
   );
 }
 
+function UsageHistoryModal({ user, onClose }) {
+  const [days, setDays] = useState(7);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [tooltip, setTooltip] = useState(null); // {x, y, date, total}
+
+  useEffect(() => {
+    setLoading(true);
+    api.get(`/admin/users/${user.user_id}/quota/history?days=${days}`)
+      .then(r => setData(r.data?.data || null))
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [user.user_id, days]);
+
+  const history = data?.history || [];
+  const summary = data?.summary || { total: 0, peak: 0, active_days: 0 };
+  const maxVal = summary.peak || 1;
+
+  const fmtDate = (d) => {
+    const dt = new Date(d + "T00:00:00");
+    return dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(26,18,9,0.55)" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, width: "min(680px, 95vw)", padding: 28, boxShadow: "0 20px 48px rgba(26,18,9,0.2)" }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 style={{ fontFamily: "Georgia,serif", fontWeight: 700, color: C.ink, fontSize: 16 }}>
+              Token Usage — {user.name || `User #${user.user_id}`}
+            </h3>
+            <p style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{user.email} · data up to 5 min old</p>
+          </div>
+          <button onClick={onClose} style={{ color: C.muted }}><X size={16} /></button>
+        </div>
+
+        {/* Period tabs */}
+        <div className="flex gap-2 mb-5">
+          {[7, 15, 30].map(d => (
+            <button key={d} onClick={() => setDays(d)}
+              style={{ padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: `1.5px solid ${days === d ? C.orange : C.border}`, background: days === d ? "#fff5ec" : "#fff", color: days === d ? C.orange : C.muted, transition: "all 0.15s" }}>
+              {d}d
+            </button>
+          ))}
+        </div>
+
+        {/* Summary stats */}
+        <div className="flex gap-3 mb-5">
+          {[
+            { label: "Total tokens", value: summary.total.toLocaleString() },
+            { label: "Peak day", value: summary.peak.toLocaleString() },
+            { label: "Active days", value: `${summary.active_days} / ${days}` },
+          ].map(s => (
+            <div key={s.label} style={{ flex: 1, background: "#faf6ef", borderRadius: 10, padding: "10px 14px", border: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.ink }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bar chart */}
+        {loading ? (
+          <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: 13 }}>Loading…</div>
+        ) : history.length === 0 ? (
+          <div style={{ height: 160, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: 13 }}>No usage data</div>
+        ) : (
+          <div style={{ position: "relative" }}>
+            {/* Y-axis label */}
+            <div style={{ fontSize: 10, color: C.muted, marginBottom: 6 }}>tokens / day</div>
+            {/* Bars */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 140, paddingBottom: 0 }}>
+              {history.map((d, i) => {
+                const pct = maxVal > 0 ? (d.total / maxVal) * 100 : 0;
+                const barH = Math.max(pct * 1.4, d.total > 0 ? 3 : 0);
+                return (
+                  <div key={d.date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", cursor: "pointer" }}
+                    onMouseEnter={e => setTooltip({ i, date: d.date, total: d.total })}
+                    onMouseLeave={() => setTooltip(null)}>
+                    <div style={{
+                      width: "100%", height: `${barH}px`,
+                      background: tooltip?.i === i ? C.orange : (d.total > 0 ? "#f5c49a" : "#f0e8de"),
+                      borderRadius: "3px 3px 0 0", transition: "background 0.15s",
+                      minHeight: d.total > 0 ? 3 : 0,
+                    }} />
+                  </div>
+                );
+              })}
+            </div>
+            {/* X-axis labels — show every Nth to avoid crowding */}
+            <div style={{ display: "flex", gap: 3, marginTop: 4 }}>
+              {history.map((d, i) => {
+                const step = days <= 7 ? 1 : days <= 15 ? 2 : 5;
+                const show = i % step === 0 || i === history.length - 1;
+                return (
+                  <div key={d.date} style={{ flex: 1, fontSize: 9, color: C.muted, textAlign: "center", overflow: "hidden" }}>
+                    {show ? fmtDate(d.date) : ""}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Tooltip */}
+            {tooltip && (
+              <div style={{ position: "absolute", top: 0, left: `calc(${(tooltip.i / history.length) * 100}% + 4px)`, background: C.ink, color: "#faf6ef", borderRadius: 6, padding: "5px 9px", fontSize: 11, pointerEvents: "none", whiteSpace: "nowrap", zIndex: 10 }}>
+                <div style={{ fontWeight: 600 }}>{fmtDate(tooltip.date)}</div>
+                <div>{tooltip.total.toLocaleString()} tokens</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const AdminTokenQuota = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [employees, setEmployees] = useState([]);
@@ -111,6 +229,11 @@ const AdminTokenQuota = () => {
   const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [viewingHistory, setViewingHistory] = useState(null);
+  const [overviewDays, setOverviewDays] = useState(7);
+  const [overview, setOverview] = useState(null);
+  const [topUsers, setTopUsers] = useState([]);
+  const [topLimit, setTopLimit] = useState(10);
   const hasFetched = useRef(false);
 
   const loadData = async () => {
@@ -149,6 +272,15 @@ const AdminTokenQuota = () => {
     if (!hasFetched.current) { hasFetched.current = true; loadData(); }
   }, []);
 
+  useEffect(() => {
+    api.get(`/admin/quota/overview?days=${overviewDays}`)
+      .then(r => setOverview(r.data?.data || null))
+      .catch(() => {});
+    api.get(`/admin/quota/top-users?days=${overviewDays}&limit=${topLimit}`)
+      .then(r => setTopUsers(r.data?.data?.users || []))
+      .catch(() => {});
+  }, [overviewDays, topLimit]);
+
   const handleReset = async (userId) => {
     setResetting(userId);
     try {
@@ -184,17 +316,85 @@ const AdminTokenQuota = () => {
               </p>
             </div>
           </div>
-          <button onClick={loadData} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, fontSize: 13 }}>
-            <RefreshCw size={13} /> Refresh
-          </button>
+        </div>
+
+        {/* Overview + Top Users */}
+        <div className="px-8 pt-5 pb-2 flex-shrink-0">
+          {/* Period selector + overview refresh */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>Period:</span>
+              {[7, 15, 30].map(d => (
+                <button key={d} onClick={() => setOverviewDays(d)}
+                  style={{ padding: "4px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600, border: `1.5px solid ${overviewDays === d ? C.orange : C.border}`, background: overviewDays === d ? "#fff5ec" : "#fff", color: overviewDays === d ? C.orange : C.muted }}>
+                  {d}d
+                </button>
+              ))}
+            </div>
+            <span style={{ fontSize: 11, color: C.muted }}>Overview updates every 5 min</span>
+          </div>
+
+          {/* Summary stats */}
+          {overview && (
+            <div className="flex gap-3 mb-5">
+              {[
+                { label: "Total tokens", value: overview.total_tokens?.toLocaleString() ?? "—" },
+                { label: "Total calls", value: overview.total_calls?.toLocaleString() ?? "—" },
+                { label: "Active users", value: overview.active_users ?? "—" },
+              ].map(s => (
+                <div key={s.label} style={{ flex: 1, background: "#fff", borderRadius: 10, padding: "12px 16px", border: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: C.ink }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{s.label} (last {overviewDays}d)</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Top users */}
+          {topUsers.length > 0 && (
+            <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${C.border}`, padding: "16px 20px", marginBottom: 8 }}>
+              <div className="flex items-center justify-between mb-3">
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Top users by token usage</span>
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: 11, color: C.muted }}>Show top</span>
+                  <input type="number" min={1} max={20} value={topLimit}
+                    onChange={e => setTopLimit(Math.min(20, Math.max(1, Number(e.target.value))))}
+                    style={{ width: 48, padding: "3px 6px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, textAlign: "center" }} />
+                  <span style={{ fontSize: 11, color: C.muted }}>max 20</span>
+                </div>
+              </div>
+              {(() => {
+                const maxT = topUsers[0]?.total_tokens || 1;
+                return topUsers.map((u, i) => (
+                  <div key={u.user_id} className="flex items-center gap-3 mb-2">
+                    <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, width: 18, textAlign: "right" }}>{i + 1}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name || `User #${u.user_id}`}</span>
+                        <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, marginLeft: 8 }}>{u.total_tokens.toLocaleString()} tokens</span>
+                      </div>
+                      <div style={{ height: 5, background: "#f0e8de", borderRadius: 99, overflow: "hidden" }}>
+                        <div style={{ width: `${(u.total_tokens / maxT) * 100}%`, height: "100%", background: i === 0 ? C.orange : "#f5c49a", borderRadius: 99 }} />
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
         </div>
 
         {/* Search */}
-        <div className="px-8 pt-5 pb-3 flex-shrink-0">
-          <div className="relative" style={{ maxWidth: 340 }}>
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees…"
-              style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, outline: "none", background: "#fff" }} />
+        <div className="px-8 pt-2 pb-3 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="relative" style={{ maxWidth: 340, flex: 1 }}>
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees…"
+                style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, outline: "none", background: "#fff" }} />
+            </div>
+            <button onClick={loadData} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, fontSize: 13, flexShrink: 0 }}>
+              <RefreshCw size={13} /> Refresh table
+            </button>
           </div>
         </div>
 
@@ -244,6 +444,11 @@ const AdminTokenQuota = () => {
                         <td style={{ padding: "14px 16px", fontSize: 12, color: C.muted }}>{resetsAt}</td>
                         <td style={{ padding: "14px 16px" }}>
                           <div className="flex items-center gap-2">
+                            <button onClick={() => setViewingHistory({ ...emp, user_id: emp.id })}
+                              title="View usage history"
+                              style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                              <Zap size={12} /> History
+                            </button>
                             <button onClick={() => setEditing({ ...emp, user_id: emp.id, token_limit: q?.token_limit, reset_interval_hours: q?.reset_interval_hours })}
                               title="Edit quota"
                               style={{ padding: "6px 10px", borderRadius: 7, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
@@ -270,6 +475,7 @@ const AdminTokenQuota = () => {
       </div>
 
       {editing && <EditQuotaModal user={editing} onClose={() => setEditing(null)} onSaved={loadData} defaultLimit={defaults.token_limit} defaultHours={defaults.reset_interval_hours} />}
+      {viewingHistory && <UsageHistoryModal user={viewingHistory} onClose={() => setViewingHistory(null)} />}
     </div>
   );
 };

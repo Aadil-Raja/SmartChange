@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone, timedelta
@@ -8,7 +8,8 @@ from app.deps.auth import get_current_admin
 from app.core.config import get_settings
 from app.utils.response_utils import make_response
 from shared.repos.token_quota_repo import (
-    get_quota, peek_quota, upsert_quota, reset_quota, get_current_usage
+    get_quota, peek_quota, upsert_quota, reset_quota, get_current_usage,
+    get_usage_history, get_usage_overview, get_top_users_by_usage
 )
 
 router = APIRouter()
@@ -138,3 +139,54 @@ def reset_user_quota(
         "tokens_used": 0,
         "tokens_remaining": quota.token_limit,
     }, status_code=200)
+
+
+@router.get("/users/{user_id}/quota/history")
+def get_quota_history(
+    user_id: int,
+    days: int = Query(default=7, ge=1, le=30),
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    history = get_usage_history(db, user_id, days)
+    total = sum(d["total"] for d in history)
+    peak = max((d["total"] for d in history), default=0)
+    active_days = sum(1 for d in history if d["total"] > 0)
+    return make_response(True, "OK", data={
+        "user_id": user_id,
+        "days": days,
+        "history": history,
+        "summary": {"total": total, "peak": peak, "active_days": active_days},
+    }, status_code=200)
+
+
+@router.get("/quota/overview")
+def get_overview(
+    days: int = Query(default=7, ge=1, le=30),
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """Org-wide token usage stats for the last N days."""
+    data = get_usage_overview(db, days)
+    return make_response(True, "OK", data=data, status_code=200)
+
+
+@router.get("/quota/top-users")
+def get_top_users(
+    days: int = Query(default=7, ge=1, le=30),
+    limit: int = Query(default=10, ge=1, le=20),
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """Top N users by token usage in the last N days. Max limit=20."""
+    from shared.models.user import User
+    rows = get_top_users_by_usage(db, days, limit)
+    # Enrich with user names/emails
+    if rows:
+        user_ids = [r["user_id"] for r in rows]
+        users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()}
+        for r in rows:
+            u = users.get(r["user_id"])
+            r["name"] = u.Name if u else None
+            r["email"] = u.email if u else None
+    return make_response(True, "OK", data={"days": days, "limit": limit, "users": rows}, status_code=200)
