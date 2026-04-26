@@ -229,13 +229,15 @@ def respond_turn_v2(
         if not validated_doc_ids:
             validated_doc_ids = active_doc_ids
         
-        # NOW save BOTH user and assistant messages with VALIDATED doc IDs only
+        # NOW save BOTH user and assistant messages
+        # User message: save the ORIGINAL active_doc_ids (what user had selected)
+        # Assistant message: save validated_doc_ids (docs LLM actually cited)
         chat_repo.add_message(
             db,
             chathead_id=cid,
             role=MessageRole.USER,
             message=message,
-            active_doc_ids=validated_doc_ids  # Only validated docs
+            active_doc_ids=active_doc_ids  # Full selection the user had open
         )
         
         chat_repo.add_message(
@@ -243,7 +245,7 @@ def respond_turn_v2(
             chathead_id=cid,
             role=MessageRole.ASSISTANT,
             message=answer_text,
-            active_doc_ids=validated_doc_ids,  # Only docs that were actually used
+            active_doc_ids=validated_doc_ids,  # Only docs actually cited
             citations=citations
         )
 

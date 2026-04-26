@@ -798,6 +798,65 @@ const DocSelector = ({ onClose }) => {
 };
 
 /* ─────────────────────────────────────────
+   DOC QUESTIONS (collapsible per-doc)
+───────────────────────────────────────── */
+const DocQuestions = ({ docTitle, questions, onSelect }) => {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? questions : questions.slice(0, 2);
+  const btnStyle = { display: 'block', width: '100%', marginBottom: 4, padding: '7px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', fontSize: 11, color: 'rgba(255,255,255,0.65)', lineHeight: 1.4, transition: 'all 0.15s' };
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 5 }}>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 1h6.5l2 2v7h-8.5V1z" stroke="rgba(255,255,255,0.35)" strokeWidth="0.9" strokeLinejoin="round"/></svg>
+        <span style={{ fontSize: 10, fontWeight: 600, color: 'rgba(255,255,255,0.4)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 190 }}>{docTitle}</span>
+      </div>
+      {visible.map(q => (
+        <button key={q.id} style={btnStyle}
+          onClick={() => onSelect(q.text)}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,146,42,0.12)'; e.currentTarget.style.borderColor = 'rgba(232,146,42,0.35)'; e.currentTarget.style.color = 'rgba(255,255,255,0.9)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}
+        >{q.text}</button>
+      ))}
+      {questions.length > 2 && (
+        <button onClick={() => setExpanded(v => !v)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 10, color: 'var(--gold)', padding: '2px 0', fontWeight: 600 }}>
+          {expanded ? '▲ Show less' : `▼ +${questions.length - 2} more`}
+        </button>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────────────────────────────────
+   COPY BUTTON
+───────────────────────────────────────── */
+const CopyBtn = ({ text, isUser = false }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* silently fail */ }
+  };
+  const baseColor = isUser ? 'rgba(250,246,239,0.45)' : '#b0a090';
+  const hoverColor = isUser ? 'rgba(250,246,239,0.8)' : '#7a6a5a';
+  return (
+    <button onClick={handleCopy} title={copied ? "Copied!" : "Copy"}
+      style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 6px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', color: copied ? '#22c55e' : baseColor, fontSize: 10, fontWeight: 500, transition: 'color 0.15s' }}
+      onMouseEnter={e => { if (!copied) e.currentTarget.style.color = hoverColor; }}
+      onMouseLeave={e => { if (!copied) e.currentTarget.style.color = copied ? '#22c55e' : baseColor; }}
+    >
+      {copied
+        ? <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        : <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="3.5" y="1" width="6.5" height="7.5" rx="1" stroke="currentColor" strokeWidth="1"/><rect x="1" y="3.5" width="6.5" height="7.5" rx="1" stroke="currentColor" strokeWidth="1" fill="transparent"/></svg>
+      }
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+};
+
+/* ─────────────────────────────────────────
    TYPING INDICATOR
 ───────────────────────────────────────── */
 const TypingBubble = () => (
@@ -829,16 +888,18 @@ const RAGChatbot = () => {
     selectedDocumentIds, error, success, clearMessages,
     fetchChatHeads, fetchDocuments, fetchConfig, startNewChat,
     activeChatId, messages, availableDocuments, loading,
-    sendMessage, fetchMessages,
+    sendMessage, fetchMessages, selectDocument, clearDocumentSelection,
   } = useChatbot();
 
   const [showDocSel, setShowDocSel] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [showPromptPanel, setShowPromptPanel] = useState(true);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [inputMsg, setInputMsg] = useState("");
   const [sending, setSending] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
-  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]); // flat, for empty state
+  const [suggestedByDoc, setSuggestedByDoc] = useState([]); // [{docId, docTitle, questions}] for panel
   const [inputFocused, setInputFocused] = useState(false);
   const hasFetched = useRef(false);
   const inputRef = useRef(null);
@@ -858,31 +919,47 @@ const RAGChatbot = () => {
 
   useEffect(() => { if (activeChatId && !messages[activeChatId]) fetchMessages(activeChatId); }, [activeChatId]);
   useEffect(() => { if (!availableDocuments?.length) fetchDocuments(); }, []);
+
+  // Auto-load docs from last message when switching chats
+  useEffect(() => {
+    if (!activeChatId) return;
+    const msgs = messages[activeChatId];
+    if (!msgs?.length) return;
+    // Use last ASSISTANT message's active_doc_ids — only docs that were actually cited/used
+    // This avoids restoring irrelevant docs the user had open but never used
+    const lastAssistantMsg = [...msgs].reverse().find(m => m.role === 'assistant' && m.active_doc_ids?.length > 0);
+    const fallback = [...msgs].reverse().find(m => m.active_doc_ids?.length > 0);
+    const source = lastAssistantMsg || fallback;
+    if (!source) return;
+    clearDocumentSelection();
+    source.active_doc_ids.forEach(id => selectDocument(id));
+  }, [activeChatId, messages[activeChatId]?.length]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages, sending]);
 
   useEffect(() => {
-    if (selectedDocumentIds?.length === 1) {
-      getDocumentSuggestedQuestions(selectedDocumentIds[0])
-        .then(res => setSuggestedQuestions(res?.data?.questions || []))
-        .catch(() => setSuggestedQuestions([]));
+    if (!selectedDocumentIds?.length) {
+      setSuggestedQuestions([]);
+      setSuggestedByDoc([]);
       return;
     }
-    if (selectedDocumentIds?.length > 1) {
-      Promise.all(
-        selectedDocumentIds.map(id =>
-          getDocumentSuggestedQuestions(id).then(res => res?.data?.questions || []).catch(() => [])
-        )
-      ).then(results => {
-        const perDoc = Math.max(1, Math.floor(5 / results.length));
-        const seen = new Set(); const merged = [];
-        results.forEach(dq => dq.slice(0, perDoc).forEach(q => { if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); } }));
-        results.forEach(dq => dq.slice(perDoc).forEach(q => { if (merged.length >= 5) return; if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); } }));
-        setSuggestedQuestions(merged.slice(0, 5));
-      });
-      return;
-    }
-    setSuggestedQuestions([]);
-  }, [JSON.stringify(selectedDocumentIds)]);
+    Promise.all(
+      selectedDocumentIds.map(id => {
+        const doc = availableDocuments.find(d => d.id === id);
+        return getDocumentSuggestedQuestions(id)
+          .then(res => ({ docId: id, docTitle: doc?.title || `Doc ${id}`, questions: res?.data?.questions || [] }))
+          .catch(() => ({ docId: id, docTitle: doc?.title || `Doc ${id}`, questions: [] }));
+      })
+    ).then(results => {
+      // Per-doc grouped for panel
+      setSuggestedByDoc(results.filter(r => r.questions.length > 0));
+      // Flat merged for empty state (max 5)
+      const perDoc = Math.max(1, Math.floor(5 / results.length));
+      const seen = new Set(); const merged = [];
+      results.forEach(r => r.questions.slice(0, perDoc).forEach(q => { if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); } }));
+      results.forEach(r => r.questions.slice(perDoc).forEach(q => { if (merged.length >= 5) return; if (!seen.has(q.text)) { seen.add(q.text); merged.push(q); } }));
+      setSuggestedQuestions(merged.slice(0, 5));
+    });
+  }, [JSON.stringify(selectedDocumentIds), availableDocuments]);
 
   const handleNewChat = () => { startNewChat(); setShowDocSel(true); };
 
@@ -1409,6 +1486,21 @@ const RAGChatbot = () => {
                   <><span>Sources</span><span className="src-badge">{selectedDocumentIds.length}</span></>
                 ) : "Add sources"}
               </button>
+              {hasDocs && (
+                <button
+                  onClick={() => setShowPromptPanel(v => !v)}
+                  title={showPromptPanel ? "Hide suggestions" : "Show suggestions"}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: `1.5px solid ${showPromptPanel ? 'var(--gold)' : '#e0d8ce'}`, background: showPromptPanel ? 'rgba(232,146,42,0.08)' : '#fff', color: showPromptPanel ? 'var(--gold)' : '#6b5e4e', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { if (!showPromptPanel) { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.color = 'var(--gold)'; } }}
+                  onMouseLeave={e => { if (!showPromptPanel) { e.currentTarget.style.borderColor = '#e0d8ce'; e.currentTarget.style.color = '#6b5e4e'; } }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                    <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M6.5 4v3.5M6.5 9v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  </svg>
+                  Suggest
+                </button>
+              )}
             </div>
           </header>
 
@@ -1420,7 +1512,51 @@ const RAGChatbot = () => {
               </div>
             )}
 
-            <div className="rag-chat">
+            <div className="rag-chat" style={{ position: 'relative' }}>
+              {/* ── Prompt panel (right, absolute overlay) ── */}
+              {hasDocs && showPromptPanel && (
+                <div style={{
+                  position: 'fixed', top: 56, right: 16, width: 240, zIndex: 100,
+                  borderRadius: 14, border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(22,14,6,0.97)', backdropFilter: 'blur(16px)',
+                  display: 'flex', flexDirection: 'column', padding: '14px 12px', gap: 10,
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.5)', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
+                }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>How to use</span>
+                    <button onClick={() => setShowPromptPanel(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.35)', padding: '0 2px', fontSize: 14, lineHeight: 1 }}>✕</button>
+                  </div>
+
+                  {/* Steps */}
+                  {[
+                    { n: '1', label: 'Get overview / sections', prompt: 'List the main sections of this document' },
+                    { n: '2', label: 'Get a summary', prompt: 'Summarize the key points of this document' },
+                    { n: '3', label: 'Ask a question', prompt: null },
+                  ].map(({ n, label, prompt }) => (
+                    <button key={n}
+                      onClick={() => { if (prompt) { setInputMsg(prompt); inputRef.current?.focus(); } else inputRef.current?.focus(); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 10px', borderRadius: 9, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,146,42,0.12)'; e.currentTarget.style.borderColor = 'rgba(232,146,42,0.35)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                    >
+                      <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(232,146,42,0.18)', color: 'var(--gold)', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.3 }}>{label}</span>
+                    </button>
+                  ))}
+
+                  {/* Per-doc suggested questions — collapsed */}
+                  {suggestedByDoc.length > 0 && (
+                    <>
+                      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)' }}>Suggested questions</span>
+                      {suggestedByDoc.map(({ docId, docTitle, questions }) => (
+                        <DocQuestions key={docId} docTitle={docTitle} questions={questions} onSelect={q => { setInputMsg(q); inputRef.current?.focus(); }} />
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Source strip */}
               {hasDocs && (
@@ -1429,12 +1565,21 @@ const RAGChatbot = () => {
                   {selectedDocumentIds.slice(0, 4).map((id, i) => {
                     const doc = availableDocuments.find(d => d.id === id);
                     return (
-                      <button key={id} className="source-pill"
-                        style={{ animationDelay: `${i * 0.05}s`, animation: "slideRight 0.2s ease both" }}
-                        onClick={() => setShowDocSel(true)}>
+                      <span key={id} className="source-pill"
+                        style={{ animationDelay: `${i * 0.05}s`, animation: "slideRight 0.2s ease both", paddingRight: 6 }}>
                         <span className="src-dot" />
-                        <span>{doc?.title || `Doc ${id}`}</span>
-                      </button>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}
+                          onClick={() => setShowDocSel(true)}>
+                          {doc?.title || `Doc ${id}`}
+                        </span>
+                        <button
+                          onClick={() => selectDocument(id)}
+                          title="Remove"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(100,80,60,0.45)', padding: '0 2px', lineHeight: 1, fontSize: 10, flexShrink: 0, marginLeft: 2 }}
+                          onMouseEnter={e => e.currentTarget.style.color = '#dc2626'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'rgba(100,80,60,0.45)'}
+                        >✕</button>
+                      </span>
                     );
                   })}
                   {selectedDocumentIds.length > 4 && (
@@ -1451,22 +1596,7 @@ const RAGChatbot = () => {
                 </div>
               )}
 
-              {/* Readonly notice */}
-              {isReadOnly && currentMessages.length > 0 && (
-                <div className="readonly-bar">
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                    <circle cx="7.5" cy="7.5" r="6.5" stroke="var(--blue)" strokeWidth="1.4"/>
-                    <path d="M7.5 6.5v4.5M7.5 5v.5" stroke="var(--blue)" strokeWidth="1.7" strokeLinecap="round"/>
-                  </svg>
-                  <span style={{ fontSize: 13, color: "var(--blue)", fontFamily: "var(--font-mono)" }}>
-                    Viewing archived conversation — load sources to continue
-                  </span>
-                  <button style={{ marginLeft: "auto", fontSize: 12, color: "var(--gold-2)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-mono)", fontWeight: 600, letterSpacing: "0.04em" }}
-                    onClick={() => setShowDocSel(true)}>
-                    Add sources →
-                  </button>
-                </div>
-              )}
+              {/* Readonly notice — only shown at bottom input area, not here */}
 
               {/* ── Welcome (no docs, no active chat) ── */}
               {!hasDocs && !activeChatId ? (
@@ -1592,9 +1722,12 @@ const RAGChatbot = () => {
                                   )}
                                 </div>
                               )}
-                              <span className={`msg-time ${isUser ? "user-t" : ""}`}>
-                                {new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                              </span>
+                              <div className={`msg-time-row ${isUser ? "user-t" : ""}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                                <span className={`msg-time ${isUser ? "user-t" : ""}`}>
+                                  {new Date(msg.created_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                                <CopyBtn text={msg.message} isUser={isUser} />
+                              </div>
                             </div>
                           </div>
                         );

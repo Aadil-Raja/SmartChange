@@ -21,10 +21,10 @@ const MarkAsDoneButton = ({
         disabled
         className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium cursor-not-allowed"
         style={{ background: '#f5f0ea', color: '#9c8e80', border: '1.5px dashed #e0d8ce' }}
-        title="Enroll in this course to track progress"
+        title="Cannot track progress"
       >
         <Check size={13} />
-        Enroll to track progress
+        Unavailable
       </button>
     );
   }
@@ -131,7 +131,7 @@ const MarkAsDoneButton = ({
     if (isCompleted) {
       return (
         <button disabled className="flex items-center justify-center gap-1.5 rounded-lg border border-green-400 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700">
-          <Check size={13} /> Video Completed
+          <Check size={13} /> Watched
         </button>
       );
     }
@@ -141,7 +141,7 @@ const MarkAsDoneButton = ({
           <button onClick={handleMarkAsDone}
             className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all"
             style={{ background: isFailed ? '#ef4444' : 'linear-gradient(to right, #FDB913, #f7953f)' }}>
-            <Check size={13} />{isFailed ? 'Failed — Retry' : 'Mark as Complete'}
+            <Check size={13} />{isFailed ? 'Failed — Retry' : 'Mark as Watched'}
           </button>
           <p className="text-xs text-center" style={{ color: '#9c8e80' }}>{Math.round(progress)}% watched</p>
         </div>
@@ -160,7 +160,7 @@ const MarkAsDoneButton = ({
   if (isCompleted) {
     return (
       <button disabled className="flex items-center justify-center gap-1.5 rounded-lg border border-green-400 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700">
-        <Check size={13} /> Completed
+        <Check size={13} /> Got It!
       </button>
     );
   }
@@ -169,7 +169,7 @@ const MarkAsDoneButton = ({
     <button onClick={handleMarkAsDone}
       className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all"
       style={{ background: isFailed ? '#ef4444' : 'linear-gradient(to right, #FDB913, #f7953f)' }}>
-      <Check size={13} />{isFailed ? 'Failed — Retry' : 'Mark as Done'}
+      <Check size={13} />{isFailed ? 'Failed — Retry' : 'Got It!'}
     </button>
   );
 };

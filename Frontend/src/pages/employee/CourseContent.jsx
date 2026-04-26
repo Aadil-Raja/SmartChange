@@ -108,7 +108,9 @@ const CourseContent = () => {
   const { enrollInCourse, unenrollFromCourse } = useCourses();
 
   const contentRefs = useRef({});
+  const quizRefs = useRef({});
   const [activeItemId, setActiveItemId] = useState(null);
+  const [activeQuizId, setActiveQuizId] = useState(null);
   const [activeTab, setActiveTab] = useState('content');
   const [showMenu, setShowMenu] = useState(false);
   const [isUnenrolling, setIsUnenrolling] = useState(false);
@@ -141,6 +143,20 @@ const CourseContent = () => {
       setActiveItemId(itemId);
       setTimeout(() => setActiveItemId(null), 2000);
     }
+  };
+
+  const scrollToQuiz = (quizId) => {
+    setActiveTab('quizzes');
+    // Wait for tab switch to render before scrolling
+    setTimeout(() => {
+      const el = quizRefs.current[quizId];
+      if (el) {
+        const y = el.getBoundingClientRect().top + window.pageYOffset - 100;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+        setActiveQuizId(quizId);
+        setTimeout(() => setActiveQuizId(null), 2000);
+      }
+    }, 80);
   };
 
   const getContentIcon = (type) => {
@@ -231,6 +247,8 @@ const CourseContent = () => {
 
   const isEnrolled = selectedCourse.is_enrolled !== false;
   const isCourseCompleted = selectedCourse.enrollment_status === 'completed';
+  const isExpired = selectedCourse.enrollment_status === 'expired';
+  const canInteract = isEnrolled && !isExpired && !isCourseCompleted;
 
   return (
     <div className="min-h-screen" style={{ background: '#faf6ef' }}>
@@ -301,7 +319,95 @@ const CourseContent = () => {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-6xl mx-auto px-6 py-8 flex gap-6 items-start">
+
+        {/* ── Left mini nav (sticky, content tab only) ── */}
+        {(selectedCourse.items?.length > 1 || quizzes.length > 0) && (
+          <div className="hidden lg:flex flex-col gap-2 sticky top-20 flex-shrink-0" style={{ width: 200 }}>
+            {/* Content items */}
+            {selectedCourse.items?.length > 0 && (
+              <>
+                <p className="text-xs font-semibold mb-1 px-1" style={{ color: '#9c8e80', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Contents</p>
+                {selectedCourse.items.map((item, index) => {
+                  const done = isItemCompleted(item.id);
+                  const isActive = activeItemId === item.id && activeTab === 'content';
+                  const typeColor = { document: '#00ADEF', video: '#f7953f', link: '#78BE20' }[item.type] || '#9c8e80';
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => { if (activeTab !== 'content') setActiveTab('content'); scrollToItem(item.id); }}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-left transition-all w-full"
+                      style={{ background: isActive ? '#fff' : 'transparent', border: `1px solid ${isActive ? '#fcd9b8' : 'transparent'}`, boxShadow: isActive ? '0 2px 8px rgba(26,18,9,0.08)' : 'none' }}
+                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.border = '1px solid #e8e0d4'; } }}
+                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; } }}
+                    >
+                      <div className="relative flex-shrink-0 rounded-lg overflow-hidden" style={{ width: 36, height: 36, background: '#f0e8de' }}>
+                        {item.thumbnail_url
+                          ? <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center">{getContentIcon(item.type)}</div>}
+                        {done && (
+                          <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(21,128,61,0.75)' }}>
+                            <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>✓</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[9px] font-bold uppercase mb-0.5" style={{ color: typeColor }}>{item.type}</div>
+                        <p className="text-xs font-medium leading-tight truncate" style={{ color: isActive ? '#e0741c' : '#3d2c1c' }}>{item.title}</p>
+                      </div>
+                      <span className="flex-shrink-0 text-[10px] font-bold" style={{ color: '#c4b8a8' }}>{index + 1}</span>
+                    </button>
+                  );
+                })}
+              </>
+            )}
+
+            {/* Quizzes */}
+            {quizzes.length > 0 && (
+              <>
+                <div style={{ height: 1, background: '#e8e0d4', margin: '4px 0' }} />
+                <p className="text-xs font-semibold mb-1 px-1" style={{ color: '#9c8e80', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Quizzes</p>
+                {quizzes.map((quiz, index) => {
+                  const passed = quiz.status === 'completed';
+                  const locked = quiz.status === 'locked';
+                  const cooldown = quiz.status === 'cooldown' || quiz.status === 'in_cooldown';
+                  const noAttempts = quiz.status === 'max_attempts_reached';
+                  const available = quiz.status === 'can_take';
+                  const isActive = activeQuizId === quiz.id && activeTab === 'quizzes';
+
+                  const icon = passed ? '✅' : locked ? '🔒' : cooldown ? '⏳' : noAttempts ? '🚫' : '📝';
+                  const statusLabel = passed ? 'Passed' : locked ? 'Locked' : cooldown ? 'Cooldown' : noAttempts ? 'No Attempts' : 'Quiz';
+                  const statusColor = passed ? '#15803d' : locked ? '#9c8e80' : cooldown ? '#2563eb' : noAttempts ? '#dc2626' : '#e0741c';
+                  const bgColor = passed ? '#f0fdf4' : locked ? '#f3ede4' : cooldown ? '#eff6ff' : noAttempts ? '#fff1f0' : '#fff5ec';
+                  const borderColor = passed ? '#bbf7d0' : locked ? '#e0d8ce' : cooldown ? '#bfdbfe' : noAttempts ? '#fca5a5' : '#fcd9b8';
+
+                  return (
+                    <button
+                      key={quiz.id}
+                      onClick={() => scrollToQuiz(quiz.id)}
+                      className="flex items-center gap-2.5 p-2 rounded-xl text-left transition-all w-full"
+                      style={{ background: isActive ? '#fff' : 'transparent', border: `1px solid ${isActive ? '#fcd9b8' : 'transparent'}`, boxShadow: isActive ? '0 2px 8px rgba(26,18,9,0.08)' : 'none' }}
+                      onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = '#fff'; e.currentTarget.style.border = '1px solid #e8e0d4'; } }}
+                      onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.border = '1px solid transparent'; } }}
+                    >
+                      <div className="relative flex-shrink-0 rounded-lg flex items-center justify-center" style={{ width: 36, height: 36, background: bgColor, border: `1px solid ${borderColor}` }}>
+                        <span style={{ fontSize: 16 }}>{icon}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[9px] font-bold uppercase mb-0.5" style={{ color: statusColor }}>{statusLabel}</div>
+                        <p className="text-xs font-medium leading-tight truncate" style={{ color: isActive ? '#e0741c' : '#3d2c1c' }}>{quiz.title}</p>
+                      </div>
+                      <span className="flex-shrink-0 text-[10px] font-bold" style={{ color: '#c4b8a8' }}>{index + 1}</span>
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Main content ── */}
+        <div className="flex-1 min-w-0 space-y-6">
 
         {/* ── Course Hero Card ── */}
         <div className="bg-white rounded-[24px] overflow-hidden border border-gray-100" style={{ boxShadow: '0 4px 24px rgba(26,18,9,0.08)' }}>
@@ -358,6 +464,17 @@ const CourseContent = () => {
             >
               Enroll Now
             </button>
+          </div>
+        )}
+
+        {/* ── Expired Banner ── */}
+        {isExpired && (
+          <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border" style={{ background: '#fef2f2', borderColor: '#fecaca' }}>
+            <span style={{ fontSize: 22 }}>⏰</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: '#991b1b' }}>Deadline passed</p>
+              <p className="text-xs" style={{ color: '#b91c1c' }}>The deadline for this course has passed. You can still view the content but cannot mark progress or take quizzes.</p>
+            </div>
           </div>
         )}
 
@@ -439,7 +556,7 @@ const CourseContent = () => {
                           </p>
                         )}
                         <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-                          <MarkAsDoneButton itemId={item.id} courseId={courseId} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} disabled={!isEnrolled} />
+                          <MarkAsDoneButton itemId={item.id} courseId={courseId} itemType={item.type} isCompleted={isCompleted} progress={progressPercent} disabled={!canInteract} />
                         </div>
                       </div>
                     </div>
@@ -487,11 +604,12 @@ const CourseContent = () => {
                   return (
                     <div
                       key={quiz.id}
+                      ref={el => (quizRefs.current[quiz.id] = el)}
                       className="rounded-2xl border overflow-hidden transition-all"
                       style={{
-                        borderColor: s.cardBorder,
+                        borderColor: activeQuizId === quiz.id ? '#f7953f' : s.cardBorder,
                         background: '#fff',
-                        boxShadow: canTake ? '0 2px 12px rgba(26,18,9,0.08)' : '0 1px 4px rgba(26,18,9,0.04)',
+                        boxShadow: activeQuizId === quiz.id ? '0 0 0 3px rgba(247,149,63,0.15)' : canTake ? '0 2px 12px rgba(26,18,9,0.08)' : '0 1px 4px rgba(26,18,9,0.04)',
                       }}
                     >
                       {/* Card header accent strip */}
@@ -598,24 +716,24 @@ const CourseContent = () => {
                         {/* Right: CTA button — hidden for passed quizzes */}
                         {quiz.status !== 'completed' && (
                           <button
-                            disabled={isDisabled || !isEnrolled}
-                            onClick={() => { if (canTake && isEnrolled) navigate(`/employee/quiz/${quiz.id}`); }}
+                            disabled={isDisabled || !canInteract}
+                            onClick={() => { if (canTake && canInteract) navigate(`/employee/quiz/${quiz.id}`); }}
                             className="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex-shrink-0"
                             style={{
-                              background: (!isEnrolled || isDisabled) ? '#f3ede4' : s.btn.bg,
-                              color: (!isEnrolled || isDisabled) ? '#b0a090' : s.btn.color,
-                              cursor: (!isEnrolled || isDisabled) ? 'not-allowed' : 'pointer',
-                              border: (canTake && isEnrolled) ? 'none' : `1px solid ${s.cardBorder}`,
-                              opacity: (!isEnrolled || isDisabled) ? 0.7 : 1,
+                              background: (!canInteract || isDisabled) ? '#f3ede4' : s.btn.bg,
+                              color: (!canInteract || isDisabled) ? '#b0a090' : s.btn.color,
+                              cursor: (!canInteract || isDisabled) ? 'not-allowed' : 'pointer',
+                              border: (canTake && canInteract) ? 'none' : `1px solid ${s.cardBorder}`,
+                              opacity: (!canInteract || isDisabled) ? 0.7 : 1,
                               minWidth: 100,
                               justifyContent: 'center',
                             }}
-                            title={!isEnrolled ? "Enroll to take quizzes" : undefined}
-                            onMouseEnter={e => { if (isEnrolled && !isDisabled) e.currentTarget.style.opacity = '0.88'; }}
-                            onMouseLeave={e => { if (isEnrolled && !isDisabled) e.currentTarget.style.opacity = '1'; }}
+                            title={!isEnrolled ? "Enroll to take quizzes" : isExpired ? "Deadline passed" : undefined}
+                            onMouseEnter={e => { if (canInteract && !isDisabled) e.currentTarget.style.opacity = '0.88'; }}
+                            onMouseLeave={e => { if (canInteract && !isDisabled) e.currentTarget.style.opacity = '1'; }}
                           >
                             <BtnIcon size={13} />
-                            {!isEnrolled ? "Enroll First" : s.btn.label}
+                            {!isEnrolled ? "Enroll First" : isExpired ? "Expired" : s.btn.label}
                           </button>
                         )}
                       </div>
@@ -628,7 +746,8 @@ const CourseContent = () => {
             )
           )}
         </SectionCard>
-      </div>
+        </div> {/* closes flex-1 min-w-0 */}
+      </div>   {/* closes max-w-6xl flex */}
     </div>
   );
 };
