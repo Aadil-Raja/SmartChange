@@ -1,13 +1,14 @@
 // src/pages/admin/training/AdminTrainingList.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
+import { useAdminCourses, useAdminInvalidations } from "../../hooks/useAdminQueries";
 import { Plus, Search, Edit, Trash2, Power, PowerOff, ClipboardList, FileText, BookOpen, ArrowUpRight } from "lucide-react";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Alert from "../../components/ui/Alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-
+import { useRef } from "react";
 // Emoji pool for courses without thumbnails
 const COURSE_EMOJIS = ["📚", "🎯", "💡", "🔬", "🛠️", "📊", "🌐", "🧠", "⚡", "🚀"];
 const getEmoji = (id) => COURSE_EMOJIS[id % COURSE_EMOJIS.length];
@@ -15,29 +16,25 @@ const getEmoji = (id) => COURSE_EMOJIS[id % COURSE_EMOJIS.length];
 const AdminTrainingList = () => {
   const navigate = useNavigate();
   const {
-    courses,
-    loading,
-    error,
+    error: ctxError,
     success,
-    fetchCourses,
     activateExistingCourse,
     deactivateExistingCourse,
     deleteExistingCourse,
     clearMessages,
   } = useAdminTraining();
 
+  // React Query — courses list with caching
+  const { data: courses = [], isLoading: loading, error: queryError } = useAdminCourses();
+  const { invalidateCourses } = useAdminInvalidations();
+  const error = ctxError || queryError?.message || null;
+
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const hasFetched = useRef(false);
-
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchCourses();
-    }
     return () => clearMessages();
   }, []);
 
@@ -68,11 +65,15 @@ const AdminTrainingList = () => {
     } else {
       await activateExistingCourse(course.id);
     }
+    invalidateCourses(); // refresh cache after toggle
   };
 
   const handleDeleteCourse = async (courseId) => {
     const result = await deleteExistingCourse(courseId);
-    if (result.success) setShowDeleteConfirm(null);
+    if (result.success) {
+      setShowDeleteConfirm(null);
+      invalidateCourses(); // refresh cache after delete
+    }
   };
 
 

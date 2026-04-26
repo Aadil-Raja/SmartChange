@@ -1,5 +1,5 @@
 // src/pages/admin/AdminQuizManagement.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Plus,
@@ -18,6 +18,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
+import { useAdminDocuments, useAdminCourses } from "../../hooks/useAdminQueries";
 import * as quizApi from "../../services/quizApi";
 import AdminPromptQuizManagement from "./AdminPromptQuizManagement";
 
@@ -63,8 +64,13 @@ function FocusInput({ style, ...props }) {
 const AdminQuizManagement = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { fetchProcessedDocuments, fetchCourses, courses, loading: coursesLoading, clearMessages } = useAdminTraining();
+  const { clearMessages } = useAdminTraining();
 
+  // React Query — documents and courses with caching
+  const { data: allDocuments = [], isLoading: docsLoading } = useAdminDocuments();
+  const { data: courses = [],      isLoading: coursesLoading } = useAdminCourses();
+
+  // Only PROCESSED documents are shown in the quiz tab
   const [documents, setDocuments] = useState([]);
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [activeTab, setActiveTab] = useState(() => {
@@ -93,40 +99,24 @@ const AdminQuizManagement = () => {
 
   const [generateForm, setGenerateForm] = useState({ title: "", description: "", num_questions: 10 });
   const [submitting, setSubmitting] = useState(false);
-  const hasFetched = useRef(false);
+
+  // Filter to PROCESSED docs and pre-fetch quiz counts whenever the cached list updates
+  useEffect(() => {
+    const processed = allDocuments.filter((d) => d.status === "PROCESSED");
+    setDocuments(processed);
+    processed.forEach((doc) => {
+      quizApi.getQuizzesByDocument(doc.id)
+        .then((response) => {
+          const list = response.quizzes || [];
+          setDocQuizCounts((p) => ({ ...p, [doc.id]: response.total ?? list.length }));
+        })
+        .catch(() => {});
+    });
+  }, [allDocuments]);
 
   useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      Promise.all([loadDocuments(), fetchCourses()]);
-    }
     return () => clearMessages();
   }, []);
-
-  const loadDocuments = async () => {
-    setLoading(true);
-    try {
-      const result = await fetchProcessedDocuments();
-      if (result.success) {
-        const docs = result.data?.documents || [];
-        const processed = docs.filter((d) => d.status === "PROCESSED");
-        setDocuments(processed);
-        // Pre-fetch quiz counts for all documents
-        processed.forEach((doc) => {
-          quizApi.getQuizzesByDocument(doc.id)
-            .then((response) => {
-              const list = response.quizzes || [];
-              setDocQuizCounts((p) => ({ ...p, [doc.id]: response.total ?? list.length }));
-            })
-            .catch(() => {});
-        });
-      }
-    } catch {
-      setError("Failed to load documents");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadQuizzesForDocument = async (documentId, forceReload = false) => {
     if (quizzes[documentId] && !forceReload) return;
@@ -238,7 +228,7 @@ const AdminQuizManagement = () => {
 
   const filteredDocuments = documents.filter((d) => d.title?.toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredCourses = (courses || []).filter((c) => c.title?.toLowerCase().includes(searchTerm.toLowerCase()));
-  const isInitialPageLoading = (loading || coursesLoading) && documents.length === 0 && (courses || []).length === 0;
+  const isInitialPageLoading = (docsLoading || coursesLoading) && documents.length === 0 && (courses || []).length === 0;
 
   if (isInitialPageLoading) {
     return (
@@ -323,7 +313,7 @@ const AdminQuizManagement = () => {
           {/* Document Tab */}
           {activeTab === "document" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {loading && documents.length === 0 ? (
+              {docsLoading && documents.length === 0 ? (
                 <div style={{ background: C.card, borderRadius: 16, border: `1px solid ${C.border}`, padding: "48px 24px", textAlign: "center" }}>
                   <LoadingSpinner size="small" text="Loading documents..." />
                 </div>

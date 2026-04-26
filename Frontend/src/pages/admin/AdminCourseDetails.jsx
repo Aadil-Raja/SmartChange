@@ -1,7 +1,8 @@
 // src/pages/admin/training/AdminCourseDetails.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
+import { useAdminCourse, useAdminInvalidations } from "../../hooks/useAdminQueries";
 import {
   ArrowLeft, Edit, Upload, Plus, FileText, Video,
   Link as LinkIcon, Trash2, Edit3, HelpCircle, Clock,
@@ -29,11 +30,22 @@ const getEmoji = (id) => COURSE_EMOJIS[(id || 0) % COURSE_EMOJIS.length];
 const AdminCourseDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const courseId = parseInt(id);
   const {
-    currentCourse, contentItems, quizzes, loading, error, success,
-    fetchCourseDetails, uploadThumbnail, deleteContent, reorderContent,
+    error: ctxError, success,
+    uploadThumbnail, deleteContent, reorderContent,
     clearMessages, setCourseDeadlineWeeks, activateExistingCourse, deactivateExistingCourse,
   } = useAdminTraining();
+
+  // React Query — course detail with caching
+  const { data: courseData, isLoading: loading, error: queryError } = useAdminCourse(courseId);
+  const { invalidateCourse, invalidateCourseAll } = useAdminInvalidations();
+
+  // Derive the three pieces from the query result
+  const currentCourse  = courseData?.course       || null;
+  const contentItems   = courseData?.contentItems  || [];
+  const quizzes        = courseData?.quizzes       || [];
+  const error          = ctxError || queryError?.message || null;
 
   const [quizError, setQuizError] = useState(null);
   const [quizSuccess, setQuizSuccess] = useState(null);
@@ -50,8 +62,8 @@ const AdminCourseDetails = () => {
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [isReordering, setIsReordering] = useState(false);
+  const [publishingCourse, setPublishingCourse] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
-  const hasFetchedCourse = useRef(null);
 
   // Deadline config state
   const [deadlineInput, setDeadlineInput] = useState('');
@@ -62,10 +74,6 @@ const AdminCourseDetails = () => {
   const clearQuizMessages = () => { setQuizError(null); setQuizSuccess(null); };
 
   useEffect(() => {
-    if (id && hasFetchedCourse.current !== id) {
-      hasFetchedCourse.current = id;
-      fetchCourseDetails(id);
-    }
     return () => { clearMessages(); clearQuizMessages(); };
   }, [id]);
 
@@ -78,16 +86,14 @@ const AdminCourseDetails = () => {
 
   useEffect(() => { console.log('Quizzes updated:', quizzes); }, [quizzes]);
 
-  const [publishingCourse, setPublishingCourse] = useState(false);
-
   const handleTogglePublish = async () => {
     setPublishingCourse(true);
     if (isPublished) {
-      await deactivateExistingCourse(parseInt(id));
+      await deactivateExistingCourse(courseId);
     } else {
-      await activateExistingCourse(parseInt(id));
+      await activateExistingCourse(courseId);
     }
-    await fetchCourseDetails(id);
+    invalidateCourseAll(courseId); // refresh both list and detail
     setPublishingCourse(false);
   };
 
@@ -105,7 +111,8 @@ const AdminCourseDetails = () => {
     }
     setSavingDeadline(true);
     const weeks = deadlineInput === '' ? null : parseInt(deadlineInput, 10);
-    await setCourseDeadlineWeeks(parseInt(id), weeks);
+    await setCourseDeadlineWeeks(courseId, weeks);
+    invalidateCourse(courseId);
     setSavingDeadline(false);
   };
 
@@ -117,7 +124,7 @@ const AdminCourseDetails = () => {
     const result = await uploadThumbnail(id, file);
     setUploadingThumbnail(false);
     e.target.value = '';
-    if (result.success) await fetchCourseDetails(id);
+    if (result.success) invalidateCourse(courseId);
   };
 
   const handleAddContent = () => { setEditingContent(null); setShowContentForm(true); };
@@ -127,7 +134,7 @@ const AdminCourseDetails = () => {
     if (!deleteConfirm) return;
     const result = await deleteContent(deleteConfirm.id, id);
     setDeleteConfirm(null);
-    if (result.success) await fetchCourseDetails(id);
+    if (result.success) invalidateCourse(courseId);
   };
 
   const handleCreateQuiz = () => {
@@ -145,8 +152,7 @@ const AdminCourseDetails = () => {
   const handleViewQuiz = (quiz) => { setSelectedQuiz(quiz); setShowQuizDetailModal(true); };
 
   const refreshQuizData = async () => {
-    try { await new Promise(r => setTimeout(r, 300)); return await fetchCourseDetails(id); }
-    catch { return { success: false }; }
+    invalidateCourse(courseId);
   };
 
   const submitQuiz = async (e) => {
@@ -196,6 +202,7 @@ const AdminCourseDetails = () => {
       const [moved] = newItems.splice(draggedItem.index, 1);
       newItems.splice(dropIndex, 0, moved);
       await reorderContent(id, newItems.map((item, i) => ({ id: item.id, order_index: i })));
+      invalidateCourse(courseId);
     } catch { setQuizError('Failed to reorder content items'); }
     finally { setIsReordering(false); setDraggedItem(null); }
   };
@@ -487,7 +494,7 @@ const AdminCourseDetails = () => {
       {showContentForm && (
         <AdminContentForm courseId={parseInt(id)} editingContent={editingContent}
           onClose={() => { setShowContentForm(false); setEditingContent(null); }}
-          onSuccess={() => { setShowContentForm(false); setEditingContent(null); fetchCourseDetails(id); }} />
+          onSuccess={() => { setShowContentForm(false); setEditingContent(null); invalidateCourse(courseId); }} />
       )}
 
       {deleteConfirm && (

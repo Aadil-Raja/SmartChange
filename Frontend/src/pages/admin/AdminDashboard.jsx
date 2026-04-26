@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import { useAdmin } from '../../hooks/useAdmin';
+import { useAdminDocuments, useAdminInvalidations } from '../../hooks/useAdminQueries';
 import { fetchProcessingJobs, fetchDocumentSections } from '../../services/adminApi';
 import SuggestedQuestionsPanel from '../../components/ui/SuggestedQuestionsPanel';
 
@@ -71,10 +72,15 @@ const inputCls = `w-full px-3 py-2 rounded-xl border text-sm outline-none transi
 
 const AdminDashboard = () => {
   const {
-    documents, loading, error, jobStatuses,
-    loadDocuments, uploadDoc, queueDoc, checkJobStatus,
+    jobStatuses,
+    uploadDoc, queueDoc, checkJobStatus,
     deleteDoc, downloadDoc, clearError,
   } = useAdmin();
+
+  // React Query — documents list with caching
+  const { data: documents = [], isLoading: loading, error: queryError } = useAdminDocuments();
+  const { invalidateDocuments } = useAdminInvalidations();
+  const error = queryError?.message || null;
 
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -96,7 +102,7 @@ const AdminDashboard = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!hasFetched.current) { hasFetched.current = true; loadDocuments(); }
+    // React Query handles initial fetch — no manual loadDocuments() needed
   }, []);
 
   useEffect(() => {
@@ -122,13 +128,21 @@ const AdminDashboard = () => {
     setUploading(true);
     try {
       const result = await uploadDoc(uploadingFile, uploadTitle.trim() || null);
-      if (result.success) { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }
+      if (result.success) {
+        setShowUploadModal(false);
+        setUploadingFile(null);
+        setUploadTitle('');
+        invalidateDocuments(); // refresh cache
+      }
     } finally { setUploading(false); }
   };
 
   const handleQueueDocument = async (documentId) => {
     setProcessingDocs(prev => new Set(prev).add(documentId));
-    try { await queueDoc(documentId); }
+    try {
+      await queueDoc(documentId);
+      invalidateDocuments(); // refresh status
+    }
     finally {
       setProcessingDocs(prev => { const s = new Set(prev); s.delete(documentId); return s; });
     }
@@ -216,7 +230,7 @@ const AdminDashboard = () => {
                   <AlertCircle size={18} color="#dc2626" className="mt-0.5" />
                   <p style={{ color: '#991b1b', fontSize: 13 }}>{error}</p>
                 </div>
-                <button onClick={clearError} style={{ color: '#dc2626' }}><X size={16} /></button>
+                <button onClick={() => {}} style={{ color: '#dc2626' }}><X size={16} /></button>
               </div>
             )}
 

@@ -3,12 +3,19 @@ import { Plus, UserPlus, X, ChevronDown, ChevronUp, Users, Trash2 } from 'lucide
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { useAdmin } from '../../hooks/useAdmin';
+import { useAdminTeams, useAdminEmployees, useAdminInvalidations } from '../../hooks/useAdminQueries';
 
 const AVATAR_COLORS = ['bg-blue-400', 'bg-emerald-400', 'bg-violet-400', 'bg-pink-400', 'bg-amber-400', 'bg-teal-400'];
 const TEAM_ROLES = ['member', 'manager'];
 
 const TeamsPage = () => {
-  const { teams, employees, loading, loadTeams, loadEmployees, createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
+  const { createTeam, addMemberToTeam, removeMemberFromTeam, updateTeamMemberRole, deleteTeam } = useAdmin();
+  const { invalidateTeamsAndEmployees } = useAdminInvalidations();
+
+  // React Query — teams + employees with caching
+  const { data: teams = [],     isLoading: teamsLoading    } = useAdminTeams();
+  const { data: employees = [], isLoading: employeesLoading } = useAdminEmployees();
+  const loading = teamsLoading || employeesLoading;
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -20,16 +27,7 @@ const TeamsPage = () => {
   const [expandedTeams, setExpandedTeams] = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
-
-  const hasFetchedTeams = useRef(false);
-  const hasFetchedEmployees = useRef(false);
-
-  useEffect(() => {
-    if (!hasFetchedTeams.current) { loadTeams(); hasFetchedTeams.current = true; }
-  }, []);
-  useEffect(() => {
-    if (!hasFetchedEmployees.current) { loadEmployees(); hasFetchedEmployees.current = true; }
-  }, []);
+  // React Query handles fetching — no manual useEffect needed
 
   const groupedEmployees = (() => {
     const grouped = {};
@@ -57,21 +55,32 @@ const TeamsPage = () => {
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
     const result = await createTeam(newTeamName);
-    if (result.success) { setShowCreateModal(false); setNewTeamName(''); }
+    if (result.success) {
+      setShowCreateModal(false);
+      setNewTeamName('');
+      invalidateTeamsAndEmployees();
+    }
     else alert(result.message || 'Failed to create team');
   };
 
   const handleAddMember = async () => {
     if (!selectedUserId || !selectedRole) return;
     const result = await addMemberToTeam(selectedTeam.id, parseInt(selectedUserId), selectedRole);
-    if (result.success) { setShowAddMemberModal(false); setSelectedUserId(''); setSelectedRole(''); setSelectedTeam(null); }
+    if (result.success) {
+      setShowAddMemberModal(false);
+      setSelectedUserId('');
+      setSelectedRole('');
+      setSelectedTeam(null);
+      invalidateTeamsAndEmployees();
+    }
     else alert(result.message || 'Failed to add member');
   };
 
   const handleRemoveMember = async (teamId, userId) => {
     if (window.confirm('Remove this member from the team?')) {
       const result = await removeMemberFromTeam(teamId, userId);
-      if (!result.success) alert(result.message || 'Failed to remove member');
+      if (result.success) invalidateTeamsAndEmployees();
+      else alert(result.message || 'Failed to remove member');
     }
   };
 
@@ -81,8 +90,7 @@ const TeamsPage = () => {
     if (result.success) {
       setDeleteConfirm(null);
       setDeleteError(null);
-      loadTeams();
-      loadEmployees();
+      invalidateTeamsAndEmployees();
     } else {
       setDeleteError(result.message || 'Failed to delete team');
     }
@@ -91,7 +99,10 @@ const TeamsPage = () => {
   const handleUpdateMemberRole = async (teamId, userId, newRole) => {
     if (!userId || !teamId || !newRole) return;
     const result = await updateTeamMemberRole(teamId, userId, newRole);
-    if (result.success) setEditingMemberId(null);
+    if (result.success) {
+      setEditingMemberId(null);
+      invalidateTeamsAndEmployees();
+    }
     else alert(result.message || 'Failed to update role');
   };
 

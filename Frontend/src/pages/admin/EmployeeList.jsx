@@ -1,25 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Users, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import { useAdmin } from '../../hooks/useAdmin';
+import { useAdminEmployees, useAdminTeamRoles, useAdminInvalidations } from '../../hooks/useAdminQueries';
 
 const EmployeeList = () => {
-  const { employees, teamRoles, loading, loadEmployees, loadTeamRoles, updateTeamMemberRole } = useAdmin();
+  const { updateTeamMemberRole } = useAdmin();
+  const { invalidateEmployees } = useAdminInvalidations();
+
+  // React Query — employees + roles with caching
+  const { data: employees = [], isLoading: empLoading } = useAdminEmployees();
+  const { data: teamRoles = [] }                        = useAdminTeamRoles();
+  const loading = empLoading;
   const [navCollapsed, setNavCollapsed] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('');
   const [filterTeam, setFilterTeam] = useState('');
   const [editingRole, setEditingRole] = useState(null);
   const [expandedEmployees, setExpandedEmployees] = useState(new Set());
-  const hasFetched = useRef(false);
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      loadEmployees();
-      loadTeamRoles();
-    }
-  }, []);
+  // React Query handles fetching — no manual useEffect needed
 
   const groupedEmployees = (() => {
     const grouped = {};
@@ -61,7 +60,10 @@ const EmployeeList = () => {
   const handleRoleChange = async (teamId, userId, newRole) => {
     if (!userId || !teamId || !newRole) return;
     const result = await updateTeamMemberRole(teamId, userId, newRole);
-    if (result.success) setEditingRole(null);
+    if (result.success) {
+      setEditingRole(null);
+      invalidateEmployees(); // refresh cache after role update
+    }
     else alert(result.message || 'Failed to update role');
   };
 
