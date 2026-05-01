@@ -276,7 +276,8 @@ def invoke_llm_with_structured_output(
         llm_provider=settings.llm_provider,
         llm_model=settings.llm_model,
         google_api_key=settings.google_api_key,
-        openai_api_key=settings.openai_api_key
+        openai_api_key=settings.openai_api_key,
+        max_output_tokens=settings.max_output_tokens
     )
 
     # Count user-variable input tokens: chunk text only (question counted in chat_service_v2)
@@ -309,7 +310,30 @@ def invoke_llm_with_structured_output(
                     "section": chunk_meta["section"],
                     "snippets": citation.highlight_snippets  # ✅ Array of snippets from LLM
                 })
+        
+        # ✅ NEW: Include retrieved contexts (chunk texts) for RAGAS evaluation
+        # Extract chunk texts from context_blocks (they contain the actual text)
+        retrieved_contexts = []
+        print(f"[INVOKE_LLM] Starting extraction from {len(context_blocks)} context blocks", file=sys.stderr)
+        for block_idx, block in enumerate(context_blocks):
+            print(f"[INVOKE_LLM] Block {block_idx}: length={len(block)}, preview='{block[:200]}'", file=sys.stderr)
+            # Each block contains chunks with format: [CHUNK_ID: ...]\ntext
+            # Split by CHUNK_ID markers and extract text
+            chunks_in_block = block.split('[CHUNK_ID:')
+            print(f"[INVOKE_LLM] Block {block_idx}: split into {len(chunks_in_block)} parts", file=sys.stderr)
+            for chunk_idx, chunk_part in enumerate(chunks_in_block[1:]):  # Skip first part (source header)
+                # Extract text after the chunk ID line
+                lines = chunk_part.split('\n', 1)
+                print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: split into {len(lines)} lines", file=sys.stderr)
+                if len(lines) > 1:
+                    extracted_text = lines[1].strip()
+                    retrieved_contexts.append(extracted_text)
+                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: extracted {len(extracted_text)} chars: '{extracted_text[:100]}'", file=sys.stderr)
+                else:
+                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: SKIPPED (only {len(lines)} line)", file=sys.stderr)
 
+        print(f"[INVOKE_LLM] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+        
         return {
             "answer": answer,
             "has_contradiction": has_contradiction,
@@ -352,7 +376,22 @@ def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], ch
                 "section": chunk_meta["section"],
                 "snippets": citation.get("highlight_snippets", [])
             })
+    
+    # ✅ NEW: Include retrieved contexts (chunk texts) for RAGAS evaluation
+    # Extract chunk texts from context_blocks (they contain the actual text)
+    retrieved_contexts = []
+    for block in context_blocks:
+        # Each block contains chunks with format: [CHUNK_ID: ...]\ntext
+        # Split by CHUNK_ID markers and extract text
+        chunks_in_block = block.split('[CHUNK_ID:')
+        for chunk_part in chunks_in_block[1:]:  # Skip first part (source header)
+            # Extract text after the chunk ID line
+            lines = chunk_part.split('\n', 1)
+            if len(lines) > 1:
+                retrieved_contexts.append(lines[1].strip())
 
+    print(f"[FALLBACK] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+    
     return {
         "answer": answer,
         "has_contradiction": has_contradiction,

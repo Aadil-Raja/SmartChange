@@ -152,7 +152,8 @@ Summary:"""
         llm_provider=settings.llm_provider,
         llm_model=settings.llm_model,
         google_api_key=settings.google_api_key,
-        openai_api_key=settings.openai_api_key
+        openai_api_key=settings.openai_api_key,
+        max_output_tokens=settings.max_output_tokens
     )
     
     new_summary = llm.generate(prompt)

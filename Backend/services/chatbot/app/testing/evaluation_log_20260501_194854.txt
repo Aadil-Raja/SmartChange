@@ -1,0 +1,44 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-05-01 19:49:02
+Chathead ID: 233
+User: k224492@nu.edu.pk
+Documents: [49, 45]
+Total Questions: 20
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+Aadil Raja's CGPA is **3.99 out of 4.0**. The **Harry Potter** series was written by **J.K. Rowling**. The series consists of **seven novels** published between **1997** and **2007**, following the journey of a young wizard. PSL stands for **Pakistan Super League**. It is a professional Twenty20 (T20) cricket franchise league in Pakistan, featuring city-based teams that compete annually in a short-format tournament. The league was officially announced in 2015, with its first season taking place in 2016.
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 2
+====================================================================================================
+
+QUESTION:
+What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?
+
+ANSWER:
+Aadil Raja attends **FAST University** in Karachi, where he is currently in his final semester of a **BS in Computer Science**. The first Harry Potter book, **Harry Potter and the Philosopher’s Stone**, was published in **1997**. The **Pakistan Super League (PSL)** is organized and managed by the **Pakistan Cricket Board (PCB)**. The PCB is responsible for handling various aspects of the league, including scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.
+
+GROUND TRUTH:
+Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================

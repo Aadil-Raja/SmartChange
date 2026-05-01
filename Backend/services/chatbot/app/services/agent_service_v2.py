@@ -243,10 +243,18 @@ class DocumentAgentV2:
         provider = settings.llm_provider.lower()
         model = settings.llm_model
 
+        # Prepare kwargs for LLM initialization
+        llm_kwargs = {"model": model, "temperature": 0}
+        if settings.max_output_tokens is not None:
+            if provider == "openai":
+                llm_kwargs["max_tokens"] = settings.max_output_tokens
+            elif provider == "gemini":
+                llm_kwargs["max_output_tokens"] = settings.max_output_tokens
+
         if provider == "openai":
-            self.llm = ChatOpenAI(model=model, temperature=0, api_key=settings.openai_api_key)
+            self.llm = ChatOpenAI(api_key=settings.openai_api_key, **llm_kwargs)
         elif provider == "gemini":
-            self.llm = ChatGoogleGenerativeAI(model=model, temperature=0, google_api_key=settings.google_api_key)
+            self.llm = ChatGoogleGenerativeAI(google_api_key=settings.google_api_key, **llm_kwargs)
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -383,9 +391,10 @@ class DocumentAgentV2:
                     obs = json.loads(obs)
                 except (json.JSONDecodeError, TypeError):
                     pass
-            if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input")):
+            # ✅ FIXED: Also check for retrieved_contexts to ensure it's always captured
+            if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input") or obs.get("retrieved_contexts")):
                 tool_metadata = obs
-                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}", file=sys.stderr)
+                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}, retrieved_contexts={len(obs.get('retrieved_contexts', []))} chunks", file=sys.stderr)
                 break
         
         print(f"[AGENT] raw_output type={type(raw_output)}, tool_metadata={bool(tool_metadata)}", file=sys.stderr)
@@ -395,9 +404,11 @@ class DocumentAgentV2:
             # If raw_output is already a dict, use it directly
             if isinstance(raw_output, dict):
                 parsed = raw_output
+                print(f"[AGENT] Parsed as dict: retrieved_contexts={len(parsed.get('retrieved_contexts', []))} chunks", file=sys.stderr)
             else:
                 # Try to parse as JSON string
                 parsed = json.loads(raw_output)
+                print(f"[AGENT] Parsed from JSON: retrieved_contexts={len(parsed.get('retrieved_contexts', []))} chunks", file=sys.stderr)
             
             # Handle case where parsed is a list (multiple tool calls returned as array)
             if isinstance(parsed, list):
@@ -406,6 +417,7 @@ class DocumentAgentV2:
                 # Merge all items in the list
                 merged_answers = []
                 all_citations = []
+                all_retrieved_contexts = []  # ✅ NEW: Collect all retrieved contexts
                 has_any_contradiction = False
                 total_tokens_input = 0
                 total_tokens_output = 0
@@ -432,6 +444,11 @@ class DocumentAgentV2:
                             all_citations.append(citation)
                             existing_keys.add(key)
                     
+                    # ✅ NEW: Collect retrieved contexts (no deduplication - keep all chunks)
+                    contexts = item.get("retrieved_contexts", [])
+                    if contexts:
+                        all_retrieved_contexts.extend(contexts)
+                    
                     # Track contradictions and tokens
                     if item.get("has_contradiction"):
                         has_any_contradiction = True
@@ -442,12 +459,13 @@ class DocumentAgentV2:
                 parsed = {
                     "answer": "\n\n".join(str(a) for a in merged_answers if a),
                     "citations": all_citations,
+                    "retrieved_contexts": all_retrieved_contexts,  # ✅ NEW: Include merged contexts
                     "has_contradiction": has_any_contradiction,
                     "tokens_input": total_tokens_input,
                     "tokens_output": total_tokens_output,
                     "call_type": "doc_qa"
                 }
-                print(f"[AGENT] Merged list into single response with {len(all_citations)} citations", file=sys.stderr)
+                print(f"[AGENT] Merged list into single response with {len(all_citations)} citations and {len(all_retrieved_contexts)} contexts", file=sys.stderr)
             
             flat_citations = parsed.get("citations", []) or tool_metadata.get("citations", [])
 

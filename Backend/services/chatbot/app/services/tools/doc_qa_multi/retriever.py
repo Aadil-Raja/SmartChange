@@ -164,17 +164,19 @@ def _process_sub_question(
             
             # Step 2: Calculate thresholds based on best rerank score
             # Three tiers: same doc + same section, same doc, other docs
+            from app.core.config import get_settings
+            settings = get_settings()
             
             if best_rerank_score >= 0:
                 # Positive scores: use multiplication (traditional approach)
-                same_section_threshold = best_rerank_score * 0.50  # 50% for same section
-                same_doc_threshold = best_rerank_score * 0.65      # 65% for same doc
-                other_doc_threshold = best_rerank_score * 0.75     # 75% for other docs
+                same_section_threshold = best_rerank_score * settings.threshold_same_section_percent
+                same_doc_threshold = best_rerank_score * settings.threshold_same_doc_percent
+                other_doc_threshold = best_rerank_score * settings.threshold_other_doc_percent
             else:
                 # Negative scores: use margin-based approach
-                margin_same_section = abs(best_rerank_score) * 0.50  # 50% margin for same section
-                margin_same_doc = abs(best_rerank_score) * 0.35      # 35% margin for same doc
-                margin_other = abs(best_rerank_score) * 0.25         # 25% margin for other docs
+                margin_same_section = abs(best_rerank_score) * settings.threshold_same_section_margin_percent
+                margin_same_doc = abs(best_rerank_score) * settings.threshold_same_doc_margin_percent
+                margin_other = abs(best_rerank_score) * settings.threshold_other_doc_margin_percent
                 
                 same_section_threshold = best_rerank_score - margin_same_section  # Most lenient
                 same_doc_threshold = best_rerank_score - margin_same_doc          # Medium
@@ -200,11 +202,11 @@ def _process_sub_question(
             # 90% of that specific chunk's dense score
             if best_rerank_chunk is not None:
                 best_rerank_chunk_dense = best_rerank_chunk.get('dense_score', 0)
-                dense_threshold = best_rerank_chunk_dense * 0.90
+                dense_threshold = best_rerank_chunk_dense * settings.dense_fallback_percent
             else:
                 dense_threshold = 0.0
             
-            print(f"[RETRIEVER] Dense fallback: best rerank chunk dense={best_rerank_chunk_dense:.4f}, threshold={dense_threshold:.4f} (90%)", file=sys.stderr)
+            print(f"[RETRIEVER] Dense fallback: best rerank chunk dense={best_rerank_chunk_dense:.4f}, threshold={dense_threshold:.4f} ({int(settings.dense_fallback_percent*100)}%)", file=sys.stderr)
             
             for doc_id, data in raw_results.items():
                 if not data["chunks"]:
@@ -253,14 +255,14 @@ def _process_sub_question(
                     else:
                         dropped_chunks_with_metadata.append(item)
             
-            # Step 4: Sort passing chunks by rerank score and take top 20
+            # Step 4: Sort passing chunks by rerank score and take top K
             passing_chunks_with_metadata.sort(
                 key=lambda x: x["chunk"].get("rerank_score", x["chunk"].get("score", 0)),
                 reverse=True
             )
             
-            # Limit to top 20 chunks
-            top_chunks = passing_chunks_with_metadata[:20]
+            # Limit to max chunks to LLM
+            top_chunks = passing_chunks_with_metadata[:settings.max_chunks_to_llm]
             
             print(f"[RETRIEVER] {len(passing_chunks_with_metadata)} chunks passed threshold, using top {len(top_chunks)}", file=sys.stderr)
             print(f"[RETRIEVER] {len(dropped_chunks_with_metadata)} chunks dropped below threshold", file=sys.stderr)
@@ -296,13 +298,19 @@ def _process_sub_question(
                 }
             
             # Build context blocks
+            total_chunk_texts = 0
             for doc_id in passing_doc_ids:
                 data = doc_chunks[doc_id]
                 block_lines = [f"[Source: {data['doc_title']}]"]
                 for c in data["chunks"]:
                     cid = f"DOC{doc_id}_CHUNK{c['chunk_index']}"
-                    block_lines.append(f"[CHUNK_ID: {cid}]\n{c['text']}")
+                    chunk_text = c['text']
+                    block_lines.append(f"[CHUNK_ID: {cid}]\n{chunk_text}")
+                    total_chunk_texts += 1
+                    print(f"[RETRIEVER] Adding chunk {cid}: text_length={len(chunk_text)}, preview='{chunk_text[:100]}'", file=sys.stderr)
                 context_blocks.append("\n\n".join(block_lines))
+            
+            print(f"[RETRIEVER] Built {len(context_blocks)} context blocks with {total_chunk_texts} total chunks", file=sys.stderr)
             
             # For logging
             best_score = best_rerank_score
@@ -470,19 +478,24 @@ def _process_sub_question(
                 else:
                     log_raw_results = raw_results  # Use original results with all chunks
                 
-                logger.log_chunk_retrieval(
-                    sub_question=sub_question.question,
-                    raw_results=log_raw_results,
-                    best_score=best_score,
-                    best_doc_id=best_doc_id,
-                    same_doc_threshold=same_doc_threshold,
-                    other_doc_threshold=other_doc_threshold,
-                    passing_doc_ids=passing_doc_ids,
-                    has_rerank_scores=has_rerank_scores,
-                    best_section=best_rerank_section if has_rerank_scores else None,
-                    same_section_threshold=same_section_threshold if has_rerank_scores else None,
-                    chunk_db=chunk_db  # NEW: Pass database session
-                )
+                # Log chunk retrieval if method exists (for backward compatibility)
+                if hasattr(logger, 'log_chunk_retrieval'):
+                    logger.log_chunk_retrieval(
+                        sub_question=sub_question.question,
+                        raw_results=log_raw_results,
+                        best_score=best_score,
+                        best_doc_id=best_doc_id,
+                        same_doc_threshold=same_doc_threshold,
+                        other_doc_threshold=other_doc_threshold,
+                        passing_doc_ids=passing_doc_ids,
+                        has_rerank_scores=has_rerank_scores,
+                        best_section=best_rerank_section if has_rerank_scores else None,
+                        same_section_threshold=same_section_threshold if has_rerank_scores else None,
+                        chunk_db=chunk_db  # NEW: Pass database session
+                    )
+                else:
+                    # Use available ChatLogger methods instead
+                    print(f"[RETRIEVER] Detailed logging: {len(passing_doc_ids)} passing docs, best_score={best_score:.4f}", file=sys.stderr)
         except Exception as log_err:
             print(f"[RETRIEVER] Logging error: {log_err}", file=sys.stderr)
             import traceback
@@ -508,12 +521,15 @@ def _process_sub_question(
         )
         
         # Step 5: Invoke LLM with structured output
+        print(f"[RETRIEVER] Calling invoke_llm_with_structured_output with {len(context_blocks)} blocks", file=sys.stderr)
         result = invoke_llm_with_structured_output(
             question=sub_question.question,
             conversation_context=conversation_context,
             context_blocks=context_blocks,
             chunk_map=chunk_map
         )
+        
+        print(f"[RETRIEVER] LLM returned {len(result.get('retrieved_contexts', []))} contexts", file=sys.stderr)
         
         # ✅ Store Stage 5 in buffer and flush all stages atomically
         if buf:
@@ -536,6 +552,7 @@ def _process_sub_question(
             doc_ids=passing_doc_ids,  # ✅ CHANGED: Use actual docs that had passing chunks
             answer=result.get('answer', ''),
             citations=result.get('citations', []),
+            # retrieved_contexts removed - now using side channel
             has_contradiction=result.get('has_contradiction', False),
             failed=False,
             error_note="",
@@ -553,6 +570,7 @@ def _process_sub_question(
             doc_ids=sub_question.doc_ids,
             answer="",
             citations=[],
+            retrieved_contexts=[],  # ✅ NEW: Empty list for failed retrieval
             has_contradiction=False,
             failed=True,
             error_note=f"Could not retrieve information for: {sub_question.question}"

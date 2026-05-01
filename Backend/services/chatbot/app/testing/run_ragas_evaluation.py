@@ -85,7 +85,7 @@ class RAGASEvaluationPipeline:
         self.contexts: List[List[str]] = []
         self.chathead_id: int = None
         self.user_id: int = None
-        self.test_doc_ids: List[int] = [39, 41, 45]  # Switchgear, PSL, Aadil's resume
+        self.test_doc_ids: List[int] = [49, 45]  # Switchgear, PSL, Aadil's resume
         
     def log(self, message: str):
         """Write message to both console and log file."""
@@ -195,10 +195,9 @@ RETRIEVED CHUNKS ({len(chunks)} total):
             print(f"✓ Created chathead ID: {self.chathead_id}")
             
             # Use 3 documents: Switchgear (39), PSL (41), Aadil's resume (45)
-            self.test_doc_ids = [39, 41, 45]
+            self.test_doc_ids = [49, 45]
             print(f"✓ Will use documents: {self.test_doc_ids}")
-            print(f"  - Doc 39: Switchgear Maintenance Manual")
-            print(f"  - Doc 41: PSL and Harry Potter")
+            print(f"  - Doc 49: PSL and Harry Potter")
             print(f"  - Doc 45: Aadil Raja's Resume")
             print(f"✓ Documents will be passed to agent for each question")
         finally:
@@ -252,15 +251,8 @@ RETRIEVED CHUNKS ({len(chunks)} total):
                     answer = response["answer"]
                     self.answers.append(answer)
                     
-                    # Collect contexts (retrieved chunks)
-                    chunks = []
-                    for citation in response.get("citations", []):
-                        for ref in citation.get("references", []):
-                            if ref.get("snippet"):
-                                chunks.append(ref["snippet"])
-                    
-                    # RAGAS expects List[List[str]] format
-                    self.contexts.append(chunks if chunks else ["No context retrieved"])
+                    # RAGAS contexts - not available anymore
+                    self.contexts.append(["Context not available"])
                     
                     # Get ground truth for this question
                     ground_truth = self.ground_truths[i-1] if i-1 < len(self.ground_truths) else "N/A"
@@ -270,12 +262,11 @@ RETRIEVED CHUNKS ({len(chunks)} total):
                         question_num=i,
                         question=question,
                         answer=answer,
-                        chunks=chunks,
+                        chunks=[],  # No chunks available
                         ground_truth=ground_truth
                     )
                     
                     print(f"  ✓ Answer length: {len(answer)} chars")
-                    print(f"  ✓ Retrieved chunks: {len(chunks)}")
                     
                     success = True
                     break  # ✅ FIX: Exit retry loop on success

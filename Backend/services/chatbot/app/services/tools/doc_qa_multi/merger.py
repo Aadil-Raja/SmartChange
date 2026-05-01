@@ -214,6 +214,7 @@ def _create_fallback_merged_answer(sub_answers: List[SubAnswer], original_questi
     # Concatenate all successful answers
     answer_parts = []
     all_citations = []
+    # all_contexts removed - now using side channel
     has_any_contradiction = False
     total_input_tokens = 0
     total_output_tokens = 0
@@ -222,6 +223,7 @@ def _create_fallback_merged_answer(sub_answers: List[SubAnswer], original_questi
         if not sa.failed and sa.answer:
             answer_parts.append(sa.answer)
             all_citations.extend(sa.citations)
+            # retrieved_contexts removed - now using side channel
             if sa.has_contradiction:
                 has_any_contradiction = True
             total_input_tokens += sa.tokens_input
@@ -236,10 +238,13 @@ def _create_fallback_merged_answer(sub_answers: List[SubAnswer], original_questi
     # Count the concatenated output as output tokens (no extra LLM call in fallback)
     total_output_tokens += count_tokens(final_answer)
     
+    # Contexts are already accumulated in side channel by invoke_llm calls
+    
     return MergedAnswer(
         answer=final_answer,
         has_contradiction=has_any_contradiction,
         citations=_dedup_citations(all_citations),
+        # retrieved_contexts removed - now using side channel
         tokens_input=total_input_tokens,
         tokens_output=total_output_tokens
     )

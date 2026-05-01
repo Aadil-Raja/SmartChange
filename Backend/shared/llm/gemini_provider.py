@@ -48,7 +48,7 @@ class GeminiProvider(BaseLLMProvider):
         
         Args:
             prompt: Input prompt
-            **kwargs: Additional parameters (temperature, max_tokens, etc.)
+            **kwargs: Additional parameters (temperature, max_output_tokens, etc.)
             
         Returns:
             Generated text

@@ -169,7 +169,8 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                 llm_provider=settings.llm_provider,
                 llm_model=settings.llm_model,
                 google_api_key=settings.google_api_key,
-                openai_api_key=settings.openai_api_key
+                openai_api_key=settings.openai_api_key,
+                max_output_tokens=settings.max_output_tokens
             )
 
             full_context = "\n\n---\n\n".join(context_blocks)

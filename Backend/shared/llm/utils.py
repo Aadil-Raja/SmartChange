@@ -71,6 +71,7 @@ def create_llm_provider(
     llm_model: str,
     google_api_key: str | None = None,
     openai_api_key: str | None = None,
+    max_output_tokens: int | None = None,
     **kwargs
 ) -> BaseLLMProvider:
     """
@@ -82,6 +83,7 @@ def create_llm_provider(
         llm_model: Model name
         google_api_key: Google API key (for Gemini)
         openai_api_key: OpenAI API key (for OpenAI)
+        max_output_tokens: Maximum tokens to generate (None = no limit)
         **kwargs: Additional provider configuration
         
     Returns:
@@ -96,12 +98,22 @@ def create_llm_provider(
         ...     llm_provider=settings.llm_provider,
         ...     llm_model=settings.llm_model,
         ...     google_api_key=settings.google_api_key,
-        ...     openai_api_key=settings.openai_api_key
+        ...     openai_api_key=settings.openai_api_key,
+        ...     max_output_tokens=settings.max_output_tokens
         ... )
         >>> response = llm.generate("Hello")
     """
     # Get the appropriate API key
     api_key = get_llm_api_key(llm_provider, google_api_key, openai_api_key)
+    
+    # Add max_output_tokens to kwargs if specified
+    # Different providers use different parameter names
+    if max_output_tokens is not None:
+        provider_lower = llm_provider.lower().strip()
+        if provider_lower == "openai":
+            kwargs["max_tokens"] = max_output_tokens
+        elif provider_lower == "gemini":
+            kwargs["max_output_tokens"] = max_output_tokens
     
     # Create and return the provider
     return get_llm_provider(

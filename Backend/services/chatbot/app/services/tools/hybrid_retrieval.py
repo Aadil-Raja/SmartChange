@@ -43,30 +43,15 @@ _stage3_data = None  # Reranked chunks
 
 
 # ============================================================================
-# CONFIGURATION
+# CONFIGURATION - All values now loaded from config.py
 # ============================================================================
-
-# Retrieval strategy weights
-DENSE_WEIGHT = 0.85   # 70% weight to vector similarity
-SPARSE_WEIGHT = 0.15  # 30% weight to BM25 keyword matching
-
-# Retrieval pool sizes
-DENSE_TOP_K = None   # Fetch ALL chunks from vector search (no limit)
-SPARSE_TOP_K = None  # Fetch ALL chunks from BM25 search (no limit)
-FINAL_TOP_K = 20     # After combining scores, keep top 20 for reranking
-
-# Reranking models
-RERANKER_MODEL_FAST = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # Fast, good quality (for /v2)
-RERANKER_MODEL_DEEP = "jinaai/jina-reranker-v3"  # State-of-the-art, 8192 tokens (for /v2-deep)
-
-# Default model for backward compatibility
-RERANKER_MODEL = RERANKER_MODEL_FAST
+from app.core.config import get_settings
 
 # Global model cache (loaded once per model, reused for all requests)
 _reranker_models = {}
 
 
-def _get_reranker_model(model_name: str = RERANKER_MODEL):
+def _get_reranker_model(model_name: str):
     """
     Get or load the reranker model (cached globally per model).
     
@@ -75,6 +60,7 @@ def _get_reranker_model(model_name: str = RERANKER_MODEL):
     - Deep (Jina custom): jina-reranker-v3
     """
     global _reranker_models
+    settings = get_settings()
     
     if model_name not in _reranker_models:
         import os
@@ -87,20 +73,24 @@ def _get_reranker_model(model_name: str = RERANKER_MODEL):
         print(f"[HYBRID] Loading reranker model: {model_name} (first time only)", file=sys.stderr)
         
         # Use different loading methods for different models
-        if model_name == RERANKER_MODEL_DEEP:
+        if model_name == settings.reranker_model_deep:
             # Jina v3 uses custom architecture - load with AutoModel + trust_remote_code
             from transformers import AutoModel
             model = AutoModel.from_pretrained(
                 model_name,
                 torch_dtype="auto",
                 trust_remote_code=True,  # Loads Jina's custom JinaForRanking class
+                token=settings.hugging_face_token,  # ✅ Use HF token for faster downloads
             )
             model.eval()
             _reranker_models[model_name] = {'model': model, 'type': 'jina'}
         else:
             # Fast model uses standard CrossEncoder
             from sentence_transformers import CrossEncoder
-            model = CrossEncoder(model_name)
+            model = CrossEncoder(
+                model_name,
+                use_auth_token=settings.hugging_face_token  # ✅ Use HF token for faster downloads
+            )
             _reranker_models[model_name] = {'model': model, 'type': 'cross_encoder'}
         
         print(f"[HYBRID] Reranker model {model_name} loaded and cached", file=sys.stderr)
@@ -286,9 +276,7 @@ def sparse_retrieve(
 
 def merge_results(
     dense_results: Dict[int, Dict],
-    sparse_results: Dict[int, Dict],
-    dense_weight: float = DENSE_WEIGHT,
-    sparse_weight: float = SPARSE_WEIGHT
+    sparse_results: Dict[int, Dict]
 ) -> Dict[int, Dict]:
     """
     Merge dense and sparse results with weighted scoring.
@@ -301,6 +289,10 @@ def merge_results(
     Returns:
         Dict[doc_id, {doc_title, cloudinary_url, chunks}]
     """
+    settings = get_settings()
+    dense_weight = settings.dense_weight
+    sparse_weight = settings.sparse_weight
+    
     print(f"[HYBRID] Merging results (dense_weight={dense_weight}, sparse_weight={sparse_weight})", file=sys.stderr)
     
     merged = {}
@@ -379,8 +371,7 @@ def merge_results(
 
 
 def pre_filter_top_k(
-    merged_results: Dict[int, Dict],
-    top_k: int = FINAL_TOP_K
+    merged_results: Dict[int, Dict]
 ) -> Dict[int, Dict]:
     """
     Pre-filter merged results to top-K chunks ACROSS ALL DOCUMENTS BEFORE reranking.
@@ -392,11 +383,13 @@ def pre_filter_top_k(
     
     Args:
         merged_results: Merged dense+sparse results with combined_score
-        top_k: Number of top chunks to keep ACROSS ALL DOCUMENTS
         
     Returns:
         Filtered results with top-K chunks distributed across documents
     """
+    settings = get_settings()
+    top_k = settings.final_top_k
+    
     print(f"[HYBRID] Pre-filtering to top {top_k} chunks ACROSS ALL DOCUMENTS (based on combined score)", file=sys.stderr)
     
     # Collect all chunks from all documents with their metadata
@@ -489,8 +482,7 @@ def pre_filter_top_k(
 def rerank_chunks(
     merged_results: Dict[int, Dict],
     question: str,
-    top_k: int = FINAL_TOP_K,
-    model_name: str = RERANKER_MODEL
+    model_name: str
 ) -> Dict[int, Dict]:
     """
     Rerank merged results using a cross-encoder model.
@@ -612,30 +604,36 @@ def hybrid_retrieve_chunks(
     chunk_db: Session,
     document_ids: List[int],
     question: str,
-    top_k: int = FINAL_TOP_K,
     use_reranking: bool = True,
-    reranker_model: str = RERANKER_MODEL  # NEW: Allow specifying which model to use
+    reranker_model: str = None
 ) -> Dict[int, Dict]:
     """
     Hybrid retrieval combining dense + sparse + reranking.
     
     Pipeline:
-    1. Dense retrieval (vector similarity) → top 20 per doc (PARALLEL with sparse)
-    2. Sparse retrieval (BM25 keywords) → top 20 per doc (PARALLEL with dense)
+    1. Dense retrieval (vector similarity) → ALL chunks per doc (PARALLEL with sparse)
+    2. Sparse retrieval (BM25 keywords) → ALL chunks per doc (PARALLEL with dense)
     3. Merge with weighted scores → deduplicated pool
-    4. Rerank with cross-encoder → final top-k per doc
+    4. Pre-filter to top-K across all docs
+    5. Rerank with cross-encoder → final ranked chunks
     
     Args:
         chunk_db: Database session
         document_ids: List of document IDs to search
         question: User's question
-        top_k: Final number of chunks to return per document
         use_reranking: Whether to use cross-encoder reranking (slower but better)
+        reranker_model: Which reranker model to use (if None, uses fast model)
     
     Returns:
         Dict[doc_id, {doc_title, cloudinary_url, chunks}]
         Each chunk has: chunk_index, text, score, start_page_num, end_page_num, section_title
     """
+    settings = get_settings()
+    
+    # Use provided model or default to fast model
+    if reranker_model is None:
+        reranker_model = settings.reranker_model_fast
+    
     print(f"\n[HYBRID] Starting hybrid retrieval for {len(document_ids)} docs", file=sys.stderr)
     print(f"[HYBRID] Question: {question[:100]}...", file=sys.stderr)
     
@@ -668,9 +666,9 @@ def hybrid_retrieve_chunks(
                 "chunk": chunk
             })
     
-    # Sort by combined score and mark top 20
+    # Sort by combined score and mark top K
     all_chunks_for_ranking.sort(key=lambda x: x["chunk"]["combined_score"], reverse=True)
-    top20_ids = {(item["doc_id"], item["chunk"].get('chunk_index')) for item in all_chunks_for_ranking[:top_k]}
+    top_k_ids = {(item["doc_id"], item["chunk"].get('chunk_index')) for item in all_chunks_for_ranking[:settings.final_top_k]}
     
     # Add 'passed' flag to chunks for Stage 1
     doc_chunks_map_for_stage1 = {}
@@ -678,7 +676,7 @@ def hybrid_retrieve_chunks(
         chunks_with_status = []
         for chunk in data["chunks"]:
             chunk_copy = chunk.copy()
-            chunk_copy['passed'] = (doc_id, chunk.get('chunk_index')) in top20_ids
+            chunk_copy['passed'] = (doc_id, chunk.get('chunk_index')) in top_k_ids
             chunks_with_status.append(chunk_copy)
         
         doc_chunks_map_for_stage1[doc_id] = {
@@ -692,7 +690,7 @@ def hybrid_retrieve_chunks(
     _stage1_data = doc_chunks_map_for_stage1
     
     print(f"\n{'='*80}", file=sys.stderr)
-    print(f"[HYBRID] DENSE AND SPARSE CHUNKS (Before pre-filtering to top-{top_k})", file=sys.stderr)
+    print(f"[HYBRID] DENSE AND SPARSE CHUNKS (Before pre-filtering to top-{settings.final_top_k})", file=sys.stderr)
     print(f"{'='*80}", file=sys.stderr)
     
     for doc_id, data in merged_results.items():
@@ -719,11 +717,11 @@ def hybrid_retrieve_chunks(
     
     # Step 3.5: Pre-filter to top-K BEFORE reranking (NEW)
     # This ensures all reranked chunks are in the pool for threshold filtering
-    pre_filtered_results = pre_filter_top_k(merged_results, top_k=top_k)
+    pre_filtered_results = pre_filter_top_k(merged_results)
     
     # Step 4: Rerank (optional)
     if use_reranking:
-        final_results = rerank_chunks(pre_filtered_results, question, top_k=top_k, model_name=reranker_model)
+        final_results = rerank_chunks(pre_filtered_results, question, model_name=reranker_model)
     else:
         # Already filtered to top-k in pre_filter_top_k
         final_results = pre_filtered_results    
@@ -753,11 +751,10 @@ def retrieve_chunks_for_all_docs_hybrid(
         use_deep_reranker: If True, uses jina-reranker-v3 (slower, more accurate)
                           If False, uses ms-marco-MiniLM (faster, good quality)
     """
-    from app.core.config import get_settings
     settings = get_settings()
     
     # Choose reranker model based on flag
-    reranker_model = RERANKER_MODEL_DEEP if use_deep_reranker else RERANKER_MODEL_FAST
+    reranker_model = settings.reranker_model_deep if use_deep_reranker else settings.reranker_model_fast
     
     print(f"[HYBRID] Using reranker: {reranker_model}", file=sys.stderr)
     
@@ -766,7 +763,6 @@ def retrieve_chunks_for_all_docs_hybrid(
         chunk_db=chunk_db,
         document_ids=document_ids,
         question=question,
-        top_k=settings.max_chunks_per_doc,
         use_reranking=True,
         reranker_model=reranker_model
     )

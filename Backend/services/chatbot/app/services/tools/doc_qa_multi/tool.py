@@ -140,7 +140,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 llm_provider=settings.llm_provider,
                 llm_model=settings.llm_model,
                 google_api_key=settings.google_api_key,
-                openai_api_key=settings.openai_api_key
+                openai_api_key=settings.openai_api_key,
+                max_output_tokens=settings.max_output_tokens
             )
             
             # ✅ OPTIMIZATION: Use pre-fetched sections if available, otherwise fetch now

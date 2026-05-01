@@ -25,6 +25,7 @@ class SubAnswer(BaseModel):
     doc_ids: List[int] = Field(description="Documents used for this answer")
     answer: str = Field(description="The answer text")
     citations: List[dict] = Field(default_factory=list, description="Citations for this answer")
+    # retrieved_contexts removed - now using side channel
     has_contradiction: bool = Field(default=False, description="Whether contradictions were found")
     failed: bool = Field(default=False, description="Whether retrieval failed")
     error_note: str = Field(default="", description="Error message if failed")
@@ -37,5 +38,6 @@ class MergedAnswer(BaseModel):
     answer: str = Field(description="Final merged answer text")
     has_contradiction: bool = Field(description="Overall contradiction flag")
     citations: List[dict] = Field(default_factory=list, description="Deduplicated citations")
+    # retrieved_contexts removed - now using side channel
     tokens_input: int = Field(default=0, description="Total input tokens")
     tokens_output: int = Field(default=0, description="Total output tokens")
