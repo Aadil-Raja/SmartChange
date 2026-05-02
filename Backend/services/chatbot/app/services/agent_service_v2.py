@@ -178,16 +178,106 @@ Examples of enrichment:
 
 RULE: Never pass a vague short message directly to a tool. Always enrich it first. The enriched question is what you pass as the `question` argument to the tool. This enrichment happens silently — do not tell the user you are enriching the query.
 
+## HANDLING CORRECTIONS AND CLARIFICATIONS — CRITICAL
+
+When users correct a previous answer (keywords: "not", "I meant", "I said", "I asked about", "no I want"), you MUST:
+1. Detect that this is a correction - the previous answer was WRONG
+2. Identify what was WRONG in the previous answer (the term/concept to EXCLUDE)
+3. Identify what the user ACTUALLY wants (the term/concept to EMPHASIZE)
+4. Rewrite the query to emphasize what they want and explicitly exclude what was wrong
+
+Format: "What is X? I need X specifically, NOT Y. Focus only on X."
+
+Use UPPERCASE, "specifically", "only", and "NOT" so retrieval and the LLM prioritize the right information.
+
+Examples of correction requests:
+
+- User says: "I asked about college not uni"
+  History shows: Previous question was "where did Aadil study?" and answer mentioned "university"
+  Enriched question: "Which college did Aadil study at? I need information about his COLLEGE education specifically, NOT university. Focus only on college-level education."
+
+- User says: "no I meant his projects not experience"
+  History shows: Previous answer was about work experience
+  Enriched question: "What are Aadil's projects? I need information about his PROJECTS specifically, NOT his work experience. Focus only on project work."
+
+- User says: "I said PSL teams not players"
+  History shows: Previous answer listed player names
+  Enriched question: "What are the PSL team names? I need the TEAM names specifically, NOT player names. Focus only on the teams."
+
+- User says: "I want to know about his GPA not courses"
+  History shows: Previous answer listed course names
+  Enriched question: "What is Aadil's GPA? I need his GPA score specifically, NOT the course names. Focus only on the GPA number."
+
+- User says: "I meant backend not frontend"
+  History shows: Previous answer discussed frontend technologies
+  Enriched question: "What backend technologies did Aadil use? I need BACKEND technologies specifically, NOT frontend. Focus only on backend stack."
+
+CRITICAL RULES FOR CORRECTIONS:
+- Always use the format: "What is X? I need X specifically, NOT Y. Focus only on X."
+- Use UPPERCASE for the correct term (what to include)
+- Use "NOT" before the wrong term (what to exclude)
+- Use "specifically", "only", "Focus only on" to emphasize
+- This helps retrieval find the right chunks and helps the LLM focus on correct information
+- ALWAYS call doc_qa_multi_tool with the corrected enriched question
+
+## HANDLING RE-EXPLANATION REQUESTS — CRITICAL
+
+When the user asks to re-explain, elaborate, or simplify a PREVIOUS answer, you MUST:
+1. Look at the Conversation History to find the last answer and identify the topic/entity discussed
+2. Extract key details from that previous answer (names, concepts, features mentioned)
+3. Create an enriched question that includes:
+   - The specific topic name or entity
+   - Request for simple/easy explanation
+   - Key details or aspects mentioned in the previous response
+4. Call doc_qa_multi_tool with this enriched question
+
+Examples of re-explanation requests and how to enrich them:
+
+- User says: "explain in easy words"
+  History shows: Last answer was about "Aadil Raja's Digital Adoption Platform with AI chatbot, interactive guides, and analytics dashboard"
+  Enriched question: "Explain Aadil Raja's Digital Adoption Platform in simple and easy words, including what the AI chatbot does, how the interactive guides work, and what the analytics dashboard shows"
+
+- User says: "explain again"
+  History shows: Last answer discussed "PSL tournament format with 6 teams playing double round-robin"
+  Enriched question: "Explain the PSL tournament format again in detail, including how the 6 teams play in the double round-robin system and how playoffs work"
+
+- User says: "tell me more details"
+  History shows: Last answer was about "Aadil's internship at TechCorp as Backend Developer"
+  Enriched question: "Tell me more details about Aadil Raja's internship at TechCorp as a Backend Developer, including his responsibilities, technologies used, and achievements"
+
+- User says: "elaborate on that"
+  History shows: Last answer mentioned "PSL's impact on Pakistan cricket through player development and international exposure"
+  Enriched question: "Elaborate on PSL's impact on Pakistan cricket, specifically how it helps with player development and provides international exposure to local players"
+
+- User says: "in simple terms"
+  History shows: Last answer explained "microservices architecture with Docker containers and Kubernetes orchestration"
+  Enriched question: "Explain the microservices architecture in simple terms, including what Docker containers are and how Kubernetes orchestration works"
+
+- User says: "can you simplify?"
+  History shows: Last answer was about "neural network training with backpropagation and gradient descent"
+  Enriched question: "Explain neural network training in simple terms, including what backpropagation means and how gradient descent works"
+
+CRITICAL RULES FOR RE-EXPLANATION:
+- These are NOT summary requests → Do NOT call list_document_sections_tool
+- These are NOT new questions → They refer to EXISTING conversation context
+- ALWAYS enrich with: topic name + "in simple/easy words" + key details from previous answer
+- ALWAYS call doc_qa_multi_tool with the enriched question
+- The enriched question should be detailed enough to retrieve the same content but ask for simpler explanation
+
 ## TOOL SELECTION — READ THIS CAREFULLY
 
 ### ALWAYS use list_document_sections_tool when the user says ANY of:
-- "summarize", "summary", "summarise"
-- "overview", "give me an overview"
-- "what is this document about", "explain this document"
-- "what topics", "what sections", "table of contents"
-- "tell me about [document/topic]" when asking about the document as a whole
-- Anything that sounds like they want a high-level digest of the document
-- Examples: "Can you summarize this?", "Give me an overview", "What topics are covered?"
+- "summarize", "summary", "summarise" (when asking about the ENTIRE document)
+- "overview", "give me an overview" (when asking about the ENTIRE document structure)
+- "what is this document about", "what topics does this document cover"
+- "what sections", "table of contents", "list all sections"
+- Anything that asks for the DOCUMENT STRUCTURE or SECTION LIST
+- Examples: "Can you summarize this document?", "Give me an overview of what's in this document", "What topics are covered?"
+
+### NEVER use list_document_sections_tool for:
+- "explain in easy words", "explain again", "tell me more", "elaborate", "in detail", "simplify", "can you explain"
+- These are re-explanation requests → Use doc_qa_multi_tool with enriched question
+- Follow-ups about a specific topic/entity from previous answer → Use doc_qa_multi_tool
 
 ### ALWAYS use generate_section_summary_tool when:
 - User names a SPECIFIC section title (e.g. "summarize Day 3", "tell me about Chapter 2")
@@ -198,15 +288,12 @@ RULE: Never pass a vague short message directly to a tool. Always enrich it firs
 - User asks a specific factual question: "What is X?", "Who is Y?", "How does Z work?"
 - User asks for details about a named person, project, achievement, or event
 - User asks "does X include Y?", "what did X do at Y?"
+- User asks to re-explain, elaborate, or simplify a previous answer (with enrichment)
 - The question has a specific answer extractable from the document
 - User asks multiple questions in one message (the tool handles this automatically)
 - Examples: "What is the tournament format?", "Who are the notable players?", "How many teams participated?"
 - Examples: "What is Aadil's GPA and what are the PSL team names?" (pass as single question)
-
-### NEVER use doc_qa_multi_tool for:
-- Summary or overview requests — even if the user says "can you tell me more" or "in detail" after asking about a topic
-- Follow-ups about summaries should go to list_document_sections_tool
-- If the previous context was about summaries/overviews, stay with section tools
+- Examples: "explain in easy words" (after enriching with previous topic and details)
 
 ## CRITICAL INSTRUCTIONS:
 1. YOU MUST ALWAYS CALL A TOOL. NEVER answer directly without calling a tool.
@@ -244,7 +331,7 @@ class DocumentAgentV2:
         model = settings.llm_model
 
         # Prepare kwargs for LLM initialization
-        llm_kwargs = {"model": model, "temperature": 0}
+        llm_kwargs = {"model": model, "temperature": settings.llm_temperature}
         if settings.max_output_tokens is not None:
             if provider == "openai":
                 llm_kwargs["max_tokens"] = settings.max_output_tokens

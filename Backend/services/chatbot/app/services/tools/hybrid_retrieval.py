@@ -87,10 +87,7 @@ def _get_reranker_model(model_name: str):
         else:
             # Fast model uses standard CrossEncoder
             from sentence_transformers import CrossEncoder
-            model = CrossEncoder(
-                model_name,
-                use_auth_token=settings.hugging_face_token  # ✅ Use HF token for faster downloads
-            )
+            model = CrossEncoder(model_name)
             _reranker_models[model_name] = {'model': model, 'type': 'cross_encoder'}
         
         print(f"[HYBRID] Reranker model {model_name} loaded and cached", file=sys.stderr)

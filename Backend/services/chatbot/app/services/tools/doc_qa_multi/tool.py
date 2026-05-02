@@ -132,7 +132,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             # Optimization: Skip decomposition if only 1 document
             if len(document_ids) == 1:
                 print(f"[MULTI-DOC TOOL] Only 1 document active, skipping decomposition", file=sys.stderr)
-                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories)
+                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
             
             # Import LLM provider
             from shared.llm import create_llm_provider
@@ -167,7 +167,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             # Step 2: Confidence gate - fall back to single-doc if needed
             if not decomposed.is_cross_doc or decomposed.confidence < 0.7 or not decomposed.sub_questions:
                 print(f"[MULTI-DOC TOOL] Falling back to single-doc path (is_cross_doc={decomposed.is_cross_doc}, confidence={decomposed.confidence})", file=sys.stderr)
-                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories)
+                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
             
             print(f"[MULTI-DOC TOOL] Using multi-doc path with {len(decomposed.sub_questions)} sub-questions", file=sys.stderr)
             
@@ -231,12 +231,12 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             traceback.print_exc(file=sys.stderr)
             
             # Fall back to single-doc tool on any error
-            return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories)
+            return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
     
     return doc_qa_multi_tool
 
 
-def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], doc_histories: Dict):
+def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], doc_histories: Dict, use_deep_reranker: bool = False):
     """
     Fall back to the existing single-doc QA tool.
     
@@ -244,6 +244,9 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
     - Question doesn't span multiple documents
     - Confidence is too low
     - Any error occurs in the multi-doc flow
+    
+    Args:
+        use_deep_reranker: If True, uses jina-reranker-v3 (slower, more accurate)
     
     Returns:
         Dict with answer, has_contradiction, citations, tokens_input, tokens_output
@@ -260,11 +263,12 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
             invoke_llm_with_structured_output
         )
         
-        # Use hybrid retrieval
+        # Use hybrid retrieval with deep reranker flag
         raw_results = retrieve_chunks_for_all_docs_hybrid(
             chunk_db=chunk_db,
             document_ids=document_ids,
-            question=question
+            question=question,
+            use_deep_reranker=use_deep_reranker
         )
         
         if not raw_results:

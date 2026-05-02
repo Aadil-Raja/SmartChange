@@ -66,7 +66,7 @@ class DocumentAgent:
         print(f"[AGENT] Initializing with provider: {provider}, model: {model_to_use}", file=sys.stderr)
         
         # Prepare kwargs for LLM initialization
-        llm_kwargs = {"model": model_to_use, "temperature": 0}
+        llm_kwargs = {"model": model_to_use, "temperature": settings.llm_temperature}
         if settings.max_output_tokens is not None:
             if provider == "openai":
                 llm_kwargs["max_tokens"] = settings.max_output_tokens

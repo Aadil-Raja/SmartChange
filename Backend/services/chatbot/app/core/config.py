@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-2.5-flash"
     openai_api_key: str | None = None
     
+    # LLM Temperature (controls randomness: 0=deterministic, 1=creative)
+    # Recommended: 0 for factual Q&A, 0.3-0.7 for creative tasks
+    llm_temperature: float = 0.0
+    
     # Hugging Face token for faster model downloads and private models
     hugging_face_token: str | None = None
 
