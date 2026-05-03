@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "timestamp": "20260423_140815",
+    "source_log": "evaluation_log_20260420_003117.txt",
+    "total_questions": 2
+  },
+  "ragas_scores": {
+    "user_input": {
+      "0": "What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?",
+      "1": "What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?"
+    },
+    "retrieved_contexts": {
+      "0": [
+        "1. Author and Publication Timeline\n\nThe J. K. Rowling wrote the Harry Potter fantasy series.\n\n\u25cf First book published in 1997 \u25cf Last book published in",
+        "Summary\n\n\u25cf Author: J.K. Rowling \u25cf Books: 7 main novels \u25cf Genre: Fantasy \u25cf Setting: Wizarding world + Hogwarts \u25cf Main villain: Voldemort \u25cf Adaptations:"
+      ],
+      "1": [
+        "1. Author and Publication Timeline\n\nThe J. K. Rowling wrote the Harry Potter fantasy series.\n\n\u25cf First book published in 1997 \u25cf Last book published in"
+      ]
+    },
+    "response": {
+      "0": "The **Harry Potter series** was written by **J.K. Rowling**. This beloved series consists of **seven main novels**, with the first book published in **1997** and the last in **2007**.\n\nUnfortunately, there is no available information regarding **Aadil Raja's CGPA**.\n\nAdditionally, **PSL** stands for **Pakistan Super League**, but specific details about its structure or format are not provided here.\n\nNote: No relevant information found for: What is Aadil Raja's CGPA?\nNote: No relevant information found for: What does PSL stand for?",
+      "1": "The first **Harry Potter** book, titled **\"Harry Potter and the Philosopher\u2019s Stone,\"** was published in **1997**.\n\nUnfortunately, there is no information available regarding which university **Aadil** attends or which organization manages the **Pakistan Super League (PSL)**.\n\nNote: No relevant information found for: What university does Aadil attend?\nNote: No relevant information found for: Which organization manages the PSL?"
+    },
+    "reference": {
+      "0": "Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.",
+      "1": "Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB)."
+    },
+    "faithfulness": {
+      "0": 0.42857142857142855,
+      "1": 0.8333333333333334
+    },
+    "answer_relevancy": {
+      "0": 0.4257064754289354,
+      "1": 0.0
+    },
+    "context_precision": {
+      "0": 0.0,
+      "1": 0.0
+    },
+    "context_recall": {
+      "0": 0.3333333333333333,
+      "1": 0.3333333333333333
+    },
+    "answer_correctness": {
+      "0": 0.5075372127619591,
+      "1": 0.3605271283694502
+    }
+  },
+  "questions_and_answers": [
+    {
+      "question": "What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?",
+      "answer": "The **Harry Potter series** was written by **J.K. Rowling**. This beloved series consists of **seven main novels**, with the first book published in **1997** and the last in **2007**.\n\nUnfortunately, there is no available information regarding **Aadil Raja's CGPA**.\n\nAdditionally, **PSL** stands for **Pakistan Super League**, but specific details about its structure or format are not provided here.\n\nNote: No relevant information found for: What is Aadil Raja's CGPA?\nNote: No relevant information found for: What does PSL stand for?",
+      "ground_truth": "Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.",
+      "contexts": [
+        "1. Author and Publication Timeline\n\nThe J. K. Rowling wrote the Harry Potter fantasy series.\n\n\u25cf First book published in 1997 \u25cf Last book published in",
+        "Summary\n\n\u25cf Author: J.K. Rowling \u25cf Books: 7 main novels \u25cf Genre: Fantasy \u25cf Setting: Wizarding world + Hogwarts \u25cf Main villain: Voldemort \u25cf Adaptations:"
+      ]
+    },
+    {
+      "question": "What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?",
+      "answer": "The first **Harry Potter** book, titled **\"Harry Potter and the Philosopher\u2019s Stone,\"** was published in **1997**.\n\nUnfortunately, there is no information available regarding which university **Aadil** attends or which organization manages the **Pakistan Super League (PSL)**.\n\nNote: No relevant information found for: What university does Aadil attend?\nNote: No relevant information found for: Which organization manages the PSL?",
+      "ground_truth": "Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).",
+      "contexts": [
+        "1. Author and Publication Timeline\n\nThe J. K. Rowling wrote the Harry Potter fantasy series.\n\n\u25cf First book published in 1997 \u25cf Last book published in"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-05-01 19:30:17
+Chathead ID: 231
+User: k224492@nu.edu.pk
+Documents: [49, 45]
+Total Questions: 20
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+Aadil Raja's academic performance is impressive, with a **CGPA of 3.99 out of 4.0**.
+
+The **Harry Potter** series, a beloved collection of fantasy novels, was written by **J.K. Rowling**. This series consists of **seven novels** published between **1997** and **2007**, chronicling the adventures of a young wizard.
+
+In the realm of sports, **PSL** stands for **Pakistan Super League**. This professional **Twenty20 (T20)** cricket franchise league in Pakistan features city-based teams competing annually in a short-format tournament. The league was officially announced in **2015**, with its inaugural season taking place in **2016**.
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================

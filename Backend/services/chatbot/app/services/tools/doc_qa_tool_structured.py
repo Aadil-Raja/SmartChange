@@ -144,8 +144,8 @@ def filter_chunks_by_threshold(
                 "doc_title": doc_title,
                 "cloudinary_url": data.get("cloudinary_url"),
                 "page": c.get("start_page_num"),
-                "section": c.get("section_title"),
-                "snippet": c["text"][:150].strip()
+                "section": c.get("section_title")
+                # Note: snippets now come from LLM, not stored here
             }
 
         context_blocks.append("\n\n".join(block_lines))
@@ -221,10 +221,38 @@ Instructions:
    Then recommend the safer option if possible.
 7. If no contradiction, answer normally.
 8. Do not make up information not in the content.
-9. In "used_chunk_ids", list ONLY the CHUNK_IDs that directly contain the specific facts answering the question.
-   Do NOT include chunks used only for background context or general topic framing.
-   Example: if asked "Who is Babar Azam?" and one chunk says "PSL is a cricket league" and another says "Babar Azam is a top batsman", only include the second chunk.
-   Available chunk IDs: {available_chunk_ids}"""
+9. CITATIONS: For each chunk you use, provide:
+   - chunk_id: The CHUNK_ID (e.g., "DOC5_CHUNK2")
+   - highlight_snippets: 2-3 EXACT text phrases (5-20 words each) from that chunk that directly answer the question
+   
+   Copy these phrases EXACTLY as they appear in the chunk. These will be highlighted in yellow on the PDF.
+   Only cite chunks that directly contain facts answering the question.
+   Do NOT cite chunks used only for background context.
+   
+   Available chunk IDs: {available_chunk_ids}
+
+CITATION EXAMPLES:
+- Question: "What is Aadil's CGPA?"
+  Chunk: "Education: FAST University — BS Computer Science. Final Semester CGPA: 3.99 / 4.0"
+  Good snippets: ["Final Semester CGPA: 3.99 / 4.0", "BS Computer Science"]
+  Bad snippets: ["Education", "FAST University"] (too vague, doesn't answer question)
+
+- Question: "What are the PSL teams?"
+  Chunk: "The PSL features six teams: Karachi Kings, Lahore Qalandars, Multan Sultans, Peshawar Zalmi, Quetta Gladiators, and Islamabad United."
+  Good snippets: ["six teams: Karachi Kings, Lahore Qalandars, Multan Sultans", "Peshawar Zalmi, Quetta Gladiators, and Islamabad United"]
+  Bad snippets: ["Pakistan Super League"] (doesn't answer the question)
+
+FORMATTING RULES:
+- Use proper markdown formatting
+- For numbered lists, add TWO line breaks after each item:
+  1. First item
+  
+  2. Second item
+  
+  3. Third item
+- For bullet lists, add ONE line break after each item
+- Bold important terms using **term**
+- Use proper paragraph spacing"""
 
 
 def invoke_llm_with_structured_output(
@@ -248,7 +276,8 @@ def invoke_llm_with_structured_output(
         llm_provider=settings.llm_provider,
         llm_model=settings.llm_model,
         google_api_key=settings.google_api_key,
-        openai_api_key=settings.openai_api_key
+        openai_api_key=settings.openai_api_key,
+        max_output_tokens=settings.max_output_tokens
     )
 
     # Count user-variable input tokens: chunk text only (question counted in chat_service_v2)
@@ -264,11 +293,47 @@ def invoke_llm_with_structured_output(
 
         answer = result.answer
         has_contradiction = result.has_contradiction
-        used_chunk_ids = result.used_chunk_ids
+        llm_citations = result.citations  # List[ChunkCitation]
         tokens_output = count_tokens(answer)
 
-        final_citations = [chunk_map[cid] for cid in used_chunk_ids if cid in chunk_map]
+        # Build final citations by enriching LLM citations with chunk metadata
+        final_citations = []
+        for citation in llm_citations:
+            chunk_id = citation.chunk_id
+            if chunk_id in chunk_map:
+                chunk_meta = chunk_map[chunk_id]
+                final_citations.append({
+                    "doc_id": chunk_meta["doc_id"],
+                    "doc_title": chunk_meta["doc_title"],
+                    "cloudinary_url": chunk_meta["cloudinary_url"],
+                    "page": chunk_meta["page"],
+                    "section": chunk_meta["section"],
+                    "snippets": citation.highlight_snippets  # ✅ Array of snippets from LLM
+                })
+        
+        # ✅ NEW: Include retrieved contexts (chunk texts) for RAGAS evaluation
+        # Extract chunk texts from context_blocks (they contain the actual text)
+        retrieved_contexts = []
+        print(f"[INVOKE_LLM] Starting extraction from {len(context_blocks)} context blocks", file=sys.stderr)
+        for block_idx, block in enumerate(context_blocks):
+            print(f"[INVOKE_LLM] Block {block_idx}: length={len(block)}, preview='{block[:200]}'", file=sys.stderr)
+            # Each block contains chunks with format: [CHUNK_ID: ...]\ntext
+            # Split by CHUNK_ID markers and extract text
+            chunks_in_block = block.split('[CHUNK_ID:')
+            print(f"[INVOKE_LLM] Block {block_idx}: split into {len(chunks_in_block)} parts", file=sys.stderr)
+            for chunk_idx, chunk_part in enumerate(chunks_in_block[1:]):  # Skip first part (source header)
+                # Extract text after the chunk ID line
+                lines = chunk_part.split('\n', 1)
+                print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: split into {len(lines)} lines", file=sys.stderr)
+                if len(lines) > 1:
+                    extracted_text = lines[1].strip()
+                    retrieved_contexts.append(extracted_text)
+                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: extracted {len(extracted_text)} chars: '{extracted_text[:100]}'", file=sys.stderr)
+                else:
+                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: SKIPPED (only {len(lines)} line)", file=sys.stderr)
 
+        print(f"[INVOKE_LLM] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+        
         return {
             "answer": answer,
             "has_contradiction": has_contradiction,
@@ -289,16 +354,44 @@ def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], ch
     # tokens_input already has chunk text counted; don't re-count
     available_chunk_ids = list(chunk_map.keys())
     prompt = build_prompt(question, conversation_context, full_context, available_chunk_ids)
-    prompt += "\n\nRespond with ONLY valid JSON:\n{\n  \"answer\": \"your full answer here\",\n  \"has_contradiction\": true or false,\n  \"used_chunk_ids\": [\"list only chunk IDs you actually used\"]\n}"
+    prompt += "\n\nRespond with ONLY valid JSON:\n{\n  \"answer\": \"your full answer here\",\n  \"has_contradiction\": true or false,\n  \"citations\": [{\"chunk_id\": \"DOC5_CHUNK2\", \"highlight_snippets\": [\"exact phrase 1\", \"exact phrase 2\"]}]\n}"
 
     result = llm.generate_json(prompt)
     answer = result.get("answer", "Could not generate an answer.")
     has_contradiction = result.get("has_contradiction", False)
-    used_chunk_ids = result.get("used_chunk_ids", [])
+    llm_citations = result.get("citations", [])
     tokens_output = count_tokens(answer)
 
-    final_citations = [chunk_map[cid] for cid in used_chunk_ids if cid in chunk_map]
+    # Build final citations
+    final_citations = []
+    for citation in llm_citations:
+        chunk_id = citation.get("chunk_id")
+        if chunk_id and chunk_id in chunk_map:
+            chunk_meta = chunk_map[chunk_id]
+            final_citations.append({
+                "doc_id": chunk_meta["doc_id"],
+                "doc_title": chunk_meta["doc_title"],
+                "cloudinary_url": chunk_meta["cloudinary_url"],
+                "page": chunk_meta["page"],
+                "section": chunk_meta["section"],
+                "snippets": citation.get("highlight_snippets", [])
+            })
+    
+    # ✅ NEW: Include retrieved contexts (chunk texts) for RAGAS evaluation
+    # Extract chunk texts from context_blocks (they contain the actual text)
+    retrieved_contexts = []
+    for block in context_blocks:
+        # Each block contains chunks with format: [CHUNK_ID: ...]\ntext
+        # Split by CHUNK_ID markers and extract text
+        chunks_in_block = block.split('[CHUNK_ID:')
+        for chunk_part in chunks_in_block[1:]:  # Skip first part (source header)
+            # Extract text after the chunk ID line
+            lines = chunk_part.split('\n', 1)
+            if len(lines) > 1:
+                retrieved_contexts.append(lines[1].strip())
 
+    print(f"[FALLBACK] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+    
     return {
         "answer": answer,
         "has_contradiction": has_contradiction,

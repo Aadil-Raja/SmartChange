@@ -1,0 +1,265 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-05-01 18:41:18
+Chathead ID: 229
+User: k224492@nu.edu.pk
+Documents: [49, 45]
+Total Questions: 20
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+Aadil Raja's academic performance is impressive, with a **CGPA of 3.99 out of 4.0**.
+
+The **Harry Potter series**, a beloved collection of fantasy novels, was written by **J.K. Rowling**. This series consists of **seven novels** published between **1997 and 2007**, chronicling the adventures of a young wizard.
+
+In the realm of sports, **PSL** stands for the **Pakistan Super League**, a professional **Twenty20 (T20)** cricket franchise league in Pakistan. It features city-based teams competing annually in a short-format tournament, with the league officially announced in **2015** and its inaugural season taking place in **2016**.
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 2
+====================================================================================================
+
+QUESTION:
+What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?
+
+ANSWER:
+Aadil Raja attends **FAST University** in Karachi, where he is currently in his final semester pursuing a **BS in Computer Science**.
+
+The first Harry Potter book, titled **Harry Potter and the Philosopher’s Stone**, was published in **1997**.
+
+The **Pakistan Super League (PSL)** is organized and managed by the **Pakistan Cricket Board (PCB)**, which oversees various aspects of the league, including scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.
+
+GROUND TRUTH:
+Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 3
+====================================================================================================
+
+QUESTION:
+How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?
+
+ANSWER:
+Aadil Raja has achieved notable success in his academic pursuits, winning a total of **4 Gold Medals** and **1 Silver Medal** in the **BSCS Department** at **FAST University**.
+
+The title of the first book in the **Harry Potter** series is **Harry Potter and the Philosopher’s Stone**, which was published in **1997** and marks the beginning of a series of seven novels written by **J.K. Rowling**.
+
+In the realm of cricket, the **Pakistan Super League (PSL)** is played in the **Twenty20 (T20)** format, where each match consists of **20 overs per side**. The tournament features a double round-robin group stage followed by playoffs, allowing the top teams to compete for the championship.
+
+GROUND TRUTH:
+Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 4
+====================================================================================================
+
+QUESTION:
+What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?
+
+ANSWER:
+Aadil Raja's email address is **aadil2raja@gmail.com**.
+
+The **Harry Potter** series consists of a total of **7 main novels**, written by **J.K. Rowling**. The books in the series are:
+1. **Harry Potter and the Philosopher's Stone**
+2. **Harry Potter and the Chamber of Secrets**
+3. **Harry Potter and the Prisoner of Azkaban**
+4. **Harry Potter and the Goblet of Fire**
+5. **Harry Potter and the Order of the Phoenix**
+6. **Harry Potter and the Half-Blood Prince**
+7. **Harry Potter and the Deathly Hallows**
+
+The first season of the **Pakistan Super League (PSL)** took place in **2016**. The league was officially announced in **2015** and has since become a prominent cricket tournament in Pakistan.
+
+GROUND TRUTH:
+Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 5
+====================================================================================================
+
+QUESTION:
+What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?
+
+ANSWER:
+Aadil received the **Honour Roll** from **Cedar College** as part of his academic achievements.
+
+The headmaster of **Hogwarts School of Witchcraft and Wizardry** is **Albus Dumbledore**, a central character in the Harry Potter series known for his wisdom and leadership.
+
+The **Pakistan Super League (PSL)** originally started with **6 teams**:
+1. **Islamabad United**  
+2. **Karachi Kings**  
+3. **Lahore Qalandars**  
+4. **Peshawar Zalmi**  
+5. **Quetta Gladiators**  
+6. **Multan Sultans**  
+
+In 2026, the league expanded to **8 teams** with the introduction of new franchises.
+
+GROUND TRUTH:
+Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 6
+====================================================================================================
+
+QUESTION:
+From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "Aadil received the **APSACS High Achiever CAIE** from **Army Public School** as part of his academic achievements.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 45,
+          "doc_title": "Aadil_Raja_Resume123.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/gtgnefvblkwjlqbx3v23.pdf",
+          "page": 1,
+          "section": "Achievements",
+          "snippets": [
+            "APSACS High Achiever CAIE – Army Public School"
+          ]
+        }
+      ]
+    },
+    {
+      "answer": "The four Hogwarts houses are:\n\n- **Gryffindor** — bravery\n\n- **Slytherin** — ambition\n\n- **Ravenclaw** — intelligence\n\n- **Hufflepuff** — loyalty",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 49,
+          "doc_title": "harrypotterANDPSL.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/hhrs0mejllpcp7wq7tft.pdf",
+          "page": 3,
+          "section": "Hogwarts Houses",
+          "snippets": [
+            "Gryffindor — bravery",
+            "Slytherin — ambition",
+            "Ravenclaw — intelligence",
+            "Hufflepuff — loyalty"
+          ]
+        }
+      ]
+    },
+    {
+      "answer": "The two new teams added to the **Pakistan Super League (PSL)** in **2026** are the **Hyderabad Kingsmen** and **Rawalpindiz**. This expansion increased the total number of teams in the league from **six** to **eight**.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 49,
+          "doc_title": "harrypotterANDPSL.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/hhrs0mejllpcp7wq7tft.pdf",
+          "page": 5,
+          "section": "New Teams (Expansion – 2026)",
+          "snippets": [
+            "Hyderabad Kingsmen",
+            "Rawalpindiz"
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 7
+====================================================================================================
+
+QUESTION:
+What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?
+
+ANSWER:
+Aadil Raja's phone number is **+92 335 3633400**.
+
+The trait associated with **Gryffindor** is **bravery**, emphasizing courage and valor among its members.
+
+In the **2026 Pakistan Super League (PSL)** season, a total of **8 teams** competed, reflecting the league's growth and popularity.
+
+GROUND TRUTH:
+Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 8
+====================================================================================================
+
+QUESTION:
+In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?
+
+ANSWER:
+Aadil Raja started his **BS in Computer Science** at **FAST University** in **September 2022** and is currently in his final semester.
+
+The trait associated with **Slytherin** is **ambition**, reflecting the house's values of determination and the desire for success.
+
+In the **Pakistan Super League (PSL)**, a team receives **2 points for a win**. If a match ends with no result, the team gets **1 point**. This points system is part of the tournament's double round-robin format, where each team plays against the others.
+
+GROUND TRUTH:
+Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 9
+====================================================================================================
+
+QUESTION:
+What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?
+
+ANSWER:
+Aadil Raja's LinkedIn handle is **linkedin/aadil-raja**.
+
+The trait associated with **Ravenclaw** is **intelligence**, emphasizing the importance of knowledge and wisdom among its members.
+
+In the **2026 Pakistan Super League (PSL)** season, a total of **44 matches** were scheduled, reflecting the league's expansion to **8 teams**.
+
+GROUND TRUTH:
+Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================

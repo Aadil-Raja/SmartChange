@@ -65,22 +65,28 @@ class DocumentAgent:
         
         print(f"[AGENT] Initializing with provider: {provider}, model: {model_to_use}", file=sys.stderr)
         
+        # Prepare kwargs for LLM initialization
+        llm_kwargs = {"model": model_to_use, "temperature": settings.llm_temperature}
+        if settings.max_output_tokens is not None:
+            if provider == "openai":
+                llm_kwargs["max_tokens"] = settings.max_output_tokens
+            elif provider == "gemini":
+                llm_kwargs["max_output_tokens"] = settings.max_output_tokens
+        
         # Create LLM based on provider
         if provider == "openai":
             if not settings.openai_api_key:
                 raise ValueError("OpenAI API key is required for OpenAI provider")
             self.llm = ChatOpenAI(
-                model=model_to_use,
-                temperature=0,
-                api_key=settings.openai_api_key
+                api_key=settings.openai_api_key,
+                **llm_kwargs
             )
         elif provider == "gemini":
             if not settings.google_api_key:
                 raise ValueError("Google API key is required for Gemini provider")
             self.llm = ChatGoogleGenerativeAI(
-                model=model_to_use,
-                temperature=0,
-                google_api_key=settings.google_api_key
+                google_api_key=settings.google_api_key,
+                **llm_kwargs
             )
         else:
             raise ValueError(f"Unknown LLM provider: {provider}. Supported: 'openai', 'gemini'")

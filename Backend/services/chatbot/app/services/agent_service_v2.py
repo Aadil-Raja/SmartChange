@@ -28,10 +28,73 @@ class AgentFinalOutput(BaseModel):
     call_type: str = Field(default="", description="Type of tool call made")
 
 
+def _format_dict_answer(answer: str) -> str:
+    """
+    Format Python dict-like answers into readable markdown.
+    Converts {'key': 'value', 'list': [1, 2, 3]} into formatted text.
+    """
+    # Check if it looks like a Python dict
+    if not (answer.strip().startswith('{') and ':' in answer):
+        return answer
+    
+    try:
+        # Try to parse as Python literal
+        import ast
+        obj = ast.literal_eval(answer)
+        
+        # Convert to readable markdown
+        return _format_object_to_markdown(obj)
+    except:
+        # If parsing fails, return original
+        return answer
+
+
+def _format_object_to_markdown(obj, depth=0) -> str:
+    """Recursively format Python objects to markdown."""
+    if obj is None:
+        return ""
+    
+    if not isinstance(obj, (dict, list)):
+        return str(obj)
+    
+    result = []
+    
+    if isinstance(obj, list):
+        # Format arrays as bullet points
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                result.append(_format_object_to_markdown(item, depth))
+            else:
+                result.append(f"- {item}")
+        return '\n'.join(result)
+    
+    # Format dict with bold keys
+    for key, value in obj.items():
+        # Make key readable (replace underscores with spaces, capitalize)
+        readable_key = key.replace('_', ' ').title()
+        
+        if isinstance(value, list):
+            result.append(f"\n**{readable_key}:**")
+            for item in value:
+                if isinstance(item, (dict, list)):
+                    result.append(_format_object_to_markdown(item, depth + 1))
+                else:
+                    result.append(f"- {item}")
+        elif isinstance(value, dict):
+            result.append(f"\n**{readable_key}:**")
+            result.append(_format_object_to_markdown(value, depth + 1))
+        else:
+            result.append(f"**{readable_key}:** {value}")
+    
+    return '\n'.join(result)
+
+
 def _group_citations(flat_citations: list) -> list:
     """
-    Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippet}
-    into grouped list of {doc_id, doc_title, cloudinary_url, references: [{page, section, snippet}]}.
+    Convert flat list of {doc_id, doc_title, cloudinary_url, page, section, snippets}
+    into grouped list of {doc_id, doc_title, cloudinary_url, references: [{page, section, snippets}]}.
+    
+    Note: snippets is now an array of strings from the LLM, not a single string.
     """
     grouped = {}
     for c in flat_citations:
@@ -46,7 +109,7 @@ def _group_citations(flat_citations: list) -> list:
         grouped[doc_id]["references"].append({
             "page": c.get("page"),
             "section": c.get("section"),
-            "snippet": c.get("snippet")
+            "snippets": c.get("snippets", [])
         })
     return list(grouped.values())
 
@@ -70,16 +133,21 @@ Even if you think you know the answer from the history, you MUST call a tool to 
 ## CRITICAL: PASS FULL QUESTIONS TO TOOLS
 
 When calling doc_qa_multi_tool:
-- ALWAYS pass the COMPLETE user question as-is
+- ALWAYS pass the COMPLETE user question as-is in a SINGLE tool call
 - DO NOT break the question into parts yourself
 - DO NOT call the tool multiple times for one question
-- The tool will automatically handle multi-document questions internally
+- Even if the user asks multiple questions (e.g., "What is X and what is Y?"), pass the ENTIRE question as ONE string
+- The tool will automatically handle multi-part and multi-document questions internally
 - Let the tool decide if decomposition is needed
 
 Examples:
-✅ CORRECT: doc_qa_multi_tool(question="What is Aadil's GPA and what are the PSL team names?")
-❌ WRONG: Call doc_qa_multi_tool twice with separate questions
+✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's GPA and what are the PSL team names?"])
+✅ CORRECT: doc_qa_multi_tool(questions=["What are teams in PSL and tell me about FYP?"])
+❌ WRONG: Call doc_qa_multi_tool twice with questions=["What is Aadil's GPA?"] then questions=["What are PSL team names?"]
+❌ WRONG: Call doc_qa_multi_tool with questions=["What is Aadil's GPA?", "What are PSL team names?"]
 ❌ WRONG: Rewrite or simplify the user's question
+
+CRITICAL RULE: ONE user message = ONE tool call with ONE question string, no matter how many sub-questions it contains.
 
 ## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
 
@@ -110,16 +178,106 @@ Examples of enrichment:
 
 RULE: Never pass a vague short message directly to a tool. Always enrich it first. The enriched question is what you pass as the `question` argument to the tool. This enrichment happens silently — do not tell the user you are enriching the query.
 
+## HANDLING CORRECTIONS AND CLARIFICATIONS — CRITICAL
+
+When users correct a previous answer (keywords: "not", "I meant", "I said", "I asked about", "no I want"), you MUST:
+1. Detect that this is a correction - the previous answer was WRONG
+2. Identify what was WRONG in the previous answer (the term/concept to EXCLUDE)
+3. Identify what the user ACTUALLY wants (the term/concept to EMPHASIZE)
+4. Rewrite the query to emphasize what they want and explicitly exclude what was wrong
+
+Format: "What is X? I need X specifically, NOT Y. Focus only on X."
+
+Use UPPERCASE, "specifically", "only", and "NOT" so retrieval and the LLM prioritize the right information.
+
+Examples of correction requests:
+
+- User says: "I asked about college not uni"
+  History shows: Previous question was "where did Aadil study?" and answer mentioned "university"
+  Enriched question: "Which college did Aadil study at? I need information about his COLLEGE education specifically, NOT university. Focus only on college-level education."
+
+- User says: "no I meant his projects not experience"
+  History shows: Previous answer was about work experience
+  Enriched question: "What are Aadil's projects? I need information about his PROJECTS specifically, NOT his work experience. Focus only on project work."
+
+- User says: "I said PSL teams not players"
+  History shows: Previous answer listed player names
+  Enriched question: "What are the PSL team names? I need the TEAM names specifically, NOT player names. Focus only on the teams."
+
+- User says: "I want to know about his GPA not courses"
+  History shows: Previous answer listed course names
+  Enriched question: "What is Aadil's GPA? I need his GPA score specifically, NOT the course names. Focus only on the GPA number."
+
+- User says: "I meant backend not frontend"
+  History shows: Previous answer discussed frontend technologies
+  Enriched question: "What backend technologies did Aadil use? I need BACKEND technologies specifically, NOT frontend. Focus only on backend stack."
+
+CRITICAL RULES FOR CORRECTIONS:
+- Always use the format: "What is X? I need X specifically, NOT Y. Focus only on X."
+- Use UPPERCASE for the correct term (what to include)
+- Use "NOT" before the wrong term (what to exclude)
+- Use "specifically", "only", "Focus only on" to emphasize
+- This helps retrieval find the right chunks and helps the LLM focus on correct information
+- ALWAYS call doc_qa_multi_tool with the corrected enriched question
+
+## HANDLING RE-EXPLANATION REQUESTS — CRITICAL
+
+When the user asks to re-explain, elaborate, or simplify a PREVIOUS answer, you MUST:
+1. Look at the Conversation History to find the last answer and identify the topic/entity discussed
+2. Extract key details from that previous answer (names, concepts, features mentioned)
+3. Create an enriched question that includes:
+   - The specific topic name or entity
+   - Request for simple/easy explanation
+   - Key details or aspects mentioned in the previous response
+4. Call doc_qa_multi_tool with this enriched question
+
+Examples of re-explanation requests and how to enrich them:
+
+- User says: "explain in easy words"
+  History shows: Last answer was about "Aadil Raja's Digital Adoption Platform with AI chatbot, interactive guides, and analytics dashboard"
+  Enriched question: "Explain Aadil Raja's Digital Adoption Platform in simple and easy words, including what the AI chatbot does, how the interactive guides work, and what the analytics dashboard shows"
+
+- User says: "explain again"
+  History shows: Last answer discussed "PSL tournament format with 6 teams playing double round-robin"
+  Enriched question: "Explain the PSL tournament format again in detail, including how the 6 teams play in the double round-robin system and how playoffs work"
+
+- User says: "tell me more details"
+  History shows: Last answer was about "Aadil's internship at TechCorp as Backend Developer"
+  Enriched question: "Tell me more details about Aadil Raja's internship at TechCorp as a Backend Developer, including his responsibilities, technologies used, and achievements"
+
+- User says: "elaborate on that"
+  History shows: Last answer mentioned "PSL's impact on Pakistan cricket through player development and international exposure"
+  Enriched question: "Elaborate on PSL's impact on Pakistan cricket, specifically how it helps with player development and provides international exposure to local players"
+
+- User says: "in simple terms"
+  History shows: Last answer explained "microservices architecture with Docker containers and Kubernetes orchestration"
+  Enriched question: "Explain the microservices architecture in simple terms, including what Docker containers are and how Kubernetes orchestration works"
+
+- User says: "can you simplify?"
+  History shows: Last answer was about "neural network training with backpropagation and gradient descent"
+  Enriched question: "Explain neural network training in simple terms, including what backpropagation means and how gradient descent works"
+
+CRITICAL RULES FOR RE-EXPLANATION:
+- These are NOT summary requests → Do NOT call list_document_sections_tool
+- These are NOT new questions → They refer to EXISTING conversation context
+- ALWAYS enrich with: topic name + "in simple/easy words" + key details from previous answer
+- ALWAYS call doc_qa_multi_tool with the enriched question
+- The enriched question should be detailed enough to retrieve the same content but ask for simpler explanation
+
 ## TOOL SELECTION — READ THIS CAREFULLY
 
 ### ALWAYS use list_document_sections_tool when the user says ANY of:
-- "summarize", "summary", "summarise"
-- "overview", "give me an overview"
-- "what is this document about", "explain this document"
-- "what topics", "what sections", "table of contents"
-- "tell me about [document/topic]" when asking about the document as a whole
-- Anything that sounds like they want a high-level digest of the document
-- Examples: "Can you summarize this?", "Give me an overview", "What topics are covered?"
+- "summarize", "summary", "summarise" (when asking about the ENTIRE document)
+- "overview", "give me an overview" (when asking about the ENTIRE document structure)
+- "what is this document about", "what topics does this document cover"
+- "what sections", "table of contents", "list all sections"
+- Anything that asks for the DOCUMENT STRUCTURE or SECTION LIST
+- Examples: "Can you summarize this document?", "Give me an overview of what's in this document", "What topics are covered?"
+
+### NEVER use list_document_sections_tool for:
+- "explain in easy words", "explain again", "tell me more", "elaborate", "in detail", "simplify", "can you explain"
+- These are re-explanation requests → Use doc_qa_multi_tool with enriched question
+- Follow-ups about a specific topic/entity from previous answer → Use doc_qa_multi_tool
 
 ### ALWAYS use generate_section_summary_tool when:
 - User names a SPECIFIC section title (e.g. "summarize Day 3", "tell me about Chapter 2")
@@ -130,15 +288,12 @@ RULE: Never pass a vague short message directly to a tool. Always enrich it firs
 - User asks a specific factual question: "What is X?", "Who is Y?", "How does Z work?"
 - User asks for details about a named person, project, achievement, or event
 - User asks "does X include Y?", "what did X do at Y?"
+- User asks to re-explain, elaborate, or simplify a previous answer (with enrichment)
 - The question has a specific answer extractable from the document
 - User asks multiple questions in one message (the tool handles this automatically)
 - Examples: "What is the tournament format?", "Who are the notable players?", "How many teams participated?"
 - Examples: "What is Aadil's GPA and what are the PSL team names?" (pass as single question)
-
-### NEVER use doc_qa_multi_tool for:
-- Summary or overview requests — even if the user says "can you tell me more" or "in detail" after asking about a topic
-- Follow-ups about summaries should go to list_document_sections_tool
-- If the previous context was about summaries/overviews, stay with section tools
+- Examples: "explain in easy words" (after enriching with previous topic and details)
 
 ## CRITICAL INSTRUCTIONS:
 1. YOU MUST ALWAYS CALL A TOOL. NEVER answer directly without calling a tool.
@@ -167,17 +322,26 @@ REMEMBER: You are a tool-calling agent. You MUST call a tool for every user ques
 
 
 class DocumentAgentV2:
-    def __init__(self, db: Session, management_db: Session):
+    def __init__(self, db: Session, management_db: Session, chathead=None):
         self.db = db
         self.management_db = management_db
+        self.chathead = chathead  # NEW: Store chathead to access use_deep_reranker
 
         provider = settings.llm_provider.lower()
         model = settings.llm_model
 
+        # Prepare kwargs for LLM initialization
+        llm_kwargs = {"model": model, "temperature": settings.llm_temperature}
+        if settings.max_output_tokens is not None:
+            if provider == "openai":
+                llm_kwargs["max_tokens"] = settings.max_output_tokens
+            elif provider == "gemini":
+                llm_kwargs["max_output_tokens"] = settings.max_output_tokens
+
         if provider == "openai":
-            self.llm = ChatOpenAI(model=model, temperature=0, api_key=settings.openai_api_key)
+            self.llm = ChatOpenAI(api_key=settings.openai_api_key, **llm_kwargs)
         elif provider == "gemini":
-            self.llm = ChatGoogleGenerativeAI(model=model, temperature=0, google_api_key=settings.google_api_key)
+            self.llm = ChatGoogleGenerativeAI(google_api_key=settings.google_api_key, **llm_kwargs)
         else:
             raise ValueError(f"Unknown provider: {provider}")
 
@@ -247,7 +411,8 @@ class DocumentAgentV2:
         *,
         active_doc_ids: List[int],
         user_message: str,
-        doc_histories: Dict = None  # NEW: per-doc histories
+        doc_histories: Dict = None,  # NEW: per-doc histories
+        section_names_map: Dict[int, List[str]] = None  # NEW: pre-fetched sections
     ) -> Dict[str, Any]:
         from app.services.tools.doc_qa_multi import make_doc_qa_multi_tool
         from app.services.tools.section_summary_tool_v2 import (
@@ -261,8 +426,13 @@ class DocumentAgentV2:
         # Format doc histories for system prompt
         chat_history_string = self._format_doc_histories_for_prompt(doc_histories, active_doc_ids)
 
+        # Get use_deep_reranker flag from chathead
+        use_deep_reranker = self.chathead.use_deep_reranker if self.chathead else False
+        
+        print(f"[AGENT V2] Using deep reranker: {use_deep_reranker}", file=sys.stderr)
+
         tools = [
-            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories),
+            make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories, section_names_map, use_deep_reranker),
             make_list_sections_tool_v2(self.management_db, self.management_db, active_doc_ids),
             make_generate_summary_tool_v2(self.management_db, self.management_db, active_doc_ids),
         ]
@@ -308,30 +478,86 @@ class DocumentAgentV2:
                     obs = json.loads(obs)
                 except (json.JSONDecodeError, TypeError):
                     pass
-            if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input")):
+            # ✅ FIXED: Also check for retrieved_contexts to ensure it's always captured
+            if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input") or obs.get("retrieved_contexts")):
                 tool_metadata = obs
-                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}", file=sys.stderr)
+                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}, retrieved_contexts={len(obs.get('retrieved_contexts', []))} chunks", file=sys.stderr)
                 break
         
         print(f"[AGENT] raw_output type={type(raw_output)}, tool_metadata={bool(tool_metadata)}", file=sys.stderr)
 
-        # Handle both dict and JSON string responses from tools
-        # Tools now return dicts directly, but agent might still stringify them
+        # Try normal JSON parsing first
         try:
             # If raw_output is already a dict, use it directly
             if isinstance(raw_output, dict):
                 parsed = raw_output
+                print(f"[AGENT] Parsed as dict: retrieved_contexts={len(parsed.get('retrieved_contexts', []))} chunks", file=sys.stderr)
             else:
                 # Try to parse as JSON string
                 parsed = json.loads(raw_output)
+                print(f"[AGENT] Parsed from JSON: retrieved_contexts={len(parsed.get('retrieved_contexts', []))} chunks", file=sys.stderr)
+            
+            # Handle case where parsed is a list (multiple tool calls returned as array)
+            if isinstance(parsed, list):
+                print(f"[AGENT] Parsed output is a list with {len(parsed)} items, merging...", file=sys.stderr)
+                
+                # Merge all items in the list
+                merged_answers = []
+                all_citations = []
+                all_retrieved_contexts = []  # ✅ NEW: Collect all retrieved contexts
+                has_any_contradiction = False
+                total_tokens_input = 0
+                total_tokens_output = 0
+                
+                for item in parsed:
+                    if not isinstance(item, dict):
+                        continue
+                    
+                    # Collect answers
+                    ans = item.get("answer", "")
+                    if isinstance(ans, list):
+                        merged_answers.extend(ans)
+                    else:
+                        merged_answers.append(str(ans))
+                    
+                    # Deduplicate citations
+                    existing_keys = {
+                        (c.get('doc_id'), c.get('page'), c.get('section'))
+                        for c in all_citations
+                    }
+                    for citation in item.get("citations", []):
+                        key = (citation.get('doc_id'), citation.get('page'), citation.get('section'))
+                        if key not in existing_keys:
+                            all_citations.append(citation)
+                            existing_keys.add(key)
+                    
+                    # ✅ NEW: Collect retrieved contexts (no deduplication - keep all chunks)
+                    contexts = item.get("retrieved_contexts", [])
+                    if contexts:
+                        all_retrieved_contexts.extend(contexts)
+                    
+                    # Track contradictions and tokens
+                    if item.get("has_contradiction"):
+                        has_any_contradiction = True
+                    total_tokens_input += item.get("tokens_input", 0)
+                    total_tokens_output += item.get("tokens_output", 0)
+                
+                # Create merged dict
+                parsed = {
+                    "answer": "\n\n".join(str(a) for a in merged_answers if a),
+                    "citations": all_citations,
+                    "retrieved_contexts": all_retrieved_contexts,  # ✅ NEW: Include merged contexts
+                    "has_contradiction": has_any_contradiction,
+                    "tokens_input": total_tokens_input,
+                    "tokens_output": total_tokens_output,
+                    "call_type": "doc_qa"
+                }
+                print(f"[AGENT] Merged list into single response with {len(all_citations)} citations and {len(all_retrieved_contexts)} contexts", file=sys.stderr)
             
             flat_citations = parsed.get("citations", []) or tool_metadata.get("citations", [])
 
             # Use structured output schema for consistency
-            # Prefer parsed values, fall back to tool_metadata from intermediate_steps
-            raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or ""
-            if not raw_call_type:
-                raw_call_type = "doc_qa"
+            raw_call_type = parsed.get("call_type") or tool_metadata.get("call_type") or "doc_qa"
 
             # Ensure answer is always a string
             raw_answer = parsed.get("answer", str(raw_output))
@@ -342,15 +568,12 @@ class DocumentAgentV2:
                 answer=raw_answer,
                 has_contradiction=parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False),
                 citations=flat_citations,
-                # ALWAYS use tool_metadata for tokens when available — it's the raw tool output
-                # before the LLM potentially rewrites/zeroes them out.
-                # Only fall back to parsed values if tool_metadata has nothing.
                 tokens_input=tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else parsed.get("tokens_input", 0),
                 tokens_output=tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else parsed.get("tokens_output", 0),
                 call_type=raw_call_type,
             )
             
-            print(f"[AGENT] Happy path: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}, call_type={structured_response.call_type}", file=sys.stderr)
+            print(f"[AGENT] Structured parsing: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}", file=sys.stderr)
             
             return {
                 "answer": structured_response.answer,
@@ -360,72 +583,102 @@ class DocumentAgentV2:
                 "tokens_output": structured_response.tokens_output,
                 "call_type": structured_response.call_type,
             }
-        except (json.JSONDecodeError, TypeError, ValueError) as e:
-            print(f"[AGENT] Failed to parse tool output: {e}", file=sys.stderr)
-            print(f"[AGENT] Raw output type: {type(raw_output)}", file=sys.stderr)
-            print(f"[AGENT] Raw output: {str(raw_output)[:200]}...", file=sys.stderr)
-            
-            # Try to extract and merge multiple JSON objects from concatenated output
+        
+        except (json.JSONDecodeError, TypeError, ValueError, AttributeError) as e:
+            # Fallback: Use regex extraction for malformed output
+            print(f"[AGENT] JSON parsing failed: {e}, using regex fallback", file=sys.stderr)
             import re
-            json_objects = []
-            decoder = json.JSONDecoder()
-            idx = 0
-            while idx < len(raw_output):
-                try:
-                    obj, end_idx = decoder.raw_decode(raw_output, idx)
-                    if isinstance(obj, dict) and "answer" in obj:
-                        json_objects.append(obj)
-                    idx = end_idx  # end_idx is absolute position, not delta
-                except json.JSONDecodeError:
-                    idx += 1
-
-            if json_objects:
-                merged_parts = []
-                for o in json_objects:
-                    ans = o.get("answer", "")
-                    if isinstance(ans, list):
-                        ans = " ".join(str(x) for x in ans)
-                    merged_parts.append(str(ans))
-                # Use only the FIRST object's answer (tool output), not the LLM's rewrite
-                merged_answer = merged_parts[0] if merged_parts else ""
-                merged_citations = json_objects[0].get("citations", [])
-                has_contradiction = json_objects[0].get("has_contradiction", False)
+            
+            # Convert to string if it's a dict
+            if isinstance(raw_output, dict):
+                raw_str = str(raw_output)
+            else:
+                raw_str = raw_output
+            
+            print(f"[AGENT] Using regex extraction for raw output", file=sys.stderr)
+            
+            # Extract all answers (handles both "answer": and 'answer':)
+            answer_pattern = r'["\']answer["\']\s*:\s*["\']([^"\']*(?:["\']["\']|\\["\'])*[^"\']*)["\']'
+            answers = re.findall(answer_pattern, raw_str, re.DOTALL)
+            
+            # If no answers found with quotes, try without quotes (for multiline strings)
+            if not answers:
+                # Try to find answer values more broadly
+                answer_pattern2 = r'["\']answer["\']\s*:\s*(["\'])(((?!\1).)*)\1'
+                matches = re.finditer(answer_pattern2, raw_str, re.DOTALL)
+                answers = [m.group(2) for m in matches]
+            
+            # Extract has_contradiction
+            contradiction_pattern = r'["\']has_contradiction["\']\s*:\s*(true|false|True|False)'
+            contradictions = re.findall(contradiction_pattern, raw_str, re.IGNORECASE)
+            has_contradiction = any(c.lower() == 'true' for c in contradictions)
+            
+            # Extract tokens
+            tokens_input_pattern = r'["\']tokens_input["\']\s*:\s*(\d+)'
+            tokens_inputs = [int(x) for x in re.findall(tokens_input_pattern, raw_str)]
+            total_tokens_input = sum(tokens_inputs) if tokens_inputs else tool_metadata.get("tokens_input", 0)
+            
+            tokens_output_pattern = r'["\']tokens_output["\']\s*:\s*(\d+)'
+            tokens_outputs = [int(x) for x in re.findall(tokens_output_pattern, raw_str)]
+            total_tokens_output = sum(tokens_outputs) if tokens_outputs else tool_metadata.get("tokens_output", 0)
+            
+            # Build citations from extracted data
+            citations = []
+            seen_citations = set()
+            
+            # Try to extract full citation objects
+            citation_pattern = r'\{[^}]*["\']doc_id["\']\s*:\s*(\d+)[^}]*["\']doc_title["\']\s*:\s*["\']([^"\']+)["\'][^}]*\}'
+            for match in re.finditer(citation_pattern, raw_str):
+                doc_id = int(match.group(1))
+                doc_title = match.group(2)
                 
-                # Always prefer tool_metadata (from intermediate_steps) for tokens
-                # Fall back to first json_object (the actual tool output, not LLM rewrite)
-                first_obj = json_objects[0]
-                ti = tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else first_obj.get("tokens_input", 0)
-                to = tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else first_obj.get("tokens_output", 0)
-                ct = tool_metadata.get("call_type") or first_obj.get("call_type") or "doc_qa"
+                # Extract other citation fields from this block
+                block = match.group(0)
+                page_match = re.search(r'["\']page["\']\s*:\s*(\d+)', block)
+                section_match = re.search(r'["\']section["\']\s*:\s*["\']([^"\']+)["\']', block)
+                url_match = re.search(r'["\']cloudinary_url["\']\s*:\s*["\']([^"\']+)["\']', block)
                 
-                print(f"[AGENT] Multi-JSON path: tokens_input={ti}, tokens_output={to}, call_type={ct}", file=sys.stderr)
+                page = int(page_match.group(1)) if page_match else None
+                section = section_match.group(1) if section_match else None
+                url = url_match.group(1) if url_match else None
                 
-                structured_response = AgentFinalOutput(
-                    answer=merged_answer,
-                    has_contradiction=has_contradiction,
-                    citations=merged_citations,
-                    tokens_input=ti,
-                    tokens_output=to,
-                    call_type=ct,
-                )
-                
-                return {
-                    "answer": structured_response.answer,
-                    "has_contradiction": structured_response.has_contradiction,
-                    "citations": _group_citations(structured_response.citations),
-                    "tokens_input": structured_response.tokens_input,
-                    "tokens_output": structured_response.tokens_output,
-                    "call_type": structured_response.call_type,
-                }
-
-            # Last resort: return raw output as answer, use tool_metadata if available
-            print(f"[AGENT] Could not parse any JSON, returning raw output", file=sys.stderr)
-            raw_answer_str = raw_output if isinstance(raw_output, str) else str(raw_output)
+                # Deduplicate
+                key = (doc_id, page, section)
+                if key not in seen_citations:
+                    citations.append({
+                        "doc_id": doc_id,
+                        "doc_title": doc_title,
+                        "cloudinary_url": url,
+                        "page": page,
+                        "section": section
+                    })
+                    seen_citations.add(key)
+            
+            # Merge all answers
+            merged_answer = "\n\n".join(answers) if answers else str(raw_output)
+            
+            print(f"[AGENT] Regex extracted: {len(answers)} answers, {len(citations)} citations", file=sys.stderr)
+            
+            structured_response = AgentFinalOutput(
+                answer=merged_answer,
+                has_contradiction=has_contradiction or tool_metadata.get("has_contradiction", False),
+                citations=citations or tool_metadata.get("citations", []),
+                tokens_input=total_tokens_input,
+                tokens_output=total_tokens_output,
+                call_type=tool_metadata.get("call_type", "doc_qa"),
+            )
+            
+            print(f"[AGENT] Regex fallback: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}", file=sys.stderr)
+            
+            # Format dict-like answers to readable markdown
+            formatted_answer = _format_dict_answer(structured_response.answer)
+            
             return {
-                "answer": raw_answer_str,
-                "has_contradiction": tool_metadata.get("has_contradiction", False),
-                "citations": tool_metadata.get("citations", []),
-                "tokens_input": tool_metadata.get("tokens_input", 0),
-                "tokens_output": tool_metadata.get("tokens_output", 0),
-                "call_type": tool_metadata.get("call_type") or "doc_qa",
+                "answer": formatted_answer,
+                "has_contradiction": structured_response.has_contradiction,
+                "citations": _group_citations(structured_response.citations),
+                "tokens_input": structured_response.tokens_input,
+                "tokens_output": structured_response.tokens_output,
+                "call_type": structured_response.call_type,
             }
+

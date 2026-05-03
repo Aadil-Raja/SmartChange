@@ -1,0 +1,187 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-05-01 16:57:11
+Chathead ID: 226
+User: k224492@nu.edu.pk
+Documents: [49, 45]
+Total Questions: 20
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding **Aadil Raja's CGPA**.
+
+The **Harry Potter series** was written by **J.K. Rowling**. This beloved series consists of **7 books** that have captivated readers worldwide.
+
+**PSL** stands for the **Pakistan Super League**, a professional Twenty20 cricket league in Pakistan, which features teams from various cities competing in a structured format.
+
+Note: Could not retrieve information for: What is Aadil Raja's CGPA?
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 2
+====================================================================================================
+
+QUESTION:
+What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding the university Aadil attends, the year the first **Harry Potter** book was published, or the organization that manages the **Pakistan Super League (PSL)**.
+
+If you have any other questions or need information on a different topic, feel free to ask!
+
+Note: Could not retrieve information for: What university does Aadil attend?
+Note: Could not retrieve information for: In what year was the first Harry Potter book published?
+Note: Could not retrieve information for: Which organization manages the PSL?
+
+GROUND TRUTH:
+Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 3
+====================================================================================================
+
+QUESTION:
+How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding the following queries:
+
+- **How many gold medals did Aadil win?**
+- **What is the title of the first Harry Potter book?**
+- **What format of cricket is played in the PSL?**
+
+If you have any other questions or need information on different topics, feel free to ask!
+
+Note: Could not retrieve information for: How many gold medals did Aadil win?
+Note: Could not retrieve information for: What is the title of the first Harry Potter book?
+Note: Could not retrieve information for: What format of cricket is played in the PSL?
+
+GROUND TRUTH:
+Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 4
+====================================================================================================
+
+QUESTION:
+What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding **Aadil's email address**.
+
+Regarding the **Harry Potter** series, there are a total of **7 books**:
+
+1. **Harry Potter and the Philosopher's Stone**
+2. **Harry Potter and the Chamber of Secrets**
+3. **Harry Potter and the Prisoner of Azkaban**
+4. **Harry Potter and the Goblet of Fire**
+5. **Harry Potter and the Order of the Phoenix**
+6. **Harry Potter and the Half-Blood Prince**
+7. **Harry Potter and the Deathly Hallows**
+
+The **first season of the Pakistan Super League (PSL)** took place in the year **2016**.
+
+Note: Could not retrieve information for: What is Aadil's email address?
+
+GROUND TRUTH:
+Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 5
+====================================================================================================
+
+QUESTION:
+What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding the honor that **Aadil** received from **Cedar College**, the identity of the current **headmaster of Hogwarts**, or the number of original teams in the **Pakistan Super League (PSL)**.
+
+If you have any other questions or need information on a different topic, feel free to ask!
+
+Note: Could not retrieve information for: What honor did Aadil receive from Cedar College?
+Note: Could not retrieve information for: Who is the headmaster of Hogwarts?
+Note: Could not retrieve information for: How many original teams were in the PSL?
+
+GROUND TRUTH:
+Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 6
+====================================================================================================
+
+QUESTION:
+From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding the school from which **Aadil** received his **High Achiever CAIE** award.
+
+Regarding the **Hogwarts houses**, they are:
+1. **Gryffindor** - known for bravery and courage.
+2. **Hufflepuff** - known for loyalty and hard work.
+3. **Ravenclaw** - known for intelligence and wisdom.
+4. **Slytherin** - known for ambition and cunning.
+
+As for the **Pakistan Super League (PSL)**, the names of the two new teams added in **2026** have not been specified in the retrieved information.
+
+Note: Could not retrieve information for: From which school did Aadil receive his High Achiever CAIE?
+
+GROUND TRUTH:
+Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 7
+====================================================================================================
+
+QUESTION:
+What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?
+
+ANSWER:
+Unfortunately, I could not retrieve specific information regarding **Aadil's phone number** or the **trait associated with Gryffindor**. Additionally, there is no available data on how many total teams competed in the **2026 Pakistan Super League (PSL)** season. 
+
+If you have any other questions or need information on different topics, feel free to ask! 
+
+Note: Could not retrieve information for: What is Aadil's phone number? 
+Note: Could not retrieve information for: What trait is associated with Gryffindor? 
+Note: Could not retrieve information for: How many total teams competed in the 2026 PSL season?
+
+GROUND TRUTH:
+Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================

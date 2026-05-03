@@ -1,0 +1,4151 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-04-24 21:05:30
+Chathead ID: 191
+User: k224492@nu.edu.pk
+Documents: [39, 41, 45]
+Total Questions: 100
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+Aadil Raja's **CGPA** is not available in the retrieved content, so I cannot provide that information.
+
+The **Harry Potter series** was written by **J. K. Rowling**. This beloved series consists of **7 novels** published between **1997** and **2007**, chronicling the adventures of a young wizard.
+
+**PSL** stands for **Pakistan Super League**, a professional **Twenty20 (T20)** cricket franchise league in Pakistan. It features city-based teams competing annually in a tournament format similar to other global leagues. The league was officially announced in **2015**, with its inaugural season taking place in **2016**.
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 2]
+1. What is Pakistan Super League (PSL)?
+
+The Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea
+
+[Chunk 3]
+Pakistan Super League (PSL) — Detailed Overview
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 2
+====================================================================================================
+
+QUESTION:
+What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?
+
+ANSWER:
+The **first Harry Potter book**, titled **"Harry Potter and the Philosopher’s Stone,"** was published in **1997**.
+
+The **Pakistan Super League (PSL)** is organized and managed by the **Pakistan Cricket Board (PCB)**, which is responsible for scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.
+
+Unfortunately, there is no information available regarding the university that Aadil attends.
+
+GROUND TRUTH:
+Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 2]
+2. Who Organizes PSL?
+
+● PSL is organized and managed by the Pakistan Cricket Board (PCB) . ● The PCB handles scheduling, franchise agreements, player
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 3
+====================================================================================================
+
+QUESTION:
+How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?
+
+ANSWER:
+The **first Harry Potter book** is titled **"Harry Potter and the Philosopher’s Stone"**, published in **1997**.
+
+In the **Pakistan Super League (PSL**, the format of cricket played is **Twenty20 (T20)**, which features city-based teams competing in a short-format tournament.
+
+Note: No relevant information found for: How many gold medals did Aadil win?
+
+GROUND TRUTH:
+Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 2]
+1. What is Pakistan Super League (PSL)?
+
+The Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 4
+====================================================================================================
+
+QUESTION:
+What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?
+
+ANSWER:
+Aadil's email address is **aadil2raja@gmail.com**.
+
+The **Harry Potter series** consists of a total of **7 books**, listed as follows:
+
+1. **Harry Potter and the Philosopher's Stone**
+2. **Harry Potter and the Chamber of Secrets**
+3. **Harry Potter and the Prisoner of Azkaban**
+4. **Harry Potter and the Goblet of Fire**
+5. **Harry Potter and the Order of the Phoenix**
+6. **Harry Potter and the Half-Blood Prince**
+7. **Harry Potter and the Deathly Hallows**
+
+The first season of the **Pakistan Super League (PSL)** took place in **2016**.
+
+GROUND TRUTH:
+Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+AADIL RAJA
+
++92 335 3633400 aadil2raja@gmail.com linkedin/aadil-raja github/Aadil-Raja
+
+[Chunk 2]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 3]
+1. What is Pakistan Super League (PSL)?
+
+The Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 5
+====================================================================================================
+
+QUESTION:
+What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?
+
+ANSWER:
+Aadil received the **Honour Roll** from **Cedar College**.
+
+The headmaster of **Hogwarts** is **Albus Dumbledore**.
+
+The **Pakistan Super League (PSL)** originally featured **6 teams**:
+1. **Islamabad United**
+2. **Karachi Kings**
+3. **Lahore Qalandars**
+4. **Peshawar Zalmi**
+5. **Quetta Gladiators**
+6. **Multan Sultans**
+
+GROUND TRUTH:
+Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Achievements
+
+4 Gold Medals and 1 Silver Medal – BSCS Department, FAST University
+
+Honour Roll – Cedar College
+
+APSACS High Achiever CAIE – Army Publi
+
+[Chunk 2]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 3]
+Original Teams
+
+1. Islamabad United 2. Karachi Kings 3. Lahore Qalandars 4. Peshawar Zalmi 5. Quetta Gladiators 6. Multan Sultans
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 6
+====================================================================================================
+
+QUESTION:
+From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?
+
+ANSWER:
+Aadil received his **High Achiever CAIE** from **Army Public School**.
+
+The four **Hogwarts houses** are:
+- **Gryffindor** — bravery
+- **Slytherin** — ambition
+- **Ravenclaw** — intelligence
+- **Hufflepuff** — loyalty
+
+In **2026**, the two new teams added to the **Pakistan Super League (PSL)** are the **Hyderabad Kingsmen** and the **Rawalpindiz**. This expansion increased the league from six to eight teams for the first time following a franchise auction and restructuring.
+
+GROUND TRUTH:
+Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Achievements
+
+4 Gold Medals and 1 Silver Medal – BSCS Department, FAST University
+
+Honour Roll – Cedar College
+
+APSACS High Achiever CAIE – Army Publi
+
+[Chunk 2]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+[Chunk 3]
+New Teams (Expansion – 2026)
+
+● Hyderabad Kingsmen ● Rawalpindiz
+
+The league expanded from six to eight teams for the first time in 2026 , following a
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 7
+====================================================================================================
+
+QUESTION:
+What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?
+
+ANSWER:
+Aadil's contact information is as follows:
+
+- **Phone Number**: Aadil's phone number is **+92 335 3633400**.
+
+Regarding the **2026 Pakistan Super League (PSL)** season:
+
+- **Total Teams**: A total of **8 teams** competed in the 2026 PSL season, marking the first time the league included eight teams following a franchise auction and restructuring.
+
+Unfortunately, there was no relevant information found regarding the trait associated with **Gryffindor**.
+
+GROUND TRUTH:
+Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+AADIL RAJA
+
++92 335 3633400 aadil2raja@gmail.com linkedin/aadil-raja github/Aadil-Raja
+
+[Chunk 2]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 8
+====================================================================================================
+
+QUESTION:
+In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?
+
+ANSWER:
+In the **Pakistan Super League (PSL)**, a team receives **2 points** for a win. Additionally, if a match has no result, the team gets **1 point**.
+
+Unfortunately, there is no available information regarding the month and year Aadil started his **BS in Computer Science**, nor the specific traits associated with **Slytherin** from the **Harry Potter** series.
+
+GROUND TRUTH:
+Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 9
+====================================================================================================
+
+QUESTION:
+What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?
+
+ANSWER:
+Aadil's LinkedIn handle is **linkedin/aadil-raja**.
+
+The **2026 Pakistan Super League (PSL)** season includes a total of **44 matches** scheduled, reflecting an increased scale with **8 teams** participating.
+
+Note: No information was found regarding the trait associated with **Ravenclaw**.
+
+GROUND TRUTH:
+Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+AADIL RAJA
+
++92 335 3633400 aadil2raja@gmail.com linkedin/aadil-raja github/Aadil-Raja
+
+[Chunk 2]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 10
+====================================================================================================
+
+QUESTION:
+What is Aadil's GitHub handle, what trait is associated with Hufflepuff, and which team won the inaugural PSL championship in 2016?
+
+ANSWER:
+Aadil's GitHub handle is **github/Aadil-Raja**.
+
+The inaugural **Pakistan Super League (PSL)** championship in **2016** was won by **Islamabad United**.
+
+Unfortunately, there was no relevant information found regarding the trait associated with **Hufflepuff**.
+
+GROUND TRUTH:
+Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+AADIL RAJA
+
++92 335 3633400 aadil2raja@gmail.com linkedin/aadil-raja github/Aadil-Raja
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 11
+====================================================================================================
+
+QUESTION:
+What was Aadil's job title at Securiti, who is described as the complex professor in Harry Potter, and which team won the PSL in 2017?
+
+ANSWER:
+The answers to your questions are as follows:
+
+1. **Complex Professor in Harry Potter**: The complex professor in **Harry Potter** is **Severus Snape**.
+
+2. **PSL 2017 Winner**: The team that won the **Pakistan Super League (PSL)** in **2017** is **Peshawar Zalmi**.
+
+Unfortunately, I could not find any information regarding Aadil's job title at **Securiti**.
+
+GROUND TRUTH:
+Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 12
+====================================================================================================
+
+QUESTION:
+Which cloud provider's storage service did Aadil use to download logs, who is Harry Potter's intelligent best friend, and which team won the PSL in 2018?
+
+ANSWER:
+Harry Potter's intelligent best friend is **Hermione Granger**.
+
+The team that won the **Pakistan Super League (PSL)** in **2018** is **Islamabad United**.
+
+Note: No relevant information found for: Which cloud provider's storage service did Aadil use to download logs?
+
+GROUND TRUTH:
+Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 13
+====================================================================================================
+
+QUESTION:
+What containerization technologies did Aadil use during his internship, who is considered Harry's loyal friend, and which team won the PSL in 2019?
+
+ANSWER:
+During his internship, no specific information was found regarding the **containerization technologies** that Aadil used.
+
+Harry's loyal friend is **Ron Weasley**.
+
+The team that won the **Pakistan Super League (PSL)** in **2019** is the **Quetta Gladiators**.
+
+Note: No relevant information found for: What containerization technologies did Aadil use during his internship?
+
+GROUND TRUTH:
+Aadil used Docker and Kubernetes. Harry's loyal friend is Ron Weasley. Quetta Gladiators won the PSL in 2019.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 14
+====================================================================================================
+
+QUESTION:
+Where were the customer application logs indexed for centralized search in Aadil's internship, who is the main villain in the Harry Potter series, and which team won the PSL in 2020?
+
+ANSWER:
+During Aadil's internship at **Securiti**, the customer application logs were indexed into **Elasticsearch** for centralized search and analysis.
+
+In the **Harry Potter** series, the main villain is **Lord Voldemort**.
+
+The team that won the **Pakistan Super League (PSL)** in **2020** is the **Karachi Kings**.
+
+GROUND TRUTH:
+Logs were indexed in Elasticsearch. The main villain is Lord Voldemort. Karachi Kings won the PSL in 2020.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+[Chunk 2]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 3]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 15
+====================================================================================================
+
+QUESTION:
+What type of workflow did Aadil develop for orchestration at Securiti, who are the dark wizard followers of Voldemort, and which team won the PSL in 2021?
+
+ANSWER:
+Aadil developed a **CLI-based orchestration workflow** at **Securiti**, featuring configurable filters such as date ranges, customer/account scope, and keywords. This innovative workflow significantly enhanced the repeatability of troubleshooting during his internship.
+
+In the realm of **Harry Potter**, the dark wizard followers of **Voldemort** are known as the **Death Eaters**. Notable members include **Bellatrix Lestrange** and **Draco Malfoy**.
+
+Regarding the **Pakistan Super League (PSL)**, the team that emerged victorious in **2021** is the **Multan Sultans**.
+
+GROUND TRUTH:
+Aadil developed a CLI-based orchestration workflow. Voldemort's dark wizard followers are the Death Eaters. Multan Sultans won the PSL in 2021.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+[Chunk 2]
+7. Villains and Conflicts
+
+Primary villain:
+
+● Lord Voldemort
+
+Other antagonists:
+
+● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo
+
+[Chunk 3]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 16
+====================================================================================================
+
+QUESTION:
+Name the three configurable filters included in Aadil's orchestration workflow, what object allows time travel in Harry Potter, and which team won the PSL in 2022?
+
+ANSWER:
+The three configurable filters included in **Aadil's orchestration workflow** are:
+
+1. **Date ranges** - allows users to specify the time period for the workflow.
+2. **Customer/account scope** - enables filtering based on specific customers or accounts.
+3. **Keywords** - permits the inclusion of specific keywords to refine the workflow.
+
+In the **Harry Potter** series, the object that allows time travel is the **Time-Turner**, a magical device used by Hermione Granger in **"Harry Potter and the Prisoner of Azkaban"**.
+
+The team that won the **Pakistan Super League (PSL)** in **2022** is the **Lahore Qalandars**.
+
+GROUND TRUTH:
+The filters were date ranges, customer/account scope, and keywords. A Time-Turner allows time travel. Lahore Qalandars won the PSL in 2022.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 17
+====================================================================================================
+
+QUESTION:
+What platform was Aadil's automated pipeline deployed on, what magical object makes the wearer unseen, and which team won the PSL in 2023?
+
+ANSWER:
+Aadil's automated pipeline was deployed on **Kubernetes**, which provided him with hands-on experience in containerized deployments, configuration, and runtime troubleshooting.
+
+The team that won the **Pakistan Super League (PSL)** in **2023** is the **Lahore Qalandars**.
+
+Unfortunately, there was no relevant information found regarding the magical object that makes the wearer unseen in **Harry Potter**.
+
+GROUND TRUTH:
+The pipeline was deployed on Kubernetes. An Invisibility cloak makes the wearer unseen. Lahore Qalandars won the PSL in 2023.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 18
+====================================================================================================
+
+QUESTION:
+What programming language did Aadil use at Securiti, who did Harry Potter survive an attack from as a baby, and which team won the PSL in 2024?
+
+ANSWER:
+Harry Potter survived an attack from **Voldemort** as a baby, which left him orphaned and marked him as a significant figure in the wizarding world.
+
+The team that won the **Pakistan Super League (PSL)** in **2024** is **Islamabad United**.
+
+Note: No relevant information found for: What programming language did Aadil use at Securiti?
+
+GROUND TRUTH:
+Aadil programmed in Python. Harry survived a baby attack from Lord Voldemort. Islamabad United won the PSL in 2024.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+4. Story Summary
+
+The story follows Harry Potter , an orphan who discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry .
+
+●
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 19
+====================================================================================================
+
+QUESTION:
+Did Aadil handle runtime troubleshooting during his backend internship, what are horcruxes, and who were the defending PSL champions entering the 2026 season?
+
+ANSWER:
+The defending **Pakistan Super League (PSL)** champions entering the **2026 season** are the **Lahore Qalandars**, who won the championship in **2025**.
+
+Unfortunately, there is no available information regarding whether **Aadil** handled runtime troubleshooting during his backend internship or what horcruxes are.
+
+GROUND TRUTH:
+Yes, Aadil handled runtime troubleshooting. Horcruxes are magical objects. The defending champions entering 2026 were the Lahore Qalandars.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 20
+====================================================================================================
+
+QUESTION:
+What specific goal did Aadil's CLI workflow achieve for troubleshooting, what is the name of the Harry Potter stage play, and which PSL team has the most titles?
+
+ANSWER:
+The **Harry Potter** stage play is titled **"Harry Potter and the Cursed Child"**.
+
+In the **Pakistan Super League (PSL)**, the team with the most titles is **Islamabad United**, having won the championship **three times** in **2016**, **2018**, and **2024**. The **Lahore Qalandars** have also achieved success, winning titles in **2022** and **2023**, and they are the defending champions entering the **2026 season**.
+
+Unfortunately, there was no relevant information found regarding the specific goal achieved by Aadil's CLI workflow for troubleshooting.
+
+GROUND TRUTH:
+The CLI workflow improved troubleshooting repeatability. The stage play is *Harry Potter and the Cursed Child*. Islamabad United has the most PSL titles.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+8. Movies and Adaptations
+
+The books were adapted into 8 films by Warner Bros.:
+
+Movies include:
+
+1. Harry Potter and the Philosopher's Stone 2. Harry
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 21
+====================================================================================================
+
+QUESTION:
+What was the title of Aadil's Final Year Project, what are three major themes of Harry Potter, and name three notable PSL players?
+
+ANSWER:
+The title of Aadil's Final Year Project is currently unknown, as no relevant information was found regarding it.
+
+Three major themes of the **Harry Potter** series include:
+1. **Friendship and loyalty** - The bonds between characters play a crucial role in their adventures and challenges.
+2. **Good vs evil** - The struggle between good and evil forces is central to the plot, particularly represented by **Harry** and **Voldemort**.
+3. **Sacrifice** - Characters often make significant sacrifices for the greater good, highlighting the importance of selflessness and bravery.
+
+Three notable players in the **Pakistan Super League (PSL)** are:
+- **Babar Azam** - Renowned for his exceptional batting skills.
+- **Shaheen Shah Afridi** - A prominent fast bowler known for his wicket-taking ability.
+- **Mohammad Rizwan** - A key player recognized for his contributions in both batting and wicketkeeping.
+
+Note: No relevant information found for: What was the title of Aadil's Final Year Project?
+
+GROUND TRUTH:
+The FYP title is Digital Adoption Platform. Themes include friendship and loyalty, good vs evil, sacrifice, love and protection, power and corruption, or identity and destiny (any three). Notable players include Babar Azam, Shaheen Shah Afridi, Mohammad Rizwan, Shadab Khan, or Fakhar Zaman (any three).
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+5. Themes and World-Building
+
+Major themes:
+
+● Friendship and loyalty ● Good vs evil ● Sacrifice ● Love and protection ● Power and corruption ● Identi
+
+[Chunk 2]
+Notable PSL Players
+
+● Babar Azam ● Shaheen Shah Afridi ● Mohammad Rizwan ● Shadab Khan ● Fakhar Zaman
+
+These players have dominated batting, bowling,
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 22
+====================================================================================================
+
+QUESTION:
+What backend framework was used for the Digital Adoption Platform, what is the wizarding government called, and name three cities where PSL matches are played?
+
+ANSWER:
+The **Digital Adoption Platform** utilizes the **FastAPI** backend framework, along with **PostgreSQL** for its database, **Redis** for job queuing, and **Firebase Auth** for authentication.
+
+The wizarding government is not specified in the available information.
+
+The **Pakistan Super League (PSL)** matches are played in several cities, including:
+1. **Karachi**
+2. **Lahore**
+3. **Rawalpindi**
+4. **Multan**
+5. **Peshawar**
+6. **Faisalabad** (added as a venue to expand the league’s footprint)
+
+GROUND TRUTH:
+Aadil used FastAPI. The wizarding government is the Ministry of Magic. PSL matches are played in Karachi, Lahore, Rawalpindi, Multan, Peshawar, and Faisalabad (any three).
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+7. Where Matches Are Played
+
+PSL matches are played in multiple Pakistani cities, including:
+
+● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 23
+====================================================================================================
+
+QUESTION:
+What database was used in the Digital Adoption Platform, how many Harry Potter movies were made by Warner Bros, and what city was newly added as a PSL venue?
+
+ANSWER:
+The **Digital Adoption Platform** utilizes **PostgreSQL** as its database.
+
+In total, **8 Harry Potter movies** were produced by **Warner Bros**. These films, which are adaptations of the original book series, include:
+1. **Harry Potter and the Philosopher's Stone**
+2. **Harry Potter and the Chamber of Secrets**
+3. **Harry Potter and the Prisoner of Azkaban**
+4. **Harry Potter and the Goblet of Fire**
+5. **Harry Potter and the Order of the Phoenix**
+6. **Harry Potter and the Half-Blood Prince**
+7. **Harry Potter and the Deathly Hallows – Part 1**
+8. **Harry Potter and the Deathly Hallows – Part 2**.
+
+The city that was newly added as a **PSL venue** is **Faisalabad**, which was included to expand the league’s footprint.
+
+GROUND TRUTH:
+The database was PostgreSQL. Warner Bros made 8 Harry Potter movies. Faisalabad was added as a PSL venue.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+8. Movies and Adaptations
+
+The books were adapted into 8 films by Warner Bros.:
+
+Movies include:
+
+1. Harry Potter and the Philosopher's Stone 2. Harry
+
+[Chunk 3]
+7. Where Matches Are Played
+
+PSL matches are played in multiple Pakistani cities, including:
+
+● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 24
+====================================================================================================
+
+QUESTION:
+What technology functioned as the job queue for Aadil's FYP, what is the title of the second Harry Potter book, and what type of players were notably discovered through the PSL?
+
+ANSWER:
+The title of the second **Harry Potter** book is **"Harry Potter and the Chamber of Secrets"**.
+
+Notable players discovered through the **Pakistan Super League (PSL)** include:
+- **Babar Azam**
+- **Shaheen Shah Afridi**
+- **Mohammad Rizwan**
+- **Shadab Khan**
+- **Fakhar Zaman**
+
+These players have excelled in batting, bowling, and leadership roles throughout various seasons of the league.
+
+Note: No relevant information found for: What technology functioned as the job queue for Aadil's FYP?
+
+GROUND TRUTH:
+The job queue used Redis. The second book is *Harry Potter and the Chamber of Secrets*. Young talent, especially fast bowlers, was discovered.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 2]
+Notable PSL Players
+
+● Babar Azam ● Shaheen Shah Afridi ● Mohammad Rizwan ● Shadab Khan ● Fakhar Zaman
+
+These players have dominated batting, bowling,
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 25
+====================================================================================================
+
+QUESTION:
+How was user authentication managed in the Digital Adoption Platform, what is the title of the third Harry Potter book, and what impact did the PSL have on international cricket in Pakistan?
+
+ANSWER:
+User authentication in the **Digital Adoption Platform** was managed using **Firebase Auth**. This system provided a secure method for handling user authentication and lifecycle events, ensuring that users could access the platform effectively while maintaining security protocols.
+
+The title of the third Harry Potter book is **"Harry Potter and the Prisoner of Azkaban"**.
+
+The **Pakistan Super League (PSL)** has had a significant impact on international cricket in Pakistan by reviving the sport within the country. It has helped discover young talent, particularly fast bowlers, and has led to improvements in domestic infrastructure and stadium upgrades. Additionally, the PSL has increased commercial revenue and sponsorship opportunities, providing exposure to Pakistani players alongside international stars. This exposure has strengthened the T20 skills of Pakistani players, enhancing their competitiveness in global tournaments.
+
+GROUND TRUTH:
+Authentication used Firebase Auth. The third book is *Harry Potter and the Prisoner of Azkaban*. The PSL revived international cricket in Pakistan.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 3]
+8. Impact of PSL on Pakistan Cricket
+
+● Revived international cricket in Pakistan. ● Helped discover young talent (fast bowlers especially). ● Improve
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 26
+====================================================================================================
+
+QUESTION:
+For what specific audience was chatbot guidance integrated in Aadil's FYP, what is the title of the fourth Harry Potter book, and what system replaced the player draft in the 2026 PSL season?
+
+ANSWER:
+The **fourth Harry Potter book** is titled **"Harry Potter and the Goblet of Fire"**.
+
+In the **2026 Pakistan Super League (PSL)** season, the player draft was replaced by a **player auction system**. This change was part of the league's expansion to **8 teams** and included plans for matches across multiple cities.
+
+Unfortunately, there is no available information regarding the specific audience for which chatbot guidance was integrated in Aadil's FYP.
+
+GROUND TRUTH:
+Chatbot guidance was integrated for employee training. The fourth book is *Harry Potter and the Goblet of Fire*. A player auction system replaced the draft.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 2]
+9. Recent Updates & Expansion Plans (2026)
+
+● League expanded to 8 teams . ● New franchise auction held. ● Matches planned across multiple cities . ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 27
+====================================================================================================
+
+QUESTION:
+What architectural pattern was utilized for Aadil's FYP backend, what is the title of the fifth Harry Potter book, and why were some 2026 PSL matches planned without spectators?
+
+ANSWER:
+The title of the fifth **Harry Potter** book is **"Harry Potter and the Order of the Phoenix"**.
+
+Some matches in the **2026 Pakistan Super League (PSL)** were planned without spectators due to:
+- **Logistical issues**
+- **Cost-cutting measures** that led to fewer venues being used in certain planning stages
+- **Financial and scheduling competition** from other leagues
+
+Unfortunately, there is no information available regarding the architectural pattern utilized for Aadil's FYP backend.
+
+GROUND TRUTH:
+A microservices-based backend pattern was used. The fifth book is *Harry Potter and the Order of the Phoenix*. Matches were planned without spectators due to logistics.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 2]
+Recent News
+
+● The Times of India ● The Times of India ● The Times of India ● The Times of India ● PSL 2026 opened with new teams and unusual moments
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 28
+====================================================================================================
+
+QUESTION:
+Which three microservices were separated in Aadil's FYP, what is the title of the sixth Harry Potter book, and what led to fewer venues in certain PSL planning stages?
+
+ANSWER:
+The title of the sixth Harry Potter book is **"Harry Potter and the Half-Blood Prince"**.
+
+In the context of the **2026 Pakistan Super League (PSL)**, fewer venues were utilized during certain planning stages due to **cost-cutting measures** and **logistical issues**. These factors significantly impacted the overall scheduling and organization of the league.
+
+Note: No relevant information found for: Which three microservices were separated in Aadil's FYP?
+
+GROUND TRUTH:
+The microservices separated were management, chatbot, and document processing. The sixth book is *Harry Potter and the Half-Blood Prince*. Fewer venues were planned due to cost-cutting.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 2]
+Recent News
+
+● The Times of India ● The Times of India ● The Times of India ● The Times of India ● PSL 2026 opened with new teams and unusual moments
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 29
+====================================================================================================
+
+QUESTION:
+Why were background job queues configured in the Digital Adoption Platform, what is the title of the seventh Harry Potter book, and what unusual moments occurred during the first 2026 PSL match?
+
+ANSWER:
+The **Digital Adoption Platform** configured **background job queues** to manage asynchronous processing and user lifecycle events effectively. This setup enhances the platform's performance by efficiently handling tasks such as email notifications and cloud media storage.
+
+The title of the seventh Harry Potter book is **"Harry Potter and the Deathly Hallows"**.
+
+During the first match of the **2026 Pakistan Super League (PSL)**, there were some unusual moments, although specific details about these occurrences were not provided in the available content.
+
+GROUND TRUTH:
+Queues were configured to handle asynchronous processing and user lifecycle events. The seventh book is *Harry Potter and the Deathly Hallows*. The text mentions unusual moments during the first match but does not detail what they were.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 3]
+Recent News
+
+● The Times of India ● The Times of India ● The Times of India ● The Times of India ● PSL 2026 opened with new teams and unusual moments
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 30
+====================================================================================================
+
+QUESTION:
+Did the Digital Adoption Platform feature email notifications, what is the name of the spin-off movie series, and what competition does the PSL face?
+
+ANSWER:
+The **Digital Adoption Platform** features **email notifications** as part of its configuration, which enhances its performance by effectively handling asynchronous processing and user lifecycle events.
+
+The name of the spin-off movie series is **Fantastic Beasts and Where to Find Them**.
+
+The **Pakistan Super League (PSL)** faces competition from other global **Twenty20 (T20)** leagues that also feature city-based teams and attract international players. This competition can significantly impact player recruitment, viewership, and sponsorship opportunities, as fans may opt to follow other leagues that offer similar formats and entertainment value.
+
+GROUND TRUTH:
+Yes, the platform featured email notifications. The spin-off series is *Fantastic Beasts and Where to Find Them*. The PSL faces financial and scheduling competition from other leagues.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+8. Movies and Adaptations
+
+The books were adapted into 8 films by Warner Bros.:
+
+Movies include:
+
+1. Harry Potter and the Philosopher's Stone 2. Harry
+
+[Chunk 3]
+1. What is Pakistan Super League (PSL)?
+
+The Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 31
+====================================================================================================
+
+QUESTION:
+What web framework was utilized for the Indoor Booking System, what organization issued the Switchgear Maintenance manual, and what happens in PSL Eliminator 1?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "The web framework utilized for the **Indoor Booking System** is **Blazor**, which is a web application framework that allows for building interactive web UIs using C# instead of JavaScript. This project was hosted on **Microsoft Azure**.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 45,
+          "doc_title": "Aadil_Raja_Resume123.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/gtgnefvblkwjlqbx3v23.pdf",
+          "page": 1,
+          "section": "Projects",
+          "snippet": "Projects\n\nDigital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth\n\nCreated a learning management pl"
+        }
+      ]
+    },
+    {
+      "answer": "The Switchgear Maintenance manual was issued by the National Transmission & Despatch Company (NTDC).",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 1,
+          "section": "Switchgear Maintenance",
+          "snippet": "Switchgear Maintenance\n\nOrganization: National Transmission & Despatch Company (NTDC)\n\nDepartment: Distribution\n\nVersion: 1.0 Issue Date: July 2024\n\nC"
+        }
+      ]
+    },
+    {
+      "answer": "In the **PSL Eliminator 1**, the match is played between the 3rd and 4th placed teams from the group stage. The winner of this match advances to **Eliminator 2**, where they will face the loser of the **Qualifier** match, which is contested between the top two teams. The format of the PSL playoffs includes this structure to determine which teams will compete in the final.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 6,
+          "section": "4. Tournament Format & Rules",
+          "snippet": "4. Tournament Format & Rules\n\nTypical PSL format:\n\n● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+The framework was Blazor Web App. The manual was issued by the National Transmission & Despatch Company (NTDC). Eliminator 1 is played between the 3rd and 4th place teams.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 32
+====================================================================================================
+
+QUESTION:
+On which cloud platform was the Indoor Booking System hosted, what department issued the switchgear manual, and what happens in PSL Eliminator 2?
+
+ANSWER:
+The **Indoor Booking System** was hosted on **Microsoft Azure**. This project involved building and hosting a Blazor web application to understand the Azure ecosystem through a real application workflow.
+
+The department that issued the **Switchgear Maintenance** manual is the **Distribution** department of the **National Transmission & Despatch Company (NTDC)**.
+
+In **PSL Eliminator 2**, the match is played between the loser of the **Qualifier** (which is contested between the top two teams) and the winner of **Eliminator 1** (which is played between the 3rd and 4th placed teams from the group stage). The winner of Eliminator 2 then advances to the **Final** of the tournament.
+
+GROUND TRUTH:
+Hosted on Microsoft Azure. Issued by the Distribution department. Eliminator 2 is played by the loser of the Qualifier and the winner of Eliminator 1.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+Switchgear Maintenance
+
+Organization: National Transmission & Despatch Company (NTDC)
+
+Department: Distribution
+
+Version: 1.0 Issue Date: July 2024
+
+C
+
+[Chunk 3]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 33
+====================================================================================================
+
+QUESTION:
+Which Azure service was used for hosting Aadil's application, when was the switchgear manual issued, and who plays in the PSL Qualifier?
+
+ANSWER:
+The **Switchgear Maintenance** manual was issued in **July 2024**.
+
+In the **PSL Qualifier**, the match is played between the top two teams from the group stage. The winner of this match advances directly to the **Final**, while the loser gets another chance to compete in **Eliminator 2** against the winner of **Eliminator 1**.
+
+Note: No relevant information found for: Which Azure service was used for hosting Aadil's application?
+
+GROUND TRUTH:
+Azure App Service was used. The manual was issued in July 2024. The Qualifier is played between the 1st and 2nd place teams.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Switchgear Maintenance
+
+Organization: National Transmission & Despatch Company (NTDC)
+
+Department: Distribution
+
+Version: 1.0 Issue Date: July 2024
+
+C
+
+[Chunk 2]
+Notable PSL Players
+
+● Babar Azam ● Shaheen Shah Afridi ● Mohammad Rizwan ● Shadab Khan ● Fakhar Zaman
+
+These players have dominated batting, bowling,
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 34
+====================================================================================================
+
+QUESTION:
+What database service was used in the Indoor Booking System, who prepared the switchgear manual, and how many points does a team get for a "no result" in the PSL?
+
+ANSWER:
+The **Indoor Booking System** utilizes **Cosmos DB** as its database service for managing application data within the Blazor web application hosted on **Microsoft Azure**.
+
+In the **Pakistan Super League (PSL)**, a team earns **1 point** for a **no result** in a match.
+
+Unfortunately, there is no available information regarding who prepared the switchgear manual.
+
+GROUND TRUTH:
+The database service was Cosmos DB. The manual was prepared by Luqmaan Barraq. A no result gives 1 point.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 35
+====================================================================================================
+
+QUESTION:
+How did Aadil securely store secrets in Azure, who reviewed the switchgear manual, and what format is the PSL group stage?
+
+ANSWER:
+The **Pakistan Super League (PSL)** follows a structured format for its group stage and playoffs:
+
+**Group Stage:**
+- **Double round-robin format**: Each team plays every other team.
+- **Points System**: Teams earn **2 points** for a win and **1 point** for a no result.
+- The **top 4 teams** from the group stage qualify for the playoffs.
+
+**Playoffs:**
+1. **Qualifier**: 1st place vs 2nd place
+2. **Eliminator 1**: 3rd place vs 4th place
+3. **Eliminator 2**: Loser of Qualifier vs Winner of Eliminator 1
+4. **Final**: Winner of Qualifier vs Winner of Eliminator 2
+
+All matches are played in **T20 format** (20 overs per team). 
+
+Unfortunately, there is no available information regarding how Aadil securely stored secrets in Azure or who reviewed the switchgear manual.
+
+GROUND TRUTH:
+He used Azure Key Vault for secrets. Reviewed by Mahmood Damurah. The group stage follows a double round-robin format.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 36
+====================================================================================================
+
+QUESTION:
+What tool was used to view logs in Azure, who approved the switchgear manual, and how many teams qualify for the PSL playoffs?
+
+ANSWER:
+In the **Pakistan Super League (PSL)**, the **top 4 teams** qualify for the playoffs. The playoff structure includes:
+
+1. **Qualifier**: 1st place vs 2nd place  
+2. **Eliminator 1**: 3rd place vs 4th place  
+3. **Eliminator 2**: Loser of Qualifier vs Winner of Eliminator 1  
+4. **Final**: Winner of Qualifier vs Winner of Eliminator 2  
+
+All matches are played in **T20 format** (20 overs per side).  
+
+Regarding the **Switchgear Maintenance** manual issued by the **National Transmission & Despatch Company (NTDC)**, the content does not specify who approved the manual, only providing details about the organization, department, version, and issue date.  
+
+Unfortunately, there was no relevant information found regarding the tool used to view logs in **Azure**.
+
+GROUND TRUTH:
+Logs were viewed with Application Insights. Approved by the Head of Distribution. The top 4 teams qualify for the playoffs.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Switchgear Maintenance
+
+Organization: National Transmission & Despatch Company (NTDC)
+
+Department: Distribution
+
+Version: 1.0 Issue Date: July 2024
+
+C
+
+[Chunk 2]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 37
+====================================================================================================
+
+QUESTION:
+What frontend library was used to build MaslaFix, what does LOTO stand for in the switchgear manual, and where were early PSL matches played?
+
+ANSWER:
+In the context of the **switchgear manual**, LOTO stands for **Lock-Out / Tag-Out**. This procedure is mandatory and must be applied and verified by two authorized personnel to ensure safety during maintenance activities.
+
+Early **Pakistan Super League (PSL)** matches were played in multiple Pakistani cities, including:
+1. **Karachi**
+2. **Lahore**
+3. **Rawalpindi**
+4. **Multan**
+5. **Peshawar**
+6. **Faisalabad**
+
+Faisalabad was added as a venue to expand the league’s footprint.
+
+Note: No relevant information found for: What frontend library was used to build MaslaFix?
+
+GROUND TRUTH:
+The frontend library was React.js. LOTO stands for Lock-out / tag-out. Early PSL matches were played in the UAE.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+......Step 2: Circuit breaker contact resistance testing It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised pers
+
+[Chunk 2]
+7. Where Matches Are Played
+
+PSL matches are played in multiple Pakistani cities, including:
+
+● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 38
+====================================================================================================
+
+QUESTION:
+What backend runtime environment was used for MaslaFix, what does PTW stand for in the switchgear manual, and what is the full name of the Quetta PSL team?
+
+ANSWER:
+The information regarding the backend runtime environment used for **MaslaFix** is currently unavailable.
+
+In the context of the switchgear manual, **PTW** stands for **Permit-to-Work**. This is a mandatory procedure that must be obtained before starting any isolation or maintenance work to ensure safety and compliance during such activities.
+
+The full name of the **Quetta PSL team** is **Quetta Gladiators**.
+
+Note: No relevant information found for: What backend runtime environment was used for MaslaFix?
+
+GROUND TRUTH:
+The backend used Node.js. PTW stands for Permit-to-Work. The team is Quetta Gladiators.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...Relay secondary injection procedures The following procedure shall be followed: a valid Permit-to-Work (PTW) is obtained before starting any isolat
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 39
+====================================================================================================
+
+QUESTION:
+Which database system powered MaslaFix, who must supervise all switchgear maintenance work, and what is the full name of the Peshawar PSL team?
+
+ANSWER:
+The information regarding the database system that powered **MaslaFix** is currently unavailable.
+
+**Switchgear Maintenance Supervision:**  
+All switchgear maintenance work must be supervised by an **authorised Maintenance Supervisor**. This is a mandatory requirement to ensure safety and compliance during maintenance activities.
+
+**Peshawar PSL Team:**  
+The full name of the Peshawar PSL team is **Peshawar Zalmi**.
+
+Note: No relevant information found for: Which database system powered MaslaFix?
+
+GROUND TRUTH:
+Powered by MySQL. Work must be supervised by an authorised Maintenance Supervisor. The team is Peshawar Zalmi.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+.SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor.
+
+Procedure Details
+
+Relay
+
+[Chunk 2]
+......Notify the regional control centre (RCC-LHR) prior to switching. 57. Step 4: SF6 handling and GIS maintenance It is mandatory that all work is s
+
+[Chunk 3]
+.Step 2: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. 239. Step 3: SF6
+
+[Chunk 4]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 40
+====================================================================================================
+
+QUESTION:
+What is the live website URL for the MaslaFix project, what must be done with test instruments before switchgear maintenance, and what is the full name of the Karachi PSL team?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "Before switchgear maintenance, it is mandatory that test instruments are verified and calibration certificates are recorded. This ensures that all testing is accurate and compliant with safety standards. Additionally, a valid Permit-to-Work (PTW) must be obtained before starting any isolation or maintenance work.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 64,
+          "section": "Step-by-Step Procedure",
+          "snippet": "....Step 3: Circuit breaker contact resistance testing Documentary evidence shall include: test instruments are verified and calibration certificates"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 47,
+          "section": "Tools & Equipment",
+          "snippet": "..Circuit breaker contact resistance testing All staff must ensure that test instruments are verified and calibration certificates are recorded. Examp"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 72,
+          "section": "Testing & Commissioning",
+          "snippet": "....Relay secondary injection procedures The following procedure shall be followed: test instruments are verified and calibration certificates are rec"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 99,
+          "section": "Appendices & Templates",
+          "snippet": ".Notify the regional control centre (RCC-FSD) prior to switching.\n\nSF6 handling and GIS maintenance All staff must ensure that test instruments are ve"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 27,
+          "section": "Definitions & References",
+          "snippet": ".....Step 3: SF6 handling and GIS maintenance The following procedure shall be\n\nfollowed: a valid Permit-to-Work (PTW) is obtained before starting any"
+        }
+      ]
+    },
+    {
+      "answer": "The full name of the Karachi PSL team is **Karachi Kings**.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 5,
+          "section": "1. What is Pakistan Super League (PSL)?",
+          "snippet": "1. What is Pakistan Super League (PSL)?\n\nThe Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+The live URL is maslafix.com. Test instruments must be verified and calibration certificates recorded. The team is Karachi Kings.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 41
+====================================================================================================
+
+QUESTION:
+What rank did MaslaFix achieve in its section, name the three procedures outlined in the switchgear manual, and how many languages has Harry Potter been translated into?
+
+ANSWER:
+The **Harry Potter** series has been translated into **80+ languages**.
+
+Unfortunately, there is no available information regarding the rank achieved by **MaslaFix** in its section or the three procedures outlined in the switchgear manual.
+
+Note: No relevant information found for: What rank did MaslaFix achieve in its section?
+Note: No relevant information found for: What are the three procedures outlined in the switchgear manual?
+
+GROUND TRUTH:
+MaslaFix ranked Top 2 in its section. The procedures are Relay secondary injection procedures, SF6 handling and GIS maintenance, and Circuit breaker contact resistance testing. Translated into 80+ languages.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+9. Cultural Impact
+
+Harry Potter became one of the most successful franchises ever :
+
+● Over 500 million books sold ● Translated into 80+ languages ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 42
+====================================================================================================
+
+QUESTION:
+What showcase was MaslaFix selected for, what does RCC-LHR stand for in the switchgear manual, and how many copies of Harry Potter books have been sold?
+
+ANSWER:
+In the context of the **switchgear manual**, **RCC-LHR** stands for **Regional Control Centre - Lahore**. Personnel are required to notify the RCC-LHR prior to switching during maintenance procedures.
+
+Regarding the **Harry Potter** series, over **500 million** copies of the books have been sold worldwide, making it one of the most successful franchises ever.
+
+Unfortunately, there is no available information regarding the showcase for which **MaslaFix** was selected.
+
+GROUND TRUTH:
+It was selected for the FAST Think and Create Society (TnC) Open House showcase. RCC-LHR is the regional control centre in LHR. Over 500 million copies sold.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+.Notify the regional control centre (RCC-LHR) prior to switching.
+
+Relay secondary injection procedures In accordance with NTDC policy, test instrumen
+
+[Chunk 2]
+......Notify the regional control centre (RCC-LHR) prior to switching. 57. Step 4: SF6 handling and GIS maintenance It is mandatory that all work is s
+
+[Chunk 3]
+..Notify the regional control centre (RCC-LHR) prior to switching.
+
+Item Criteria Remarks
+
+Check 1
+
+Check 2
+
+Check 3
+
+Relay secondary injection proced
+
+[Chunk 4]
+9. Cultural Impact
+
+Harry Potter became one of the most successful franchises ever :
+
+● Over 500 million books sold ● Translated into 80+ languages ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 43
+====================================================================================================
+
+QUESTION:
+On what type of server was MaslaFix deployed, what does RCC-KHI stand for in the switchgear manual, and what narrative progression does the Harry Potter story follow?
+
+ANSWER:
+The information regarding the deployment of **MaslaFix** is currently unavailable, as no relevant details were found regarding the type of server used.
+
+In the context of the switchgear manual, **RCC-KHI** stands for **Regional Control Centre - Karachi**. Personnel are required to notify the RCC-KHI prior to switching during maintenance procedures.
+
+The narrative progression of the **Harry Potter** story follows a distinct arc:
+1. **Introduction**: Harry Potter, an orphan, discovers he is a wizard and attends **Hogwarts School of Witchcraft and Wizardry**.
+2. **Development**: As he learns magic and makes friends, he uncovers the mystery of surviving an attack by **Voldemort** as a baby.
+3. **Climax**: Each year at Hogwarts reveals new mysteries, leading to Voldemort's return to power.
+4. **Conclusion**: The story culminates in a final battle between good and evil, where Harry ultimately destroys Voldemort and restores peace.
+
+Thus, the narrative progresses from a school adventure to a dark fantasy and finally to a war story.
+
+GROUND TRUTH:
+Deployed on a Linux VPS. RCC-KHI is the regional control centre in KHI. The narrative goes from school adventure to dark fantasy to war story.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.....Notify the regional control centre (RCC-KHI) prior to switching.
+
+Circuit breaker contact resistance testing For safety and compliance, test inst
+
+[Chunk 2]
+4. Story Summary
+
+The story follows Harry Potter , an orphan who discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry .
+
+●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 44
+====================================================================================================
+
+QUESTION:
+Which hosting provider was used for the Linux VPS, what does RCC-ISB stand for in the switchgear manual, and what is taught academically with structured classes at Hogwarts?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "In the context of the switchgear manual, **RCC-ISB** stands for **Regional Control Centre - Islamabad**. Personnel are required to notify the RCC-ISB prior to switching during maintenance procedures.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 26,
+          "section": "Definitions & References",
+          "snippet": "....Notify the regional control centre (RCC-ISB) prior to switching.\n\nSF6 handling and GIS maintenance It is mandatory that a valid Permit-to-Work (PT"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 70,
+          "section": "Testing & Commissioning",
+          "snippet": "..Example: Insulation resistance measurements should typically exceed 479 MΩ depending on asset rating. Notify the regional control centre (RCC-ISB) p"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 82,
+          "section": "Corrective Actions",
+          "snippet": ".....Item Criteria Remarks\n\nCheck 1\n\nCheck 2\n\nCheck 3\n\nCheck 4\n\nCheck 5\n\nRelay secondary injection procedures Documentary evidence shall include: lock"
+        }
+      ]
+    },
+    {
+      "answer": "At Hogwarts, students learn magic academically through structured classes that cover various aspects of the magic system, including spells using wands, potions, charms and curses, magical creatures, and objects like the Invisibility Cloak, Time-Turner, and Horcruxes.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 3,
+          "section": "Magic System",
+          "snippet": "Magic System\n\n● Spells using wands ● Potions ● Charms and curses ● Magical creatures ● Objects like: ○ Invisibility cloak ○ Time-Turner ○ Horcruxes\n\nM"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+The hosting provider was Hostinger. RCC-ISB is the regional control centre in ISB. Magic is taught academically with structured classes.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 45
+====================================================================================================
+
+QUESTION:
+What web server software was used in MaslaFix's deployment, what does RCC-FSD stand for in the switchgear manual, and who is Draco Malfoy?
+
+ANSWER:
+The deployment of **MaslaFix** utilized **Nginx** as the web server software, which was set up on a Linux VPS (Hostinger) to host the application built with **React.js**, **Node.js**, and **MySQL**.
+
+In the context of the switchgear manual, **RCC-FSD** stands for **Regional Control Centre - Faisalabad**. It is important for personnel to notify the RCC-FSD prior to switching during maintenance procedures.
+
+**Draco Malfoy** is a prominent antagonist in the **Harry Potter** series. He belongs to the influential Malfoy family and is often depicted as a rival to **Harry Potter**. Draco is associated with dark forces, including being a follower of **Lord Voldemort** and a member of the **Death Eaters**. His character explores themes of privilege, prejudice, and the internal struggles of those raised in families with strong beliefs in blood purity.
+
+GROUND TRUTH:
+The web server was Nginx. RCC-FSD is the regional control centre in FSD. Draco Malfoy is an antagonist.
+
+RETRIEVED CHUNKS (5 total):
+
+[Chunk 1]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+[Chunk 2]
+....Notify the regional control centre (RCC-FSD) prior to switching. 160. Step 2: SF6 handling and GIS maintenance The following procedure shall be fo
+
+[Chunk 3]
+......Step 2: Circuit breaker contact resistance testing It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised pers
+
+[Chunk 4]
+.....Step 3: SF6 handling and GIS maintenance The following procedure shall be
+
+followed: a valid Permit-to-Work (PTW) is obtained before starting any
+
+[Chunk 5]
+7. Villains and Conflicts
+
+Primary villain:
+
+● Lord Voldemort
+
+Other antagonists:
+
+● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 46
+====================================================================================================
+
+QUESTION:
+What automation tool was used for the Sales Pipeline Automation project, how many personnel must verify a lock-out/tag-out, and who is Bellatrix Lestrange?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "The automation tool used for the **Sales Pipeline Automation** project is **n8n**. This tool was utilized to automate sales workflows, including lead scoring, email drafting, and meeting scheduling, which significantly reduced manual effort and sped up deal progression.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 45,
+          "doc_title": "Aadil_Raja_Resume123.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/gtgnefvblkwjlqbx3v23.pdf",
+          "page": 1,
+          "section": "Projects",
+          "snippet": "Projects\n\nDigital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth\n\nCreated a learning management pl"
+        }
+      ]
+    },
+    {
+      "answer": "Lock-out / tag-out (LOTO) must be applied and verified by **two authorised personnel** before proceeding with maintenance activities. This is a mandatory safety procedure to ensure compliance and safety during switchgear maintenance.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 97,
+          "section": "Training & Competency",
+          "snippet": "......Step 2: Circuit breaker contact resistance testing It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised pers"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 36,
+          "section": "Roles & Responsibilities",
+          "snippet": "......Example: Insulation resistance measurements should typically exceed 160 MΩ depending on asset rating. 114. Step 3: Relay secondary injection pro"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 66,
+          "section": "Step-by-Step Procedure",
+          "snippet": ".....SF6 handling and GIS maintenance It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised personnel. Example: Ins"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 41,
+          "section": "Safety Precautions",
+          "snippet": "...Step 1: SF6 handling and GIS maintenance In accordance with NTDC policy, lock-out / tag-out (LOTO) is applied and verified by two authorised person"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 89,
+          "section": "Records & Documentation",
+          "snippet": ".....Relay secondary injection procedures The following procedure shall be followed: lock- out / tag-out (LOTO) is applied and verified by two authori"
+        }
+      ]
+    },
+    {
+      "answer": "**Bellatrix Lestrange** is one of the antagonists in the **Harry Potter** series. She is a devoted follower of **Lord Voldemort** and a member of the **Death Eaters**, who are dark wizard followers. Bellatrix is known for her sadistic nature and loyalty to Voldemort, making her a significant villain in the conflicts against Harry Potter and his allies.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 3,
+          "section": "7. Villains and Conflicts",
+          "snippet": "7. Villains and Conflicts\n\nPrimary villain:\n\n● Lord Voldemort\n\nOther antagonists:\n\n● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+The tool used was n8n. LOTO is verified by two authorised personnel. Bellatrix Lestrange is an antagonist.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 47
+====================================================================================================
+
+QUESTION:
+What CRM platform was integrated with n8n, what is the insulation resistance example given in step 3 of SF6 handling on page 131, and what are the followers of Voldemort called?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "In the context of SF6 handling and GIS maintenance, the insulation resistance measurements should typically exceed **306 MΩ** depending on asset rating, as stated in step 3 of the procedure.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 105,
+          "section": "Appendices & Templates",
+          "snippet": ".....Step 3: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insu"
+        }
+      ]
+    },
+    {
+      "answer": "The followers of Voldemort are called the **Death Eaters**. They are dark wizard followers who are loyal to Voldemort and participate in his quest for power and domination over the wizarding world.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 3,
+          "section": "7. Villains and Conflicts",
+          "snippet": "7. Villains and Conflicts\n\nPrimary villain:\n\n● Lord Voldemort\n\nOther antagonists:\n\n● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+Pipedrive CRM was integrated. The resistance is 362 MΩ. Followers are called Death Eaters.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 48
+====================================================================================================
+
+QUESTION:
+What was the business value of generating outreach automatically in Aadil's project, what is the insulation resistance example given in step 1 of relay secondary injection on page 144, and what kind of creatures are mentioned in the wizarding world?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "In the context of relay secondary injection procedures, the insulation resistance measurements should typically exceed **498 MΩ** depending on asset rating, as stated in step 1 of the procedure on page 144.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 60,
+          "section": "Step-by-Step Procedure",
+          "snippet": "Step-by-Step Procedure\n\nRelay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor"
+        }
+      ]
+    },
+    {
+      "answer": "In the wizarding world, various magical creatures are mentioned, including **dragons** and **elves**. These creatures are part of the rich tapestry of the hidden magical society, which also includes elements like the Ministry of Magic, a magical economy, and magical schools.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 2,
+          "section": "5. Themes and World-Building",
+          "snippet": "5. Themes and World-Building\n\nMajor themes:\n\n● Friendship and loyalty ● Good vs evil ● Sacrifice ● Love and protection ● Power and corruption ● Identi"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+The value was reducing manual effort and speeding up deal progression. Page 144 does not contain an insulation resistance example for step 1 of relay injection. Magical creatures include dragons and elves.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 49
+====================================================================================================
+
+QUESTION:
+What skill did Aadil use to ensure desired AI responses, what is the insulation resistance example given in step 5 of circuit breaker testing on page 165, and who destroys Voldemort at the end of the story?
+
+ANSWER:
+Aadil's specific skill to ensure desired AI responses was not identified in the available information.
+
+In the context of **circuit breaker testing**, the insulation resistance measurements given in **step 5** should typically exceed **117 MΩ**, depending on the asset rating. This measurement is crucial for ensuring compliance and safety during maintenance activities.
+
+At the end of the story, **Harry Potter** destroys **Voldemort**, restoring peace after the final battle between good and evil.
+
+Note: No relevant information found for: What skill did Aadil use to ensure desired AI responses?
+
+GROUND TRUTH:
+Aadil used prompt engineering. The resistance is 326 MΩ. Harry Potter destroys Voldemort.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.Step 5: Circuit breaker contact resistance testing In accordance with NTDC policy, a valid Permit-to-Work (PTW) is obtained before starting any isola
+
+[Chunk 2]
+4. Story Summary
+
+The story follows Harry Potter , an orphan who discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry .
+
+●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 50
+====================================================================================================
+
+QUESTION:
+Why were JSON parsing snippets used in the freelance project, what is the insulation resistance example given in step 2 of SF6 handling on page 190, and what does Harry discover about his past as a baby?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "In the context of SF6 handling, the insulation resistance measurements given in step 2 should typically exceed **492 MΩ** depending on asset rating, as stated in the retrieved content.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 20,
+          "section": "Scope",
+          "snippet": ".....Step 2: SF6 handling and GIS maintenance It is mandatory that a valid Permit-to-\n\nWork (PTW) is obtained before starting any isolation or mainten"
+        }
+      ]
+    },
+    {
+      "answer": "Harry discovers that he survived an attack by **Voldemort** as a baby. This event is pivotal in his life, as it marks the beginning of his journey into the wizarding world and sets the stage for his ongoing conflict with Voldemort throughout the series.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 2,
+          "section": "4. Story Summary",
+          "snippet": "4. Story Summary\n\nThe story follows Harry Potter , an orphan who discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry .\n\n●"
+        }
+      ]
+    }
+  ]
+}
+
+GROUND TRUTH:
+JSON parsing was used to extract needed outputs so n8n workflows run correctly and consistently. The resistance is 218 MΩ. Harry discovered he survived an attack by Voldemort as a baby.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 51
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 3 of SF6 handling on page 191, what city is the home of the Kingsmen PSL team, and what programming language is associated with FastAPI?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of SF6 handling, the insulation resistance measurements given in step 3 should typically exceed **306 MΩ** depending on asset rating, as stated in the retrieved content.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 105,
+          "section": "Appendices & Templates",
+          "snippet": ".....Step 3: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insu"
+        }
+      ]
+    },
+    {
+      "answer": "The home city of the **Kingsmen** PSL team is **Hyderabad**. This team was added to the league in 2026 as part of the expansion.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 7,
+          "section": "7. Where Matches Are Played",
+          "snippet": "7. Where Matches Are Played\n\nPSL matches are played in multiple Pakistani cities, including:\n\n● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 101 MΩ. The Kingsmen play in Hyderabad. Python is associated with FastAPI.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 52
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of circuit breaker testing on page 223, what city is the home of the Qalandars PSL team, and what programming language is associated with React.js?
+
+ANSWER:
+In the context of circuit breaker testing, the insulation resistance measurements given in **step 1** should typically exceed **417 MΩ** depending on asset rating.
+
+The home city of the **Lahore Qalandars** PSL team is **Lahore**. They have been successful in the league, winning the championship in **2022** and **2023**.
+
+Unfortunately, no relevant information was found regarding the programming language associated with **React.js**.
+
+GROUND TRUTH:
+The resistance is 494 MΩ. The Qalandars play in Lahore. React.js is listed alongside Node.js, part of a JavaScript stack.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-
+
+to-Work (PTW) is obtained before starting any isolation or
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 53
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of circuit breaker testing on page 224, what city is the home of the Sultans PSL team, and what is Redis primarily used for in Aadil's FYP?
+
+ANSWER:
+In the context of **circuit breaker testing**, the insulation resistance measurements in **step 2** should typically exceed **174 MΩ**, depending on the asset rating.
+
+The home city of the **Multan Sultans** PSL team is **Multan**. This team has been a part of the **Pakistan Super League** since its inception and has achieved notable success in the league.
+
+Unfortunately, there is no relevant information available regarding what **Redis** is primarily used for in **Aadil's FYP**.
+
+Note: No relevant information found for: What is Redis primarily used for in Aadil's FYP?
+
+GROUND TRUTH:
+The resistance is 495 MΩ. The Sultans play in Multan. Redis was used as a Job Queue.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:
+
+lock-out / tag-out (LOTO) is applied and verified by two au
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+[Chunk 3]
+7. Where Matches Are Played
+
+PSL matches are played in multiple Pakistani cities, including:
+
+● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 54
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of relay secondary injection on page 200, what city is the home of the Zalmi PSL team, and what service did Aadil use for cloud media storage in his FYP?
+
+ANSWER:
+In the context of relay secondary injection procedures, the **insulation resistance** measurements given in **step 2** should typically exceed **212 MΩ** depending on asset rating.
+
+The home city of the **Peshawar Zalmi** PSL team is **Peshawar**. This team has been a significant competitor in the **Pakistan Super League**, winning the championship in **2017**.
+
+Unfortunately, no relevant information was found regarding the service that **Aadil** used for cloud media storage in his **FYP**.
+
+GROUND TRUTH:
+The resistance is 240 MΩ. The Zalmi play in Peshawar. Aadil configured cloud media storage for his FYP, but the specific service is unnamed.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+...Step 2: Relay secondary injection procedures In accordance with NTDC policy, all work is supervised by an authorised Maintenance Supervisor. Exampl
+
+[Chunk 3]
+.....Example: Insulation resistance measurements should typically exceed 462 MΩ depending on asset rating.
+
+Relay secondary injection procedures For s
+
+[Chunk 4]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 55
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 4 of relay secondary injection on page 201, what city is the home of the Gladiators PSL team, and what environment was used to run Aadil's Kubernetes pipeline?
+
+ANSWER:
+In the context of relay secondary injection procedures, the insulation resistance measurements given in **step 4** should typically exceed **387 MΩ** depending on asset rating.
+
+The home city of the **Quetta Gladiators** PSL team is **Quetta**. This team has been a significant competitor in the **Pakistan Super League**, winning the championship in **2019**.
+
+Aadil's Kubernetes pipeline was run in an environment that utilized **Docker** for containerization, allowing for efficient deployment and management of applications. The pipeline was specifically designed to download customer application logs from **AWS S3**, parse and transform them, and then index them into **Elasticsearch** for centralized search and analysis.
+
+GROUND TRUTH:
+The resistance is 306 MΩ. The Gladiators play in Quetta. The Kubernetes pipeline ran on AWS S3 for storage, but the cloud hosting the cluster isn't specified.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+...Step 4: Relay secondary injection procedures For safety and compliance, a valid Permit-to-Work (PTW) is obtained before starting any isolation or m
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+[Chunk 3]
+7. Where Matches Are Played
+
+PSL matches are played in multiple Pakistani cities, including:
+
+● Karachi ● Lahore ● Rawalpindi ● Multan ● Peshawar ● Fa
+
+[Chunk 4]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 56
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of SF6 handling on page 240, who is the current defending champion of the PSL going into 2026, and what type of database is PostgreSQL?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in step 1 should typically exceed **198 MΩ** depending on asset rating.
+
+The current defending champion of the **Pakistan Super League (PSL)** going into **2026** is the **Lahore Qalandars**, who won the championship in **2025**.
+
+Unfortunately, no relevant information was found regarding the type of database that **PostgreSQL** is.
+
+Note: No relevant information found for: What type of database is PostgreSQL?
+
+GROUND TRUTH:
+The text does not give an insulation resistance example for step 1 on page 240. The defending champion entering 2026 is the Lahore Qalandars. PostgreSQL is a database (type unspecified in source).
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...Step 1: SF6 handling and GIS maintenance In accordance with NTDC policy, lock-out / tag-out (LOTO) is applied and verified by two authorised person
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 57
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of SF6 handling on page 241, what PSL team won three titles including 2024, and what type of database is Cosmos DB?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of **SF6 handling**, the insulation resistance measurements given in **step 2** should typically exceed **320 MΩ** depending on asset rating, as stated in the retrieved content.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 62,
+          "section": "Step-by-Step Procedure",
+          "snippet": "..Step 2: SF6 handling and GIS maintenance For safety and compliance, lock-out / tag-out (LOTO) is applied and verified by two authorised personnel. E"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 20,
+          "section": "Scope",
+          "snippet": ".....Step 2: SF6 handling and GIS maintenance It is mandatory that a valid Permit-to-\n\nWork (PTW) is obtained before starting any isolation or mainten"
+        }
+      ]
+    },
+    {
+      "answer": "The **Islamabad United** is the PSL team that has won three titles, including the championship in **2024**. Their previous title victories were in **2016** and **2018**.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 6,
+          "section": "5. PSL Champions by Year",
+          "snippet": "5. PSL Champions by Year\n\nYear Winner\n\n2016 Islamabad United\n\n2017 Peshawar Zalmi\n\n2018 Islamabad United\n\n2019 Quetta Gladiators\n\n2020 Karachi Kings"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 334 MΩ. Islamabad United won three titles. Cosmos DB is a database for application data in Azure.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 58
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of circuit breaker testing on page 243, what PSL team won the title in 2020, and what type of database is MySQL?
+
+ANSWER:
+In the context of **circuit breaker testing**, the insulation resistance measurements given in **step 1** should typically exceed **417 MΩ** depending on asset rating. This is a crucial requirement to ensure safety and compliance during maintenance activities.
+
+The **Pakistan Super League (PSL)** team that won the title in **2020** is the **Karachi Kings**.
+
+Regarding MySQL, no relevant information was found to specify the type of database it is.
+
+Note: No relevant information found for: What type of database is MySQL?
+
+GROUND TRUTH:
+No insulation resistance example is given for step 1 on page 243. Karachi Kings won in 2020. MySQL is a database system.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-
+
+to-Work (PTW) is obtained before starting any isolation or
+
+[Chunk 2]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 59
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of circuit breaker testing on page 243, what PSL team won the title in 2021, and what technology did Aadil use for parsing customer logs?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of **circuit breaker testing**, the insulation resistance measurements given in **step 2** should typically exceed **174 MΩ** depending on asset rating. This is crucial for ensuring safety and compliance during maintenance activities.\n\nAdditionally, the **Pakistan Super League (PSL)** team that won the title in **2021** is the **Multan Sultans**.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 10,
+          "section": "Purpose",
+          "snippet": "...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:\n\nlock-out / tag-out (LOTO) is applied and verified by two au"
+        },
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 6,
+          "section": "5. PSL Champions by Year",
+          "snippet": "5. PSL Champions by Year\n\nYear Winner\n\n2016 Islamabad United\n\n2017 Peshawar Zalmi\n\n2018 Islamabad United\n\n2019 Quetta Gladiators\n\n2020 Karachi Kings"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 470 MΩ. Multan Sultans won in 2021. Aadil used Python, Docker, Kubernetes, and Elasticsearch for log parsing.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 60
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of relay secondary injection on page 251, what was the first year the PSL had 8 teams, and what tool did Aadil use for sales automation?
+
+ANSWER:
+In the context of **relay secondary injection procedures**, the insulation resistance measurements given in **step 2** should typically exceed **212 MΩ** depending on asset rating.
+
+The first year the **Pakistan Super League (PSL)** had **8 teams** was **2026**, following a franchise auction and restructuring that expanded the league from six to eight teams.
+
+Unfortunately, there is no relevant information available regarding the tool that **Aadil** used for sales automation.
+
+Note: No relevant information found for: What tool did Aadil use for sales automation?
+
+GROUND TRUTH:
+Step 2 on page 251 does not give an insulation resistance example. 2026 was the first year with 8 teams. He used n8n and Pipedrive for sales automation.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+New Teams (Expansion – 2026)
+
+● Hyderabad Kingsmen ● Rawalpindiz
+
+The league expanded from six to eight teams for the first time in 2026 , following a
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 61
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of SF6 handling on page 253, what is the core theme involving power in Harry Potter, and what framework is associated with Blazor?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in **step 1** should typically exceed **198 MΩ** depending on asset rating, as stated in the retrieved content.
+
+Unfortunately, no relevant information was found regarding the core theme involving power in **Harry Potter** or the framework associated with **Blazor**.
+
+GROUND TRUTH:
+The resistance is 120 MΩ. Power and corruption is a core theme. Blazor is associated with a Blazor Web App.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.....Step 3: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insu
+
+[Chunk 2]
+......Example: Insulation resistance measurements should typically exceed 146 MΩ depending on asset rating.
+
+SF6 handling and GIS maintenance It is ma
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 62
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of SF6 handling on page 253, what is the core theme involving identity in Harry Potter, and what cloud ecosystem provides Key Vault?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in **step 2** should typically exceed **320 MΩ** depending on asset rating, as stated in the retrieved content.
+
+Unfortunately, no relevant information was found regarding the core theme involving identity in **Harry Potter** or the cloud ecosystem that provides **Key Vault**. 
+
+This indicates a gap in the available data for those specific inquiries.
+
+Note: No relevant information found for: What is the core theme involving identity in Harry Potter?
+Note: No relevant information found for: What cloud ecosystem provides Key Vault?
+
+GROUND TRUTH:
+The resistance is 300 MΩ. Identity and destiny is a core theme. Microsoft Azure provides Key Vault.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.....Step 2: SF6 handling and GIS maintenance It is mandatory that a valid Permit-to-
+
+Work (PTW) is obtained before starting any isolation or mainten
+
+[Chunk 2]
+......Step 1: SF6 handling and GIS maintenance All staff must ensure that a valid Permit-to-Work (PTW) is obtained before starting any isolation or ma
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 63
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of circuit breaker testing on page 255, what magical object is used for invisibility, and what is Nginx typically used for?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of **circuit breaker testing**, the insulation resistance measurements given in **step 1** should typically exceed **417 MΩ** depending on asset rating. This is crucial for ensuring safety and compliance during maintenance activities.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 8,
+          "section": "Purpose",
+          "snippet": "..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-\n\nto-Work (PTW) is obtained before starting any isolation or"
+        }
+      ]
+    },
+    {
+      "answer": "The magical object used for invisibility is the **Invisibility Cloak**. This object is part of the magical items mentioned in the context of the Harry Potter series, which also includes other significant magical objects like the Time-Turner and Horcruxes.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 3,
+          "section": "Magic System",
+          "snippet": "Magic System\n\n● Spells using wands ● Potions ● Charms and curses ● Magical creatures ● Objects like: ○ Invisibility cloak ○ Time-Turner ○ Horcruxes\n\nM"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 198 MΩ. An invisibility cloak is used for invisibility. Nginx is used as web server software on a Linux VPS.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 64
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of SF6 handling on page 258, what magical object is used to reverse time, and what is Pipedrive?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in **step 2** should typically exceed **320 MΩ** depending on asset rating, as stated in the retrieved content.
+
+Unfortunately, there is no relevant information available regarding the magical object used to reverse time.
+
+Additionally, there is no information found about **Pipedrive** in the retrieved content.
+
+GROUND TRUTH:
+The resistance is 477 MΩ. A Time-Turner is used to reverse time. Pipedrive is a CRM.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+..Step 2: SF6 handling and GIS maintenance For safety and compliance, lock-out / tag-out (LOTO) is applied and verified by two authorised personnel. E
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 65
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 3 of SF6 handling on page 260, what magical object contains fragments of a soul, and what is Docker used for?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in **step 3** should typically exceed **471 MΩ** depending on asset rating, as stated in the retrieved content.
+
+Unfortunately, there was no relevant information found regarding the magical object that contains fragments of a soul or the specific uses of **Docker**.
+
+GROUND TRUTH:
+The step on page 259/260 gives 200 MΩ. Horcruxes contain soul fragments (implied by objects list). Docker is a containerization technology.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+..Step 2: SF6 handling and GIS maintenance For safety and compliance, lock-out / tag-out (LOTO) is applied and verified by two authorised personnel. E
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 66
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of circuit breaker testing on page 269, who played the villainous role of Bellatrix Lestrange's master, and what is Firebase used for?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of **circuit breaker testing**, the insulation resistance measurements given in **step 2** should typically exceed **174 MΩ** depending on asset rating. This is crucial for ensuring safety and compliance during maintenance activities.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 10,
+          "section": "Purpose",
+          "snippet": "...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:\n\nlock-out / tag-out (LOTO) is applied and verified by two au"
+        }
+      ]
+    },
+    {
+      "answer": "The villainous role of Bellatrix Lestrange's master is played by **Lord Voldemort**. He is the primary villain in the Harry Potter series, and Bellatrix Lestrange is one of his devoted followers, along with other antagonists such as Draco Malfoy and the Death Eaters.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 3,
+          "section": "7. Villains and Conflicts",
+          "snippet": "7. Villains and Conflicts\n\nPrimary villain:\n\n● Lord Voldemort\n\nOther antagonists:\n\n● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 289 MΩ. Voldemort is Bellatrix's master. Firebase Auth is used for user authentication.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 67
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of relay secondary injection on page 289, who is the headmaster of Hogwarts, and what did Aadil use Elasticsearch for?
+
+ANSWER:
+In the context of **relay secondary injection procedures**, the insulation resistance measurements given in **step 1** should typically exceed **126 MΩ** depending on asset rating.
+
+The headmaster of Hogwarts is **Albus Dumbledore**.
+
+Unfortunately, there is no relevant information available regarding what Aadil used **Elasticsearch** for.
+
+Note: No relevant information found for: What did Aadil use Elasticsearch for?
+
+GROUND TRUTH:
+The resistance is 392 MΩ. Albus Dumbledore is the headmaster. Elasticsearch was used for centralized search and analysis of logs.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.SF6 handling and GIS maintenance Documentary evidence shall include: test instruments are verified and calibration certificates are recorded.
+
+Relay
+
+[Chunk 2]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 68
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of relay secondary injection on page 290, what is Hermione's last name, and what did Aadil use AWS S3 for?
+
+ANSWER:
+In the context of **relay secondary injection procedures**, the insulation resistance measurements given in **step 2** should typically exceed **212 MΩ** depending on asset rating, as stated in the retrieved content.
+
+Unfortunately, there is no relevant information available regarding Hermione's last name or what Aadil used **AWS S3** for.
+
+Note: No relevant information found for: What is Hermione's last name?
+Note: No relevant information found for: What did Aadil use AWS S3 for?
+
+GROUND TRUTH:
+The resistance is 161 MΩ. Hermione's last name is Granger. AWS S3 was used to download customer logs.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 69
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 3 of relay secondary injection on page 291, what is Ron's last name, and what was MaslaFix built for?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In the context of **relay secondary injection procedures**, the insulation resistance measurements given in **step 3** should typically exceed **183 MΩ** depending on asset rating, as stated in the retrieved content.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 36,
+          "section": "Roles & Responsibilities",
+          "snippet": "......Example: Insulation resistance measurements should typically exceed 160 MΩ depending on asset rating. 114. Step 3: Relay secondary injection pro"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 56,
+          "section": "Pre-Maintenance Checks",
+          "snippet": "...Step 2: Relay secondary injection procedures In accordance with NTDC policy, all work is supervised by an authorised Maintenance Supervisor. Exampl"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 487 MΩ. Ron's last name is Weasley. MaslaFix is a web platform for coordinating services between clients and providers.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 70
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of SF6 handling on page 105, what is Albus's last name, and what is the Digital Adoption Platform meant to do?
+
+ANSWER:
+In the context of **SF6 handling**, the insulation resistance measurements given in **step 1** should typically exceed **455 MΩ** depending on asset rating.
+
+Regarding Albus's last name, no relevant information was found.
+
+The **Digital Adoption Platform** is designed to create a learning management platform that includes features such as:
+- **Course administration**
+- **Team onboarding**
+- **Progress tracking**
+- **Integrated chatbot guidance** for employee training
+
+It utilizes a **microservices-based backend architecture**, which allows for a clear separation of concerns across various services, improving maintainability and enabling independent scaling. Additionally, it is configured to handle asynchronous processing and user lifecycle events through background job queues, authentication, cloud media storage, and email notifications.
+
+Note: No relevant information found for: What is Albus's last name?
+
+GROUND TRUTH:
+The resistance is 342 MΩ. Albus's last name is Dumbledore. The Digital Adoption Platform is a learning management platform for employee training.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+...Step 1: SF6 handling and GIS maintenance In accordance with NTDC policy, lock-out / tag-out (LOTO) is applied and verified by two authorised person
+
+[Chunk 2]
+.....Step 2: SF6 handling and GIS maintenance It is mandatory that a valid Permit-to-
+
+Work (PTW) is obtained before starting any isolation or mainten
+
+[Chunk 3]
+Projects
+
+Digital Adoption Platform (Final Year Project - 1) — FastAPI, PostgreSQL, Redis (Job Queue), Firebase Auth
+
+Created a learning management pl
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 71
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 2 of relay secondary injection on page 252, which PSL team did Fakhar Zaman play for, and what was Aadil's role in the Sales Pipeline Automation project?
+
+ANSWER:
+In the context of relay secondary injection procedures, the **Regional Control Centre (RCC)** that must be notified in step 2 is **RCC-KHI** (Regional Control Centre - Karachi) prior to switching. This is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Fakhar Zaman played for the **Lahore Qalandars** in the **Pakistan Super League (PSL)**.
+
+Unfortunately, there is no relevant information available regarding Aadil's role in the **Sales Pipeline Automation project**.
+
+Note: No relevant information found for: What was Aadil's role in the Sales Pipeline Automation project?
+
+GROUND TRUTH:
+RCC-KHI is notified. Fakhar Zaman is a notable player, but his team is unlisted. Aadil's role was as a Freelancer.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...Step 2: Relay secondary injection procedures Documentary evidence shall include: lock-out / tag-out (LOTO) is applied and verified by two authorise
+
+[Chunk 2]
+Notable PSL Players
+
+● Babar Azam ● Shaheen Shah Afridi ● Mohammad Rizwan ● Shadab Khan ● Fakhar Zaman
+
+These players have dominated batting, bowling,
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 72
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 3 of relay secondary injection on page 300, what is the full name of the cricket board in Pakistan, and what is the highest possible CGPA at Aadil's university?
+
+ANSWER:
+In response to your questions:
+
+1. **RCC Notified in Step 3**: The **RCC** that must be notified in **step 3** of relay secondary injection on page **300** is **RCC-FSD** (Regional Control Centre - Faisalabad). This step is crucial for ensuring safety and compliance during maintenance activities.
+
+2. **Full Name of the Cricket Board in Pakistan**: The full name of the cricket board in Pakistan is the **Pakistan Cricket Board (PCB)**. The PCB is responsible for organizing and managing the **Pakistan Super League (PSL)**, including scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.
+
+3. **Highest Possible CGPA at Aadil's University**: Unfortunately, no relevant information was found regarding the highest possible **CGPA** at Aadil's university.
+
+Note: No relevant information found for: What is the highest possible CGPA at Aadil's university.
+
+GROUND TRUTH:
+RCC-ISB is notified. PCB is the Pakistan Cricket Board. The highest CGPA scale is 4.0.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...Step 2: Relay secondary injection procedures In accordance with NTDC policy, all work is supervised by an authorised Maintenance Supervisor. Exampl
+
+[Chunk 2]
+2. Who Organizes PSL?
+
+● PSL is organized and managed by the Pakistan Cricket Board (PCB) . ● The PCB handles scheduling, franchise agreements, player
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 73
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 5 of SF6 handling on page 334, what year was the Deathly Hallows published, and what does TnC stand for in Aadil's resume?
+
+ANSWER:
+In step 5 of **SF6 handling** on page 334, the **Regional Control Centre (RCC)** that must be notified is **RCC-KHI** (Regional Control Centre - Karachi). This notification is crucial for ensuring safety and compliance during maintenance activities.
+
+The **Deathly Hallows** was published in **2007**.
+
+Unfortunately, there is no relevant information available regarding what **TnC** stands for in Aadil's resume.
+
+Note: No relevant information found for: What does TnC stand for in Aadil's resume?
+
+GROUND TRUTH:
+RCC-KHI is notified. *Deathly Hallows* was published in 2007. TnC stands for Think and Create Society.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+....Step 4: SF6 handling and GIS maintenance Documentary evidence shall include: test instruments are verified and calibration certificates are record
+
+[Chunk 2]
+......Notify the regional control centre (RCC-LHR) prior to switching. 57. Step 4: SF6 handling and GIS maintenance It is mandatory that all work is s
+
+[Chunk 3]
+..69. Step 2: SF6 handling and GIS maintenance In accordance with NTDC policy, test
+
+instruments are verified and calibration certificates are recorde
+
+[Chunk 4]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 74
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 1 of circuit breaker testing on page 351, what is the subtitle of the first Harry Potter movie, and what was the main academic focus for Aadil's Azure project?
+
+ANSWER:
+In step 1 of circuit breaker testing on page 351, the **Regional Control Centre (RCC)** that must be notified is **RCC-LHR** (Regional Control Centre - Lahore). This notification is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Unfortunately, there was no relevant information found regarding the subtitle of the first **Harry Potter** movie or the main academic focus for **Aadil's Azure project**.
+
+Note: No relevant information found for: What is the subtitle of the first Harry Potter movie?
+Note: No relevant information found for: What was the main academic focus for Aadil's Azure project?
+
+GROUND TRUTH:
+No RCC is mentioned for step 1 on page 351. The subtitle is *Philosopher's Stone*. The focus of the Azure project was Cloud Computing.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Appendices & Templates
+
+Circuit breaker contact resistance testing In accordance with NTDC policy, all work is supervised by an authorised Maintenance
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 75
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 2 of relay secondary injection on page 356, what is the subtitle of the second Harry Potter movie, and what does Aadil's CLI tool filter by?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In step 2 of the **relay secondary injection** procedures, the **Regional Control Centre (RCC)** that must be notified is **RCC-KHI** (Regional Control Centre - Karachi). This notification is a mandatory step to ensure safety and compliance during maintenance activities.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 63,
+          "section": "Step-by-Step Procedure",
+          "snippet": "...Step 2: Relay secondary injection procedures Documentary evidence shall include: lock-out / tag-out (LOTO) is applied and verified by two authorise"
+        },
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 27,
+          "section": "Definitions & References",
+          "snippet": "......Relay secondary injection procedures In accordance with NTDC policy, a valid Permit- to-Work (PTW) is obtained before starting any isolation or"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": [],
+      "tokens_input": 0,
+      "tokens_output": 0,
+      "call_type": "doc_qa"
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": [],
+      "tokens_input": 0,
+      "tokens_output": 0,
+      "call_type": "doc_qa"
+    }
+  ]
+}
+
+GROUND TRUTH:
+RCC-KHI is notified. The subtitle is *Chamber of Secrets*. The CLI tool filters by date ranges, customer/account scope, and keywords.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 76
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 5 of SF6 handling on page 358, what is the subtitle of the third Harry Potter movie, and how many silver medals does Aadil have?
+
+ANSWER:
+In step 5 of **SF6 handling** on page 358, the **Regional Control Centre (RCC)** that must be notified is **RCC-KHI** (Regional Control Centre - Karachi). This notification is crucial for ensuring safety and compliance during maintenance activities.
+
+Unfortunately, there is no available information regarding the subtitle of the third **Harry Potter** movie, **Harry Potter and the Prisoner of Azkaban**, or the number of silver medals that **Aadil** possesses.
+
+Note: No relevant information found for: What is the subtitle of the third Harry Potter movie?
+Note: No relevant information found for: How many silver medals does Aadil have?
+
+GROUND TRUTH:
+RCC-FSD is notified. The subtitle is *Prisoner of Azkaban*. Aadil has 1 silver medal.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+....Step 4: SF6 handling and GIS maintenance Documentary evidence shall include: test instruments are verified and calibration certificates are record
+
+[Chunk 2]
+......Notify the regional control centre (RCC-LHR) prior to switching. 57. Step 4: SF6 handling and GIS maintenance It is mandatory that all work is s
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 77
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 1 of circuit breaker testing on page 364, what is the subtitle of the fourth Harry Potter movie, and what terminal-based server setup did Aadil use?
+
+ANSWER:
+In step 1 of circuit breaker testing on page 364, the **Regional Control Centre (RCC)** that must be notified is **RCC-LHR** (Regional Control Centre - Lahore). This notification is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Unfortunately, there is no relevant information available regarding the subtitle of the fourth **Harry Potter** movie or the terminal-based server setup used by **Aadil**.
+
+Note: No relevant information found for: What is the subtitle of the fourth Harry Potter movie?
+Note: No relevant information found for: What terminal-based server setup did Aadil use?
+
+GROUND TRUTH:
+RCC-ISB is notified. The subtitle is *Goblet of Fire*. Aadil deployed on a Linux VPS using Nginx and a terminal-based server setup.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...248. Step 3: Circuit breaker contact resistance testing All staff must ensure that lock- out / tag-out (LOTO) is applied and verified by two author
+
+[Chunk 2]
+Appendices & Templates
+
+Circuit breaker contact resistance testing In accordance with NTDC policy, all work is supervised by an authorised Maintenance
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 78
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 2 of circuit breaker testing on page 365, what is the subtitle of the fifth Harry Potter movie, and what is Aadil's contact email?
+
+ANSWER:
+In step 2 of circuit breaker testing on page 365, the **Regional Control Centre (RCC)** that must be notified is **RCC-KHI** (Regional Control Centre - Karachi). This notification is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Unfortunately, there is no relevant information available regarding the subtitle of the fifth Harry Potter movie.
+
+Aadil's contact email is **aadil2raja@gmail.com**.
+
+Note: No relevant information found for: What is the subtitle of the fifth Harry Potter movie?
+
+GROUND TRUTH:
+RCC-FSD is notified. The subtitle is *Order of the Phoenix*. Aadil's email is aadil2raja@gmail.com.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+......Step 2: Circuit breaker contact resistance testing It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised pers
+
+[Chunk 2]
+AADIL RAJA
+
++92 335 3633400 aadil2raja@gmail.com linkedin/aadil-raja github/Aadil-Raja
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 79
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 4 of circuit breaker testing on page 394, what is the subtitle of the sixth Harry Potter movie, and what was Aadil's FYP backend architecture designed for?
+
+ANSWER:
+In step 4 of circuit breaker testing on page 394, the **Regional Control Centre (RCC)** that must be notified is **RCC-LHR** (Regional Control Centre - Lahore). This notification is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Unfortunately, there is no relevant information available regarding the subtitle of the sixth Harry Potter movie or the design of Aadil's FYP backend architecture.
+
+Note: No relevant information found for: What is the subtitle of the sixth Harry Potter movie?
+Note: No relevant information found for: What was Aadil's FYP backend architecture designed for?
+
+GROUND TRUTH:
+RCC-LHR is notified. The subtitle is *Half-Blood Prince*. The FYP backend separated concerns, improving maintainability and enabling independent scaling.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+...248. Step 3: Circuit breaker contact resistance testing All staff must ensure that lock- out / tag-out (LOTO) is applied and verified by two author
+
+[Chunk 2]
+....Step 4: Circuit breaker contact resistance testing The following procedure shall be
+
+followed: test instruments are verified and calibration certi
+
+[Chunk 3]
+.Step 3: Circuit breaker contact resistance testing In accordance with NTDC policy, lock-out / tag-out (LOTO) is applied and verified by two authorise
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 80
+====================================================================================================
+
+QUESTION:
+Which RCC is notified in step 2 of circuit breaker testing on page 422, what is the subtitle of the seventh Harry Potter movie, and what did Aadil use prompt engineering to achieve?
+
+ANSWER:
+In step 2 of circuit breaker testing on page 422, the **Regional Control Centre (RCC)** that must be notified is **RCC-KHI** (Regional Control Centre - Karachi). This notification is a mandatory step to ensure safety and compliance during maintenance activities.
+
+Unfortunately, there is no relevant information available regarding the subtitle of the seventh Harry Potter movie or what Aadil used prompt engineering to achieve.
+
+Note: No relevant information found for: What is the subtitle of the seventh Harry Potter movie?
+Note: No relevant information found for: What did Aadil use prompt engineering to achieve?
+
+GROUND TRUTH:
+No RCC is notified in step 2 on page 422. The subtitle is *Deathly Hallows* (Parts 1 & 2). Aadil used prompt engineering to get desired AI responses.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+......Step 2: Circuit breaker contact resistance testing It is mandatory that lock-out / tag-out (LOTO) is applied and verified by two authorised pers
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 81
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 2 of circuit breaker testing on page 319, how many original teams were in the PSL, and what is J.K. Rowling's profession?
+
+ANSWER:
+In step 2 of circuit breaker testing as outlined on page 319 of the **switchgear manual**, the expected **insulation resistance** measurements should typically exceed **319 MΩ**, depending on the asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+Regarding the **Pakistan Super League (PSL)**, the original teams were:
+1. **Islamabad United**  
+2. **Karachi Kings**  
+3. **Lahore Qalandars**  
+4. **Peshawar Zalmi**  
+5. **Quetta Gladiators**  
+6. **Multan Sultans**
+
+As for **J.K. Rowling's profession**, no relevant information was found regarding her current profession in the provided sources.
+
+GROUND TRUTH:
+The resistance is 261 MΩ. There were 6 original PSL teams. J.K. Rowling is an Author.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+..181. Step 1: Circuit breaker contact resistance testing Documentary evidence shall include: test instruments are verified and calibration certificat
+
+[Chunk 2]
+Original Teams
+
+1. Islamabad United 2. Karachi Kings 3. Lahore Qalandars 4. Peshawar Zalmi 5. Quetta Gladiators 6. Multan Sultans
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 82
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 1 of relay secondary injection on page 322, who was the main villain defeated by Harry, and what was Aadil's major?
+
+ANSWER:
+In step 1 of relay secondary injection procedures as outlined on page 322 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **498 MΩ** depending on the asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+The main villain defeated by Harry in the **Harry Potter series** is **Lord Voldemort**. He serves as the primary antagonist throughout the series, representing the dark forces that Harry and his friends must confront.
+
+Unfortunately, there is no relevant information available regarding Aadil's major.
+
+Note: No relevant information found for: What was Aadil's major?
+
+GROUND TRUTH:
+The resistance is 374 MΩ. The main villain was Voldemort. Aadil majors in BS Computer Science.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+7. Villains and Conflicts
+
+Primary villain:
+
+● Lord Voldemort
+
+Other antagonists:
+
+● Bellatrix Lestrange ● Draco Malfoy ● Death Eaters (dark wizard fo
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 83
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 2 of relay secondary injection on page 322, what year did the PSL move back to Pakistan, and what is Aadil's university city?
+
+ANSWER:
+In step 2 of relay secondary injection procedures as outlined on page 322 of the **switchgear manual**, the expected **insulation resistance** measurements should typically exceed **214 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+The **Pakistan Super League (PSL)** initially played its matches in the UAE due to security concerns, but later editions moved back to Pakistan. The specific year when the PSL moved back to Pakistan is not explicitly stated, but it is implied that this transition occurred after the league's inception in **2016**.
+
+Unfortunately, there is no relevant information available regarding **Aadil's university city**.
+
+Note: No relevant information found for: What is Aadil's university city?
+
+GROUND TRUTH:
+The resistance is 294 MΩ. The year the PSL moved back to Pakistan is not specified. Aadil's university is located in Karachi.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+...Step 2: Relay secondary injection procedures In accordance with NTDC policy, all work is supervised by an authorised Maintenance Supervisor. Exampl
+
+[Chunk 2]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 3]
+1. What is Pakistan Super League (PSL)?
+
+The Pakistan Super League (PSL) is a professional Twenty20 (T20) cricket franchise league in Pakistan. It fea
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 84
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 4 of relay secondary injection on page 323, what is the overarching theme of Gryffindor, and what tool handles Aadil's email notifications?
+
+ANSWER:
+During step 4 of relay secondary injection procedures as outlined on page 323 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **214 MΩ**, depending on asset rating.
+
+Unfortunately, there is no relevant information available regarding the overarching theme of **Gryffindor** or the tool that handles **Aadil's email notifications**.
+
+GROUND TRUTH:
+The resistance is 88 MΩ. Gryffindor's theme is bravery. Email notifications were configured alongside background queues without naming a specific separate tool.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+....Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insulatio
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 85
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 1 of circuit breaker testing on page 280, what is the overarching theme of Hufflepuff, and what tool handles Aadil's background jobs?
+
+ANSWER:
+During step 1 of circuit breaker testing, the expected **insulation resistance** measurements should typically exceed **498 MΩ**, depending on the asset rating, as outlined in the **Switchgear Maintenance** manual.
+
+Unfortunately, there is no relevant information available regarding the overarching theme of **Hufflepuff** or the tool that handles **Aadil's background jobs**.
+
+GROUND TRUTH:
+The resistance is 106 MΩ. Hufflepuff's theme is loyalty. Background jobs are handled by Redis (Job Queue).
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-
+
+to-Work (PTW) is obtained before starting any isolation or
+
+[Chunk 2]
+...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:
+
+lock-out / tag-out (LOTO) is applied and verified by two au
+
+[Chunk 3]
+....Example: Insulation resistance measurements should typically exceed 464 MΩ depending on asset rating. Notify the regional control centre (RCC-FSD)
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 86
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 2 of circuit breaker testing on page 283, what is the overarching theme of Ravenclaw, and what platform tracks progress in Aadil's FYP?
+
+ANSWER:
+In step 2 of circuit breaker testing as outlined on page 283 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **174 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+Unfortunately, there was no relevant information found regarding the overarching theme of **Ravenclaw** or the platform that tracks progress in **Aadil's FYP**.
+
+GROUND TRUTH:
+The resistance is 386 MΩ. Ravenclaw's theme is intelligence. Progress tracking is integrated into the Digital Adoption Platform.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:
+
+lock-out / tag-out (LOTO) is applied and verified by two au
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 87
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 4 of circuit breaker testing on page 284, what is the overarching theme of Slytherin, and what platform did Aadil use for meeting scheduling?
+
+ANSWER:
+During step 4 of circuit breaker testing as outlined in the **switchgear manual**, the expected **insulation resistance** measurements should typically exceed **220 MΩ**, depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+Unfortunately, no relevant information was found regarding the overarching theme of **Slytherin** or the platform that **Aadil** used for meeting scheduling.
+
+Note: No relevant information found for: What is the overarching theme of Slytherin?
+Note: No relevant information found for: What platform did Aadil use for meeting scheduling?
+
+GROUND TRUTH:
+The resistance is 220 MΩ. Slytherin's theme is ambition. Aadil used n8n and Pipedrive for meeting scheduling.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+...248. Step 3: Circuit breaker contact resistance testing All staff must ensure that lock- out / tag-out (LOTO) is applied and verified by two author
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 88
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 1 of relay secondary injection on page 285, how many copies of Harry Potter were sold, and what did Aadil use for JSON parsing?
+
+ANSWER:
+In step 1 of relay secondary injection procedures as outlined on page 285 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **498 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+Additionally, the **Harry Potter** series has achieved remarkable success, with over **500 million** copies sold worldwide, making it one of the most successful franchises ever.
+
+Unfortunately, there is no relevant information available regarding what **Aadil** used for **JSON parsing**.
+
+Note: No relevant information found for: What did Aadil use for JSON parsing?
+
+GROUND TRUTH:
+The resistance is 85 MΩ. Over 500 million copies were sold. Aadil used JSON parsing snippets.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+9. Cultural Impact
+
+Harry Potter became one of the most successful franchises ever :
+
+● Over 500 million books sold ● Translated into 80+ languages ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 89
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 3 of relay secondary injection on page 291, how many languages is Harry Potter translated into, and what did Aadil use Azure Application Insights for?
+
+ANSWER:
+In step 3 of relay secondary injection procedures as outlined on page 291 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **183 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+The **Harry Potter** series has been translated into **80+ languages**, showcasing its global appeal and reach.
+
+Unfortunately, there is no relevant information available regarding what Aadil used **Azure Application Insights** for.
+
+GROUND TRUTH:
+The resistance is 487 MΩ. Translated into 80+ languages. Azure Application Insights was used to view logs and debug issues.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+......Example: Insulation resistance measurements should typically exceed 160 MΩ depending on asset rating. 114. Step 3: Relay secondary injection pro
+
+[Chunk 2]
+...Step 2: Relay secondary injection procedures In accordance with NTDC policy, all work is supervised by an authorised Maintenance Supervisor. Exampl
+
+[Chunk 3]
+.....Example: Insulation resistance measurements should typically exceed 462 MΩ depending on asset rating.
+
+Relay secondary injection procedures For s
+
+[Chunk 4]
+9. Cultural Impact
+
+Harry Potter became one of the most successful franchises ever :
+
+● Over 500 million books sold ● Translated into 80+ languages ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 90
+====================================================================================================
+
+QUESTION:
+In the switchgear manual, what insulation resistance is expected during step 4 of circuit breaker testing on page 294, what theme parks were created from Harry Potter, and what did Aadil use Azure Key Vault for?
+
+ANSWER:
+During step 4 of circuit breaker testing as outlined in the **switchgear manual**, the expected **insulation resistance** measurements should typically exceed **220 MΩ**, depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+The **Harry Potter** franchise has led to the creation of several theme parks, which are part of its broader cultural impact and success. These parks contribute to the franchise's legacy, which includes over **500 million books sold** and translations into **80+ languages**.
+
+Unfortunately, there is no relevant information available regarding what **Aadil** used **Azure Key Vault** for.
+
+GROUND TRUTH:
+The resistance is 272 MΩ. Specific theme parks aren't named, just that it "Created theme parks". Azure Key Vault was used to keep secrets.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+...248. Step 3: Circuit breaker contact resistance testing All staff must ensure that lock- out / tag-out (LOTO) is applied and verified by two author
+
+[Chunk 2]
+9. Cultural Impact
+
+Harry Potter became one of the most successful franchises ever :
+
+● Over 500 million books sold ● Translated into 80+ languages ●
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 91
+====================================================================================================
+
+QUESTION:
+What is the full title of Luqmaan Barraq in the switchgear manual, what magical creature is mentioned besides elves, and who won the 2016 PSL?
+
+ANSWER:
+The **2016 Pakistan Super League (PSL)** was won by **Islamabad United**.
+
+Unfortunately, there is no available information regarding the full title of **Luqmaan Barraq** in the switchgear manual or any magical creature mentioned besides elves.
+
+GROUND TRUTH:
+Luqmaan Barraq prepared the manual. Dragons are also mentioned as magical creatures. Islamabad United won the 2016 PSL.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 92
+====================================================================================================
+
+QUESTION:
+What is the full title of Mahmood Damurah in the switchgear manual, what government body rules the wizarding world, and what expansion team plays in Rawalpindi?
+
+ANSWER:
+The following information addresses your questions:
+
+1. **Government Body of the Wizarding World**: The organization that governs the wizarding world is the **Ministry of Magic**. This body oversees various aspects of the magical society, including magical creatures, the magical economy, and magical schools.
+
+2. **Expansion Team in Rawalpindi**: The expansion team that plays in Rawalpindi is the **Rawalpindiz**. This team was introduced as part of the league's expansion from six to eight teams in **2026**, following a franchise auction and restructuring.
+
+3. **Full Title of Mahmood Damurah**: Unfortunately, there is no relevant information available regarding the full title of Mahmood Damurah in the switchgear manual.
+
+GROUND TRUTH:
+Mahmood Damurah reviewed the manual. The Ministry of Magic rules the wizarding world. Rawalpindiz plays in Rawalpindi.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+5. Themes and World-Building
+
+Major themes:
+
+● Friendship and loyalty ● Good vs evil ● Sacrifice ● Love and protection ● Power and corruption ● Identi
+
+[Chunk 2]
+New Teams (Expansion – 2026)
+
+● Hyderabad Kingsmen ● Rawalpindiz
+
+The league expanded from six to eight teams for the first time in 2026 , following a
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 93
+====================================================================================================
+
+QUESTION:
+Who approved the July 2024 switchgear manual, what spells are learned in Hogwarts, and what expansion team plays in Hyderabad?
+
+ANSWER:
+The **July 2024 switchgear manual** was developed by the **National Transmission & Despatch Company (NTDC)**, specifically within the **Distribution** department. However, the document does not specify who approved the manual.
+
+At **Hogwarts School of Witchcraft and Wizardry**, students learn a variety of spells as part of their magical education. These spells encompass different categories, including:
+1. **Charms** - spells that add certain properties to an object or individual.
+2. **Curses** - spells that cause harm or negative effects.
+3. **Potions** - magical mixtures that produce various effects.
+
+The curriculum is designed to provide a comprehensive understanding of magical disciplines, allowing students to develop their skills in diverse areas of magic.
+
+In the realm of sports, the **Hyderabad Kingsmen** is the expansion team that plays in **Hyderabad**. This team was introduced as part of the league's expansion from six to eight teams in **2026**, following a franchise auction and restructuring.
+
+GROUND TRUTH:
+The Head of Distribution approved the manual. Charms, curses, and potions are learned as magic. The Hyderabad Kingsmen play in Hyderabad.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Switchgear Maintenance
+
+Organization: National Transmission & Despatch Company (NTDC)
+
+Department: Distribution
+
+Version: 1.0 Issue Date: July 2024
+
+C
+
+[Chunk 2]
+4. Story Summary
+
+The story follows Harry Potter , an orphan who discovers he is a wizard and attends Hogwarts School of Witchcraft and Wizardry .
+
+●
+
+[Chunk 3]
+New Teams (Expansion – 2026)
+
+● Hyderabad Kingsmen ● Rawalpindiz
+
+The league expanded from six to eight teams for the first time in 2026 , following a
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 94
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 3 of SF6 handling on page 306, what is a Time-Turner, and what is the double round-robin format?
+
+ANSWER:
+In step 3 of **SF6 handling** as outlined on page 306 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **306 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+A **Time-Turner** is a magical object in the **Harry Potter** series that allows the wearer to travel back in time. It is notably used by Hermione Granger in **"Harry Potter and the Prisoner of Azkaban"** to attend multiple classes simultaneously and to help save Sirius Black and Buckbeak. The Time-Turner is one of several significant magical objects mentioned in the series, alongside others like the Invisibility Cloak and Horcruxes.
+
+The **Pakistan Super League (PSL)** follows a **double round-robin format** during the group stage, where each team plays every other team twice. This structure enhances the overall competitiveness of the league. The points system awards **2 points** for a win and **1 point** for a no result, with the **top 4 teams** qualifying for the playoffs. The playoff structure includes:
+1. **Qualifier**: 1st place vs 2nd place
+2. **Eliminator 1**: 3rd place vs 4th place
+3. **Eliminator 2**: Loser of Qualifier vs Winner of Eliminator 1
+4. **Final**: Winner of Qualifier vs Winner of Eliminator 2
+
+All matches are played in **T20 format** (20 overs per side).
+
+GROUND TRUTH:
+Step 3 does not appear on page 306. A Time-Turner is a magical object. A double round-robin format means each team plays the others twice (or simply "each team plays others").
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+.....Step 3: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insu
+
+[Chunk 2]
+Magic System
+
+● Spells using wands ● Potions ● Charms and curses ● Magical creatures ● Objects like: ○ Invisibility cloak ○ Time-Turner ○ Horcruxes
+
+M
+
+[Chunk 3]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 95
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of circuit breaker testing on page 311, what is an Invisibility Cloak, and what is the PSL playoff structure?
+
+ANSWER:
+In step 2 of circuit breaker testing as outlined on page 283 of the **switchgear manual**, the expected **insulation resistance** measurements should typically exceed **174 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+An **Invisibility Cloak** is a magical object in the **Harry Potter** series that renders the wearer invisible. It is one of several significant magical items mentioned in the context of the series, alongside others like the **Time-Turner** and **Horcruxes**. The Invisibility Cloak is particularly notable for its use by Harry Potter and is a key element in various plot points throughout the story.
+
+The **Pakistan Super League (PSL)** playoff structure is as follows:
+1. **Qualifier**: The match is played between the 1st and 2nd placed teams from the group stage.
+2. **Eliminator 1**: This match is contested between the 3rd and 4th placed teams from the group stage.
+3. **Eliminator 2**: The loser of the Qualifier faces the winner of Eliminator 1.
+4. **Final**: The winner of the Qualifier competes against the winner of Eliminator 2.
+
+All matches are played in **T20 format** (20 overs per side). The playoff structure is designed to determine the champion of the league after a competitive group stage where the top 4 teams qualify for these knockout matches.
+
+GROUND TRUTH:
+The resistance is 462 MΩ. An invisibility cloak is a magical object. The playoff structure consists of a Qualifier, Eliminator 1, Eliminator 2, and Final.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+.....Step 2: Circuit breaker contact resistance testing In accordance with NTDC policy, a valid Permit-to-Work (PTW) is obtained before starting any i
+
+[Chunk 2]
+Magic System
+
+● Spells using wands ● Potions ● Charms and curses ● Magical creatures ● Objects like: ○ Invisibility cloak ○ Time-Turner ○ Horcruxes
+
+M
+
+[Chunk 3]
+4. Tournament Format & Rules
+
+Typical PSL format:
+
+● Double round-robin group stage (each team plays others). ● Points system: ○ Win = 2 points ○ No r
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 96
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 4 of circuit breaker testing on page 312, what are Horcruxes, and what city is the home of the Kings?
+
+ANSWER:
+In step 4 of circuit breaker testing as outlined in the **switchgear manual**, the expected insulation resistance measurements should typically exceed **220 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+Unfortunately, there was no relevant information found regarding **Horcruxes** or the city that is the home of the Kings.
+
+GROUND TRUTH:
+Step 4 on page 312 does not list an insulation resistance. Horcruxes are magical objects. The Kings play in Karachi.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+...248. Step 3: Circuit breaker contact resistance testing All staff must ensure that lock- out / tag-out (LOTO) is applied and verified by two author
+
+[Chunk 2]
+.Step 3: Circuit breaker contact resistance testing In accordance with NTDC policy, lock-out / tag-out (LOTO) is applied and verified by two authorise
+
+[Chunk 3]
+..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-
+
+to-Work (PTW) is obtained before starting any isolation or
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 97
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 3 of SF6 handling on page 314, who is Albus Dumbledore, and what city is the home of the United?
+
+ANSWER:
+In step 3 of **SF6 handling** as outlined on page 314 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **306 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+**Albus Dumbledore** is the headmaster of **Hogwarts School of Witchcraft and Wizardry** in the **Harry Potter** series. He is a significant character known for his wisdom and leadership in the fight against dark forces.
+
+Unfortunately, there is no relevant information available regarding the city that is the home of the United.
+
+GROUND TRUTH:
+The resistance is 105 MΩ. Albus Dumbledore is the Headmaster of Hogwarts. United plays in Islamabad.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+.....Step 3: SF6 handling and GIS maintenance All staff must ensure that all work is supervised by an authorised Maintenance Supervisor. Example: Insu
+
+[Chunk 2]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 98
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of circuit breaker testing on page 318, who is Severus Snape, and what city is the home of the Qalandars?
+
+ANSWER:
+In step 1 of circuit breaker testing as outlined in the **switchgear manual**, the expected insulation resistance measurements should typically exceed **417 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+**Severus Snape** is described as a **complex professor** in the **Harry Potter** series. He is a significant character known for his intricate personality and pivotal role in the storyline, particularly in relation to Harry Potter and the overarching conflict with Lord Voldemort.
+
+The home city of the **Qalandars** is **Lahore**, which is known for its vibrant culture and history. This team competes in the **Pakistan Super League** (PSL).
+
+GROUND TRUTH:
+The resistance is 452 MΩ. Severus Snape is the complex professor. The Qalandars play in Lahore.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+..Step 1: Circuit breaker contact resistance testing It is mandatory that a valid Permit-
+
+to-Work (PTW) is obtained before starting any isolation or
+
+[Chunk 2]
+...Step 1: Circuit breaker contact resistance testing Documentary evidence shall include:
+
+lock-out / tag-out (LOTO) is applied and verified by two au
+
+[Chunk 3]
+....Step 4: Circuit breaker contact resistance testing The following procedure shall be
+
+followed: test instruments are verified and calibration certi
+
+[Chunk 4]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 99
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 1 of relay secondary injection on page 336, who is Hermione Granger, and what city is the home of the Sultans?
+
+ANSWER:
+In step 1 of relay secondary injection procedures as outlined in the **switchgear manual**, the expected insulation resistance measurements should typically exceed **498 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.
+
+**Hermione Granger** is described as Harry Potter's **intelligent best friend** in the **Harry Potter** series. She plays a crucial role in supporting Harry throughout his adventures and is known for her exceptional intellect and resourcefulness.
+
+The home city of the **Qalandars** is **Lahore**, which is known for its vibrant culture and history. This team competes in the **Pakistan Super League** (PSL).
+
+GROUND TRUTH:
+Step 1 on page 336 does not contain an insulation resistance example. Hermione Granger is Harry's intelligent best friend. The Sultans play in Multan.
+
+RETRIEVED CHUNKS (4 total):
+
+[Chunk 1]
+Step-by-Step Procedure
+
+Relay secondary injection procedures All staff must ensure that all work is supervised by an authorised Maintenance Supervisor
+
+[Chunk 2]
+....Relay secondary injection procedures The following procedure shall be followed: test instruments are verified and calibration certificates are rec
+
+[Chunk 3]
+.....Example: Insulation resistance measurements should typically exceed 462 MΩ depending on asset rating.
+
+Relay secondary injection procedures For s
+
+[Chunk 4]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 100
+====================================================================================================
+
+QUESTION:
+What is the insulation resistance example in step 2 of relay secondary injection on page 337, who is Ron Weasley, and what city is the home of the Zalmi?
+
+ANSWER:
+{
+  "answers": [
+    {
+      "answer": "In step 2 of relay secondary injection procedures as outlined on page 337 of the **switchgear manual**, the expected insulation resistance measurements should typically exceed **191 MΩ** depending on asset rating. This measurement is crucial for ensuring safety and compliance during maintenance activities.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 39,
+          "doc_title": "Switchgear Maintenance_040108",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/ffnq4xf0lzqrp56tzdrt.pdf",
+          "page": 35,
+          "section": "Roles & Responsibilities",
+          "snippet": ".....Example: Insulation resistance measurements should typically exceed 462 MΩ depending on asset rating.\n\nRelay secondary injection procedures For s"
+        }
+      ]
+    },
+    {
+      "answer": "**Ron Weasley** is described as Harry Potter's **loyal friend** in the **Harry Potter** series. He plays a significant role in supporting Harry throughout his adventures, showcasing themes of friendship and loyalty.",
+      "has_contradiction": false,
+      "citations": [
+        {
+          "doc_id": 41,
+          "doc_title": "PSL and Harry potter.pdf",
+          "cloudinary_url": "https://res.cloudinary.com/ddx9ewmu4/image/upload/v1/smartchange_docs/mhgbkceutfl43wsonza0.pdf",
+          "page": 2,
+          "section": "3. Main Characters",
+          "snippet": "3. Main Characters\n\n● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend\n\n● Ron Weasley — Loyal friend ● Albus Dumbledore —"
+        }
+      ]
+    },
+    {
+      "answer": "I couldn't find relevant information to answer your question.",
+      "has_contradiction": false,
+      "citations": []
+    }
+  ]
+}
+
+GROUND TRUTH:
+The resistance is 166 MΩ. Ron Weasley is Harry's loyal friend. The Zalmi play in Peshawar.
+
+RETRIEVED CHUNKS (0 total):
+
+====================================================================================================
+
+====================================================================================================
+Completed at: 2026-04-24 23:00:58
+====================================================================================================

@@ -19,6 +19,7 @@ class TextSegment:
     page_num: int
     segment_type: str = "paragraph"  # paragraph, section, heading
     section_title: Optional[str] = None
+    parent_section_title: Optional[str] = None  # Parent heading for breadcrumb context
     char_start: int = 0
     char_end: int = 0
     heading_level: int = 0  # 0=body, 1=h1, 2=h2, etc.
@@ -670,7 +671,14 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
     """
     Build hierarchical sections from content elements.
     Groups paragraphs under their preceding heading.
+    Tracks parent heading for sub-sections so chunks can include breadcrumb context.
     Also tracks per-element page boundaries for accurate chunk page calculation.
+
+    Parent tracking logic:
+    - When a heading of level N is encountered, any previous heading with
+      level < N becomes the parent of this new heading.
+    - Example: h2 "Teams" is followed by h3 "Original Teams"
+      → "Original Teams" segment gets parent_section_title = "Teams"
     
     Args:
         elements: List of content elements
@@ -680,11 +688,18 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
     """
     segments = []
     current_section_title = None
+    current_section_level = 0
+    current_parent_title = None          # ← NEW: tracks the parent heading
     current_section_text = []
     current_page = 1
     current_heading_level = 0
     char_position = 0
-    current_element_pages: List[Tuple[int, int, int]] = []  # (page, start, end) per element
+    current_element_pages: List[Tuple[int, int, int]] = []
+
+    # ── NEW: a small stack that maps heading_level → title
+    # so we can always find the nearest ancestor when a deeper heading appears.
+    # e.g. {1: "PSL Overview", 2: "Teams"}
+    heading_stack: Dict[int, str] = {}
 
     for element in elements:
         if element["type"] == "heading":
@@ -696,6 +711,7 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
                     page_num=current_page,
                     segment_type="section",
                     section_title=current_section_title,
+                    parent_section_title=current_parent_title,   # ← NEW
                     char_start=char_position,
                     char_end=char_position + len(section_text),
                     heading_level=current_heading_level,
@@ -704,18 +720,38 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
                 ))
                 char_position += len(section_text) + 2
 
+            new_level = element["heading_level"]
+
+            # ── NEW: find the parent for this heading
+            # The parent is the nearest heading whose level is strictly less
+            # than the current heading's level.
+            parent_title = None
+            for lvl in sorted(heading_stack.keys(), reverse=True):
+                if lvl < new_level:
+                    parent_title = heading_stack[lvl]
+                    break
+
+            # ── NEW: remove any headings at the same or deeper level from stack
+            # (they are siblings/children of the new heading, not ancestors)
+            keys_to_remove = [lvl for lvl in heading_stack if lvl >= new_level]
+            for lvl in keys_to_remove:
+                del heading_stack[lvl]
+
+            # ── NEW: register this heading in the stack
+            heading_stack[new_level] = element["text"]
+
             # Start new section
             current_section_title = element["text"]
+            current_section_level = new_level
+            current_parent_title = parent_title                  # ← NEW
             current_section_text = [element["text"]]
             current_page = element["page_num"]
-            current_heading_level = element["heading_level"]
-            # First element in new section
+            current_heading_level = new_level
             current_element_pages = [(element["page_num"], 0, len(element["text"]))]
 
         else:  # paragraph
             if current_section_text:
-                # Calculate this element's start position in the combined section text
-                elem_start = sum(len(t) + 2 for t in current_section_text)  # +2 for \n\n separator
+                elem_start = sum(len(t) + 2 for t in current_section_text)
                 elem_end = elem_start + len(element["text"])
                 current_element_pages.append((element["page_num"], elem_start, elem_end))
                 current_section_text.append(element["text"])
@@ -740,6 +776,7 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
             page_num=current_page,
             segment_type="section",
             section_title=current_section_title,
+            parent_section_title=current_parent_title,           # ← NEW
             char_start=char_position,
             char_end=char_position + len(section_text),
             heading_level=current_heading_level,
@@ -749,8 +786,11 @@ def build_sections_from_elements(elements: List[Dict[str, Any]]) -> List[TextSeg
     logger.info(f"Built {len(segments)} sections from {len(elements)} elements")
 
     for i, seg in enumerate(segments):
-        logger.debug(f"Section {i+1}: '{seg.section_title}' - {len(seg.text)} chars, "
-                    f"level {seg.heading_level}, page {seg.page_num}")
+        logger.debug(
+            f"Section {i+1}: '{seg.section_title}' "
+            f"(parent='{seg.parent_section_title}') - "
+            f"{len(seg.text)} chars, level {seg.heading_level}, page {seg.page_num}"
+        )
 
     return segments
 

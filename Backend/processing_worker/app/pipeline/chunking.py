@@ -116,6 +116,38 @@ def calculate_chunk_page(
     return max(page_overlaps.items(), key=lambda x: x[1])[0]
 
 
+def build_breadcrumb(segment: Any) -> str:
+    """
+    Build a breadcrumb header string from segment's heading hierarchy.
+
+    If the segment has a parent heading, the breadcrumb looks like:
+        "Teams > Original Teams"
+
+    If it only has a section title (top-level heading), it looks like:
+        "Teams"
+
+    If it has neither (standalone paragraph), returns an empty string.
+
+    This breadcrumb is prepended to every chunk so the embedding model
+    always sees the full context path, not just the immediate section.
+
+    Args:
+        segment: A TextSegment object (from preprocess_fitz.py)
+
+    Returns:
+        Breadcrumb string, or empty string if no titles available
+    """
+    parent = getattr(segment, 'parent_section_title', None)
+    title = getattr(segment, 'section_title', None)
+
+    if parent and title:
+        return f"{parent} > {title}"
+    elif title:
+        return title
+    else:
+        return ""
+
+
 def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
     """
     Chunk text respecting sentence boundaries.
@@ -198,7 +230,6 @@ def chunk_by_tokens_semantic(text: str, config: ChunkingConfig) -> List[str]:
     return chunks
 
 
-
 def create_chunks_from_segments(
     segments: List[Any],
     document_id: int,
@@ -207,7 +238,20 @@ def create_chunks_from_segments(
     """
     Convert preprocessed segments into chunks.
     Tracks page range for each chunk based on segments it spans.
-    
+
+    Each chunk's text is prefixed with a breadcrumb header built from the
+    segment's parent and section titles. This ensures the embedding model
+    always has the full heading context, even when a section is split into
+    multiple chunks.
+
+    Breadcrumb format:
+        "[Teams > Original Teams]\n\n<chunk content>"
+        "[Teams]\n\n<chunk content>"          ← top-level section
+        "<chunk content>"                      ← standalone paragraph, no prefix
+
+    The breadcrumb is enclosed in square brackets so it is visually distinct
+    from the actual content and can be stripped if needed for display.
+
     Args:
         segments: List of TextSegment from preprocess.py
         document_id: Document ID for metadata
@@ -226,8 +270,12 @@ def create_chunks_from_segments(
     
     for segment in segments:
         logger.debug(f"Segment {segments.index(segment)}: {len(segment.text)} chars, ~{count_tokens(segment.text)} tokens, page {segment.page_num}")
-        
-        # Use semantic chunking
+
+        # Build the breadcrumb once per segment — same for all chunks within it
+        breadcrumb = build_breadcrumb(segment)
+
+        # Use semantic chunking on the raw segment text (without breadcrumb)
+        # so token counts are not thrown off by the prefix
         chunk_texts = chunk_by_tokens_semantic(segment.text, config)
 
         # Track character position within segment to calculate page per chunk
@@ -248,17 +296,27 @@ def create_chunks_from_segments(
                 segment.page_num  # fallback
             )
 
+            # ── Prepend breadcrumb to the chunk text that will be embedded.
+            # The breadcrumb gives the embedding model context about where
+            # this chunk sits in the document hierarchy.
+            if breadcrumb:
+                chunk_text_with_context = f"[{breadcrumb}]\n\n{chunk_text}"
+            else:
+                chunk_text_with_context = chunk_text
+
             chunk = Chunk(
-                text=chunk_text,
+                text=chunk_text_with_context,   # ← includes breadcrumb
                 chunk_index=global_chunk_index,
-                page_num=chunk_page,           # Updated to accurate page
+                page_num=chunk_page,
                 section_title=segment.section_title,
                 char_start=segment.char_start + chunk_start,
                 char_end=segment.char_start + chunk_end,
-                token_count=token_count,
+                token_count=count_tokens(chunk_text_with_context),  # recount with breadcrumb
                 metadata={
                     "document_id": document_id,
                     "segment_type": segment.segment_type,
+                    "breadcrumb": breadcrumb,                        # ← store for debugging
+                    "parent_section_title": getattr(segment, 'parent_section_title', None),
                 },
                 start_page_num=chunk_page,
                 end_page_num=chunk_page

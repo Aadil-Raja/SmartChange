@@ -1,0 +1,413 @@
+====================================================================================================
+RAGAS EVALUATION - DETAILED QUESTION LOG
+====================================================================================================
+Started at: 2026-04-23 14:30:32
+Chathead ID: 178
+User: k224492@nu.edu.pk
+Documents: [39, 41, 45]
+Total Questions: 100
+====================================================================================================
+
+
+====================================================================================================
+QUESTION 1
+====================================================================================================
+
+QUESTION:
+What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?
+
+ANSWER:
+The **Harry Potter series** was written by **J.K. Rowling**. This beloved series consists of **7 main novels** published between **1997 and 2007**, chronicling the adventures of a young wizard.
+
+Unfortunately, there is no available information regarding **Aadil Raja's CGPA**.
+
+Additionally, **PSL** stands for the **Pakistan Super League**, a professional Twenty20 cricket league in Pakistan.
+
+Note: No relevant information found for: What is Aadil Raja's CGPA?
+Note: No relevant information found for: What does PSL stand for?
+
+GROUND TRUTH:
+Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 2]
+Summary
+
+● Author: J.K. Rowling ● Books: 7 main novels ● Genre: Fantasy ● Setting: Wizarding world + Hogwarts ● Main villain: Voldemort ● Adaptations:
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 2
+====================================================================================================
+
+QUESTION:
+What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?
+
+ANSWER:
+The first **Harry Potter** book, titled **"Harry Potter and the Philosopher’s Stone,"** was published in **1997**.
+
+Unfortunately, there is no information available regarding which university **Aadil** attends or which organization manages the **Pakistan Super League (PSL)**.
+
+Note: No relevant information found for: What university does Aadil attend?
+Note: No relevant information found for: Which organization manages the PSL?
+
+GROUND TRUTH:
+Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 3
+====================================================================================================
+
+QUESTION:
+How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?
+
+ANSWER:
+The **first Harry Potter book** is titled **"Harry Potter and the Philosopher's Stone."** Unfortunately, there is no information available regarding how many **gold medals Aadil** has won, nor is there any relevant data on the format of cricket played in the **Pakistan Super League (PSL)**.
+
+GROUND TRUTH:
+Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.
+
+RETRIEVED CHUNKS (2 total):
+
+[Chunk 1]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 2]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 4
+====================================================================================================
+
+QUESTION:
+What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?
+
+ANSWER:
+Aadil's email address is not available based on the retrieved information.
+
+The **Harry Potter** series consists of a total of **7 books** written by **J.K. Rowling**. The books in the series are:
+1. **Harry Potter and the Philosopher's Stone**
+2. **Harry Potter and the Chamber of Secrets**
+3. **Harry Potter and the Prisoner of Azkaban**
+4. **Harry Potter and the Goblet of Fire**
+5. **Harry Potter and the Order of the Phoenix**
+6. **Harry Potter and the Half-Blood Prince**
+7. **Harry Potter and the Deathly Hallows**
+
+Unfortunately, there is no information available regarding the year the first **Pakistan Super League (PSL)** season took place.
+
+Note: No relevant information found for: In what year did the first PSL season take place?
+
+GROUND TRUTH:
+Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+2. All Books in Order
+
+1. Harry Potter and the Philosopher's Stone 2. Harry Potter and the Chamber of Secrets 3. Harry Potter and the Prisoner of Azka
+
+[Chunk 2]
+1. Author and Publication Timeline
+
+The J. K. Rowling wrote the Harry Potter fantasy series.
+
+● First book published in 1997 ● Last book published in
+
+[Chunk 3]
+Summary
+
+● Author: J.K. Rowling ● Books: 7 main novels ● Genre: Fantasy ● Setting: Wizarding world + Hogwarts ● Main villain: Voldemort ● Adaptations:
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 5
+====================================================================================================
+
+QUESTION:
+What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?
+
+ANSWER:
+The **headmaster of Hogwarts** is **Albus Dumbledore**.
+
+Unfortunately, there is no available information regarding the honor that **Aadil** received from **Cedar College** or the number of original teams in the **Pakistan Super League (PSL)**.
+
+Note: No relevant information found for: What honor did Aadil receive from Cedar College?
+Note: No relevant information found for: How many original teams were in the PSL?
+
+GROUND TRUTH:
+Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 6
+====================================================================================================
+
+QUESTION:
+From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?
+
+ANSWER:
+Aadil's **High Achiever CAIE** school information is currently unavailable.
+
+The four **Hogwarts houses** are:
+- **Gryffindor** — bravery
+- **Slytherin** — ambition
+- **Ravenclaw** — intelligence
+- **Hufflepuff** — loyalty
+
+Information regarding the names of the two new **PSL teams** added in **2026** is also not available.
+
+Note: No relevant information found for: From which school did Aadil receive his High Achiever CAIE?
+Note: No relevant information found for: What are the names of the two new PSL teams added in 2026?
+
+GROUND TRUTH:
+Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 7
+====================================================================================================
+
+QUESTION:
+What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?
+
+ANSWER:
+Aadil's phone number is not available in the retrieved content, as it only includes document control and signoff information without any personal contact details.
+
+The trait associated with **Gryffindor** is **bravery**.
+
+Unfortunately, there is no relevant information found regarding how many total teams competed in the **2026 PSL season**.
+
+Note: No relevant information found for: How many total teams competed in the 2026 PSL season?
+
+GROUND TRUTH:
+Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 8
+====================================================================================================
+
+QUESTION:
+In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?
+
+ANSWER:
+In response to your questions:
+
+1. **Trait Associated with Slytherin**: The trait associated with **Slytherin** is **ambition**.
+
+2. **Points for a Win in the PSL**: In the **Pakistan Super League (PSL)**, a team earns **2 points** for a win.
+
+Unfortunately, I could not find information regarding the month and year Aadil started his **BS in Computer Science**.
+
+GROUND TRUTH:
+Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 9
+====================================================================================================
+
+QUESTION:
+What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?
+
+ANSWER:
+The information regarding **Aadil's LinkedIn handle** is not available in the retrieved documents, so I cannot provide that detail.
+
+The trait associated with **Ravenclaw** is **intelligence**.
+
+Unfortunately, there is no relevant information found regarding how many matches were scheduled for the **2026 Pakistan Super League (PSL)** season.
+
+Note: No relevant information found for: How many matches were scheduled for the 2026 PSL season?
+
+GROUND TRUTH:
+Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 10
+====================================================================================================
+
+QUESTION:
+What is Aadil's GitHub handle, what trait is associated with Hufflepuff, and which team won the inaugural PSL championship in 2016?
+
+ANSWER:
+Aadil's **GitHub handle** is not available in the retrieved documents, so I cannot provide that information.
+
+The trait associated with **Hufflepuff** is **loyalty**. Hufflepuff is one of the four Hogwarts houses, characterized by this trait and a strong emphasis on friendship.
+
+The team that won the inaugural **Pakistan Super League (PSL)** championship in **2016** is not specified in the retrieved documents, and no relevant information was found regarding this question.
+
+Note: No relevant information found for: Which team won the inaugural PSL championship in 2016?
+
+GROUND TRUTH:
+Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+Hogwarts Houses
+
+Students are sorted into:
+
+● Gryffindor — bravery ● Slytherin — ambition ● Ravenclaw — intelligence ● Hufflepuff — loyalty
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 11
+====================================================================================================
+
+QUESTION:
+What was Aadil's job title at Securiti, who is described as the complex professor in Harry Potter, and which team won the PSL in 2017?
+
+ANSWER:
+The **complex professor** in the **Harry Potter** series is **Severus Snape**.
+
+As for the **Pakistan Super League (PSL)**, the team that won the tournament in **2017** was **Peshawar Zalmi**.
+
+Unfortunately, there is no available information regarding **Aadil's job title at Securiti**.
+
+GROUND TRUTH:
+Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017.
+
+RETRIEVED CHUNKS (1 total):
+
+[Chunk 1]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+====================================================================================================
+
+====================================================================================================
+QUESTION 12
+====================================================================================================
+
+QUESTION:
+Which cloud provider's storage service did Aadil use to download logs, who is Harry Potter's intelligent best friend, and which team won the PSL in 2018?
+
+ANSWER:
+Aadil used **AWS S3** to download logs as part of his work at **Securiti**, where he built an automated pipeline for this purpose.
+
+Harry Potter's intelligent best friend is **Hermione Granger**.
+
+The team that won the **Pakistan Super League (PSL)** in **2018** was **Islamabad United**.
+
+GROUND TRUTH:
+Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018.
+
+RETRIEVED CHUNKS (3 total):
+
+[Chunk 1]
+Experience
+
+Backend Intern – Securiti — Python, Docker, Kubernetes, Elasticsearch 06/2025 – 08/2025
+
+Built an automated pipeline to download customer
+
+[Chunk 2]
+3. Main Characters
+
+● Harry Potter — The chosen wizard ● Hermione Granger — Intelligent best friend
+
+● Ron Weasley — Loyal friend ● Albus Dumbledore —
+
+[Chunk 3]
+5. PSL Champions by Year
+
+Year Winner
+
+2016 Islamabad United
+
+2017 Peshawar Zalmi
+
+2018 Islamabad United
+
+2019 Quetta Gladiators
+
+2020 Karachi Kings
+
+====================================================================================================

@@ -24,30 +24,38 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
   const [loadError, setLoadError] = useState(false);
 
   const url = citation?.cloudinaryUrl || null;
-  const snippet = citation?.snippet || "";
+  const snippets = Array.isArray(citation?.snippets) ? citation.snippets : [];
 
   // Normalize text for comparison
   const normalize = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  const normalizedSnippet = normalize(snippet);
 
   // Highlight matching text — only on the cited page
   const customTextRenderer = useCallback(
     ({ str, pageNumber: renderedPage }) => {
       if (renderedPage !== citation?.page) return str;
-      if (!normalizedSnippet || normalizedSnippet.length < 15) return str;
+      if (snippets.length === 0) return str;
+      
       try {
         const normalizedStr = normalize(str);
         // Require span to be at least 4 chars to avoid highlighting single words/noise
         if (normalizedStr.length < 4) return str;
-        if (normalizedSnippet.includes(normalizedStr)) {
-          return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
+        
+        // Check if this text matches any of the snippets
+        for (const snippet of snippets) {
+          const normalizedSnippet = normalize(snippet);
+          if (normalizedSnippet.length < 10) continue; // Skip very short snippets
+          
+          if (normalizedSnippet.includes(normalizedStr) || normalizedStr.includes(normalizedSnippet)) {
+            return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
+          }
         }
+        
         return str;
       } catch {
         return str;
       }
     },
-    [normalizedSnippet, citation?.page]
+    [snippets, citation?.page]
   );
 
   if (!citation) return null;
@@ -78,9 +86,13 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
               {citation.page ? `Page ${citation.page}` : "Referenced section"}
               {citation.section ? ` · ${citation.section}` : ""}
             </p>
-            {snippet && (
-              <p className="text-[11px] mt-1 line-clamp-1 max-w-2xl" style={{ color: "rgba(250,246,239,0.45)" }} title={snippet}>
-                "{snippet}"
+            {snippets.length > 0 && (
+              <p className="text-[11px] mt-1 line-clamp-2 max-w-2xl" style={{ color: "rgba(250,246,239,0.45)" }}>
+                {snippets.map((snip, idx) => (
+                  <span key={idx} title={snip}>
+                    "{snip}"{idx < snippets.length - 1 ? " · " : ""}
+                  </span>
+                ))}
               </p>
             )}
           </div>

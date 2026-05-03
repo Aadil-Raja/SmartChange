@@ -5,6 +5,8 @@ fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
+asyncpg                          # Async PostgreSQL driver for high concurrency
+greenlet                         # Required for async SQLAlchemy
 python-dotenv
 pydantic[email]
 passlib[bcrypt]
@@ -43,3 +45,7 @@ openai
 cloudinary
 tiktoken
 requests
+
+# Hybrid search and reranking
+rank-bm25                        # BM25 sparse retrieval
+sentence-transformers            # For reranking with cross-encoder models

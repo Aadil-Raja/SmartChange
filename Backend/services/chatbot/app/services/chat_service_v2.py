@@ -4,8 +4,9 @@ V2 chat service - returns structured response with citations.
 """
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 from langchain_core.messages import HumanMessage, AIMessage
+from concurrent.futures import ThreadPoolExecutor
 
 from app.repositories import chat_repo
 from app.services.agent_service_v2 import DocumentAgentV2
@@ -20,6 +21,36 @@ class QuotaExceededError(Exception):
     def __init__(self, quota_snapshot: dict):
         self.quota_snapshot = quota_snapshot
         super().__init__("Token quota exceeded")
+
+
+def _load_section_names_for_docs(management_db: Session, document_ids: List[int]) -> Dict[int, List[str]]:
+    """
+    Load section names for all documents in parallel.
+    
+    Args:
+        management_db: Database session
+        document_ids: List of document IDs
+        
+    Returns:
+        Dict mapping doc_id to list of section names
+    """
+    from shared.models import DocumentSection
+    
+    def get_sections(doc_id):
+        try:
+            sections = management_db.query(DocumentSection.section_title).filter(
+                DocumentSection.document_id == doc_id
+            ).order_by(DocumentSection.start_chunk_index).all()
+            return doc_id, [s[0] for s in sections if s[0]]
+        except Exception as e:
+            print(f"[SECTIONS] Error getting sections for doc {doc_id}: {e}", file=sys.stderr)
+            return doc_id, []
+    
+    with ThreadPoolExecutor(max_workers=len(document_ids)) as executor:
+        futures = [executor.submit(get_sections, doc_id) for doc_id in document_ids]
+        results = [future.result() for future in futures]
+    
+    return dict(results)
 
 
 def respond_turn_v2(
@@ -87,7 +118,12 @@ def respond_turn_v2(
 
         # Ensure chathead exists
         from app.services.chat_service import ensure_chathead, load_doc_summaries_and_messages
+        from app.models.chathead import ChatHead
+        
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
+        
+        # Fetch the chathead object to access use_deep_reranker
+        chathead_obj = db.query(ChatHead).filter(ChatHead.id == cid).first()
 
         # Initialize logger for this chathead
         try:
@@ -109,20 +145,40 @@ def respond_turn_v2(
             print(f"[LOGGER] Failed to initialize: {e}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
 
-        # Load document-wise histories (summaries + all unsummarized messages)
-        doc_histories = load_doc_summaries_and_messages(
-            db=db,
-            management_db=management_db,
-            chathead_id=cid,
-            active_doc_ids=active_doc_ids
-        )
+        # ✅ OPTIMIZATION: Load doc histories AND section names in parallel
+        from concurrent.futures import ThreadPoolExecutor
+        
+        print(f"[CHAT] Loading doc histories and sections in parallel...", file=sys.stderr)
+        
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            # Start both operations simultaneously
+            doc_histories_future = executor.submit(
+                load_doc_summaries_and_messages,
+                db=db,
+                management_db=management_db,
+                chathead_id=cid,
+                active_doc_ids=active_doc_ids
+            )
+            
+            sections_future = executor.submit(
+                _load_section_names_for_docs,
+                management_db=management_db,
+                document_ids=active_doc_ids
+            )
+            
+            # Wait for both to complete
+            doc_histories = doc_histories_future.result()
+            section_names_map = sections_future.result()
+        
+        print(f"[CHAT] Loaded {len(doc_histories)} doc histories and {len(section_names_map)} section maps in parallel", file=sys.stderr)
 
         # Run v2 agent FIRST to get validated doc IDs
-        agent = DocumentAgentV2(db, management_db)
+        agent = DocumentAgentV2(db, management_db, chathead_obj)  # Pass chathead
         out = agent.get_response(
             active_doc_ids=active_doc_ids,
             user_message=message,
-            doc_histories=doc_histories  # Pass document-wise histories
+            doc_histories=doc_histories,  # Pass document-wise histories
+            section_names_map=section_names_map  # ✅ NEW: Pass pre-fetched sections
         )
 
         answer_text = out["answer"]

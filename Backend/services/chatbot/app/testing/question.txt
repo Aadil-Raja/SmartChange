@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "total_questions": 100,
+    "description": "Test dataset for RAG system evaluation with RAGAS",
+    "format": "Each question is a compound question containing 3 sub-questions"
+  },
+  "test_cases": [
+    {
+      "id": 1,
+      "question": "What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?",
+      "ground_truth": "Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League."
+    },
+    {
+      "id": 2,
+      "question": "What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?",
+      "ground_truth": "Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB)."
+    },
+    {
+      "id": 3,
+      "question": "How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?",
+      "ground_truth": "Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format."
+    },
+    {
+      "id": 4,
+      "question": "What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?",
+      "ground_truth": "Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016."
+    },
+    {
+      "id": 5,
+      "question": "What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?",
+      "ground_truth": "Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL."
+    },
+    {
+      "id": 6,
+      "question": "From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?",
+      "ground_truth": "Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz."
+    },
+    {
+      "id": 7,
+      "question": "What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?",
+      "ground_truth": "Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season."
+    },
+    {
+      "id": 8,
+      "question": "In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?",
+      "ground_truth": "Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL."
+    },
+    {
+      "id": 9,
+      "question": "What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?",
+      "ground_truth": "Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season."
+    },
+    {
+      "id": 10,
+      "question": "What is Aadil's GitHub handle, what trait is associated with Hufflepuff, and which team won the inaugural PSL championship in 2016?",
+      "ground_truth": "Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016."
+    },
+    {
+      "id": 11,
+      "question": "What was Aadil's job title at Securiti, who is described as the complex professor in Harry Potter, and which team won the PSL in 2017?",
+      "ground_truth": "Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017."
+    },
+    {
+      "id": 12,
+      "question": "Which cloud provider's storage service did Aadil use to download logs, who is Harry Potter's intelligent best friend, and which team won the PSL in 2018?",
+      "ground_truth": "Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018."
+    },
+    {
+      "id": 13,
+      "question": "What containerization technologies did Aadil use during his internship, who is considered Harry's loyal friend, and which team won the PSL in 2019?",
+      "ground_truth": "Aadil used Docker and Kubernetes. Harry's loyal friend is Ron Weasley. Quetta Gladiators won the PSL in 2019."
+    },
+    {
+      "id": 14,
+      "question": "Where were the customer application logs indexed for centralized search in Aadil's internship, who is the main villain in the Harry Potter series, and which team won the PSL in 2020?",
+      "ground_truth": "Logs were indexed in Elasticsearch. The main villain is Lord Voldemort. Karachi Kings won the PSL in 2020."
+    },
+    {
+      "id": 15,
+      "question": "What type of workflow did Aadil develop for orchestration at Securiti, who are the dark wizard followers of Voldemort, and which team won the PSL in 2021?",
+      "ground_truth": "Aadil developed a CLI-based orchestration workflow. Voldemort's dark wizard followers are the Death Eaters. Multan Sultans won the PSL in 2021."
+    },
+    {
+      "id": 16,
+      "question": "Name the three configurable filters included in Aadil's orchestration workflow, what object allows time travel in Harry Potter, and which team won the PSL in 2022?",
+      "ground_truth": "The filters were date ranges, customer/account scope, and keywords. A Time-Turner allows time travel. Lahore Qalandars won the PSL in 2022."
+    },
+    {
+      "id": 17,
+      "question": "What platform was Aadil's automated pipeline deployed on, what magical object makes the wearer unseen, and which team won the PSL in 2023?",
+      "ground_truth": "The pipeline was deployed on Kubernetes. An Invisibility cloak makes the wearer unseen. Lahore Qalandars won the PSL in 2023."
+    },
+    {
+      "id": 18,
+      "question": "What programming language did Aadil use at Securiti, who did Harry Potter survive an attack from as a baby, and which team won the PSL in 2024?",
+      "ground_truth": "Aadil programmed in Python. Harry survived a baby attack from Lord Voldemort. Islamabad United won the PSL in 2024."
+    },
+    {
+      "id": 19,
+      "question": "Did Aadil handle runtime troubleshooting during his backend internship, what are horcruxes, and who were the defending PSL champions entering the 2026 season?",
+      "ground_truth": "Yes, Aadil handled runtime troubleshooting. Horcruxes are magical objects. The defending champions entering 2026 were the Lahore Qalandars."
+    },
+    {
+      "id": 20,
+      "question": "What specific goal did Aadil's CLI workflow achieve for troubleshooting, what is the name of the Harry Potter stage play, and which PSL team has the most titles?",
+      "ground_truth": "The CLI workflow improved troubleshooting repeatability. The stage play is *Harry Potter and the Cursed Child*. Islamabad United has the most PSL titles."
+    }
+
+   
+  ]
+}
+
+
+

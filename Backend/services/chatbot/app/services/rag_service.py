@@ -252,7 +252,8 @@ IMPORTANT: Return ONLY valid JSON, no preamble or markdown.
             llm_provider=settings.llm_provider,
             llm_model=settings.llm_model,
             google_api_key=settings.google_api_key,
-            openai_api_key=settings.openai_api_key
+            openai_api_key=settings.openai_api_key,
+            max_output_tokens=settings.max_output_tokens
         )
         
         # Use generate_json for automatic JSON parsing

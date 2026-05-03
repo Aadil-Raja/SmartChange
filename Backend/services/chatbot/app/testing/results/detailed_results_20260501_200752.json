@@ -1,0 +1,410 @@
+{
+  "metadata": {
+    "timestamp": "20260501_200752",
+    "user_email": "k224492@nu.edu.pk",
+    "chathead_id": 235,
+    "total_questions": 20
+  },
+  "ragas_scores": {
+    "user_input": {
+      "0": "What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?",
+      "1": "What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?",
+      "2": "How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?",
+      "3": "What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?",
+      "4": "What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?",
+      "5": "From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?",
+      "6": "What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?",
+      "7": "In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?",
+      "8": "What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?",
+      "9": "What is Aadil's GitHub handle, what trait is associated with Hufflepuff, and which team won the inaugural PSL championship in 2016?",
+      "10": "What was Aadil's job title at Securiti, who is described as the complex professor in Harry Potter, and which team won the PSL in 2017?",
+      "11": "Which cloud provider's storage service did Aadil use to download logs, who is Harry Potter's intelligent best friend, and which team won the PSL in 2018?",
+      "12": "What containerization technologies did Aadil use during his internship, who is considered Harry's loyal friend, and which team won the PSL in 2019?",
+      "13": "Where were the customer application logs indexed for centralized search in Aadil's internship, who is the main villain in the Harry Potter series, and which team won the PSL in 2020?",
+      "14": "What type of workflow did Aadil develop for orchestration at Securiti, who are the dark wizard followers of Voldemort, and which team won the PSL in 2021?",
+      "15": "Name the three configurable filters included in Aadil's orchestration workflow, what object allows time travel in Harry Potter, and which team won the PSL in 2022?",
+      "16": "What platform was Aadil's automated pipeline deployed on, what magical object makes the wearer unseen, and which team won the PSL in 2023?",
+      "17": "What programming language did Aadil use at Securiti, who did Harry Potter survive an attack from as a baby, and which team won the PSL in 2024?",
+      "18": "Did Aadil handle runtime troubleshooting during his backend internship, what are horcruxes, and who were the defending PSL champions entering the 2026 season?",
+      "19": "What specific goal did Aadil's CLI workflow achieve for troubleshooting, what is the name of the Harry Potter stage play, and which PSL team has the most titles?"
+    },
+    "retrieved_contexts": {
+      "0": [
+        "No context retrieved"
+      ],
+      "1": [
+        "No context retrieved"
+      ],
+      "2": [
+        "No context retrieved"
+      ],
+      "3": [
+        "No context retrieved"
+      ],
+      "4": [
+        "No context retrieved"
+      ],
+      "5": [
+        "No context retrieved"
+      ],
+      "6": [
+        "No context retrieved"
+      ],
+      "7": [
+        "No context retrieved"
+      ],
+      "8": [
+        "No context retrieved"
+      ],
+      "9": [
+        "No context retrieved"
+      ],
+      "10": [
+        "No context retrieved"
+      ],
+      "11": [
+        "No context retrieved"
+      ],
+      "12": [
+        "No context retrieved"
+      ],
+      "13": [
+        "No context retrieved"
+      ],
+      "14": [
+        "No context retrieved"
+      ],
+      "15": [
+        "No context retrieved"
+      ],
+      "16": [
+        "No context retrieved"
+      ],
+      "17": [
+        "No context retrieved"
+      ],
+      "18": [
+        "No context retrieved"
+      ],
+      "19": [
+        "No context retrieved"
+      ]
+    },
+    "response": {
+      "0": "Aadil Raja's **CGPA** is **3.99 out of 4.0**.\n\nThe **Harry Potter** series, consisting of **seven novels** published between **1997** and **2007**, was written by **J.K. Rowling**. It follows the journey of a young wizard.\n\n**PSL** stands for **Pakistan Super League**, a professional **Twenty20 (T20)** cricket franchise league in Pakistan. It features city-based teams that compete annually in a short-format tournament. The league was officially announced in **2015**, with its first season taking place in **2016**.",
+      "1": "Aadil Raja attends **FAST University** in Karachi, where he is currently in his final semester pursuing a **BS in Computer Science**.\n\nThe first Harry Potter book, **Harry Potter and the Philosopher\u2019s Stone**, was published in **1997**.\n\nThe **Pakistan Super League (PSL)** is organized and managed by the **Pakistan Cricket Board (PCB)**, which is responsible for scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.",
+      "2": "Aadil Raja has achieved notable success in his academic pursuits, winning a total of **4 Gold Medals** and **1 Silver Medal** in the **BSCS Department** at **FAST University**.\n\nThe title of the first book in the **Harry Potter** series is **Harry Potter and the Philosopher's Stone**, which was published in **1997** and marks the beginning of a beloved series written by **J.K. Rowling**.\n\nIn the realm of cricket, the **Pakistan Super League (PSL)** is played in the **Twenty20 (T20)** format, where each match consists of **20 overs per side**. The tournament features a double round-robin group stage, allowing each team to compete against the others, with the top four teams advancing to the playoffs.",
+      "3": "Aadil Raja's email address is **aadil2raja@gmail.com**.\n\nThe **Harry Potter** series consists of a total of **seven books**, written by **J.K. Rowling**. The titles of the books are as follows:\n\n1. **Harry Potter and the Philosopher's Stone**\n2. **Harry Potter and the Chamber of Secrets**\n3. **Harry Potter and the Prisoner of Azkaban**\n4. **Harry Potter and the Goblet of Fire**\n5. **Harry Potter and the Order of the Phoenix**\n6. **Harry Potter and the Half-Blood Prince**\n7. **Harry Potter and the Deathly Hallows**\n\nThe first season of the **Pakistan Super League (PSL)** took place in **2016**. The league was officially announced in **2015**.",
+      "4": "Aadil Raja received the **Honour Roll** from **Cedar College** as part of his academic achievements.\n\nThe headmaster of Hogwarts is **Albus Dumbledore**, a central character in the Harry Potter series, renowned for his wisdom and leadership at the school.\n\nThe **Pakistan Super League (PSL)** originally started with **six teams**:\n1. **Islamabad United**  \n2. **Karachi Kings**  \n3. **Lahore Qalandars**  \n4. **Peshawar Zalmi**  \n5. **Quetta Gladiators**  \n6. **Multan Sultans**  \n\nThe league has since expanded to eight teams as of 2026.",
+      "5": "Aadil Raja received his **High Achiever CAIE** from **Army Public School**.\n\nThe four **Hogwarts houses** are:\n1. **Gryffindor** - bravery\n2. **Slytherin** - ambition\n3. **Ravenclaw** - intelligence\n4. **Hufflepuff** - loyalty\n\nIn 2026, the two new teams added to the **Pakistan Super League (PSL)** are **Hyderabad Kingsmen** and **Rawalpindiz**, increasing the total number of teams in the league from six to eight.",
+      "6": "Aadil Raja's phone number is **+92 335 3633400**.\n\nThe trait associated with **Gryffindor** is **bravery**. This house values courage and valor among its members, who are known for their daring and chivalrous nature.\n\nIn the **2026 Pakistan Super League (PSL)** season, a total of **8 teams** competed. This expansion from the original number of teams was part of the league's growth and restructuring efforts.",
+      "7": "Aadil Raja started his **BS in Computer Science** at **FAST University** in **September 2022** and is currently in his final semester, indicating he is expected to complete his degree soon.\n\nThe trait associated with **Slytherin** is **ambition**, which reflects the house's value on the drive to achieve goals and the desire for power among its members.\n\nIn the **Pakistan Super League (PSL)**, a team receives **2 points for a win**. If a match has no result, the team gets **1 point**. This points system is part of the tournament's double round-robin format, where each team plays against the others.",
+      "8": "Aadil Raja's LinkedIn handle is **linkedin/aadil-raja**.\n\nThe trait associated with **Ravenclaw** is **intelligence**, which emphasizes knowledge, wisdom, and a love for learning among its members.\n\nIn the **2026 Pakistan Super League (PSL)** season, a total of **44 matches** were scheduled, reflecting the league's expansion to **8 teams** and its growing popularity.",
+      "9": "Aadil Raja's GitHub handle is **github/Aadil-Raja**.\n\nThe trait associated with **Hufflepuff** is **loyalty**. This house values dedication, hard work, and fair play among its members, who are known for their strong sense of community and support for one another.\n\nThe inaugural **Pakistan Super League (PSL)** championship in **2016** was won by **Islamabad United**. They were the first team to claim the title in the league's history, which has since seen various teams compete for the championship in subsequent seasons.",
+      "10": "Aadil Raja held the job title of **Backend Intern** at **Securiti**. During his internship, he worked with technologies such as **Python**, **Docker**, **Kubernetes**, and **Elasticsearch**. His responsibilities included building an automated pipeline for customer application logs and developing a CLI-based orchestration workflow.\n\nThe complex professor in the **Harry Potter** series is **Severus Snape**, known for his intricate character that embodies both antagonistic and heroic traits throughout the story.\n\nIn **2017**, the **Pakistan Super League (PSL)** was won by **Peshawar Zalmi**, marking their first championship title in the league's history.",
+      "11": "Aadil used **AWS S3** to download customer application logs during his internship at **Securiti**. He built an automated pipeline that involved downloading logs from this cloud provider's storage service, parsing and transforming them, and indexing them into **Elasticsearch** for centralized search and analysis.\n\nHarry Potter's intelligent best friend is **Hermione Granger**, known for her intelligence and resourcefulness throughout the series.\n\nThe **Pakistan Super League (PSL)** in **2018** was won by **Islamabad United**, adding to their reputation as one of the most successful teams in the league's history.",
+      "12": "During his internship at **Securiti**, Aadil Raja utilized the following containerization technologies:\n\n- **Docker**\n- **Kubernetes**\n\nHe gained hands-on experience with containerized deployments and runtime troubleshooting while deploying an automated pipeline.\n\nHarry Potter's loyal friend is **Ron Weasley**. He is known for his steadfast support and friendship throughout the series, standing by Harry during many challenges and adventures.\n\nThe **Pakistan Super League (PSL)** in **2019** was won by **Quetta Gladiators**. This victory marked their first championship title in the league's history, adding to the competitive spirit of the tournament.",
+      "13": "During his internship at **Securiti**, Aadil Raja indexed customer application logs into **Elasticsearch** for centralized search and analysis. He built an automated pipeline that involved downloading logs from **AWS S3**, parsing and transforming them, and then indexing them into Elasticsearch.\n\nThe main villain in the **Harry Potter** series is **Lord Voldemort**. He serves as the primary antagonist throughout the series, representing the dark forces that Harry Potter and his friends must confront. Other notable antagonists include **Bellatrix Lestrange**, **Draco Malfoy**, and the **Death Eaters**, who are Voldemort's followers.\n\nIn **2020**, the **Karachi Kings** won the **Pakistan Super League (PSL)**, marking a significant achievement in the league's history, which has seen various teams compete for the championship since its inception in **2016**.",
+      "14": "Aadil developed a **CLI-based orchestration workflow** at **Securiti**, which includes configurable filters such as date ranges, customer/account scope, and keywords. This workflow significantly improved troubleshooting repeatability during his internship.\n\nThe dark wizard followers of **Lord Voldemort** are known as the **Death Eaters**. This group consists of wizards and witches who support Voldemort in his quest for power and domination of the wizarding world. Notable members include **Bellatrix Lestrange** and **Draco Malfoy**.\n\nIn **2021**, the **Pakistan Super League (PSL)** was won by the **Multan Sultans**, marking a significant achievement in the league's history since its inception in **2016**.",
+      "15": "Aadil's orchestration workflow includes the following three configurable filters:\n\n1. **Date ranges** - This filter allows users to specify the time frame for log pulls.\n2. **Customer/account scope** - This filter enables targeting specific customers or accounts for more relevant data.\n3. **Keywords** - This filter helps in refining the search by including specific terms.\n\nThese filters enhance the efficiency of troubleshooting during his internship at **Securiti**.\n\nIn the **Harry Potter** series, the object that allows time travel is the **Time-Turner**. This magical device enables the user to travel back in time, allowing them to attend multiple events simultaneously or to change past events.\n\nThe **Lahore Qalandars** won the **Pakistan Super League (PSL)** in **2022**, marking a significant achievement in the league's history since its inception in **2016**.",
+      "16": "Aadil's automated pipeline was deployed on **Kubernetes**, which provided him with valuable hands-on experience in containerized deployments, configuration, and runtime troubleshooting during his internship at **Securiti**.\n\nIn the **Harry Potter** series, the magical object that makes the wearer unseen is the **Invisibility Cloak**. This cloak grants the user the ability to become invisible, offering significant advantages in various situations throughout the story.\n\nThe **Lahore Qalandars** emerged victorious in the **Pakistan Super League (PSL)** in **2023**, adding to their recent successes as they also won the league in **2022**.",
+      "17": "Aadil Raja utilized **Python** as the programming language during his internship at **Securiti**. He was involved in developing an automated pipeline that included downloading customer application logs, parsing and transforming them, and indexing them into **Elasticsearch** for centralized search and analysis.\n\nHarry Potter survived an attack from **Voldemort** as a baby, a crucial event that marks the beginning of his journey and his connection to the dark wizard.\n\nIn **2024**, the **Islamabad United** emerged victorious in the **Pakistan Super League (PSL)**, further solidifying their status as one of the most successful teams in the league's history, having previously won multiple championships.",
+      "18": "1. Yes, Aadil handled **runtime troubleshooting** during his backend internship at **Securiti**. He gained hands-on experience with containerized deployments, configuration, and runtime troubleshooting while deploying an automated pipeline.\n\n2. **Horcruxes** are dark magical objects in the **Harry Potter** series that allow a dark wizard or witch to attain immortality. They are created by splitting one's soul and hiding a fragment of it in an object, which protects the individual from death as long as the Horcrux exists. The act of creating a Horcrux involves committing murder, which is considered one of the darkest forms of magic. The concept of Horcruxes is central to the plot, particularly in the conflict between **Harry Potter** and **Lord Voldemort**, who created multiple Horcruxes to secure his immortality.\n\n3. The defending champions entering the **2026 Pakistan Super League (PSL)** season were the **Lahore Qalandars**, who won the title in **2025**.",
+      "19": "Aadil's CLI workflow achieved the goal of **improving troubleshooting repeatability**. This was accomplished by enabling targeted log pulls and ingestion through configurable filters such as date ranges, customer/account scope, and keywords, which enhanced the efficiency of the troubleshooting process during his internship at **Securiti**.\n\nThe name of the Harry Potter stage play is **Harry Potter and the Cursed Child**. This play is one of the adaptations of the Harry Potter series, alongside the eight films and the spin-off movies from the **Fantastic Beasts and Where to Find Them** series.\n\nIn the **Pakistan Super League (PSL)**, the team with the most titles is **Islamabad United**, which holds the record for the most championships, having won a total of **three titles** in **2016**, **2018**, and **2024**. They are recognized as the most successful team in the league's history. The **Lahore Qalandars** have also been successful recently, winning back-to-back titles in **2022** and **2023**."
+    },
+    "reference": {
+      "0": "Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.",
+      "1": "Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).",
+      "2": "Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.",
+      "3": "Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.",
+      "4": "Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.",
+      "5": "Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.",
+      "6": "Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.",
+      "7": "Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.",
+      "8": "Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.",
+      "9": "Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016.",
+      "10": "Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017.",
+      "11": "Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018.",
+      "12": "Aadil used Docker and Kubernetes. Harry's loyal friend is Ron Weasley. Quetta Gladiators won the PSL in 2019.",
+      "13": "Logs were indexed in Elasticsearch. The main villain is Lord Voldemort. Karachi Kings won the PSL in 2020.",
+      "14": "Aadil developed a CLI-based orchestration workflow. Voldemort's dark wizard followers are the Death Eaters. Multan Sultans won the PSL in 2021.",
+      "15": "The filters were date ranges, customer/account scope, and keywords. A Time-Turner allows time travel. Lahore Qalandars won the PSL in 2022.",
+      "16": "The pipeline was deployed on Kubernetes. An Invisibility cloak makes the wearer unseen. Lahore Qalandars won the PSL in 2023.",
+      "17": "Aadil programmed in Python. Harry survived a baby attack from Lord Voldemort. Islamabad United won the PSL in 2024.",
+      "18": "Yes, Aadil handled runtime troubleshooting. Horcruxes are magical objects. The defending champions entering 2026 were the Lahore Qalandars.",
+      "19": "The CLI workflow improved troubleshooting repeatability. The stage play is *Harry Potter and the Cursed Child*. Islamabad United has the most PSL titles."
+    },
+    "faithfulness": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.7272727272727273,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 0.0,
+      "7": 0.0,
+      "8": 0.0,
+      "9": 0.0,
+      "10": 0.0,
+      "11": 0.0,
+      "12": 0.0,
+      "13": 0.0,
+      "14": 0.0,
+      "15": 0.0,
+      "16": 0.0,
+      "17": 0.0,
+      "18": 0.0,
+      "19": 0.0
+    },
+    "answer_relevancy": {
+      "0": 0.8586073132715424,
+      "1": 0.5450737210731658,
+      "2": 0.6362268272126775,
+      "3": 0.36800381724336567,
+      "4": 0.5467621804257314,
+      "5": 0.6981167036678866,
+      "6": 0.8964264874032178,
+      "7": 0.7457466483943396,
+      "8": 0.9342992780826184,
+      "9": 0.8602198357394633,
+      "10": 0.6544990772929713,
+      "11": 0.3559965129609573,
+      "12": 0.5029007771322861,
+      "13": 0.7163281141082783,
+      "14": 0.5627695560844358,
+      "15": 0.713527994525674,
+      "16": 0.4736323993518045,
+      "17": 0.61741896276357,
+      "18": 0.8343480893450942,
+      "19": 0.6412373718446538
+    },
+    "context_precision": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 0.0,
+      "7": 0.0,
+      "8": 0.0,
+      "9": 0.0,
+      "10": 0.0,
+      "11": 0.0,
+      "12": 0.0,
+      "13": 0.0,
+      "14": 0.0,
+      "15": 0.0,
+      "16": 0.0,
+      "17": 0.0,
+      "18": 0.0,
+      "19": 0.0
+    },
+    "context_recall": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0,
+      "6": 0.0,
+      "7": 0.0,
+      "8": 0.0,
+      "9": 0.0,
+      "10": 0.0,
+      "11": 0.0,
+      "12": 0.0,
+      "13": 0.0,
+      "14": 0.0,
+      "15": 0.0,
+      "16": 0.0,
+      "17": 0.0,
+      "18": 0.0,
+      "19": 0.0
+    },
+    "answer_correctness": {
+      "0": 0.44021919375404067,
+      "1": 0.6269549751976151,
+      "2": 0.5223356154807177,
+      "3": 0.49322445656868286,
+      "4": 0.7007727891262802,
+      "5": 0.6308776461272442,
+      "6": 0.7221387854152019,
+      "7": 0.5518859171573256,
+      "8": 0.7296607111429783,
+      "9": 0.6353353285904819,
+      "10": 0.6178626503527378,
+      "11": 0.6119015181580877,
+      "12": 0.42972401381902464,
+      "13": 0.49493828300532156,
+      "14": 0.626061015276606,
+      "15": 0.6006987763549878,
+      "16": 0.56845893927094,
+      "17": 0.55208476737221,
+      "18": 0.393751983889286,
+      "19": 0.4854777577966854
+    }
+  },
+  "questions_and_answers": [
+    {
+      "question": "What is Aadil Raja's CGPA, who wrote the Harry Potter series, and what does PSL stand for?",
+      "answer": "Aadil Raja's **CGPA** is **3.99 out of 4.0**.\n\nThe **Harry Potter** series, consisting of **seven novels** published between **1997** and **2007**, was written by **J.K. Rowling**. It follows the journey of a young wizard.\n\n**PSL** stands for **Pakistan Super League**, a professional **Twenty20 (T20)** cricket franchise league in Pakistan. It features city-based teams that compete annually in a short-format tournament. The league was officially announced in **2015**, with its first season taking place in **2016**.",
+      "ground_truth": "Aadil's CGPA is 3.99 / 4.0. The Harry Potter series was written by J. K. Rowling. PSL stands for Pakistan Super League.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What university does Aadil attend, in what year was the first Harry Potter book published, and which organization manages the PSL?",
+      "answer": "Aadil Raja attends **FAST University** in Karachi, where he is currently in his final semester pursuing a **BS in Computer Science**.\n\nThe first Harry Potter book, **Harry Potter and the Philosopher\u2019s Stone**, was published in **1997**.\n\nThe **Pakistan Super League (PSL)** is organized and managed by the **Pakistan Cricket Board (PCB)**, which is responsible for scheduling, franchise agreements, player drafts/auctions, and broadcasting rights.",
+      "ground_truth": "Aadil attends FAST University. The first Harry Potter book was published in 1997. The PSL is managed by the Pakistan Cricket Board (PCB).",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "How many gold medals did Aadil win, what is the title of the first Harry Potter book, and what format of cricket is played in the PSL?",
+      "answer": "Aadil Raja has achieved notable success in his academic pursuits, winning a total of **4 Gold Medals** and **1 Silver Medal** in the **BSCS Department** at **FAST University**.\n\nThe title of the first book in the **Harry Potter** series is **Harry Potter and the Philosopher's Stone**, which was published in **1997** and marks the beginning of a beloved series written by **J.K. Rowling**.\n\nIn the realm of cricket, the **Pakistan Super League (PSL)** is played in the **Twenty20 (T20)** format, where each match consists of **20 overs per side**. The tournament features a double round-robin group stage, allowing each team to compete against the others, with the top four teams advancing to the playoffs.",
+      "ground_truth": "Aadil won 4 gold medals. The first Harry Potter book is titled *Harry Potter and the Philosopher's Stone*. The PSL features the Twenty20 (T20) format.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What is Aadil's email address, how many Harry Potter books are there in total, and in what year did the first PSL season take place?",
+      "answer": "Aadil Raja's email address is **aadil2raja@gmail.com**.\n\nThe **Harry Potter** series consists of a total of **seven books**, written by **J.K. Rowling**. The titles of the books are as follows:\n\n1. **Harry Potter and the Philosopher's Stone**\n2. **Harry Potter and the Chamber of Secrets**\n3. **Harry Potter and the Prisoner of Azkaban**\n4. **Harry Potter and the Goblet of Fire**\n5. **Harry Potter and the Order of the Phoenix**\n6. **Harry Potter and the Half-Blood Prince**\n7. **Harry Potter and the Deathly Hallows**\n\nThe first season of the **Pakistan Super League (PSL)** took place in **2016**. The league was officially announced in **2015**.",
+      "ground_truth": "Aadil's email is aadil2raja@gmail.com. There are 7 novels in the Harry Potter series. The first PSL season took place in 2016.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What honor did Aadil receive from Cedar College, who is the headmaster of Hogwarts, and how many original teams were in the PSL?",
+      "answer": "Aadil Raja received the **Honour Roll** from **Cedar College** as part of his academic achievements.\n\nThe headmaster of Hogwarts is **Albus Dumbledore**, a central character in the Harry Potter series, renowned for his wisdom and leadership at the school.\n\nThe **Pakistan Super League (PSL)** originally started with **six teams**:\n1. **Islamabad United**  \n2. **Karachi Kings**  \n3. **Lahore Qalandars**  \n4. **Peshawar Zalmi**  \n5. **Quetta Gladiators**  \n6. **Multan Sultans**  \n\nThe league has since expanded to eight teams as of 2026.",
+      "ground_truth": "Aadil received the Honour Roll from Cedar College. The headmaster of Hogwarts is Albus Dumbledore. There were originally 6 teams in the PSL.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "From which school did Aadil receive his High Achiever CAIE, what are the four Hogwarts houses, and what are the names of the two new PSL teams added in 2026?",
+      "answer": "Aadil Raja received his **High Achiever CAIE** from **Army Public School**.\n\nThe four **Hogwarts houses** are:\n1. **Gryffindor** - bravery\n2. **Slytherin** - ambition\n3. **Ravenclaw** - intelligence\n4. **Hufflepuff** - loyalty\n\nIn 2026, the two new teams added to the **Pakistan Super League (PSL)** are **Hyderabad Kingsmen** and **Rawalpindiz**, increasing the total number of teams in the league from six to eight.",
+      "ground_truth": "Aadil received his High Achiever CAIE from Army Public School. The four Hogwarts houses are Gryffindor, Slytherin, Ravenclaw, and Hufflepuff. The two new PSL teams added in 2026 are the Hyderabad Kingsmen and Rawalpindiz.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What is Aadil's phone number, what trait is associated with Gryffindor, and how many total teams competed in the 2026 PSL season?",
+      "answer": "Aadil Raja's phone number is **+92 335 3633400**.\n\nThe trait associated with **Gryffindor** is **bravery**. This house values courage and valor among its members, who are known for their daring and chivalrous nature.\n\nIn the **2026 Pakistan Super League (PSL)** season, a total of **8 teams** competed. This expansion from the original number of teams was part of the league's growth and restructuring efforts.",
+      "ground_truth": "Aadil's phone number is +92 335 3633400. The trait associated with Gryffindor is bravery. There were 8 teams in the 2026 PSL season.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "In what month and year did Aadil start his BS in Computer Science, what trait is associated with Slytherin, and how many points does a team get for a win in the PSL?",
+      "answer": "Aadil Raja started his **BS in Computer Science** at **FAST University** in **September 2022** and is currently in his final semester, indicating he is expected to complete his degree soon.\n\nThe trait associated with **Slytherin** is **ambition**, which reflects the house's value on the drive to achieve goals and the desire for power among its members.\n\nIn the **Pakistan Super League (PSL)**, a team receives **2 points for a win**. If a match has no result, the team gets **1 point**. This points system is part of the tournament's double round-robin format, where each team plays against the others.",
+      "ground_truth": "Aadil started his BS in Computer Science in 09/2022. The trait associated with Slytherin is ambition. A team gets 2 points for a win in the PSL.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What is Aadil's LinkedIn handle, what trait is associated with Ravenclaw, and how many matches were scheduled for the 2026 PSL season?",
+      "answer": "Aadil Raja's LinkedIn handle is **linkedin/aadil-raja**.\n\nThe trait associated with **Ravenclaw** is **intelligence**, which emphasizes knowledge, wisdom, and a love for learning among its members.\n\nIn the **2026 Pakistan Super League (PSL)** season, a total of **44 matches** were scheduled, reflecting the league's expansion to **8 teams** and its growing popularity.",
+      "ground_truth": "Aadil's LinkedIn handle is linkedin/aadil-raja. The trait associated with Ravenclaw is intelligence. There were 44 matches scheduled for the 2026 PSL season.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What is Aadil's GitHub handle, what trait is associated with Hufflepuff, and which team won the inaugural PSL championship in 2016?",
+      "answer": "Aadil Raja's GitHub handle is **github/Aadil-Raja**.\n\nThe trait associated with **Hufflepuff** is **loyalty**. This house values dedication, hard work, and fair play among its members, who are known for their strong sense of community and support for one another.\n\nThe inaugural **Pakistan Super League (PSL)** championship in **2016** was won by **Islamabad United**. They were the first team to claim the title in the league's history, which has since seen various teams compete for the championship in subsequent seasons.",
+      "ground_truth": "Aadil's GitHub handle is github/Aadil-Raja. The trait associated with Hufflepuff is loyalty. Islamabad United won the inaugural PSL championship in 2016.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What was Aadil's job title at Securiti, who is described as the complex professor in Harry Potter, and which team won the PSL in 2017?",
+      "answer": "Aadil Raja held the job title of **Backend Intern** at **Securiti**. During his internship, he worked with technologies such as **Python**, **Docker**, **Kubernetes**, and **Elasticsearch**. His responsibilities included building an automated pipeline for customer application logs and developing a CLI-based orchestration workflow.\n\nThe complex professor in the **Harry Potter** series is **Severus Snape**, known for his intricate character that embodies both antagonistic and heroic traits throughout the story.\n\nIn **2017**, the **Pakistan Super League (PSL)** was won by **Peshawar Zalmi**, marking their first championship title in the league's history.",
+      "ground_truth": "Aadil's job title was Backend Intern. Severus Snape is the complex professor. Peshawar Zalmi won the PSL in 2017.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "Which cloud provider's storage service did Aadil use to download logs, who is Harry Potter's intelligent best friend, and which team won the PSL in 2018?",
+      "answer": "Aadil used **AWS S3** to download customer application logs during his internship at **Securiti**. He built an automated pipeline that involved downloading logs from this cloud provider's storage service, parsing and transforming them, and indexing them into **Elasticsearch** for centralized search and analysis.\n\nHarry Potter's intelligent best friend is **Hermione Granger**, known for her intelligence and resourcefulness throughout the series.\n\nThe **Pakistan Super League (PSL)** in **2018** was won by **Islamabad United**, adding to their reputation as one of the most successful teams in the league's history.",
+      "ground_truth": "Aadil used AWS S3. Harry's intelligent best friend is Hermione Granger. Islamabad United won the PSL in 2018.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What containerization technologies did Aadil use during his internship, who is considered Harry's loyal friend, and which team won the PSL in 2019?",
+      "answer": "During his internship at **Securiti**, Aadil Raja utilized the following containerization technologies:\n\n- **Docker**\n- **Kubernetes**\n\nHe gained hands-on experience with containerized deployments and runtime troubleshooting while deploying an automated pipeline.\n\nHarry Potter's loyal friend is **Ron Weasley**. He is known for his steadfast support and friendship throughout the series, standing by Harry during many challenges and adventures.\n\nThe **Pakistan Super League (PSL)** in **2019** was won by **Quetta Gladiators**. This victory marked their first championship title in the league's history, adding to the competitive spirit of the tournament.",
+      "ground_truth": "Aadil used Docker and Kubernetes. Harry's loyal friend is Ron Weasley. Quetta Gladiators won the PSL in 2019.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "Where were the customer application logs indexed for centralized search in Aadil's internship, who is the main villain in the Harry Potter series, and which team won the PSL in 2020?",
+      "answer": "During his internship at **Securiti**, Aadil Raja indexed customer application logs into **Elasticsearch** for centralized search and analysis. He built an automated pipeline that involved downloading logs from **AWS S3**, parsing and transforming them, and then indexing them into Elasticsearch.\n\nThe main villain in the **Harry Potter** series is **Lord Voldemort**. He serves as the primary antagonist throughout the series, representing the dark forces that Harry Potter and his friends must confront. Other notable antagonists include **Bellatrix Lestrange**, **Draco Malfoy**, and the **Death Eaters**, who are Voldemort's followers.\n\nIn **2020**, the **Karachi Kings** won the **Pakistan Super League (PSL)**, marking a significant achievement in the league's history, which has seen various teams compete for the championship since its inception in **2016**.",
+      "ground_truth": "Logs were indexed in Elasticsearch. The main villain is Lord Voldemort. Karachi Kings won the PSL in 2020.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What type of workflow did Aadil develop for orchestration at Securiti, who are the dark wizard followers of Voldemort, and which team won the PSL in 2021?",
+      "answer": "Aadil developed a **CLI-based orchestration workflow** at **Securiti**, which includes configurable filters such as date ranges, customer/account scope, and keywords. This workflow significantly improved troubleshooting repeatability during his internship.\n\nThe dark wizard followers of **Lord Voldemort** are known as the **Death Eaters**. This group consists of wizards and witches who support Voldemort in his quest for power and domination of the wizarding world. Notable members include **Bellatrix Lestrange** and **Draco Malfoy**.\n\nIn **2021**, the **Pakistan Super League (PSL)** was won by the **Multan Sultans**, marking a significant achievement in the league's history since its inception in **2016**.",
+      "ground_truth": "Aadil developed a CLI-based orchestration workflow. Voldemort's dark wizard followers are the Death Eaters. Multan Sultans won the PSL in 2021.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "Name the three configurable filters included in Aadil's orchestration workflow, what object allows time travel in Harry Potter, and which team won the PSL in 2022?",
+      "answer": "Aadil's orchestration workflow includes the following three configurable filters:\n\n1. **Date ranges** - This filter allows users to specify the time frame for log pulls.\n2. **Customer/account scope** - This filter enables targeting specific customers or accounts for more relevant data.\n3. **Keywords** - This filter helps in refining the search by including specific terms.\n\nThese filters enhance the efficiency of troubleshooting during his internship at **Securiti**.\n\nIn the **Harry Potter** series, the object that allows time travel is the **Time-Turner**. This magical device enables the user to travel back in time, allowing them to attend multiple events simultaneously or to change past events.\n\nThe **Lahore Qalandars** won the **Pakistan Super League (PSL)** in **2022**, marking a significant achievement in the league's history since its inception in **2016**.",
+      "ground_truth": "The filters were date ranges, customer/account scope, and keywords. A Time-Turner allows time travel. Lahore Qalandars won the PSL in 2022.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What platform was Aadil's automated pipeline deployed on, what magical object makes the wearer unseen, and which team won the PSL in 2023?",
+      "answer": "Aadil's automated pipeline was deployed on **Kubernetes**, which provided him with valuable hands-on experience in containerized deployments, configuration, and runtime troubleshooting during his internship at **Securiti**.\n\nIn the **Harry Potter** series, the magical object that makes the wearer unseen is the **Invisibility Cloak**. This cloak grants the user the ability to become invisible, offering significant advantages in various situations throughout the story.\n\nThe **Lahore Qalandars** emerged victorious in the **Pakistan Super League (PSL)** in **2023**, adding to their recent successes as they also won the league in **2022**.",
+      "ground_truth": "The pipeline was deployed on Kubernetes. An Invisibility cloak makes the wearer unseen. Lahore Qalandars won the PSL in 2023.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What programming language did Aadil use at Securiti, who did Harry Potter survive an attack from as a baby, and which team won the PSL in 2024?",
+      "answer": "Aadil Raja utilized **Python** as the programming language during his internship at **Securiti**. He was involved in developing an automated pipeline that included downloading customer application logs, parsing and transforming them, and indexing them into **Elasticsearch** for centralized search and analysis.\n\nHarry Potter survived an attack from **Voldemort** as a baby, a crucial event that marks the beginning of his journey and his connection to the dark wizard.\n\nIn **2024**, the **Islamabad United** emerged victorious in the **Pakistan Super League (PSL)**, further solidifying their status as one of the most successful teams in the league's history, having previously won multiple championships.",
+      "ground_truth": "Aadil programmed in Python. Harry survived a baby attack from Lord Voldemort. Islamabad United won the PSL in 2024.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "Did Aadil handle runtime troubleshooting during his backend internship, what are horcruxes, and who were the defending PSL champions entering the 2026 season?",
+      "answer": "1. Yes, Aadil handled **runtime troubleshooting** during his backend internship at **Securiti**. He gained hands-on experience with containerized deployments, configuration, and runtime troubleshooting while deploying an automated pipeline.\n\n2. **Horcruxes** are dark magical objects in the **Harry Potter** series that allow a dark wizard or witch to attain immortality. They are created by splitting one's soul and hiding a fragment of it in an object, which protects the individual from death as long as the Horcrux exists. The act of creating a Horcrux involves committing murder, which is considered one of the darkest forms of magic. The concept of Horcruxes is central to the plot, particularly in the conflict between **Harry Potter** and **Lord Voldemort**, who created multiple Horcruxes to secure his immortality.\n\n3. The defending champions entering the **2026 Pakistan Super League (PSL)** season were the **Lahore Qalandars**, who won the title in **2025**.",
+      "ground_truth": "Yes, Aadil handled runtime troubleshooting. Horcruxes are magical objects. The defending champions entering 2026 were the Lahore Qalandars.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    },
+    {
+      "question": "What specific goal did Aadil's CLI workflow achieve for troubleshooting, what is the name of the Harry Potter stage play, and which PSL team has the most titles?",
+      "answer": "Aadil's CLI workflow achieved the goal of **improving troubleshooting repeatability**. This was accomplished by enabling targeted log pulls and ingestion through configurable filters such as date ranges, customer/account scope, and keywords, which enhanced the efficiency of the troubleshooting process during his internship at **Securiti**.\n\nThe name of the Harry Potter stage play is **Harry Potter and the Cursed Child**. This play is one of the adaptations of the Harry Potter series, alongside the eight films and the spin-off movies from the **Fantastic Beasts and Where to Find Them** series.\n\nIn the **Pakistan Super League (PSL)**, the team with the most titles is **Islamabad United**, which holds the record for the most championships, having won a total of **three titles** in **2016**, **2018**, and **2024**. They are recognized as the most successful team in the league's history. The **Lahore Qalandars** have also been successful recently, winning back-to-back titles in **2022** and **2023**.",
+      "ground_truth": "The CLI workflow improved troubleshooting repeatability. The stage play is *Harry Potter and the Cursed Child*. Islamabad United has the most PSL titles.",
+      "contexts": [
+        "No context retrieved"
+      ]
+    }
+  ]
+}
