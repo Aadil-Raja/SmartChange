@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import toast from 'react-hot-toast';
 
 export default function VerifyCode() {
   const { verifySignupCode, resendSignupCode, loading } = useAuth();
@@ -20,16 +21,21 @@ export default function VerifyCode() {
     const result = await verifySignupCode(email, code);
 
     if (result.success) {
+      toast.success('Account verified! Redirecting to login...');
       setMessage('Account verified! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } else {
-      setMessage(result.message || 'Invalid code');
+      const m = result.message || 'Invalid code';
+      setMessage(m);
+      toast.error(m);
     }
   };
 
   const handleResend = async () => {
     const result = await resendSignupCode(email);
-    setMessage(result.message || (result.success ? 'OTP resent' : 'Failed to resend'));
+    const m = result.message || (result.success ? 'OTP resent' : 'Failed to resend');
+    setMessage(m);
+    result.success ? toast.success(m) : toast.error(m);
   };
 
   return (

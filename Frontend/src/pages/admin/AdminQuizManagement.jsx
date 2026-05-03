@@ -21,6 +21,7 @@ import { useAdminTraining } from "../../hooks/useAdminTraining";
 import { useAdminDocuments, useAdminCourses } from "../../hooks/useAdminQueries";
 import * as quizApi from "../../services/quizApi";
 import AdminPromptQuizManagement from "./AdminPromptQuizManagement";
+import toast from 'react-hot-toast';
 
 const C = {
   bg: "#faf6ef",
@@ -181,18 +182,22 @@ const AdminQuizManagement = () => {
     try {
       if (activeTab === "document" && selectedDocument) {
         const response = await quizApi.generateQuiz(selectedDocument.id, generateForm);
+        toast.success(`Quiz generation started! Quiz ID: ${response.quiz_id}`);
         setSuccess(`Quiz generation started! Quiz ID: ${response.quiz_id}`);
         setShowGenerateModal(false);
         setTimeout(() => { loadQuizzesForDocument(selectedDocument.id, true); }, 2000);
       } else if (activeTab === "course" && selectedCourse) {
         await quizApi.createCourseQuiz(selectedCourse.id, { title: generateForm.title, description: generateForm.description });
+        toast.success("Course quiz created successfully!");
         setSuccess("Course quiz created successfully!");
         setShowGenerateModal(false);
         loadQuizzesForCourse(selectedCourse.id, true);
       }
     } catch (err) {
       const msg = err.response?.data?.detail || err.message || "Failed to generate quiz";
-      setError(typeof msg === "string" ? msg : JSON.stringify(msg));
+      const m = typeof msg === "string" ? msg : JSON.stringify(msg);
+      setError(m);
+      toast.error(m);
     } finally {
       setSubmitting(false);
     }
@@ -202,10 +207,13 @@ const AdminQuizManagement = () => {
     try {
       if (documentId) { await quizApi.deleteQuiz(quizId); loadQuizzesForDocument(documentId, true); }
       else if (courseId) { await quizApi.deleteCourseQuiz(quizId); loadQuizzesForCourse(courseId, true); }
+      toast.success("Quiz deleted successfully");
       setSuccess("Quiz deleted successfully");
       setDeleteConfirm(null);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to delete quiz");
+      const m = err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to delete quiz";
+      setError(m);
+      toast.error(m);
       setDeleteConfirm(null);
     }
   };

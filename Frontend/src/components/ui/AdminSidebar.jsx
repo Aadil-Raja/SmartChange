@@ -1,10 +1,13 @@
 // src/components/ui/AdminSidebar.jsx
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Users, Settings, ChevronLeft, ChevronRight, LogOut, ClipboardList, Zap } from "lucide-react";
+import LogoutConfirmModal from "./LogoutConfirmModal";
 
 const AdminSidebar = ({ collapsed = true, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const navItems = [
     { icon: Home,          label: "Dashboard",  path: "/admin" },
@@ -16,10 +19,13 @@ const AdminSidebar = ({ collapsed = true, onToggle }) => {
   ];
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("adminToken");
-      navigate("/admin/login");
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem("adminToken");
+    setShowLogoutModal(false);
+    navigate("/admin/login");
   };
 
   return (
@@ -164,6 +170,15 @@ const AdminSidebar = ({ collapsed = true, onToggle }) => {
           );
         })}
       </nav>
+
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        title="Logout admin?"
+        message="You will be signed out of the admin portal and returned to the login screen."
+        confirmLabel="Logout"
+      />
 
       {/* Logout */}
       <div className="px-2 pb-4 pt-2" style={{ borderTop: "1px solid rgba(245,130,32,0.15)" }}>

@@ -1,4 +1,5 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useRef, useState } from "react";
+import toast from 'react-hot-toast';
 import {
   getCourses,
   createCourse,
@@ -45,6 +46,29 @@ export const AdminTrainingProvider = ({ children }) => {
     setError(null);
     setSuccess(null);
   };
+
+  const lastSuccessRef = useRef(null);
+  const lastErrorRef = useRef(null);
+
+  useEffect(() => {
+    if (success && success !== lastSuccessRef.current) {
+      toast.success(success);
+      lastSuccessRef.current = success;
+    }
+
+    if (!success) {
+      lastSuccessRef.current = null;
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error && error !== lastErrorRef.current) {
+      toast.error(error);
+      lastErrorRef.current = error;
+    }
+
+    if (!error) lastErrorRef.current = null;
+  }, [error]);
 
   // ==================== COURSES ====================
 

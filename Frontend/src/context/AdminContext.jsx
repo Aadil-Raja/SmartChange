@@ -1,4 +1,5 @@
 import React, { createContext, useState,useCallback } from 'react';
+import toast from 'react-hot-toast';
 import * as adminApi from '../services/adminApi';
 
 export const AdminContext = createContext();
@@ -23,10 +24,14 @@ export const AdminProvider = ({ children }) => {
         const employeesList = data.data?.employees || data.data || [];
         setEmployees(employeesList);
       } else {
-        setError(data.message || 'Failed to load employees');
+        const m = data.message || 'Failed to load employees';
+        setError(m);
+        toast.error(m);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load employees');
+      const m = err.response?.data?.message || 'Failed to load employees';
+      setError(m);
+      toast.error(m);
       console.error('Load employees error:', err);
     } finally {
       setLoading(false);
@@ -44,10 +49,14 @@ export const AdminProvider = ({ children }) => {
         const teamsList = data.data?.teams || data.data || [];
         setTeams(teamsList);
       } else {
-        setError(data.message || 'Failed to load teams');
+        const m = data.message || 'Failed to load teams';
+        setError(m);
+        toast.error(m);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load teams');
+      const m = err.response?.data?.message || 'Failed to load teams';
+      setError(m);
+      toast.error(m);
       console.error('Load teams error:', err);
     } finally {
       setLoading(false);
@@ -78,10 +87,14 @@ export const AdminProvider = ({ children }) => {
         console.log('Processed roles array:', rolesArray);
         setTeamRoles(rolesArray);
       } else {
-        setError(data.message || 'Failed to load team roles');
+        const m = data.message || 'Failed to load team roles';
+        setError(m);
+        toast.error(m);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load team roles');
+      const m = err.response?.data?.message || 'Failed to load team roles';
+      setError(m);
+      toast.error(m);
       console.error('Load team roles error:', err);
     }
   };
@@ -244,11 +257,13 @@ const uploadDoc = useCallback(async (file, title = null) => {
     } else {
       const msg = data.message || 'Failed to upload document';
       setError(msg);
+      toast.error(msg);
       return { success: false, message: msg };
     }
   } catch (err) {
     const errorMsg = err.response?.data?.message || err.message || 'Failed to upload document';
     setError(errorMsg);
+    toast.error(errorMsg);
     console.error('Upload error:', err);
     return { success: false, message: errorMsg };
   }
@@ -288,11 +303,13 @@ const queueDoc = useCallback(async (documentId) => {
     } else {
       const msg = data.message || 'Failed to queue document';
       setError(msg);
+      toast.error(msg);
       return { success: false, message: msg };
     }
   } catch (err) {
     const errorMsg = err.response?.data?.message || err.message || 'Failed to queue document';
     setError(errorMsg);
+    toast.error(errorMsg);
     console.error('Queue error:', err);
     return { success: false, message: errorMsg };
   }
@@ -348,6 +365,7 @@ const deleteDoc = useCallback(async (documentId) => {
   } catch (err) {
     const errorMsg = err.response?.data?.message || err.message || 'Failed to delete document';
     setError(errorMsg);
+    toast.error(errorMsg);
     console.error('Delete error:', err);
     return { success: false, message: errorMsg };
   }
@@ -372,6 +390,7 @@ const downloadDoc = useCallback(async (documentId, filename) => {
   } catch (err) {
     const errorMsg = err.response?.data?.message || err.message || 'Failed to download document';
     setError(errorMsg);
+    toast.error(errorMsg);
     console.error('Download error:', err);
     return { success: false, message: errorMsg };
   }

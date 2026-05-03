@@ -3,6 +3,7 @@ import { X, Send, Loader2 } from 'lucide-react';
 import { sendDirectMessage } from '../../services/managerNotificationApi';
 import Button from './Button';
 import Input from './Input';
+import toast from 'react-hot-toast';
 
 const SendMessageModal = ({ isOpen, onClose, teamId, recipient, courses = [] }) => {
   const [title, setTitle] = useState('');
@@ -31,12 +32,16 @@ const SendMessageModal = ({ isOpen, onClose, teamId, recipient, courses = [] }) 
         setMessage('');
         setRelatedCourseId('');
         onClose();
-        alert('Message sent successfully!');
+        toast.success('Message sent successfully!');
       } else {
-        setError(result.message || 'Failed to send message');
+        const m = result.message || 'Failed to send message';
+        setError(m);
+        toast.error(m);
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to send message');
+      const m = err.response?.data?.message || err.message || 'Failed to send message';
+      setError(m);
+      toast.error(m);
     } finally {
       setSending(false);
     }

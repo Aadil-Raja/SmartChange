@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Edit, Trash2, CheckCircle, X, FileText, Search, Settin
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import * as quizApi from "../../services/quizApi";
+import toast from 'react-hot-toast';
 
 const C = {
   bg: "#faf6ef", ink: "#1a1209", orange: "#f7953f", teal: "#0d9488",
@@ -97,7 +98,9 @@ const AdminQuizDetail = () => {
       const response = isCourseQuiz ? await quizApi.getCourseQuiz(quizId) : await quizApi.getQuiz(quizId);
       setQuiz(response);
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to load quiz");
+        const m = err.response?.data?.detail || "Failed to load quiz";
+        setError(m);
+        toast.error(m);
     } finally {
       setLoading(false);
     }
@@ -117,7 +120,9 @@ const AdminQuizDetail = () => {
       const result = await quizApi.getAvailableCourseQuestions(quiz.course_id);
       setAvailableQuestions(Array.isArray(result) ? result : result?.questions || []);
     } catch {
-      setError("Failed to load available questions");
+      const m = "Failed to load available questions";
+      setError(m);
+      toast.error(m);
     } finally {
       setLoadingAvailable(false);
     }
@@ -151,6 +156,7 @@ const AdminQuizDetail = () => {
         if (editingQuestion) {
           setSubmitting(true);
           await quizApi.updateCourseQuizQuestion(editingQuestion.id, questionForm);
+          toast.success("Question updated");
           setSuccess("Question updated");
           setShowAddQuestion(false);
           setSubmitting(false);
@@ -182,13 +188,16 @@ const AdminQuizDetail = () => {
                 added++;
               } catch {}
             }
-            setSuccess(`${added} question${added !== 1 ? "s" : ""} added`);
+            const addedMessage = `${added} question${added !== 1 ? "s" : ""} added`;
+            toast.success(addedMessage);
+            setSuccess(addedMessage);
             // Only reload if something failed (count mismatch)
             if (added !== selected.length) loadQuiz();
           })();
         } else {
           setSubmitting(true);
           await quizApi.addCourseQuizQuestion(quizId, { question_type: "COURSE_SPECIFIC", ...questionForm });
+          toast.success("Question added");
           setSuccess("Question added");
           setShowAddQuestion(false);
           setSubmitting(false);
@@ -198,9 +207,11 @@ const AdminQuizDetail = () => {
         setSubmitting(true);
         if (editingQuestion) {
           await quizApi.updateQuestion(editingQuestion.id, questionForm);
+          toast.success("Question updated");
           setSuccess("Question updated");
         } else {
           await quizApi.addQuestion(quizId, { ...questionForm, question_order: quiz.questions.length });
+          toast.success("Question added");
           setSuccess("Question added");
         }
         setShowAddQuestion(false);
@@ -209,7 +220,9 @@ const AdminQuizDetail = () => {
       }
     } catch (err) {
       setSubmitting(false);
-      setError(err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to save question");
+      const m = err.response?.data?.message || err.response?.data?.detail || err.message || "Failed to save question";
+      setError(m);
+      toast.error(m);
     }
   };
 
@@ -223,6 +236,7 @@ const AdminQuizDetail = () => {
       questions: prev.questions.filter(q => q.id !== questionId),
     }));
     setDeleteConfirm(null);
+    toast.success("Question deleted");
     setSuccess("Question deleted");
 
     // Fire API detached
@@ -231,11 +245,13 @@ const AdminQuizDetail = () => {
         isCourseQuiz
           ? await quizApi.deleteCourseQuizQuestion(questionId)
           : await quizApi.deleteQuestion(questionId);
-      } catch (err) {
+        } catch (err) {
         // Revert on failure
         setQuiz(prev => ({ ...prev, questions: snapshot }));
         setSuccess(null);
-        setError(err.response?.data?.message || err.response?.data?.detail || "Failed to delete question");
+        const m = err.response?.data?.message || err.response?.data?.detail || "Failed to delete question";
+        setError(m);
+        toast.error(m);
       }
     })();
   };
@@ -243,10 +259,13 @@ const AdminQuizDetail = () => {
   const handlePublishQuiz = async () => {
     try {
       isCourseQuiz ? await quizApi.publishCourseQuiz(quizId) : await quizApi.publishQuiz(quizId);
+      toast.success("Quiz published successfully");
       setSuccess("Quiz published successfully");
       loadQuiz();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to publish quiz");
+      const m = err.response?.data?.detail || "Failed to publish quiz";
+      setError(m);
+      toast.error(m);
     }
   };
 
@@ -267,10 +286,13 @@ const AdminQuizDetail = () => {
     setConfigLoading(true);
     try {
       await quizApi.updateQuizConfiguration(quizId, quizConfig);
+      toast.success("Configuration updated");
       setSuccess("Configuration updated");
       setShowConfigModal(false);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.detail || "Failed to update configuration");
+      const m = err.response?.data?.message || err.response?.data?.detail || "Failed to update configuration";
+      setError(m);
+      toast.error(m);
     } finally { setConfigLoading(false); }
   };
 
@@ -280,8 +302,9 @@ const AdminQuizDetail = () => {
     try {
       const defaults = await quizApi.resetQuizConfiguration(quizId);
       setQuizConfig({ max_attempts: defaults.max_attempts, passing_score: defaults.passing_score, cooldown_minutes: defaults.cooldown_minutes });
+      toast.success("Configuration reset to defaults");
       setSuccess("Configuration reset to defaults");
-    } catch { setError("Failed to reset configuration"); }
+    } catch { const m = "Failed to reset configuration"; setError(m); toast.error(m); }
     finally { setConfigLoading(false); }
   };
 

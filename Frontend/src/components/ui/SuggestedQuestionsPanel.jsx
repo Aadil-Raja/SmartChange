@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Plus, Trash2, Eye, EyeOff, Save, Loader } from 'lucide-react';
 import { getSuggestedQuestions, generateSuggestedQuestions, updateSuggestedQuestions } from '../../services/adminApi';
+import toast from 'react-hot-toast';
 
 const MAX = 5;
 
@@ -26,7 +27,7 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
   }, [documentId]);
 
   const flash = (type, msg) => {
-    if (type === 'success') { setSuccess(msg); setTimeout(() => setSuccess(null), 3000); }
+    if (type === 'success') { toast.success(msg); setSuccess(msg); setTimeout(() => setSuccess(null), 3000); }
     else { setError(msg); setTimeout(() => setError(null), 4000); }
   };
 
