@@ -6,6 +6,9 @@ import sys
 from typing import List
 from .schemas import SubAnswer, MergedAnswer
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 
 def merge_answers(
     sub_answers: List[SubAnswer],
@@ -24,7 +27,7 @@ def merge_answers(
         MergedAnswer object with merged response
     """
     try:
-        print(f"[MERGER] Merging {len(sub_answers)} sub-answers", file=sys.stderr)
+        debug_log(f"Merging {len(sub_answers)} sub-answers", "MERGER")
         
         # Format sub-answers for the prompt
         formatted_answers = _format_sub_answers(sub_answers)
@@ -109,12 +112,12 @@ Respond with a JSON-compatible structure containing:
         from shared.llm.utils import count_tokens
         merger_prompt_tokens = count_tokens(prompt)
         try:
-            print(f"[MERGER] Calling LLM with structured output...", file=sys.stderr)
+            debug_log(f"Calling LLM with structured output...", "MERGER")
             langchain_model = llm.get_langchain_model()
             structured_llm = langchain_model.with_structured_output(MergedAnswer, method="function_calling")
             result: MergedAnswer = structured_llm.invoke(prompt)
         except Exception as e:
-            print(f"[MERGER] Structured output failed: {e}, trying generate_json...", file=sys.stderr)
+            debug_log(f"Structured output failed: {e}, trying generate_json...", "MERGER")
             # Fallback to generate_json
             result_dict = llm.generate_json(prompt)
             result = MergedAnswer(**result_dict)
@@ -138,11 +141,11 @@ Respond with a JSON-compatible structure containing:
         if failed_notes:
             result.answer += "\n\n" + "\n".join(f"Note: {note}" for note in failed_notes)
         
-        print(f"[MERGER] Merge complete, {len(result.citations)} citations, has_contradiction={result.has_contradiction}", file=sys.stderr)
+        debug_log(f"Merge complete, {len(result.citations)} citations, has_contradiction={result.has_contradiction}", "MERGER")
         return result
         
     except Exception as e:
-        print(f"[MERGER] Error merging answers: {e}", file=sys.stderr)
+        debug_log(f"Error merging answers: {e}", "MERGER")
         import traceback
         traceback.print_exc(file=sys.stderr)
         

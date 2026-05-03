@@ -8,6 +8,9 @@ Filtering strategy:
 - Other docs threshold: max(0.65, best_score * 0.85)
 - LLM verifies which chunk IDs it actually used → secondary citation filter
 """
+
+# Import debug logger
+from app.utils.debug_logger import debug_log
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 from typing import List
@@ -52,9 +55,9 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
         Returns a JSON string with keys: answer, has_contradiction, citations.
         IMPORTANT: Return the tool output EXACTLY as-is. Do not reformat or summarize it.
         """
-        print(f"\n[TOOL V2] doc_qa_tool called", file=sys.stderr)
-        print(f"[TOOL V2] Question: {question}", file=sys.stderr)
-        print(f"[TOOL V2] Document IDs: {document_ids}", file=sys.stderr)
+        debug_log(f"\n[TOOL V2] doc_qa_tool called", "TOOL")
+        debug_log(f"[TOOL V2] Question: {question}", "TOOL")
+        debug_log(f"[TOOL V2] Document IDs: {document_ids}", "TOOL")
 
         try:
             if not document_ids:
@@ -92,7 +95,7 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                                   f"preview={c['text'][:80].replace(chr(10), ' ')}...",
                                   file=sys.stderr)
                 except Exception as e:
-                    print(f"[TOOL V2] Error for doc {doc_id}: {e}", file=sys.stderr)
+                    debug_log(f"[TOOL V2] Error for doc {doc_id}: {e}", "TOOL")
                     continue
 
             if not raw_results:
@@ -114,7 +117,7 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
             same_doc_threshold  = max(ABSOLUTE_FLOOR, best_score * SAME_DOC_RATIO)
             other_doc_threshold = max(ABSOLUTE_FLOOR, best_score * OTHER_DOC_RATIO)
 
-            print(f"[TOOL V2] Best score: {best_score:.3f} (doc {best_doc_id})", file=sys.stderr)
+            debug_log(f"[TOOL V2] Best score: {best_score:.3f} (doc {best_doc_id})", "TOOL")
             print(f"[TOOL V2] Same-doc threshold:  {same_doc_threshold:.3f} "
                   f"(max({ABSOLUTE_FLOOR}, {best_score:.3f} * {SAME_DOC_RATIO}))", file=sys.stderr)
             print(f"[TOOL V2] Other-doc threshold: {other_doc_threshold:.3f} "
@@ -131,10 +134,10 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                 passing_chunks = [c for c in data["chunks"] if c["score"] >= threshold]
 
                 if not passing_chunks:
-                    print(f"[TOOL V2] Doc '{doc_title}' dropped - all chunks below threshold", file=sys.stderr)
+                    debug_log(f"[TOOL V2] Doc '{doc_title}' dropped - all chunks below threshold", "TOOL")
                     continue
 
-                print(f"[TOOL V2] Doc '{doc_title}': {len(passing_chunks)} chunks passed", file=sys.stderr)
+                debug_log(f"[TOOL V2] Doc '{doc_title}': {len(passing_chunks)} chunks passed", "TOOL")
 
                 block_lines = [f"[Source: {doc_title}]"]
                 for c in passing_chunks:
@@ -224,8 +227,8 @@ Respond with ONLY valid JSON:
             has_contradiction = result.get("has_contradiction", False)
             used_chunk_ids = result.get("used_chunk_ids", [])
 
-            print(f"[TOOL V2] Answer generated, has_contradiction={has_contradiction}", file=sys.stderr)
-            print(f"[TOOL V2] LLM used chunk IDs: {used_chunk_ids}", file=sys.stderr)
+            debug_log(f"[TOOL V2] Answer generated, has_contradiction={has_contradiction}", "TOOL")
+            debug_log(f"[TOOL V2] LLM used chunk IDs: {used_chunk_ids}", "TOOL")
 
             # ── Step 4: Build final citations using LLM-reported chunk IDs ──
             # Trust the LLM completely - if it used no chunks, citations = []
@@ -234,9 +237,9 @@ Respond with ONLY valid JSON:
                 if cid in chunk_map:
                     final_citations.append(chunk_map[cid])
                 else:
-                    print(f"[TOOL V2] Warning: LLM reported unknown chunk ID '{cid}'", file=sys.stderr)
+                    debug_log(f"[TOOL V2] Warning: LLM reported unknown chunk ID '{cid}'", "TOOL")
 
-            print(f"[TOOL V2] Final citations: {len(final_citations)}", file=sys.stderr)
+            debug_log(f"[TOOL V2] Final citations: {len(final_citations)}", "TOOL")
 
             return json.dumps({
                 "answer": answer,
@@ -245,7 +248,7 @@ Respond with ONLY valid JSON:
             })
 
         except Exception as e:
-            print(f"[TOOL V2] Error: {e}", file=sys.stderr)
+            debug_log(f"[TOOL V2] Error: {e}", "TOOL")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return json.dumps({

@@ -7,6 +7,9 @@ import json
 from langchain_core.tools import tool
 from typing import Dict, List
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 from .decomposer import decompose_question
 from .retriever import retrieve_and_answer_subquestions
 from .merger import merge_answers
@@ -34,7 +37,7 @@ def _prefetch_section_names(chunk_db, document_ids: List[int]) -> Dict[int, List
             ).order_by(DocumentSection.start_chunk_index).all()
             return doc_id, [s[0] for s in sections if s[0]]
         except Exception as e:
-            print(f"[PREFETCH] Error getting sections for doc {doc_id}: {e}", file=sys.stderr)
+            debug_log(f"Error getting sections for doc {doc_id}: {e}", "PREFETCH")
             return doc_id, []
     
     with ThreadPoolExecutor(max_workers=len(document_ids)) as executor:
@@ -113,12 +116,12 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             # Combine questions into single string for processing
             if len(questions) == 1:
                 question = questions[0]
-                print(f"\n[MULTI-DOC TOOL] Processing single question: '{question}'", file=sys.stderr)
+                debug_log(f"\n[MULTI-DOC TOOL] Processing single question: '{question}'", "MULTI-DOC")
             else:
                 question = " ".join(questions)
-                print(f"\n[MULTI-DOC TOOL] Processing {len(questions)} questions combined: '{question}'", file=sys.stderr)
+                debug_log(f"\n[MULTI-DOC TOOL] Processing {len(questions)} questions combined: '{question}'", "MULTI-DOC")
             
-            print(f"[MULTI-DOC TOOL] Active documents: {document_ids}", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Active documents: {document_ids}", "MULTI-DOC")
             
             # ✅ NEW: Log user turn at the start
             try:
@@ -127,12 +130,12 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 if logger:
                     logger.log_user_turn(question, document_ids)
             except Exception as log_err:
-                print(f"[MULTI-DOC TOOL] Failed to log user turn: {log_err}", file=sys.stderr)
+                debug_log(f"[MULTI-DOC TOOL] Failed to log user turn: {log_err}", "MULTI-DOC")
             
             # Optimization: Skip decomposition if only 1 document
             if len(document_ids) == 1:
-                print(f"[MULTI-DOC TOOL] Only 1 document active, skipping decomposition", file=sys.stderr)
-                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
+                debug_log(f"[MULTI-DOC TOOL] Only 1 document active, skipping decomposition", "MULTI-DOC")
+                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords=[])
             
             # Import LLM provider
             from shared.llm import create_llm_provider
@@ -148,13 +151,13 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             # Use nonlocal to access the closure variable from outer scope
             nonlocal section_names_map
             if section_names_map:
-                print(f"[MULTI-DOC TOOL] Using pre-fetched section names", file=sys.stderr)
+                debug_log(f"[MULTI-DOC TOOL] Using pre-fetched section names", "MULTI-DOC")
             else:
-                print(f"[MULTI-DOC TOOL] Pre-fetching section names...", file=sys.stderr)
+                debug_log(f"[MULTI-DOC TOOL] Pre-fetching section names...", "MULTI-DOC")
                 section_names_map = _prefetch_section_names(chunk_db, document_ids)
             
             # Step 1: Decompose the question (with pre-fetched sections)
-            print(f"[MULTI-DOC TOOL] Step 1: Decomposing question...", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Step 1: Decomposing question...", "MULTI-DOC")
             decomposed = decompose_question(
                 question=question,
                 document_ids=document_ids,
@@ -166,13 +169,15 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             
             # Step 2: Confidence gate - fall back to single-doc if needed
             if not decomposed.is_cross_doc or decomposed.confidence < 0.7 or not decomposed.sub_questions:
-                print(f"[MULTI-DOC TOOL] Falling back to single-doc path (is_cross_doc={decomposed.is_cross_doc}, confidence={decomposed.confidence})", file=sys.stderr)
-                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
+                debug_log(f"[MULTI-DOC TOOL] Falling back to single-doc path (is_cross_doc={decomposed.is_cross_doc}, confidence={decomposed.confidence})", "MULTI-DOC")
+                # Extract keywords from first sub-question if available
+                keywords = decomposed.sub_questions[0].keywords if decomposed.sub_questions and len(decomposed.sub_questions) > 0 else []
+                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords)
             
-            print(f"[MULTI-DOC TOOL] Using multi-doc path with {len(decomposed.sub_questions)} sub-questions", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Using multi-doc path with {len(decomposed.sub_questions)} sub-questions", "MULTI-DOC")
             
             # Step 3: Retrieve and answer sub-questions in parallel
-            print(f"[MULTI-DOC TOOL] Step 2: Retrieving answers in parallel...", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Step 2: Retrieving answers in parallel...", "MULTI-DOC")
             sub_answers = retrieve_and_answer_subquestions(
                 sub_questions=decomposed.sub_questions,
                 chunk_db=chunk_db,
@@ -183,7 +188,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             )
             
             # Step 4: Merge answers
-            print(f"[MULTI-DOC TOOL] Step 3: Merging answers...", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Step 3: Merging answers...", "MULTI-DOC")
             merged = merge_answers(
                 sub_answers=sub_answers,
                 original_question=question,
@@ -197,7 +202,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 if logger:
                     logger.log_merged_answer(merged.answer, merged.citations)
             except Exception as log_err:
-                print(f"[MULTI-DOC TOOL] Failed to log merged answer: {log_err}", file=sys.stderr)
+                debug_log(f"[MULTI-DOC TOOL] Failed to log merged answer: {log_err}", "MULTI-DOC")
             
             # Step 5: Log the multi-doc flow (if logger is available) - OLD LOGGING, KEEP FOR NOW
             try:
@@ -210,7 +215,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                     doc_histories=doc_histories
                 )
             except Exception as log_error:
-                print(f"[MULTI-DOC TOOL] Logging error: {log_error}", file=sys.stderr)
+                debug_log(f"[MULTI-DOC TOOL] Logging error: {log_error}", "MULTI-DOC")
             
             # Step 6: Return dict in same format as single-doc tool (NOT JSON string)
             result = {
@@ -222,21 +227,28 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 "call_type": "doc_qa",
             }
             
-            print(f"[MULTI-DOC TOOL] Complete! Returning merged answer with {len(merged.citations)} citations", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Complete! Returning merged answer with {len(merged.citations)} citations", "MULTI-DOC")
             return result
             
         except Exception as e:
-            print(f"[MULTI-DOC TOOL] Error in multi-doc flow: {e}, falling back to single-doc", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] Error in multi-doc flow: {e}, falling back to single-doc", "MULTI-DOC")
             import traceback
             traceback.print_exc(file=sys.stderr)
             
             # Fall back to single-doc tool on any error
-            return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker)
+            return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords=[])
     
     return doc_qa_multi_tool
 
 
-def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], doc_histories: Dict, use_deep_reranker: bool = False):
+def _fallback_to_single_doc(
+    question: str, 
+    chunk_db, 
+    document_ids: List[int], 
+    doc_histories: Dict, 
+    use_deep_reranker: bool = False,
+    keywords: List[str] = None  # NEW: Accept keywords
+):
     """
     Fall back to the existing single-doc QA tool.
     
@@ -252,7 +264,8 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
         Dict with answer, has_contradiction, citations, tokens_input, tokens_output
     """
     try:
-        print(f"[MULTI-DOC TOOL] Executing single-doc fallback", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Executing single-doc fallback", "MULTI-DOC")
+        debug_log(f"[MULTI-DOC TOOL] Keywords for fallback: {keywords}", "MULTI-DOC")
         
         # Import and use hybrid retrieval for single-doc fallback
         from ..hybrid_retrieval import retrieve_chunks_for_all_docs_hybrid
@@ -263,12 +276,13 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
             invoke_llm_with_structured_output
         )
         
-        # Use hybrid retrieval with deep reranker flag
+        # Use hybrid retrieval with deep reranker flag and keywords
         raw_results = retrieve_chunks_for_all_docs_hybrid(
             chunk_db=chunk_db,
             document_ids=document_ids,
             question=question,
-            use_deep_reranker=use_deep_reranker
+            use_deep_reranker=use_deep_reranker,
+            keywords=keywords  # NEW: Pass keywords
         )
         
         if not raw_results:
@@ -291,7 +305,7 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
         
         if has_rerank_scores:
             # Reranked results - skip threshold filtering, use chunks as-is
-            print(f"[FALLBACK] Using reranked results, skipping threshold filtering", file=sys.stderr)
+            debug_log(f"Using reranked results, skipping threshold filtering", "FALLBACK")
             
             context_blocks = []
             chunk_map = {}
@@ -320,20 +334,20 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
                 
                 context_blocks.append("\n".join(block_lines))
             
-            print(f"[FALLBACK] Using {len(context_blocks)} context blocks from {len(passing_doc_ids)} docs", file=sys.stderr)
+            debug_log(f"Using {len(context_blocks)} context blocks from {len(passing_doc_ids)} docs", "FALLBACK")
             
         else:
             # Not reranked - use traditional threshold filtering
-            print(f"[FALLBACK] Using threshold filtering (no rerank scores found)", file=sys.stderr)
+            debug_log(f"Using threshold filtering (no rerank scores found)", "FALLBACK")
             
             # Calculate thresholds
             best_score, best_doc_id, same_doc_threshold, other_doc_threshold = calculate_thresholds(raw_results)
             
             # ✅ Log threshold calculation
-            print(f"[FALLBACK] Threshold calculation:", file=sys.stderr)
-            print(f"[FALLBACK]   Best score: {best_score:.4f} from doc {best_doc_id}", file=sys.stderr)
-            print(f"[FALLBACK]   Same doc threshold: {same_doc_threshold:.4f}", file=sys.stderr)
-            print(f"[FALLBACK]   Other doc threshold: {other_doc_threshold:.4f}", file=sys.stderr)
+            debug_log(f"Threshold calculation:", "FALLBACK")
+            debug_log(f"  Best score: {best_score:.4f} from doc {best_doc_id}", "FALLBACK")
+            debug_log(f"  Same doc threshold: {same_doc_threshold:.4f}", "FALLBACK")
+            debug_log(f"  Other doc threshold: {other_doc_threshold:.4f}", "FALLBACK")
             
             # Filter chunks by threshold
             context_blocks, chunk_map, passing_doc_ids = filter_chunks_by_threshold(
@@ -344,13 +358,13 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
             )
             
             # ✅ Log filtering results
-            print(f"[FALLBACK] After threshold filtering:", file=sys.stderr)
-            print(f"[FALLBACK]   Passing docs: {passing_doc_ids}", file=sys.stderr)
-            print(f"[FALLBACK]   Context blocks: {len(context_blocks)}", file=sys.stderr)
-            print(f"[FALLBACK]   Chunks in map: {len(chunk_map)}", file=sys.stderr)
+            debug_log(f"After threshold filtering:", "FALLBACK")
+            debug_log(f"  Passing docs: {passing_doc_ids}", "FALLBACK")
+            debug_log(f"  Context blocks: {len(context_blocks)}", "FALLBACK")
+            debug_log(f"  Chunks in map: {len(chunk_map)}", "FALLBACK")
         
         if not context_blocks:
-            print(f"[FALLBACK] ❌ NO CHUNKS AVAILABLE - returning empty answer", file=sys.stderr)
+            debug_log(f"❌ NO CHUNKS AVAILABLE - returning empty answer", "FALLBACK")
             return {
                 "answer": "I couldn't find relevant information to answer your question.",
                 "has_contradiction": False,
@@ -388,13 +402,13 @@ def _fallback_to_single_doc(question: str, chunk_db, document_ids: List[int], do
                 has_rerank_scores=has_rerank_scores
             )
         except Exception as log_error:
-            print(f"[FALLBACK] Logging error: {log_error}", file=sys.stderr)
+            debug_log(f"Logging error: {log_error}", "FALLBACK")
         
-        print(f"[MULTI-DOC TOOL] Single-doc fallback complete", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Single-doc fallback complete", "MULTI-DOC")
         return result
         
     except Exception as e:
-        print(f"[MULTI-DOC TOOL] Error in single-doc fallback: {e}", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Error in single-doc fallback: {e}", "MULTI-DOC")
         import traceback
         traceback.print_exc(file=sys.stderr)
         
@@ -427,13 +441,17 @@ def _log_multi_doc_flow(
     """
     try:
         from app.services.chat_logger import get_logger
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
         
         logger = get_logger()
         if not logger:
-            print(f"[MULTI-DOC TOOL] No logger available, skipping logging", file=sys.stderr)
+            debug_log(f"[MULTI-DOC TOOL] No logger available, skipping logging", "MULTI-DOC")
             return
         
-        print(f"[MULTI-DOC TOOL] Logging multi-doc flow to chathead log", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Logging multi-doc flow to chathead log", "MULTI-DOC")
         
         # Create a custom log entry for multi-doc flow
         with open(logger.log_file, 'a', encoding='utf-8') as f:
@@ -517,10 +535,10 @@ def _log_multi_doc_flow(
             # Explicit flush
             f.flush()
             
-        print(f"[MULTI-DOC TOOL] Successfully logged multi-doc flow", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Successfully logged multi-doc flow", "MULTI-DOC")
         
     except Exception as e:
-        print(f"[MULTI-DOC TOOL] Error logging multi-doc flow: {e}", file=sys.stderr)
+        debug_log(f"[MULTI-DOC TOOL] Error logging multi-doc flow: {e}", "MULTI-DOC")
         import traceback
         traceback.print_exc(file=sys.stderr)
 
@@ -542,13 +560,17 @@ def _log_fallback_flow(
     """
     try:
         from app.services.chat_logger import get_logger
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
         
         logger = get_logger()
         if not logger:
-            print(f"[FALLBACK] No logger available, skipping logging", file=sys.stderr)
+            debug_log(f"No logger available, skipping logging", "FALLBACK")
             return
         
-        print(f"[FALLBACK] Logging fallback flow to chathead log", file=sys.stderr)
+        debug_log(f"Logging fallback flow to chathead log", "FALLBACK")
         
         with open(logger.log_file, 'a', encoding='utf-8') as f:
             from datetime import datetime
@@ -638,9 +660,9 @@ def _log_fallback_flow(
             # Explicit flush
             f.flush()
         
-        print(f"[FALLBACK] Successfully logged fallback flow", file=sys.stderr)
+        debug_log(f"Successfully logged fallback flow", "FALLBACK")
         
     except Exception as e:
-        print(f"[FALLBACK] Error logging fallback flow: {e}", file=sys.stderr)
+        debug_log(f"Error logging fallback flow: {e}", "FALLBACK")
         import traceback
         traceback.print_exc(file=sys.stderr)

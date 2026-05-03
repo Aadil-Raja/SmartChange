@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.deps import init_db
 from app import routers
+from app.middleware.timing import DetailedTimingMiddleware
 
 
 
@@ -22,6 +23,9 @@ app = FastAPI(
     title="Chatbot Management API",
     lifespan=lifespan,
 )
+
+# Add timing middleware BEFORE CORS (so it measures total time including CORS)
+app.add_middleware(DetailedTimingMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

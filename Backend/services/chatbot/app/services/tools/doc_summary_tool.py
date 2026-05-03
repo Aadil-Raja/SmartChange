@@ -28,43 +28,43 @@
 #     @tool(args_schema=DocSummaryToolArgs)
 #     def doc_summary_tool(chunks_per_topic: int = 2) -> str:
 #         """Generate a topic-based summary of the document using retrieved content."""
-#         print(f"\n[TOOL CALLED] doc_summary_tool", file=sys.stderr)
-#         print(f"[TOOL] Document ID (fixed): {document_id}", file=sys.stderr)
-#         print(f"[TOOL] Chunks per topic: {chunks_per_topic}", file=sys.stderr)
+#         debug_log(f"\n[TOOL CALLED] doc_summary_tool", "TOOL")
+#         debug_log(f"Document ID (fixed): {document_id}", "TOOL")
+#         debug_log(f"Chunks per topic: {chunks_per_topic}", "TOOL")
         
 #         # Limit chunks_per_topic to reasonable range
 #         chunks_per_topic = max(1, min(chunks_per_topic, 3))
-#         print(f"[TOOL] Adjusted chunks_per_topic: {chunks_per_topic}", file=sys.stderr)
+#         debug_log(f"Adjusted chunks_per_topic: {chunks_per_topic}", "TOOL")
         
 #         try:
 #             # Fetch document
 #             doc = chunk_db.query(Document).filter(Document.id == document_id).first()
             
 #             if not doc:
-#                 print(f"[TOOL] ✗ Document not found: {document_id}", file=sys.stderr)
+#                 debug_log(f"✗ Document not found: {document_id}", "TOOL")
 #                 return f"Document with ID {document_id} not found."
             
-#             print(f"[TOOL] ✓ Found document: {doc.title}", file=sys.stderr)
+#             debug_log(f"✓ Found document: {doc.title}", "TOOL")
             
 #             # Get main topics
 #             main_topics = doc.main_topics
             
 #             if not main_topics or (isinstance(main_topics, dict) and not main_topics):
-#                 print(f"[TOOL] ⚠ No topics found, falling back to general summary", file=sys.stderr)
+#                 debug_log(f"⚠ No topics found, falling back to general summary", "TOOL")
 #                 return _generate_general_summary(chunk_db, document_id, doc.title)
             
-#             print(f"[TOOL] ✓ Found {len(main_topics)} topics", file=sys.stderr)
+#             debug_log(f"✓ Found {len(main_topics)} topics", "TOOL")
             
 #             # Collect chunks for each topic
 #             topic_contexts = {}
 #             total_chunks_retrieved = 0
             
 #             for topic_name, topic_desc in main_topics.items():
-#                 print(f"\n[TOOL] Processing topic: {topic_name}", file=sys.stderr)
+#                 debug_log(f"\n[TOOL] Processing topic: {topic_name}", "TOOL")
                 
 #                 # Create search query from topic name and description
 #                 search_query = f"{topic_name} {topic_desc}"
-#                 print(f"[TOOL]   Search query: {search_query[:100]}...", file=sys.stderr)
+#                 debug_log(f"  Search query: {search_query[:100]}...", "TOOL")
                 
 #                 # Get embedding for this topic
 #                 topic_embedding = generate_query_embedding(
@@ -81,7 +81,7 @@
 #                     .all()
 #                 )
                 
-#                 print(f"[TOOL]   Retrieved {len(chunks)} chunks", file=sys.stderr)
+#                 debug_log(f"  Retrieved {len(chunks)} chunks", "TOOL")
 #                 total_chunks_retrieved += len(chunks)
                 
 #                 # Store chunks for this topic
@@ -90,17 +90,17 @@
 #                     "chunks": [c.text for c in chunks]
 #                 }
             
-#             print(f"\n[TOOL] Total chunks retrieved: {total_chunks_retrieved}", file=sys.stderr)
+#             debug_log(f"\n[TOOL] Total chunks retrieved: {total_chunks_retrieved}", "TOOL")
             
 #             # Generate summary using LLM
 #             summary = _generate_topic_summary(doc.title, topic_contexts)
             
-#             print(f"[TOOL] ✓ Success - Summary length: {len(summary)} chars", file=sys.stderr)
+#             debug_log(f"✓ Success - Summary length: {len(summary)} chars", "TOOL")
             
 #             return summary
             
 #         except Exception as e:
-#             print(f"[TOOL] ✗ Error: {e}", file=sys.stderr)
+#             debug_log(f"✗ Error: {e}", "TOOL")
 #             import traceback
 #             traceback.print_exc(file=sys.stderr)
 #             return f"Error generating document summary: {str(e)}"
@@ -127,7 +127,7 @@
     
 #     context_text = "\n".join(context_parts)
     
-#     print(f"  → Total context length: {total_context_length} chars", file=sys.stderr)
+#     debug_log(f"  → Total context length: {total_context_length} chars", "TOOL")
     
 #     # Efficient prompt for summary generation
 #     prompt = f"""Summarize this document based on its main topics and excerpts.
@@ -143,8 +143,8 @@
 
 # Keep the summary clear and under 500 words total."""
     
-#     print(f"  → Prompt length: {len(prompt)} chars", file=sys.stderr)
-#     print(f"  → Calling LLM ({settings.llm_model})...", file=sys.stderr)
+#     debug_log(f"  → Prompt length: {len(prompt)} chars", "TOOL")
+#     debug_log(f"  → Calling LLM ({settings.llm_model})...", "TOOL")
     
 #     try:
 #         # Create LLM provider using shared utility
@@ -156,20 +156,23 @@
 #         )
         
 #         summary = llm.generate(prompt)
-#         print(f"  → Summary length: {len(summary)} chars", file=sys.stderr)
+#         debug_log(f"  → Summary length: {len(summary)} chars", "TOOL")
         
 #         return summary
         
 #     except Exception as e:
-#         print(f"  ✗ LLM ERROR: {e}", file=sys.stderr)
+#         debug_log(f"  ✗ LLM ERROR: {e}", "TOOL")
 #         return f"Error generating summary: {str(e)}"
 
 
 # def _generate_general_summary(chunk_db, document_id: int, doc_title: str) -> str:
 #     """Fallback: Generate summary from first few chunks if no topics available."""
 #     from shared.models.Document import DocumentChunk
+
+# Import debug logger
+from app.utils.debug_logger import debug_log
     
-#     print(f"  → Generating general summary (no topics available)", file=sys.stderr)
+#     debug_log(f"  → Generating general summary (no topics available)", "TOOL")
     
 #     try:
 #         # Get first 5 chunks
@@ -207,5 +210,5 @@
 #         return llm.generate(prompt)
         
 #     except Exception as e:
-#         print(f"  ✗ Error in general summary: {e}", file=sys.stderr)
+#         debug_log(f"  ✗ Error in general summary: {e}", "TOOL")
 #         return f"Unable to generate summary for '{doc_title}'."
