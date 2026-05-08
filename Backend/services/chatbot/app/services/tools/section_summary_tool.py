@@ -5,6 +5,9 @@ import sys
 from datetime import datetime
 from typing import List
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 
 class ListSectionsToolArgs(BaseModel):
     """No arguments needed - uses document from session"""
@@ -110,8 +113,8 @@ def make_list_sections_tool(management_db, chunk_db, document_ids: List[int]):
 
         DO NOT use for specific factual questions about content (e.g. "what is X", "how does Y work").
         """
-        print(f"\n[TOOL CALLED] list_document_sections_tool", file=sys.stderr)
-        print(f"[TOOL] Document IDs: {document_ids}", file=sys.stderr)
+        debug_log(f"\n[TOOL CALLED] list_document_sections_tool", "TOOL")
+        debug_log(f"Document IDs: {document_ids}", "TOOL")
 
         try:
             if len(document_ids) > 1:
@@ -122,25 +125,25 @@ def make_list_sections_tool(management_db, chunk_db, document_ids: List[int]):
 
             document_id = document_ids[0]
 
-            print(f"[TOOL] Querying management_db for document_id={document_id}", file=sys.stderr)
+            debug_log(f"Querying management_db for document_id={document_id}", "TOOL")
 
             doc = documents_repo.get_by_id(management_db, document_id)
-            print(f"[TOOL] Document retrieved: {doc}", file=sys.stderr)
-            print(f"[TOOL] Document title: {doc.title if doc else 'None'}", file=sys.stderr)
+            debug_log(f"Document retrieved: {doc}", "TOOL")
+            debug_log(f"Document title: {doc.title if doc else 'None'}", "TOOL")
 
             doc_name = doc.title if doc else "this document"
 
-            print(f"[TOOL] Querying sections for document_id={document_id}", file=sys.stderr)
+            debug_log(f"Querying sections for document_id={document_id}", "TOOL")
             sections = management_db.query(DocumentSection).filter(
                 DocumentSection.document_id == document_id
             ).order_by(DocumentSection.start_chunk_index).all()
 
-            print(f"[TOOL] Sections query returned {len(sections)} results", file=sys.stderr)
+            debug_log(f"Sections query returned {len(sections)} results", "TOOL")
 
             if not sections:
                 return f"No sections found in '{doc_name}'. The document may not have been processed with section detection."
 
-            print(f"[TOOL] Found {len(sections)} sections", file=sys.stderr)
+            debug_log(f"Found {len(sections)} sections", "TOOL")
 
             response = f"**{doc_name}** contains the following {len(sections)} sections:\n\n"
             for i, section in enumerate(sections, 1):
@@ -151,7 +154,7 @@ def make_list_sections_tool(management_db, chunk_db, document_ids: List[int]):
             return response
 
         except Exception as e:
-            print(f"[TOOL] Error: {e}", file=sys.stderr)
+            debug_log(f"Error: {e}", "TOOL")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return "Something went wrong while retrieving sections. Please try again or contact support if the issue persists."
@@ -200,10 +203,10 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
         For example: "khulasa" -> "summary", "key points batao" -> "key takeaways",
         "aasan alfaz mein" -> "simple explanation", "mukhtar maloomat" -> "highlights".
         """
-        print(f"\n[TOOL CALLED] generate_section_summary_tool", file=sys.stderr)
-        print(f"[TOOL] Document IDs: {document_ids}", file=sys.stderr)
-        print(f"[TOOL] Section Title: {section_title}", file=sys.stderr)
-        print(f"[TOOL] User Intent: {user_intent}", file=sys.stderr)
+        debug_log(f"\n[TOOL CALLED] generate_section_summary_tool", "TOOL")
+        debug_log(f"Document IDs: {document_ids}", "TOOL")
+        debug_log(f"Section Title: {section_title}", "TOOL")
+        debug_log(f"User Intent: {user_intent}", "TOOL")
 
         try:
             if len(document_ids) > 1:
@@ -231,7 +234,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                 if matches:
                     matched_title = matches[0]
                     section = next(s for s in all_sections if s.section_title == matched_title)
-                    print(f"[TOOL] Fuzzy matched '{section_title}' -> '{matched_title}'", file=sys.stderr)
+                    debug_log(f"Fuzzy matched '{section_title}' -> '{matched_title}'", "TOOL")
                 else:
                     return (
                         f"Section '{section_title}' was not found.\n\n"
@@ -239,11 +242,11 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                         "\n".join([f"{i+1}. {t}" for i, t in enumerate(section_titles)])
                     )
 
-            print(f"[TOOL] Found section: {section.section_title} ({section.chunk_count} chunks)", file=sys.stderr)
+            debug_log(f"Found section: {section.section_title} ({section.chunk_count} chunks)", "TOOL")
 
             # Step 3: Resolve intent -> prompt instructions
             intent_instruction, format_hint, intent_matched = _resolve_intent_prompts(user_intent)
-            print(f"[TOOL] Resolved intent '{user_intent}' -> matched={intent_matched}, instruction: {intent_instruction[:60]}...", file=sys.stderr)
+            debug_log(f"Resolved intent '{user_intent}' -> matched={intent_matched}, instruction: {intent_instruction[:60]}...", "TOOL")
 
             # Step 4: Check cache - only reuse if intent matches or is a generic summary
             normalized_intent = user_intent.lower().strip()
@@ -254,7 +257,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
             )
 
             if cache_is_compatible:
-                print(f"[TOOL] Using cached summary (intent: {cached_intent})", file=sys.stderr)
+                debug_log(f"Using cached summary (intent: {cached_intent})", "TOOL")
                 response = f"**{_intent_label(user_intent)} - {section.section_title}**\n\n"
                 response += section.summary
                 response += f"\n\n_[Cached · {section.summary_generated_at.strftime('%Y-%m-%d %H:%M')}]_"
@@ -267,7 +270,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                 DocumentChunk.chunk_index <= section.end_chunk_index
             ).order_by(DocumentChunk.chunk_index).all()
 
-            print(f"[TOOL] Retrieved {len(chunks)} chunks", file=sys.stderr)
+            debug_log(f"Retrieved {len(chunks)} chunks", "TOOL")
 
             if not chunks:
                 return f"No content found for section '{section_title}'."
@@ -298,14 +301,14 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
 
             # Step 7: Generate - small or large section
             if chunk_count <= 10:
-                print(f"[TOOL] Using direct summarization (<= 10 chunks)", file=sys.stderr)
+                debug_log(f"Using direct summarization (<= 10 chunks)", "TOOL")
                 full_text = "\n\n".join([chunk.text for chunk in chunks])
                 target_words = chunk_count * 55
                 prompt = build_prompt(section.section_title, full_text, target_words)
                 summary = llm.generate(prompt)
 
             else:
-                print(f"[TOOL] Using iterative summarization (> 10 chunks)", file=sys.stderr)
+                debug_log(f"Using iterative summarization (> 10 chunks)", "TOOL")
                 BATCH_SIZE = 10
                 current_summary = ""
 
@@ -316,7 +319,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                     total_batches = (chunk_count + BATCH_SIZE - 1) // BATCH_SIZE
                     target_words = (i + len(batch)) * 55
 
-                    print(f"[TOOL] Processing batch {batch_num}/{total_batches} ({len(batch)} chunks)", file=sys.stderr)
+                    debug_log(f"Processing batch {batch_num}/{total_batches} ({len(batch)} chunks)", "TOOL")
 
                     prompt = build_prompt(
                         section.section_title,
@@ -325,11 +328,11 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                         existing_summary=current_summary
                     )
                     current_summary = llm.generate(prompt)
-                    print(f"[TOOL] Batch {batch_num} output: {len(current_summary.split())} words", file=sys.stderr)
+                    debug_log(f"Batch {batch_num} output: {len(current_summary.split())} words", "TOOL")
 
                 summary = current_summary
 
-            print(f"[TOOL] Summary generated ({len(summary.split())} words)", file=sys.stderr)
+            debug_log(f"Summary generated ({len(summary.split())} words)", "TOOL")
 
             # Step 8: Cache to DB
             section.summary = summary
@@ -341,7 +344,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
             management_db.commit()
             management_db.refresh(section)
 
-            print(f"[TOOL] Summary cached", file=sys.stderr)
+            debug_log(f"Summary cached", "TOOL")
 
             # Step 9: Return
             response = f"**{_intent_label(user_intent)} - {section.section_title}**\n\n"
@@ -351,7 +354,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
             return response
 
         except Exception as e:
-            print(f"[TOOL] Error: {e}", file=sys.stderr)
+            debug_log(f"Error: {e}", "TOOL")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return "Something went wrong while generating the summary. Please try again or contact support if the issue persists."

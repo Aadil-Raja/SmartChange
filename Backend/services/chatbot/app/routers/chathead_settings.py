@@ -66,18 +66,42 @@ def update_chathead_reranker(
 
 @router.get("/{chathead_id}/reranker", status_code=status.HTTP_200_OK)
 def get_chathead_reranker(
-    chathead_id: int,
+    chathead_id: str,  # Changed to str to handle temp chatheads
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
     """
     Get the current reranker model setting for a chathead.
+    Returns default setting for temporary chatheads.
     """
     user_id = int(user)
     
+    # Handle temporary chatheads (not yet created)
+    if isinstance(chathead_id, str) and chathead_id.startswith("temp-chat-"):
+        # Return default setting for temp chatheads
+        return make_response(
+            True,
+            "OK",
+            data={
+                "chathead_id": chathead_id,
+                "use_deep_reranker": False,  # Default to fast model
+                "model_name": "Fast (ms-marco-MiniLM)"
+            },
+            status_code=200
+        )
+    
+    # Convert to int for real chatheads
+    try:
+        chathead_id_int = int(chathead_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid chathead_id format"
+        )
+    
     # Get chathead and verify ownership
     chathead = db.query(ChatHead).filter(
-        ChatHead.id == chathead_id,
+        ChatHead.id == chathead_id_int,
         ChatHead.user_id == user_id
     ).first()
     
@@ -93,7 +117,7 @@ def get_chathead_reranker(
         True,
         "OK",
         data={
-            "chathead_id": chathead_id,
+            "chathead_id": chathead_id_int,
             "use_deep_reranker": chathead.use_deep_reranker,
             "model_name": model_name
         },

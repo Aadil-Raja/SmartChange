@@ -7,6 +7,9 @@ from typing import Dict, List
 from sqlalchemy.orm import Session
 from .schemas import DecomposedQuestions
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 
 def decompose_question(
     question: str,
@@ -35,11 +38,11 @@ def decompose_question(
         doc_context = _format_document_context(document_ids, doc_histories, management_db, section_names_map)
         
         # ✅ NEW: Log the document context being passed to decomposer
-        print(f"\n[DECOMPOSER] Document context being passed to LLM:", file=sys.stderr)
-        print(f"[DECOMPOSER] {'='*80}", file=sys.stderr)
+        debug_log(f"\n[DECOMPOSER] Document context being passed to LLM:", "DECOMPOSER")
+        debug_log(f"{'='*80}", "DECOMPOSER")
         for line in doc_context.split('\n'):
-            print(f"[DECOMPOSER] {line}", file=sys.stderr)
-        print(f"[DECOMPOSER] {'='*80}\n", file=sys.stderr)
+            debug_log(f"{line}", "DECOMPOSER")
+        debug_log(f"{'='*80}\n", "DECOMPOSER")
         
         # Create decomposition prompt
         prompt = f"""You have access to these documents:
@@ -69,6 +72,24 @@ Instructions:
 - Confidence should be 0.0-1.0 (0.0 = not confident at all, 1.0 = very confident)
 - Use the section names to understand document structure and content
 
+**IMPORTANT: Extract Keywords for BM25 Sparse Matching**
+For each sub-question, extract important keywords with proper casing:
+- **ALL CAPS** for acronyms: GPA, CGPA, SGPA, PSL, ACM, FYP
+- **Title Case** for names: Aadil, Raja, Pakistan
+- **lowercase** for regular words: grade, point, average, team, project
+- **Remove stopwords**: what, is, are, the, a, an, how, where, when, tell, me, about
+- **Include variations**: If question has "GPA", also include "CGPA", "SGPA", "grade", "point", "average"
+
+Keyword Examples:
+Question: "What is Aadil's GPA?"
+keywords: ["Aadil", "GPA", "CGPA", "SGPA", "gpa", "grade", "point", "average"]
+
+Question: "Tell me about PSL teams"
+keywords: ["PSL", "psl", "Pakistan", "Super", "League", "teams", "franchises", "cricket"]
+
+Question: "What are Aadil's projects?"
+keywords: ["Aadil", "projects", "work", "experience", "FYP"]
+
 Examples of multi-doc sub-questions:
 - "What is the insulation resistance value?" → If unsure which doc has this, use doc_ids=[39, 41, 45]
 - "Tell me about the maintenance procedure" → Could be in multiple docs, use doc_ids=[39, 41]
@@ -76,28 +97,45 @@ Examples of multi-doc sub-questions:
 Respond with:
 - is_cross_doc: boolean indicating if question should be split
 - confidence: float between 0.0 and 1.0
-- sub_questions: list of objects with "question" (str) and "doc_ids" (list of ints, can be multiple)
+- sub_questions: list of objects with:
+  - "question" (str): The sub-question text
+  - "doc_ids" (list of ints): Document IDs (can be multiple)
+  - "keywords" (list of str): Important keywords with proper casing for BM25 matching
 """
         
         # Use LangChain structured output with function_calling method for OpenAI compatibility
         try:
-            print(f"[DECOMPOSER] Calling LLM with structured output...", file=sys.stderr)
+            debug_log(f"Calling LLM with structured output...", "DECOMPOSER")
             langchain_model = llm.get_langchain_model()
             structured_llm = langchain_model.with_structured_output(DecomposedQuestions, method="function_calling")
             result: DecomposedQuestions = structured_llm.invoke(prompt)
-            print(f"[DECOMPOSER] Result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}, sub_questions={len(result.sub_questions)}", file=sys.stderr)
+            debug_log(f"Result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}, sub_questions={len(result.sub_questions)}", "DECOMPOSER")
+            
+            # ✅ Print extracted keywords for each sub-question
+            for idx, sub_q in enumerate(result.sub_questions, 1):
+                debug_log(f"Sub-question {idx}: '{sub_q.question}'", "DECOMPOSER")
+                debug_log(f"  Doc IDs: {sub_q.doc_ids}", "DECOMPOSER")
+                debug_log(f"  Keywords: {sub_q.keywords}", "DECOMPOSER")
+            
             return result
         except Exception as e:
-            print(f"[DECOMPOSER] Structured output failed: {e}, trying generate_json...", file=sys.stderr)
+            debug_log(f"Structured output failed: {e}, trying generate_json...", "DECOMPOSER")
             # Fallback to generate_json
             result_dict = llm.generate_json(prompt)
             result = DecomposedQuestions(**result_dict)
-            print(f"[DECOMPOSER] Fallback result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}", file=sys.stderr)
+            debug_log(f"Fallback result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}", "DECOMPOSER")
+            
+            # ✅ Print extracted keywords for fallback too
+            for idx, sub_q in enumerate(result.sub_questions, 1):
+                debug_log(f"Sub-question {idx}: '{sub_q.question}'", "DECOMPOSER")
+                debug_log(f"  Doc IDs: {sub_q.doc_ids}", "DECOMPOSER")
+                debug_log(f"  Keywords: {sub_q.keywords if hasattr(sub_q, 'keywords') else 'None'}", "DECOMPOSER")
+            
             return result
             
     except Exception as e:
         # On any error, return safe default (don't split)
-        print(f"[DECOMPOSER] Error: {e}, returning safe default", file=sys.stderr)
+        debug_log(f"Error: {e}, returning safe default", "DECOMPOSER")
         import traceback
         traceback.print_exc(file=sys.stderr)
         return DecomposedQuestions(
@@ -133,7 +171,7 @@ def _format_document_context(
     if section_names_map is None and management_db:
         from concurrent.futures import ThreadPoolExecutor
         
-        print(f"[DECOMPOSER] Fetching section names for {len(document_ids)} docs in parallel", file=sys.stderr)
+        debug_log(f"Fetching section names for {len(document_ids)} docs in parallel", "DECOMPOSER")
         
         section_names_map = {}
         with ThreadPoolExecutor(max_workers=len(document_ids)) as executor:
@@ -146,12 +184,12 @@ def _format_document_context(
                 try:
                     section_names_map[doc_id] = future.result()
                 except Exception as e:
-                    print(f"[DECOMPOSER] Failed to get sections for doc {doc_id}: {e}", file=sys.stderr)
+                    debug_log(f"Failed to get sections for doc {doc_id}: {e}", "DECOMPOSER")
                     section_names_map[doc_id] = []
         
-        print(f"[DECOMPOSER] Section names fetched in parallel", file=sys.stderr)
+        debug_log(f"Section names fetched in parallel", "DECOMPOSER")
     elif section_names_map:
-        print(f"[DECOMPOSER] Using pre-fetched section names", file=sys.stderr)
+        debug_log(f"Using pre-fetched section names", "DECOMPOSER")
     
     for doc_id in document_ids:
         # Get document title
@@ -210,9 +248,9 @@ def _get_section_names(db: Session, document_id: int) -> List[str]:
         # Extract section titles from query result
         section_titles = [s[0] for s in sections if s[0]]
         
-        print(f"[DECOMPOSER] Retrieved {len(section_titles)} sections for doc {document_id}", file=sys.stderr)
+        debug_log(f"Retrieved {len(section_titles)} sections for doc {document_id}", "DECOMPOSER")
         return section_titles
         
     except Exception as e:
-        print(f"[DECOMPOSER] Error retrieving sections: {e}", file=sys.stderr)
+        debug_log(f"Error retrieving sections: {e}", "DECOMPOSER")
         return []

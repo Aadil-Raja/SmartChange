@@ -11,6 +11,9 @@ import json
 import re
 from datetime import datetime
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 # Re-use intent resolution from v1
 from app.services.tools.section_summary_tool import (
     INTENT_PROMPT_MAP,
@@ -54,7 +57,7 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
 
         Returns a JSON string with keys: answer, has_contradiction, citations.
         """
-        print(f"\n[TOOL V2] list_document_sections_tool called", file=sys.stderr)
+        debug_log(f"\n[TOOL V2] list_document_sections_tool called", "TOOL V2")
 
         try:
             if len(document_ids) > 1:
@@ -117,7 +120,7 @@ def make_list_sections_tool_v2(management_db, chunk_db, document_ids: List[int])
             })
 
         except Exception as e:
-            print(f"[TOOL V2] list_sections error: {e}", file=sys.stderr)
+            debug_log(f"[TOOL V2] list_sections error: {e}", "TOOL V2")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return json.dumps({
@@ -164,8 +167,8 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
 
         Returns a JSON string with keys: answer, has_contradiction, citations.
         """
-        print(f"\n[TOOL V2] generate_section_summary_tool called", file=sys.stderr)
-        print(f"[TOOL V2] section_title={section_title}, user_intent={user_intent}, selection_type={selection_type}", file=sys.stderr)
+        debug_log(f"\n[TOOL V2] generate_section_summary_tool called", "TOOL V2")
+        debug_log(f"[TOOL V2] section_title={section_title}, user_intent={user_intent}, selection_type={selection_type}", "TOOL V2")
 
         # Handle multi-section request immediately
         if selection_type == "many":
@@ -346,7 +349,7 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             })
 
         except Exception as e:
-            print(f"[TOOL V2] generate_summary error: {e}", file=sys.stderr)
+            debug_log(f"[TOOL V2] generate_summary error: {e}", "TOOL V2")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return json.dumps({

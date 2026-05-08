@@ -50,6 +50,11 @@ class ChatLogger:
     
     def _initialize_log(self):
         """Initialize the log file with header (only for new files)."""
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
+        
         try:
             with open(self.log_file, 'w', encoding='utf-8') as f:
                 f.write("="*100 + "\n")
@@ -61,6 +66,11 @@ class ChatLogger:
     
     def write(self, message: str):
         """Write a message directly to the log file (thread-safe)."""
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
+        
         try:
             with self._lock:
                 with open(self.log_file, 'a', encoding='utf-8') as f:
@@ -70,6 +80,11 @@ class ChatLogger:
     
     def log_user_turn(self, user_message: str, active_doc_ids: List[int]):
         """Log the start of a new user turn."""
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
+        
         with self._lock:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write("\n" + "="*80 + "\n")
@@ -85,10 +100,17 @@ class ChatLogger:
     
     def flush_sub_question(self, index: int):
         """Write a completed sub-question log to file atomically."""
+        from app.utils.debug_logger import is_file_logging_enabled
+        
         buf = self._sub_question_logs.get(index)
         if not buf:
             print(f"[LOGGER] No buffer found for sub-question {index}", file=sys.stderr)
             return
+        
+        if not is_file_logging_enabled():
+            # Clean up buffer even if not writing to file
+            del self._sub_question_logs[index]
+            return  # Skip file logging if disabled
         
         try:
             with self._lock:
@@ -297,6 +319,11 @@ class ChatLogger:
     
     def log_merged_answer(self, answer: str, citations: List[Dict]):
         """Log the final merged answer (for multi-question queries)."""
+        from app.utils.debug_logger import is_file_logging_enabled
+        
+        if not is_file_logging_enabled():
+            return  # Skip file logging if disabled
+        
         with self._lock:
             with open(self.log_file, 'a', encoding='utf-8') as f:
                 f.write("\n" + "="*80 + "\n")

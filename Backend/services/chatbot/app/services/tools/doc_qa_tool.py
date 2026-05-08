@@ -4,6 +4,9 @@ from langchain.tools import tool
 import sys
 from typing import List
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 # Tune these constants to control relevance filtering
 ABSOLUTE_MIN_SCORE = 0.45   # A chunk must clear this regardless of other docs
 RELATIVE_RATIO = 0.75       # A chunk must be within 75% of the best score across all docs
@@ -39,9 +42,9 @@ def make_doc_qa_tool(chunk_db, document_ids: List[int]):
         Do NOT use this tool when the user wants a summary, overview, table of
         contents, or section list — use list_document_sections_tool for those.
         """
-        print(f"\n[TOOL CALLED] doc_qa_tool", file=sys.stderr)
-        print(f"[TOOL] Question: {question}", file=sys.stderr)
-        print(f"[TOOL] Document IDs: {document_ids}", file=sys.stderr)
+        debug_log(f"\n[TOOL CALLED] doc_qa_tool", "TOOL")
+        debug_log(f"Question: {question}", "TOOL")
+        debug_log(f"Document IDs: {document_ids}", "TOOL")
 
         try:
             if not document_ids:
@@ -73,10 +76,10 @@ def make_doc_qa_tool(chunk_db, document_ids: List[int]):
                         print(f"[TOOL] Doc {doc_id} ('{doc_name}'): {len(chunks)} chunks, "
                               f"top score={chunks[0]['score']:.3f}", file=sys.stderr)
                     else:
-                        print(f"[TOOL] Doc {doc_id}: no chunks returned", file=sys.stderr)
+                        debug_log(f"Doc {doc_id}: no chunks returned", "TOOL")
 
                 except Exception as e:
-                    print(f"[TOOL] Error retrieving chunks for doc {doc_id}: {e}", file=sys.stderr)
+                    debug_log(f"Error retrieving chunks for doc {doc_id}: {e}", "TOOL")
                     continue
 
             if not raw_results:
@@ -90,7 +93,7 @@ def make_doc_qa_tool(chunk_db, document_ids: List[int]):
             )
             threshold = max(ABSOLUTE_MIN_SCORE, best_score * RELATIVE_RATIO)
 
-            print(f"[TOOL] Best score across all docs: {best_score:.3f}", file=sys.stderr)
+            debug_log(f"Best score across all docs: {best_score:.3f}", "TOOL")
             print(f"[TOOL] Relevance threshold: {threshold:.3f} "
                   f"(max({ABSOLUTE_MIN_SCORE}, {best_score:.3f} * {RELATIVE_RATIO}))", file=sys.stderr)
 
@@ -110,7 +113,7 @@ def make_doc_qa_tool(chunk_db, document_ids: List[int]):
                           f"(top score={data['chunks'][0]['score']:.3f})", file=sys.stderr)
                     continue
 
-                print(f"[TOOL] Doc '{doc_name}': {len(passing_chunks)} chunks passed threshold", file=sys.stderr)
+                debug_log(f"Doc '{doc_name}': {len(passing_chunks)} chunks passed threshold", "TOOL")
                 relevant_sources.append(doc_name)
 
                 chunk_texts = "\n\n".join([c["text"] for c in passing_chunks])
@@ -159,7 +162,7 @@ Instructions:
 Answer:"""
 
             answer = llm.generate(prompt)
-            print(f"[TOOL] Answer generated ({len(answer.split())} words)", file=sys.stderr)
+            debug_log(f"Answer generated ({len(answer.split())} words)", "TOOL")
 
             # Step 6: Append citation list at the bottom
             response = answer.strip()
@@ -170,7 +173,7 @@ Answer:"""
             return response
 
         except Exception as e:
-            print(f"[TOOL] Error: {e}", file=sys.stderr)
+            debug_log(f"Error: {e}", "TOOL")
             import traceback
             traceback.print_exc(file=sys.stderr)
             return "Something went wrong while searching the documents. Please try again or contact support if the issue persists."

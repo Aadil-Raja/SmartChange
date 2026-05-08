@@ -7,6 +7,9 @@ from typing import List, Dict
 from concurrent.futures import ThreadPoolExecutor
 from .schemas import SubQuestion, SubAnswer
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 
 def retrieve_and_answer_subquestions(
     sub_questions: List[SubQuestion],
@@ -29,7 +32,7 @@ def retrieve_and_answer_subquestions(
     Returns:
         List of SubAnswer objects (one per sub-question)
     """
-    print(f"[RETRIEVER] Processing {len(sub_questions)} sub-questions in parallel", file=sys.stderr)
+    debug_log(f"Processing {len(sub_questions)} sub-questions in parallel", "RETRIEVER")
     
     # Process in parallel using ThreadPoolExecutor
     with ThreadPoolExecutor(max_workers=len(sub_questions)) as executor:
@@ -50,7 +53,7 @@ def retrieve_and_answer_subquestions(
         
         results = [future.result() for future in futures]
     
-    print(f"[RETRIEVER] Completed processing, {sum(1 for r in results if not r.failed)}/{len(results)} succeeded", file=sys.stderr)
+    debug_log(f"Completed processing, {sum(1 for r in results if not r.failed)}/{len(results)} succeeded", "RETRIEVER")
     return results
 
 
@@ -82,11 +85,13 @@ def _process_sub_question(
             if logger:
                 buf = logger.get_sub_question_buffer(index=index, question=sub_question.question, total=total)
         except Exception as log_err:
-            print(f"[RETRIEVER] Failed to get sub-question buffer: {log_err}", file=sys.stderr)
+            debug_log(f"Failed to get sub-question buffer: {log_err}", "RETRIEVER")
         
-        print(f"[RETRIEVER] Processing: '{sub_question.question}'", file=sys.stderr)
-        print(f"[RETRIEVER]   Decomposer suggested docs: {sub_question.doc_ids}", file=sys.stderr)
-        print(f"[RETRIEVER]   Fetching chunks from ALL active docs: {all_active_doc_ids}", file=sys.stderr)
+        debug_log(f"Processing: '{sub_question.question}'", "RETRIEVER")
+        debug_log(f"  Decomposer suggested docs: {sub_question.doc_ids}", "RETRIEVER")
+        debug_log(f"  Extracted keywords: {sub_question.keywords}", "RETRIEVER")
+        debug_log(f"  Keywords type: {type(sub_question.keywords)}, length: {len(sub_question.keywords) if sub_question.keywords else 0}", "RETRIEVER")
+        debug_log(f"  Fetching chunks from ALL active docs: {all_active_doc_ids}", "RETRIEVER")
         
         # Import existing functions from doc_qa_tool_structured
         from ..doc_qa_tool_structured import (
@@ -102,13 +107,19 @@ def _process_sub_question(
         # Step 1: Retrieve chunks from ALL active documents using HYBRID search
         # This combines:
         # - Dense retrieval (cosine similarity with embeddings)
-        # - Sparse retrieval (BM25 keyword matching)
+        # - Sparse retrieval (BM25 keyword matching with extracted keywords)
         # - Reranking (cross-encoder for final scoring)
+        
+        # ✅ FIX: Pass keywords even if empty list (don't convert to None)
+        keywords_to_use = sub_question.keywords if hasattr(sub_question, 'keywords') and sub_question.keywords else []
+        debug_log(f"  Passing keywords to hybrid retrieval: {keywords_to_use}", "RETRIEVER")
+        
         raw_results = retrieve_chunks_for_all_docs_hybrid(
             chunk_db=chunk_db,
             document_ids=all_active_doc_ids,  # Use all active docs
             question=sub_question.question,
-            use_deep_reranker=use_deep_reranker  # NEW: Pass deep flag
+            use_deep_reranker=use_deep_reranker,  # Pass deep flag
+            keywords=keywords_to_use  # NEW: Pass keywords (empty list or populated)
         )
         
         # ✅ Store stages 1-3 in buffer (from global variables set by hybrid_retrieval)
@@ -123,7 +134,7 @@ def _process_sub_question(
                 if _stage3_data:
                     buf.stage3 = logger.format_stage3_reranked(_stage3_data)
             except Exception as log_err:
-                print(f"[RETRIEVER] Failed to store stages 1-3: {log_err}", file=sys.stderr)
+                debug_log(f"Failed to store stages 1-3: {log_err}", "RETRIEVER")
         
         if not raw_results:
             return SubAnswer(
@@ -145,7 +156,7 @@ def _process_sub_question(
         
         if has_rerank_scores:
             # Reranked results - apply threshold filtering on rerank scores
-            print(f"[RETRIEVER] Using reranked results with threshold filtering", file=sys.stderr)
+            debug_log(f"Using reranked results with threshold filtering", "RETRIEVER")
             
             # Step 1: Find the best rerank score and which document/section it came from
             best_rerank_score = float('-inf')
@@ -182,8 +193,8 @@ def _process_sub_question(
                 same_doc_threshold = best_rerank_score - margin_same_doc          # Medium
                 other_doc_threshold = best_rerank_score - margin_other            # Most strict
             
-            print(f"[RETRIEVER] Best rerank score: {best_rerank_score:.4f} from doc {best_rerank_doc_id}, section '{best_rerank_section}'", file=sys.stderr)
-            print(f"[RETRIEVER] Thresholds: same_section={same_section_threshold:.4f}, same_doc={same_doc_threshold:.4f}, other_doc={other_doc_threshold:.4f}", file=sys.stderr)
+            debug_log(f"Best rerank score: {best_rerank_score:.4f} from doc {best_rerank_doc_id}, section '{best_rerank_section}'", "RETRIEVER")
+            debug_log(f"Thresholds: same_section={same_section_threshold:.4f}, same_doc={same_doc_threshold:.4f}, other_doc={other_doc_threshold:.4f}", "RETRIEVER")
             
             # Step 3: Collect all chunks that pass threshold
             passing_chunks_with_metadata = []
@@ -206,7 +217,7 @@ def _process_sub_question(
             else:
                 dense_threshold = 0.0
             
-            print(f"[RETRIEVER] Dense fallback: best rerank chunk dense={best_rerank_chunk_dense:.4f}, threshold={dense_threshold:.4f} ({int(settings.dense_fallback_percent*100)}%)", file=sys.stderr)
+            debug_log(f"Dense fallback: best rerank chunk dense={best_rerank_chunk_dense:.4f}, threshold={dense_threshold:.4f} ({int(settings.dense_fallback_percent*100)}%)", "RETRIEVER")
             
             for doc_id, data in raw_results.items():
                 if not data["chunks"]:
@@ -264,8 +275,8 @@ def _process_sub_question(
             # Limit to max chunks to LLM
             top_chunks = passing_chunks_with_metadata[:settings.max_chunks_to_llm]
             
-            print(f"[RETRIEVER] {len(passing_chunks_with_metadata)} chunks passed threshold, using top {len(top_chunks)}", file=sys.stderr)
-            print(f"[RETRIEVER] {len(dropped_chunks_with_metadata)} chunks dropped below threshold", file=sys.stderr)
+            debug_log(f"{len(passing_chunks_with_metadata)} chunks passed threshold, using top {len(top_chunks)}", "RETRIEVER")
+            debug_log(f"{len(dropped_chunks_with_metadata)} chunks dropped below threshold", "RETRIEVER")
             
             # Step 5: Build context blocks and chunk map from top chunks
             context_blocks = []
@@ -307,10 +318,10 @@ def _process_sub_question(
                     chunk_text = c['text']
                     block_lines.append(f"[CHUNK_ID: {cid}]\n{chunk_text}")
                     total_chunk_texts += 1
-                    print(f"[RETRIEVER] Adding chunk {cid}: text_length={len(chunk_text)}, preview='{chunk_text[:100]}'", file=sys.stderr)
+                    debug_log(f"Adding chunk {cid}: text_length={len(chunk_text)}, preview='{chunk_text[:100]}'", "RETRIEVER")
                 context_blocks.append("\n\n".join(block_lines))
             
-            print(f"[RETRIEVER] Built {len(context_blocks)} context blocks with {total_chunk_texts} total chunks", file=sys.stderr)
+            debug_log(f"Built {len(context_blocks)} context blocks with {total_chunk_texts} total chunks", "RETRIEVER")
             
             # For logging
             best_score = best_rerank_score
@@ -360,16 +371,16 @@ def _process_sub_question(
                         dropped_chunks=dropped_for_log
                     )
                 except Exception as log_err:
-                    print(f"[RETRIEVER] Failed to store stage 4: {log_err}", file=sys.stderr)
+                    debug_log(f"Failed to store stage 4: {log_err}", "RETRIEVER")
             
             # ── DEBUG: print reranked chunks with threshold filtering ──
-            print(f"\n[CHUNKS] Sub-question: '{sub_question.question}'", file=sys.stderr)
-            print(f"[CHUNKS] Using RERANKED results with 3-tier threshold filtering", file=sys.stderr)
-            print(f"[CHUNKS] Best rerank score: {best_rerank_score:.4f} from doc {best_rerank_doc_id}, section '{best_rerank_section}'", file=sys.stderr)
-            print(f"[CHUNKS] Thresholds: same_section={same_section_threshold:.4f} (50%), same_doc={same_doc_threshold:.4f} (65%), other_doc={other_doc_threshold:.4f} (75%)", file=sys.stderr)
-            print(f"[CHUNKS] Decomposer suggested: {sub_question.doc_ids}", file=sys.stderr)
+            debug_log(f"\n[CHUNKS] Sub-question: '{sub_question.question}'", "RETRIEVER")
+            debug_log(f"Using RERANKED results with 3-tier threshold filtering", "CHUNKS")
+            debug_log(f"Best rerank score: {best_rerank_score:.4f} from doc {best_rerank_doc_id}, section '{best_rerank_section}'", "CHUNKS")
+            debug_log(f"Thresholds: same_section={same_section_threshold:.4f} (50%), same_doc={same_doc_threshold:.4f} (65%), other_doc={other_doc_threshold:.4f} (75%)", "CHUNKS")
+            debug_log(f"Decomposer suggested: {sub_question.doc_ids}", "CHUNKS")
             
-            print(f"\n[CHUNKS] ✅ PASSING CHUNKS (top {len(top_chunks)} after dual-pass filtering):", file=sys.stderr)
+            debug_log(f"\n[CHUNKS] ✅ PASSING CHUNKS (top {len(top_chunks)} after dual-pass filtering):", "RETRIEVER")
             for i, item in enumerate(top_chunks, 1):
                 doc_id = item["doc_id"]
                 doc_title = item["doc_title"]
@@ -382,10 +393,10 @@ def _process_sub_question(
                 chunk_section = c.get('section_title', '')
                 decomposer_match = "✓ SUGGESTED" if doc_id in sub_question.doc_ids else "⚠ NOT SUGGESTED"
                 
-                print(f"[CHUNKS]   {i}. Doc {doc_id} '{doc_title}' [{decomposer_match}] [{tier}] [{pass_reason}] | rerank={rerank_score:.4f} dense={dense_score:.4f} | page={c.get('start_page_num')} | sec='{chunk_section[:40]}'", file=sys.stderr)
+                debug_log(f"  {i}. Doc {doc_id} '{doc_title}' [{decomposer_match}] [{tier}] [{pass_reason}] | rerank={rerank_score:.4f} dense={dense_score:.4f} | page={c.get('start_page_num')} | sec='{chunk_section[:40]}'", "CHUNKS")
             
             if dropped_chunks_with_metadata:
-                print(f"\n[CHUNKS] ❌ DROPPED CHUNKS ({len(dropped_chunks_with_metadata)} below threshold):", file=sys.stderr)
+                debug_log(f"\n[CHUNKS] ❌ DROPPED CHUNKS ({len(dropped_chunks_with_metadata)} below threshold):", "RETRIEVER")
                 for i, item in enumerate(dropped_chunks_with_metadata[:5], 1):  # Show first 5
                     doc_id = item["doc_id"]
                     doc_title = item["doc_title"]
@@ -395,19 +406,19 @@ def _process_sub_question(
                     rerank_score = c.get('rerank_score', c.get('score', 0))
                     chunk_section = c.get('section_title', '')
                     
-                    print(f"[CHUNKS]   {i}. Doc {doc_id} '{doc_title}' [{tier}] | rerank={rerank_score:.4f} < {threshold:.4f} | page={c.get('start_page_num')} | sec='{chunk_section[:40]}'", file=sys.stderr)
+                    debug_log(f"  {i}. Doc {doc_id} '{doc_title}' [{tier}] | rerank={rerank_score:.4f} < {threshold:.4f} | page={c.get('start_page_num')} | sec='{chunk_section[:40]}'", "CHUNKS")
                 
                 if len(dropped_chunks_with_metadata) > 5:
-                    print(f"[CHUNKS]   ... and {len(dropped_chunks_with_metadata) - 5} more dropped chunks", file=sys.stderr)
+                    debug_log(f"  ... and {len(dropped_chunks_with_metadata) - 5} more dropped chunks", "CHUNKS")
             
-            print(f"\n[CHUNKS] TOTAL: {len(top_chunks)} chunks passed (max 20), {len(dropped_chunks_with_metadata)} dropped | passing_docs={passing_doc_ids}", file=sys.stderr)
+            debug_log(f"\n[CHUNKS] TOTAL: {len(top_chunks)} chunks passed (max 20), {len(dropped_chunks_with_metadata)} dropped | passing_docs={passing_doc_ids}", "RETRIEVER")
             # ── END DEBUG ──
             
-            print(f"[RETRIEVER] Using {len(context_blocks)} context blocks from {len(passing_doc_ids)} docs", file=sys.stderr)
+            debug_log(f"Using {len(context_blocks)} context blocks from {len(passing_doc_ids)} docs", "RETRIEVER")
             
         else:
             # Not reranked - use traditional threshold filtering
-            print(f"[RETRIEVER] Using threshold filtering (no rerank scores found)", file=sys.stderr)
+            debug_log(f"Using threshold filtering (no rerank scores found)", "RETRIEVER")
             
             # Calculate thresholds
             best_score, best_doc_id, same_doc_threshold, other_doc_threshold = calculate_thresholds(raw_results)
@@ -421,9 +432,9 @@ def _process_sub_question(
             )
 
             # ── DEBUG: print chunk scores for this sub-question ──
-            print(f"\n[CHUNKS] Sub-question: '{sub_question.question}'", file=sys.stderr)
-            print(f"[CHUNKS] Decomposer suggested: {sub_question.doc_ids}, Cosine similarity found best in: doc {best_doc_id}", file=sys.stderr)
-            print(f"[CHUNKS] Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same={same_doc_threshold:.4f}, other={other_doc_threshold:.4f}", file=sys.stderr)
+            debug_log(f"\n[CHUNKS] Sub-question: '{sub_question.question}'", "RETRIEVER")
+            debug_log(f"Decomposer suggested: {sub_question.doc_ids}, Cosine similarity found best in: doc {best_doc_id}", "CHUNKS")
+            debug_log(f"Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same={same_doc_threshold:.4f}, other={other_doc_threshold:.4f}", "CHUNKS")
             total_pass = 0
             total_drop = 0
             for doc_id, data in raw_results.items():
@@ -435,12 +446,12 @@ def _process_sub_question(
                 
                 # Highlight if this doc was NOT suggested by decomposer but has passing chunks
                 decomposer_match = "✓ SUGGESTED" if doc_id in sub_question.doc_ids else "⚠ NOT SUGGESTED"
-                print(f"[CHUNKS] Doc {doc_id} '{data['doc_title']}' [{decomposer_match}] (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", file=sys.stderr)
+                debug_log(f"Doc {doc_id} '{data['doc_title']}' [{decomposer_match}] (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", "CHUNKS")
                 
                 for c in data["chunks"]:
                     status = "✓ PASS" if c["score"] >= thresh else "✗ DROP"
-                    print(f"[CHUNKS]   [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", file=sys.stderr)
-            print(f"[CHUNKS] TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", file=sys.stderr)
+                    debug_log(f"  [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", "CHUNKS")
+            debug_log(f"TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", "CHUNKS")
             # ── END DEBUG ──
         
         # ── LOG CHUNKS TO FILE ──
@@ -495,9 +506,9 @@ def _process_sub_question(
                     )
                 else:
                     # Use available ChatLogger methods instead
-                    print(f"[RETRIEVER] Detailed logging: {len(passing_doc_ids)} passing docs, best_score={best_score:.4f}", file=sys.stderr)
+                    debug_log(f"Detailed logging: {len(passing_doc_ids)} passing docs, best_score={best_score:.4f}", "RETRIEVER")
         except Exception as log_err:
-            print(f"[RETRIEVER] Logging error: {log_err}", file=sys.stderr)
+            debug_log(f"Logging error: {log_err}", "RETRIEVER")
             import traceback
             traceback.print_exc(file=sys.stderr)
         # ── END LOG ──
@@ -521,7 +532,7 @@ def _process_sub_question(
         )
         
         # Step 5: Invoke LLM with structured output
-        print(f"[RETRIEVER] Calling invoke_llm_with_structured_output with {len(context_blocks)} blocks", file=sys.stderr)
+        debug_log(f"Calling invoke_llm_with_structured_output with {len(context_blocks)} blocks", "RETRIEVER")
         result = invoke_llm_with_structured_output(
             question=sub_question.question,
             conversation_context=conversation_context,
@@ -529,7 +540,7 @@ def _process_sub_question(
             chunk_map=chunk_map
         )
         
-        print(f"[RETRIEVER] LLM returned {len(result.get('retrieved_contexts', []))} contexts", file=sys.stderr)
+        debug_log(f"LLM returned {len(result.get('retrieved_contexts', []))} contexts", "RETRIEVER")
         
         # ✅ Store Stage 5 in buffer and flush all stages atomically
         if buf:
@@ -544,7 +555,7 @@ def _process_sub_question(
                 # Flush all stages to file atomically
                 logger.flush_sub_question(index)
             except Exception as log_err:
-                print(f"[RETRIEVER] Failed to store stage 5 or flush: {log_err}", file=sys.stderr)
+                debug_log(f"Failed to store stage 5 or flush: {log_err}", "RETRIEVER")
         
         # Step 6: Return SubAnswer with actual passing doc IDs (not decomposer's suggestion)
         return SubAnswer(
@@ -561,7 +572,7 @@ def _process_sub_question(
         )
         
     except Exception as e:
-        print(f"[RETRIEVER] Error processing sub-question: {e}", file=sys.stderr)
+        debug_log(f"Error processing sub-question: {e}", "RETRIEVER")
         import traceback
         traceback.print_exc(file=sys.stderr)
         

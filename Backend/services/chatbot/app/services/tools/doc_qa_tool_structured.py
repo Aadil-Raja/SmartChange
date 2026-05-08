@@ -13,6 +13,9 @@ Filtering strategy:
 """
 from pydantic import BaseModel, Field
 from langchain.tools import tool
+
+# Import debug logger
+from app.utils.debug_logger import debug_log
 from typing import List, Dict, Tuple
 import sys
 import json
@@ -314,25 +317,25 @@ def invoke_llm_with_structured_output(
         # ✅ NEW: Include retrieved contexts (chunk texts) for RAGAS evaluation
         # Extract chunk texts from context_blocks (they contain the actual text)
         retrieved_contexts = []
-        print(f"[INVOKE_LLM] Starting extraction from {len(context_blocks)} context blocks", file=sys.stderr)
+        debug_log(f"[INVOKE_LLM] Starting extraction from {len(context_blocks)} context blocks", "INVOKE_LLM")
         for block_idx, block in enumerate(context_blocks):
-            print(f"[INVOKE_LLM] Block {block_idx}: length={len(block)}, preview='{block[:200]}'", file=sys.stderr)
+            debug_log(f"[INVOKE_LLM] Block {block_idx}: length={len(block)}, preview='{block[:200]}'", "INVOKE_LLM")
             # Each block contains chunks with format: [CHUNK_ID: ...]\ntext
             # Split by CHUNK_ID markers and extract text
             chunks_in_block = block.split('[CHUNK_ID:')
-            print(f"[INVOKE_LLM] Block {block_idx}: split into {len(chunks_in_block)} parts", file=sys.stderr)
+            debug_log(f"[INVOKE_LLM] Block {block_idx}: split into {len(chunks_in_block)} parts", "INVOKE_LLM")
             for chunk_idx, chunk_part in enumerate(chunks_in_block[1:]):  # Skip first part (source header)
                 # Extract text after the chunk ID line
                 lines = chunk_part.split('\n', 1)
-                print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: split into {len(lines)} lines", file=sys.stderr)
+                debug_log(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: split into {len(lines)} lines", "INVOKE_LLM")
                 if len(lines) > 1:
                     extracted_text = lines[1].strip()
                     retrieved_contexts.append(extracted_text)
-                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: extracted {len(extracted_text)} chars: '{extracted_text[:100]}'", file=sys.stderr)
+                    debug_log(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: extracted {len(extracted_text)} chars: '{extracted_text[:100]}'", "INVOKE_LLM")
                 else:
-                    print(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: SKIPPED (only {len(lines)} line)", file=sys.stderr)
+                    debug_log(f"[INVOKE_LLM] Block {block_idx}, chunk {chunk_idx}: SKIPPED (only {len(lines)} line)", "INVOKE_LLM")
 
-        print(f"[INVOKE_LLM] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+        debug_log(f"[INVOKE_LLM] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", "INVOKE_LLM")
         
         return {
             "answer": answer,
@@ -390,7 +393,7 @@ def _fallback_to_generate_json(llm, question: str, context_blocks: List[str], ch
             if len(lines) > 1:
                 retrieved_contexts.append(lines[1].strip())
 
-    print(f"[FALLBACK] Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", file=sys.stderr)
+    debug_log(f"Extracted {len(retrieved_contexts)} contexts from {len(context_blocks)} blocks", "FALLBACK")
     
     return {
         "answer": answer,
@@ -473,8 +476,8 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
             )
 
             # ── DEBUG: print all chunks with scores and pass/fail status ──
-            print(f"\n[CHUNKS] Question: '{question}'", file=sys.stderr)
-            print(f"[CHUNKS] Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same_doc_thresh={same_doc_threshold:.4f}, other_doc_thresh={other_doc_threshold:.4f}", file=sys.stderr)
+            debug_log(f"\n[CHUNKS] Question: '{question}'", "INVOKE_LLM")
+            debug_log(f"Thresholds — best_score={best_score:.4f}, best_doc_id={best_doc_id}, same_doc_thresh={same_doc_threshold:.4f}, other_doc_thresh={other_doc_threshold:.4f}", "CHUNKS")
             total_pass = 0
             total_drop = 0
             for doc_id, data in raw_results.items():
@@ -483,11 +486,11 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
                 doc_drop = len(data["chunks"]) - doc_pass
                 total_pass += doc_pass
                 total_drop += doc_drop
-                print(f"[CHUNKS] Doc {doc_id} '{data['doc_title']}' (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", file=sys.stderr)
+                debug_log(f"Doc {doc_id} '{data['doc_title']}' (thresh={thresh:.4f}) — {doc_pass} pass, {doc_drop} drop:", "CHUNKS")
                 for c in data["chunks"]:
                     status = "✓ PASS" if c["score"] >= thresh else "✗ DROP"
-                    print(f"[CHUNKS]   [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", file=sys.stderr)
-            print(f"[CHUNKS] TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", file=sys.stderr)
+                    debug_log(f"  [{status}] score={c['score']:.4f} | page={c.get('start_page_num')} | sec='{c.get('section_title','')[:40]}' | text='{c['text'][:80].strip()}'", "CHUNKS")
+            debug_log(f"TOTAL: {total_pass} passed, {total_drop} dropped | passing_docs={passing_doc_ids} | context_blocks={len(context_blocks)}", "CHUNKS")
             # ── END DEBUG ──
 
             if not context_blocks:
@@ -508,10 +511,10 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
                 from app.services.chat_logger import get_logger
                 
                 logger = get_logger()
-                print(f"[TOOL] Logger instance: {logger}", file=sys.stderr)
+                debug_log(f"Logger instance: {logger}", "TOOL")
                 
                 if logger:
-                    print(f"[TOOL] Preparing logging data...", file=sys.stderr)
+                    debug_log(f"Preparing logging data...", "TOOL")
                     
                     # Prepare retrieved chunks for logging
                     retrieved_chunks = {}
@@ -554,7 +557,7 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
                         if doc_dropped:
                             dropped_chunks[doc_id] = doc_dropped
                     
-                    print(f"[TOOL] Calling logger.log_turn()...", file=sys.stderr)
+                    debug_log(f"Calling logger.log_turn()...", "TOOL")
                     
                     # Log the turn
                     logger.log_turn(
@@ -575,12 +578,12 @@ def make_doc_qa_tool_structured(chunk_db, document_ids: List[int], doc_histories
                         has_contradiction=result['has_contradiction']
                     )
                     
-                    print(f"[TOOL] Logging completed successfully", file=sys.stderr)
+                    debug_log(f"Logging completed successfully", "TOOL")
                 else:
-                    print(f"[TOOL] Logger is None - skipping logging", file=sys.stderr)
+                    debug_log(f"Logger is None - skipping logging", "TOOL")
             except Exception as log_error:
                 # Don't fail the request if logging fails
-                print(f"[TOOL] Logging error: {log_error}", file=sys.stderr)
+                debug_log(f"Logging error: {log_error}", "TOOL")
                 import traceback
                 traceback.print_exc(file=sys.stderr)
             

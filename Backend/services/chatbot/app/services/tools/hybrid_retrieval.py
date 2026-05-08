@@ -24,6 +24,9 @@ from sqlalchemy.orm import Session
 from rank_bm25 import BM25Okapi
 import numpy as np
 
+# Import debug logger
+from app.utils.debug_logger import debug_log
+
 # Load environment variables (for HF_TOKEN)
 from dotenv import load_dotenv
 load_dotenv()
@@ -70,7 +73,7 @@ def _get_reranker_model(model_name: str):
         if hf_token:
             os.environ['HUGGING_FACE_HUB_TOKEN'] = hf_token
         
-        print(f"[HYBRID] Loading reranker model: {model_name} (first time only)", file=sys.stderr)
+        debug_log(f"Loading reranker model: {model_name} (first time only)", "HYBRID")
         
         # Use different loading methods for different models
         if model_name == settings.reranker_model_deep:
@@ -90,92 +93,358 @@ def _get_reranker_model(model_name: str):
             model = CrossEncoder(model_name)
             _reranker_models[model_name] = {'model': model, 'type': 'cross_encoder'}
         
-        print(f"[HYBRID] Reranker model {model_name} loaded and cached", file=sys.stderr)
+        debug_log(f"Reranker model {model_name} loaded and cached", "HYBRID")
     
     return _reranker_models[model_name]
 
 
 # ============================================================================
-# DENSE RETRIEVAL (Existing Vector Search)
+# CONFIGURATION
+# ============================================================================
+# Threshold for switching between NumPy and HNSW
+# Below this: Use NumPy (faster for small filtered datasets)
+# Above this: Use HNSW (scales better for large datasets)
+NUMPY_THRESHOLD = 5000  # chunks
+
+# ============================================================================
+# NUMPY-BASED RETRIEVAL (Optimized for Small Filtered Datasets)
 # ============================================================================
 
-def dense_retrieve(
+def fetch_and_score_with_numpy(
     chunk_db: Session,
     document_ids: List[int],
     question: str,
-    top_k: int = None  # None means fetch ALL chunks
+    top_k_total: int = 100
 ) -> Dict[int, Dict]:
     """
-    Dense retrieval using cosine similarity (your existing method).
+    Fetch chunks from active documents and score with NumPy.
+    
+    OPTIMIZED FOR: Small datasets with document filtering
+    
+    Why NumPy is faster for your use case:
+    1. Filter-first: Fetches only chunks from active documents
+    2. No pre-filtering problem: HNSW searches all, then filters (slow)
+    3. In-memory scoring: NumPy cosine similarity is instant for small data
+    4. Single simple query: No complex HNSW query overhead
+    
+    Performance:
+    - 36-259 chunks: ~0.15s (vs 2.2s with HNSW)
+    - 1000 chunks: ~0.3s
+    - 5000 chunks: ~1s (at this point, HNSW becomes better)
     
     Args:
-        top_k: If None, fetches ALL chunks. Otherwise, fetches top-k per document.
+        chunk_db: Database session
+        document_ids: List of document IDs to search
+        question: User's question
+        top_k_total: Number of top chunks to return
     
     Returns:
-        Dict[doc_id, {doc_title, cloudinary_url, chunks}]
+        Dict[doc_id, {doc_title, cloudinary_url, chunks, query_embedding}]
     """
-    from app.services.rag_service import retrieve_chunks_with_scores
+    from shared.models.Document import DocumentChunk
     from shared.repos import documents_repo
-    from concurrent.futures import ThreadPoolExecutor
+    from shared.llm import embed_single
+    import numpy as np
+    import time
     
-    fetch_all = top_k is None
-    print(f"[HYBRID] Dense retrieval: fetching {'ALL chunks' if fetch_all else f'top {top_k}'} per doc", file=sys.stderr)
+    debug_log(f"Using NumPy retrieval for {len(document_ids)} docs", "HYBRID")
     
     # Get document metadata
     docs = {d.id: d for d in documents_repo.get_by_ids(chunk_db, document_ids)}
     
-    def fetch_one(doc_id):
-        doc = docs.get(doc_id)
-        if not doc:
-            return doc_id, None
+    # Step 1: Generate query embedding
+    settings = get_settings()
+    print(f"[NUMPY] Starting embedding generation...", file=sys.stderr)
+    
+    t0 = time.time()
+    q_emb = embed_single(
+        text=question,
+        api_key=settings.google_api_key,
+        embedding_model=settings.embedding_model,
+        task_type="retrieval_query",
+        output_dimensionality=3072
+    )
+    embed_time = time.time() - t0
+    print(f"[NUMPY] ⏱️  Embedding: {embed_time:.2f}s", file=sys.stderr)
+    debug_log(f"Embedding generation took {embed_time:.2f}s", "HYBRID")
+    
+    try:
+        # Step 2: Fetch ONLY chunks from active documents (filter-first!)
+        t1 = time.time()
         
-        try:
-            # Fetch chunks - use large number if fetching all
-            k = 10000 if fetch_all else top_k
-            chunks = retrieve_chunks_with_scores(
-                chunk_db,
-                document_id=doc_id,
-                question=question,
-                top_k=k
-            )
+        chunks = chunk_db.query(DocumentChunk).filter(
+            DocumentChunk.document_id.in_(document_ids)
+        ).all()
+        
+        fetch_time = time.time() - t1
+        print(f"[NUMPY] ⏱️  Fetch query: {fetch_time:.2f}s ({len(chunks)} chunks)", file=sys.stderr)
+        debug_log(f"Fetched {len(chunks)} chunks in {fetch_time:.2f}s", "HYBRID")
+        
+        if not chunks:
+            debug_log(f"No chunks found for documents {document_ids}", "HYBRID")
+            return {}
+        
+        # Step 3: Compute cosine similarities with NumPy (instant!)
+        t2 = time.time()
+        
+        # Normalize query embedding
+        q_array = np.array(q_emb, dtype=np.float32)
+        q_norm = q_array / np.linalg.norm(q_array)
+        
+        # Normalize chunk embeddings
+        embeddings = np.array([chunk.embedding for chunk in chunks], dtype=np.float32)
+        embeddings_norm = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+        
+        # Compute cosine similarities (dot product of normalized vectors)
+        similarities = embeddings_norm @ q_norm
+        
+        score_time = time.time() - t2
+        print(f"[NUMPY] ⏱️  Similarity scoring: {score_time:.3f}s", file=sys.stderr)
+        debug_log(f"Computed {len(similarities)} similarities in {score_time:.3f}s", "HYBRID")
+        
+        # Step 4: Get top-K indices
+        top_k = min(top_k_total, len(chunks))
+        top_indices = np.argsort(similarities)[::-1][:top_k]
+        
+        # Step 5: Group by document
+        chunks_by_doc = {}
+        for idx in top_indices:
+            chunk = chunks[idx]
+            similarity = float(similarities[idx])
+            doc_id = chunk.document_id
             
-            if not chunks:
-                return doc_id, None
+            if doc_id not in chunks_by_doc:
+                doc = docs.get(doc_id)
+                if not doc:
+                    continue
+                
+                chunks_by_doc[doc_id] = {
+                    "doc_title": doc.title,
+                    "cloudinary_url": doc.cloudinary_url,
+                    "chunks": [],
+                    "query_embedding": q_emb
+                }
             
-            return doc_id, {
-                "doc_title": doc.title,
-                "cloudinary_url": doc.cloudinary_url,
-                "chunks": chunks
-            }
-        except Exception as e:
-            print(f"[HYBRID] Dense retrieval error for doc {doc_id}: {e}", file=sys.stderr)
-            return doc_id, None
-    
-    # Parallel execution
-    with ThreadPoolExecutor(max_workers=len(document_ids)) as executor:
-        results = dict(executor.map(fetch_one, document_ids))
-    
-    # Filter out None values
-    filtered = {k: v for k, v in results.items() if v is not None}
-    
-    total_chunks = sum(len(v["chunks"]) for v in filtered.values())
-    print(f"[HYBRID] Dense retrieval: {total_chunks} chunks from {len(filtered)} docs", file=sys.stderr)
-    
-    return filtered
+            chunks_by_doc[doc_id]["chunks"].append({
+                'chunk_index': chunk.chunk_index,
+                'text': chunk.text,
+                'dense_score': similarity,  # Cosine similarity (0-1)
+                'start_page_num': chunk.start_page_num,
+                'end_page_num': chunk.end_page_num,
+                'section_title': chunk.section_title,
+                'document_id': chunk.document_id,
+            })
+        
+        # Log distribution
+        for doc_id, data in chunks_by_doc.items():
+            debug_log(f"Doc {doc_id}: {len(data['chunks'])} chunks in top-{top_k}", "HYBRID")
+        
+        total_time = time.time() - t0
+        print(f"[NUMPY] ✅ Total time: {total_time:.2f}s", file=sys.stderr)
+        
+        return chunks_by_doc
+        
+    except Exception as e:
+        debug_log(f"NumPy retrieval error: {e}", "HYBRID")
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return {}
 
 
 # ============================================================================
-# SPARSE RETRIEVAL (BM25 Keyword Search)
+# HNSW-BASED RETRIEVAL (Optimized for Large Datasets)
 # ============================================================================
 
-def sparse_retrieve(
+def fetch_top_chunks_across_all_docs(
     chunk_db: Session,
     document_ids: List[int],
     question: str,
-    top_k: int = None  # None means fetch ALL chunks
+    top_k_total: int = 100
 ) -> Dict[int, Dict]:
     """
-    Sparse retrieval using BM25 keyword matching.
+    Fetch top-K chunks using HNSW index (for large datasets).
+    
+    OPTIMIZED FOR: Large datasets (5000+ chunks)
+    
+    Note: HNSW has a "pre-filtering problem" - it searches all chunks first,
+    then filters by document_id. For small filtered datasets, NumPy is faster.
+    
+    Args:
+        top_k_total: Total number of chunks to fetch
+    
+    Returns:
+        Dict[doc_id, {doc_title, cloudinary_url, chunks, query_embedding}]
+    """
+    from shared.models.Document import DocumentChunk
+    from shared.repos import documents_repo
+    from shared.llm import embed_single
+    import sqlalchemy as sa
+    from pgvector.sqlalchemy import HALFVEC
+    
+    debug_log(f"Fetching top-{top_k_total} chunks ACROSS ALL {len(document_ids)} docs (single query with HNSW)...", "HYBRID")
+    
+    # Get document metadata
+    docs = {d.id: d for d in documents_repo.get_by_ids(chunk_db, document_ids)}
+    
+    # Generate query embedding once
+    settings = get_settings()
+    print(f"[FETCH] Starting embedding generation...", file=sys.stderr)
+    
+    import time
+    t0 = time.time()
+    q_emb = embed_single(
+        text=question,
+        api_key=settings.google_api_key,
+        embedding_model=settings.embedding_model,
+        task_type="retrieval_query",
+        output_dimensionality=3072
+    )
+    embed_time = time.time() - t0
+    print(f"[FETCH] ⏱️  Embedding: {embed_time:.2f}s", file=sys.stderr)
+    debug_log(f"Embedding generation took {embed_time:.2f}s", "HYBRID")
+    
+    try:
+        # ✅ First, count total chunks in active documents
+        import time
+        t_count = time.time()
+        
+        total_chunks = chunk_db.query(DocumentChunk).filter(
+            DocumentChunk.document_id.in_(document_ids)
+        ).count()
+        
+        count_time = time.time() - t_count
+        print(f"[FETCH] ⏱️  Count query: {count_time:.2f}s ({total_chunks} chunks)", file=sys.stderr)
+        debug_log(f"Total chunks in active documents: {total_chunks}", "HYBRID")
+        
+        if total_chunks == 0:
+            debug_log(f"No chunks found in documents {document_ids}", "HYBRID")
+            return {}
+        
+        # Use the smaller of: requested top_k or total available chunks
+        actual_limit = min(top_k_total, total_chunks)
+        
+        # ✅ Set higher ef_search for filtered queries
+        ef_search = max(200, actual_limit * 2)
+        chunk_db.execute(sa.text(f"SET LOCAL hnsw.ef_search = {ef_search}"))
+        print(f"[FETCH] Set ef_search={ef_search} for {len(document_ids)} docs with {total_chunks} chunks", file=sys.stderr)
+        
+        t1 = time.time()
+        
+        # ✅ Convert embedding to PostgreSQL array format
+        emb_str = '[' + ','.join(map(str, q_emb)) + ']'
+        
+        print(f"[FETCH] Executing filtered HNSW query for {actual_limit} chunks...", file=sys.stderr)
+        
+        # Use raw SQL with direct string substitution for embedding
+        # Use parameterized query for doc_ids and limit
+        rows = chunk_db.execute(sa.text(f"""
+            SELECT 
+                c.*,
+                (c.embedding::halfvec(3072)) <=> '{emb_str}'::halfvec(3072) AS distance
+            FROM document_chunks c
+            WHERE c.document_id = ANY(:doc_ids)
+            ORDER BY distance
+            LIMIT :limit_val
+        """), {
+            'doc_ids': document_ids,
+            'limit_val': actual_limit
+        }).fetchall()
+        
+        query_time = time.time() - t1
+        print(f"[FETCH] ⏱️  Main query: {query_time:.2f}s ({len(rows)} rows)", file=sys.stderr)
+        debug_log(f"Filtered HNSW query took {query_time:.2f}s", "HYBRID")
+        
+        if not rows:
+            debug_log(f"No chunks found for documents {document_ids}", "HYBRID")
+            return {}
+        
+        debug_log(f"Retrieved {len(rows)} chunks from database", "HYBRID")
+        
+        # Convert raw SQL results to chunk objects
+        chunks_by_doc = {}
+        for row in rows:
+            doc_id = row.document_id
+            
+            if doc_id not in chunks_by_doc:
+                doc = docs.get(doc_id)
+                if not doc:
+                    continue
+                
+                chunks_by_doc[doc_id] = {
+                    "doc_title": doc.title,
+                    "cloudinary_url": doc.cloudinary_url,
+                    "chunks": [],
+                    "query_embedding": q_emb
+                }
+            
+            chunks_by_doc[doc_id]["chunks"].append({
+                'chunk_index': row.chunk_index,
+                'text': row.text,
+                'dense_score': float(1.0 - row.distance),  # Convert distance to similarity
+                'start_page_num': row.start_page_num,
+                'end_page_num': row.end_page_num,
+                'section_title': row.section_title,
+                'document_id': row.document_id,
+            })
+        
+        # Log distribution
+        for doc_id, data in chunks_by_doc.items():
+            debug_log(f"Doc {doc_id}: {len(data['chunks'])} chunks in top-{top_k_total}", "HYBRID")
+        
+        return chunks_by_doc
+        
+    except Exception as e:
+        debug_log(f"Error fetching chunks: {e}", "HYBRID")
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        return {}
+
+
+# ============================================================================
+# DENSE SCORING (Reuse Fetched Chunks)
+# ============================================================================
+
+def score_dense(
+    fetched_chunks: Dict[int, Dict]
+) -> Dict[int, Dict]:
+    """
+    Dense scores are already computed during fetch (using HNSW index).
+    This function just returns the data in the expected format.
+    
+    Args:
+        fetched_chunks: Output from fetch_all_chunks_once()
+    
+    Returns:
+        Dict[doc_id, {doc_title, cloudinary_url, chunks}]
+    """
+    debug_log(f"Dense scoring: using pre-computed scores from HNSW index", "HYBRID")
+    
+    # Chunks already have dense_score from the fetch
+    # Just return in the expected format
+    results = {}
+    for doc_id, data in fetched_chunks.items():
+        results[doc_id] = {
+            "doc_title": data["doc_title"],
+            "cloudinary_url": data["cloudinary_url"],
+            "chunks": data["chunks"]  # Already have dense_score
+        }
+    
+    total_chunks = sum(len(v["chunks"]) for v in results.values())
+    debug_log(f"Dense scoring: {total_chunks} chunks with scores", "HYBRID")
+    
+    return results
+
+
+# ============================================================================
+# SPARSE SCORING (Reuse Fetched Chunks)
+# ============================================================================
+
+def score_sparse(
+    fetched_chunks: Dict[int, Dict],
+    keywords: List[str] = None
+) -> Dict[int, Dict]:
+    """
+    Sparse scoring using BM25 on already-fetched chunks.
     
     BM25 is excellent for:
     - Exact keyword matches (e.g., "page 191", "174 MΩ")
@@ -183,86 +452,69 @@ def sparse_retrieve(
     - Specific terms that embeddings might miss
     
     Args:
-        top_k: If None, returns ALL chunks with BM25 scores. Otherwise, returns top-k per document.
+        fetched_chunks: Output from fetch_all_chunks_once()
+        keywords: Optional list of important keywords (with proper casing) from decomposer
     
     Returns:
         Dict[doc_id, {doc_title, cloudinary_url, chunks}]
     """
-    from shared.models import DocumentChunk
-    from shared.repos import documents_repo
+    debug_log(f"Sparse scoring: computing BM25 scores on fetched chunks", "HYBRID")
     
-    fetch_all = top_k is None
-    print(f"[HYBRID] Sparse retrieval (BM25): fetching {'ALL chunks' if fetch_all else f'top {top_k}'} per doc", file=sys.stderr)
-    
-    # Get document metadata
-    docs = {d.id: d for d in documents_repo.get_by_ids(chunk_db, document_ids)}
+    # Determine query tokens
+    if keywords and isinstance(keywords, list) and len(keywords) > 0:
+        query_tokens = [kw.lower() for kw in keywords]
+        debug_log(f"BM25 using {len(query_tokens)} keywords: {keywords}", "HYBRID")
+    else:
+        debug_log(f"No keywords provided, BM25 will use empty query (all scores = 0)", "HYBRID")
+        query_tokens = []
     
     results = {}
     
-    for doc_id in document_ids:
-        doc = docs.get(doc_id)
-        if not doc:
+    for doc_id, data in fetched_chunks.items():
+        chunks = data["chunks"]
+        
+        if not chunks:
             continue
         
         try:
-            # Fetch ALL chunks for this document
-            all_chunks = chunk_db.query(DocumentChunk).filter(
-                DocumentChunk.document_id == doc_id
-            ).all()
-            
-            if not all_chunks:
-                continue
-            
             # Tokenize corpus (simple whitespace tokenization)
-            corpus = [chunk.text.lower().split() for chunk in all_chunks]
+            corpus = [chunk['text'].lower().split() for chunk in chunks]
             
             # Build BM25 index
             bm25 = BM25Okapi(corpus)
             
-            # Tokenize query
-            query_tokens = question.lower().split()
-            
-            # Get BM25 scores for all chunks
-            scores = bm25.get_scores(query_tokens)
-            
-            # Get top-k or all chunks
-            if fetch_all:
-                # Return ALL chunks with their scores
-                indices = list(range(len(all_chunks)))
+            # Get BM25 scores
+            if query_tokens:
+                scores = bm25.get_scores(query_tokens)
             else:
-                # Get top-k chunks
-                indices = np.argsort(scores)[::-1][:top_k]
+                # No keywords - assign zero scores
+                scores = [0.0] * len(chunks)
             
-            # Build result chunks with BM25 scores
-            chunks = []
-            for idx in indices:
-                chunk = all_chunks[idx]
-                chunks.append({
-                    "chunk_index": chunk.chunk_index,
-                    "text": chunk.text,
-                    "score": float(scores[idx]),  # BM25 score (not cosine similarity)
-                    "start_page_num": chunk.start_page_num,
-                    "end_page_num": chunk.end_page_num,
-                    "section_title": chunk.section_title,
-                    "retrieval_method": "bm25"  # Tag for debugging
-                })
+            # Add sparse scores to chunks (keep existing dense_score)
+            scored_chunks = []
+            for chunk, score in zip(chunks, scores):
+                chunk_copy = chunk.copy()
+                chunk_copy['sparse_score'] = float(score)
+                chunk_copy['score'] = chunk['dense_score']  # Keep dense as primary score for now
+                scored_chunks.append(chunk_copy)
             
-            if chunks:
-                results[doc_id] = {
-                    "doc_title": doc.title,
-                    "cloudinary_url": doc.cloudinary_url,
-                    "chunks": chunks
-                }
+            results[doc_id] = {
+                "doc_title": data["doc_title"],
+                "cloudinary_url": data["cloudinary_url"],
+                "chunks": scored_chunks
+            }
             
             max_score = max(scores) if len(scores) > 0 else 0
-            print(f"[HYBRID] BM25 for doc {doc_id}: {len(chunks)} chunks, max score={max_score:.2f}", file=sys.stderr)
+            debug_log(f"BM25 for doc {doc_id}: {len(scored_chunks)} chunks, max score={max_score:.2f}", "HYBRID")
             
         except Exception as e:
-            print(f"[HYBRID] BM25 error for doc {doc_id}: {e}", file=sys.stderr)
+            debug_log(f"BM25 error for doc {doc_id}: {e}", "HYBRID")
+            import traceback
+            traceback.print_exc(file=sys.stderr)
             continue
     
     total_chunks = sum(len(v["chunks"]) for v in results.values())
-    print(f"[HYBRID] Sparse retrieval: {total_chunks} chunks from {len(results)} docs", file=sys.stderr)
+    debug_log(f"Sparse scoring: {total_chunks} chunks with BM25 scores", "HYBRID")
     
     return results
 
@@ -271,17 +523,18 @@ def sparse_retrieve(
 # MERGE DENSE + SPARSE RESULTS
 # ============================================================================
 
-def merge_results(
-    dense_results: Dict[int, Dict],
-    sparse_results: Dict[int, Dict]
+def merge_dense_sparse_scores(
+    scored_chunks: Dict[int, Dict]
 ) -> Dict[int, Dict]:
     """
-    Merge dense and sparse results with weighted scoring.
+    Merge dense and sparse scores with weighted scoring.
+    
+    Since chunks already have both dense_score and sparse_score,
+    we just need to compute the combined score.
     
     Strategy:
     1. Normalize scores from both methods to [0, 1]
     2. Combine with weighted average
-    3. Deduplicate by (doc_id, chunk_index)
     
     Returns:
         Dict[doc_id, {doc_title, cloudinary_url, chunks}]
@@ -290,79 +543,44 @@ def merge_results(
     dense_weight = settings.dense_weight
     sparse_weight = settings.sparse_weight
     
-    print(f"[HYBRID] Merging results (dense_weight={dense_weight}, sparse_weight={sparse_weight})", file=sys.stderr)
+    debug_log(f"Merging scores (dense_weight={dense_weight}, sparse_weight={sparse_weight})", "HYBRID")
     
     merged = {}
     
-    # Get all document IDs
-    all_doc_ids = set(dense_results.keys()) | set(sparse_results.keys())
-    
-    for doc_id in all_doc_ids:
-        dense_data = dense_results.get(doc_id)
-        sparse_data = sparse_results.get(doc_id)
+    for doc_id, data in scored_chunks.items():
+        chunks = data["chunks"]
         
-        # Get document metadata (prefer dense, fallback to sparse)
-        doc_title = (dense_data or sparse_data)["doc_title"]
-        cloudinary_url = (dense_data or sparse_data)["cloudinary_url"]
+        if not chunks:
+            continue
         
-        # Build chunk map for deduplication
-        chunk_map = {}  # (doc_id, chunk_index) -> chunk with combined score
+        # Normalize dense scores to [0, 1]
+        max_dense = max(c.get("dense_score", 0) for c in chunks)
         
-        # Add dense chunks
-        if dense_data:
-            dense_chunks = dense_data["chunks"]
-            # Normalize dense scores to [0, 1] (they're already cosine similarity)
-            max_dense = max(c["score"] for c in dense_chunks) if dense_chunks else 1.0
+        # Normalize sparse scores to [0, 1]
+        max_sparse = max(c.get("sparse_score", 0) for c in chunks)
+        
+        # Compute combined scores
+        combined_chunks = []
+        for chunk in chunks:
+            dense_norm = chunk.get("dense_score", 0) / max_dense if max_dense > 0 else 0
+            sparse_norm = chunk.get("sparse_score", 0) / max_sparse if max_sparse > 0 else 0
             
-            for chunk in dense_chunks:
-                key = (doc_id, chunk["chunk_index"])
-                normalized_score = chunk["score"] / max_dense if max_dense > 0 else 0
-                
-                chunk_map[key] = {
-                    **chunk,
-                    "combined_score": normalized_score * dense_weight,
-                    "dense_score": chunk["score"],
-                    "sparse_score": 0.0
-                }
-        
-        # Add/merge sparse chunks
-        if sparse_data:
-            sparse_chunks = sparse_data["chunks"]
-            # Normalize BM25 scores to [0, 1]
-            max_sparse = max(c["score"] for c in sparse_chunks) if sparse_chunks else 1.0
+            combined_score = (dense_norm * dense_weight) + (sparse_norm * sparse_weight)
             
-            for chunk in sparse_chunks:
-                key = (doc_id, chunk["chunk_index"])
-                normalized_score = chunk["score"] / max_sparse if max_sparse > 0 else 0
-                
-                if key in chunk_map:
-                    # Chunk exists from dense retrieval - add sparse score
-                    chunk_map[key]["combined_score"] += normalized_score * sparse_weight
-                    chunk_map[key]["sparse_score"] = chunk["score"]
-                else:
-                    # New chunk from sparse retrieval only
-                    chunk_map[key] = {
-                        **chunk,
-                        "combined_score": normalized_score * sparse_weight,
-                        "dense_score": 0.0,
-                        "sparse_score": chunk["score"]
-                    }
+            chunk_copy = chunk.copy()
+            chunk_copy["combined_score"] = combined_score
+            combined_chunks.append(chunk_copy)
         
         # Sort by combined score
-        sorted_chunks = sorted(
-            chunk_map.values(),
-            key=lambda c: c["combined_score"],
-            reverse=True
-        )
+        combined_chunks.sort(key=lambda c: c["combined_score"], reverse=True)
         
-        if sorted_chunks:
-            merged[doc_id] = {
-                "doc_title": doc_title,
-                "cloudinary_url": cloudinary_url,
-                "chunks": sorted_chunks
-            }
-            
-            print(f"[HYBRID] Doc {doc_id}: {len(sorted_chunks)} unique chunks after merge", file=sys.stderr)
+        merged[doc_id] = {
+            "doc_title": data["doc_title"],
+            "cloudinary_url": data["cloudinary_url"],
+            "chunks": combined_chunks
+        }
+        
+        debug_log(f"Doc {doc_id}: {len(combined_chunks)} chunks with combined scores", "HYBRID")
     
     return merged
 
@@ -387,7 +605,7 @@ def pre_filter_top_k(
     settings = get_settings()
     top_k = settings.final_top_k
     
-    print(f"[HYBRID] Pre-filtering to top {top_k} chunks ACROSS ALL DOCUMENTS (based on combined score)", file=sys.stderr)
+    debug_log(f"Pre-filtering to top {top_k} chunks ACROSS ALL DOCUMENTS (based on combined score)", "HYBRID")
     
     # Collect all chunks from all documents with their metadata
     all_chunks = []
@@ -404,7 +622,7 @@ def pre_filter_top_k(
     all_chunks.sort(key=lambda x: x["chunk"]["combined_score"], reverse=True)
     top_chunks = all_chunks[:top_k]
     
-    print(f"[HYBRID] Selected top {len(top_chunks)} chunks from {len(all_chunks)} total chunks", file=sys.stderr)
+    debug_log(f"Selected top {len(top_chunks)} chunks from {len(all_chunks)} total chunks", "HYBRID")
     
     # Store Stage 2 data globally for retriever to access
     top20_for_stage2 = []
@@ -426,13 +644,13 @@ def pre_filter_top_k(
     # Create set of passed chunk IDs for quick lookup
     passed_chunk_ids = {(item["doc_id"], item["chunk"].get('chunk_index')) for item in top_chunks}
     
-    print(f"\n{'='*80}", file=sys.stderr)
-    print(f"[HYBRID] ALL CHUNKS SORTED BY COMBINED SCORE", file=sys.stderr)
-    print(f"[HYBRID] ✓ = Passed to reranker ({len(top_chunks)} chunks)", file=sys.stderr)
-    print(f"[HYBRID] ✗ = Filtered out ({len(all_chunks) - len(top_chunks)} chunks)", file=sys.stderr)
-    print(f"{'='*80}", file=sys.stderr)
-    print(f"[HYBRID] {'Status':<8} {'Rank':<6} {'Doc':<6} {'Chunk':<8} {'Dense':<10} {'Sparse':<10} {'Combined':<10} {'Page':<6}", file=sys.stderr)
-    print(f"[HYBRID] {'-'*80}", file=sys.stderr)
+    debug_log(f"\n{'='*80}", "HYBRID")
+    debug_log(f"ALL CHUNKS SORTED BY COMBINED SCORE", "HYBRID")
+    debug_log(f"✓ = Passed to reranker ({len(top_chunks)} chunks)", "HYBRID")
+    debug_log(f"✗ = Filtered out ({len(all_chunks) - len(top_chunks)} chunks)", "HYBRID")
+    debug_log(f"{'='*80}", "HYBRID")
+    debug_log(f"{'Status':<8} {'Rank':<6} {'Doc':<6} {'Chunk':<8} {'Dense':<10} {'Sparse':<10} {'Combined':<10} {'Page':<6}", "HYBRID")
+    debug_log(f"{'-'*80}", "HYBRID")
     
     for rank, item in enumerate(all_chunks, 1):
         doc_id = item["doc_id"]
@@ -447,11 +665,11 @@ def pre_filter_top_k(
         passed = (doc_id, chunk_idx) in passed_chunk_ids
         status = "✓ PASS" if passed else "✗ DROP"
         
-        print(f"[HYBRID] {status:<8} {rank:<6} {doc_id:<6} #{chunk_idx:<7} {dense_score:<10.4f} {sparse_score:<10.4f} {combined_score:<10.4f} {page:<6}", file=sys.stderr)
+        debug_log(f"{status:<8} {rank:<6} {doc_id:<6} #{chunk_idx:<7} {dense_score:<10.4f} {sparse_score:<10.4f} {combined_score:<10.4f} {page:<6}", "HYBRID")
     
-    print(f"{'='*80}", file=sys.stderr)
-    print(f"[HYBRID] Summary: {len(top_chunks)} passed, {len(all_chunks) - len(top_chunks)} dropped", file=sys.stderr)
-    print(f"{'='*80}\n", file=sys.stderr)
+    debug_log(f"{'='*80}", "HYBRID")
+    debug_log(f"Summary: {len(top_chunks)} passed, {len(all_chunks) - len(top_chunks)} dropped", "HYBRID")
+    debug_log(f"{'='*80}\n", "HYBRID")
     
     # Group back by document
     filtered = {}
@@ -467,7 +685,7 @@ def pre_filter_top_k(
     
     # Log distribution
     for doc_id, data in filtered.items():
-        print(f"[HYBRID] Doc {doc_id}: {len(data['chunks'])} chunks in top-{top_k}", file=sys.stderr)
+        debug_log(f"Doc {doc_id}: {len(data['chunks'])} chunks in top-{top_k}", "HYBRID")
     
     return filtered
 
@@ -495,7 +713,7 @@ def rerank_chunks(
         Dict[doc_id, {doc_title, cloudinary_url, chunks}] with reranked chunks
     """
     try:
-        print(f"[HYBRID] Reranking with {model_name}", file=sys.stderr)
+        debug_log(f"Reranking with {model_name}", "HYBRID")
         
         # Load reranker model (cached globally, loaded only once)
         reranker_data = _get_reranker_model(model_name)
@@ -516,7 +734,7 @@ def rerank_chunks(
         if not all_chunks_with_metadata:
             return {}
         
-        print(f"[HYBRID] Reranking {len(all_chunks_with_metadata)} chunks across all documents", file=sys.stderr)
+        debug_log(f"Reranking {len(all_chunks_with_metadata)} chunks across all documents", "HYBRID")
         
         # Get reranking scores based on model type
         if model_type == 'jina':
@@ -555,7 +773,7 @@ def rerank_chunks(
         
         # Log results
         best_score = all_chunks_with_metadata[0]["chunk"]["rerank_score"] if all_chunks_with_metadata else 0
-        print(f"[HYBRID] Reranked {len(all_chunks_with_metadata)} chunks, best score={best_score:.4f}", file=sys.stderr)
+        debug_log(f"Reranked {len(all_chunks_with_metadata)} chunks, best score={best_score:.4f}", "HYBRID")
         
         # Store Stage 3 data globally for retriever to access
         reranked_for_stage3 = []
@@ -574,18 +792,18 @@ def rerank_chunks(
         _stage3_data = reranked_for_stage3
         
         # ✅ Print detailed chunk information
-        print(f"[HYBRID] Top {min(5, len(all_chunks_with_metadata))} chunks after reranking:", file=sys.stderr)
+        debug_log(f"Top {min(5, len(all_chunks_with_metadata))} chunks after reranking:", "HYBRID")
         for i, item in enumerate(all_chunks_with_metadata[:5], 1):
             chunk = item["chunk"]
-            print(f"[HYBRID]   {i}. Doc {item['doc_id']} - Chunk #{chunk.get('chunk_index', '?')}", file=sys.stderr)
-            print(f"[HYBRID]      Rerank: {chunk['rerank_score']:.4f} | Dense: {chunk.get('dense_score', 0):.4f} | Sparse: {chunk.get('sparse_score', 0):.4f}", file=sys.stderr)
-            print(f"[HYBRID]      Page: {chunk.get('start_page_num', '?')} | Section: {chunk.get('section_title', 'Unknown')[:50]}", file=sys.stderr)
-            print(f"[HYBRID]      Preview: {chunk['text'][:100].replace(chr(10), ' ')}...", file=sys.stderr)
+            debug_log(f"  {i}. Doc {item['doc_id']} - Chunk #{chunk.get('chunk_index', '?')}", "HYBRID")
+            debug_log(f"     Rerank: {chunk['rerank_score']:.4f} | Dense: {chunk.get('dense_score', 0):.4f} | Sparse: {chunk.get('sparse_score', 0):.4f}", "HYBRID")
+            debug_log(f"     Page: {chunk.get('start_page_num', '?')} | Section: {chunk.get('section_title', 'Unknown')[:50]}", "HYBRID")
+            debug_log(f"     Preview: {chunk['text'][:100].replace(chr(10), ' ')}...", "HYBRID")
         
         return reranked
         
     except Exception as e:
-        print(f"[HYBRID] Reranking failed: {e}, returning merged results", file=sys.stderr)
+        debug_log(f"Reranking failed: {e}, returning merged results", "HYBRID")
         import traceback
         traceback.print_exc(file=sys.stderr)
         
@@ -602,17 +820,19 @@ def hybrid_retrieve_chunks(
     document_ids: List[int],
     question: str,
     use_reranking: bool = True,
-    reranker_model: str = None
+    reranker_model: str = None,
+    keywords: List[str] = None  # NEW: Optional keywords from decomposer
 ) -> Dict[int, Dict]:
     """
     Hybrid retrieval combining dense + sparse + reranking.
     
-    Pipeline:
-    1. Dense retrieval (vector similarity) → ALL chunks per doc (PARALLEL with sparse)
-    2. Sparse retrieval (BM25 keywords) → ALL chunks per doc (PARALLEL with dense)
-    3. Merge with weighted scores → deduplicated pool
-    4. Pre-filter to top-K across all docs
-    5. Rerank with cross-encoder → final ranked chunks
+    OPTIMIZED Pipeline:
+    1. Fetch top-100 chunks across ALL docs (single DB query with HNSW index)
+    2. Score dense (already computed during fetch)
+    3. Score sparse (BM25 on fetched chunks) - ONLY if keywords provided
+    4. Merge with weighted scores (or skip if no sparse)
+    5. Pre-filter to top-K across all docs
+    6. Rerank with cross-encoder → final ranked chunks
     
     Args:
         chunk_db: Database session
@@ -620,6 +840,8 @@ def hybrid_retrieve_chunks(
         question: User's question
         use_reranking: Whether to use cross-encoder reranking (slower but better)
         reranker_model: Which reranker model to use (if None, uses fast model)
+        keywords: Optional keywords for BM25 matching (from decomposer)
+                  If None or empty, skips sparse scoring (dense only)
     
     Returns:
         Dict[doc_id, {doc_title, cloudinary_url, chunks}]
@@ -631,30 +853,73 @@ def hybrid_retrieve_chunks(
     if reranker_model is None:
         reranker_model = settings.reranker_model_fast
     
-    print(f"\n[HYBRID] Starting hybrid retrieval for {len(document_ids)} docs", file=sys.stderr)
-    print(f"[HYBRID] Question: {question[:100]}...", file=sys.stderr)
+    # Check if we should use sparse scoring
+    use_sparse = keywords and isinstance(keywords, list) and len(keywords) > 0
     
-    # ✅ OPTIMIZATION 1: Parallelize Dense + Sparse retrieval
-    from concurrent.futures import ThreadPoolExecutor
+    debug_log(f"\n[HYBRID] Starting OPTIMIZED hybrid retrieval for {len(document_ids)} docs", "HYBRID")
+    debug_log(f"Question: {question[:100]}...", "HYBRID")
+    debug_log(f"Keywords: {keywords if use_sparse else 'None (dense-only mode)'}", "HYBRID")
+    debug_log(f"Mode: {'Dense + Sparse' if use_sparse else 'Dense only'}", "HYBRID")
     
-    print(f"[HYBRID] Running Dense + Sparse retrieval in parallel (fetching ALL chunks)...", file=sys.stderr)
+    # ✅ AUTOMATIC SWITCHING: Choose NumPy or HNSW based on total chunk count
+    # Check total chunks in database to decide which method to use
+    from shared.models.Document import DocumentChunk
+    total_chunks_in_db = chunk_db.query(DocumentChunk).count()
     
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        # Submit both tasks simultaneously - fetch ALL chunks
-        dense_future = executor.submit(dense_retrieve, chunk_db, document_ids, question, None)
-        sparse_future = executor.submit(sparse_retrieve, chunk_db, document_ids, question, None)
+    use_numpy = total_chunks_in_db < NUMPY_THRESHOLD
+    method = "NumPy (filter-first)" if use_numpy else "HNSW (index-based)"
+    
+    print(f"[HYBRID] Total chunks in DB: {total_chunks_in_db}", file=sys.stderr)
+    print(f"[HYBRID] Using {method} (threshold: {NUMPY_THRESHOLD})", file=sys.stderr)
+    debug_log(f"Retrieval method: {method} ({total_chunks_in_db} total chunks)", "HYBRID")
+    
+    # ✅ OPTIMIZATION: Choose retrieval method based on data size
+    if use_numpy:
+        # Small dataset: Use NumPy (filter-first, instant scoring)
+        debug_log(f"Step 1: Fetching and scoring with NumPy...", "HYBRID")
+        fetched_chunks = fetch_and_score_with_numpy(chunk_db, document_ids, question, top_k_total=100)
+    else:
+        # Large dataset: Use HNSW (scales better for large data)
+        debug_log(f"Step 1: Fetching with HNSW index...", "HYBRID")
+        fetched_chunks = fetch_top_chunks_across_all_docs(chunk_db, document_ids, question, top_k_total=100)
+    
+    if not fetched_chunks:
+        debug_log(f"No chunks fetched, returning empty results", "HYBRID")
+        return {}
+    
+    # ✅ OPTIMIZATION: Score dense (already computed during fetch)
+    debug_log(f"Step 2: Dense scoring (using pre-computed HNSW scores)...", "HYBRID")
+    dense_results = score_dense(fetched_chunks)
+    
+    # ✅ CONDITIONAL: Only score sparse if keywords provided
+    if use_sparse:
+        debug_log(f"Step 3: Sparse scoring (BM25 on fetched chunks with keywords)...", "HYBRID")
+        sparse_results = score_sparse(fetched_chunks, keywords)
         
-        # Wait for both to complete
-        dense_results = dense_future.result()
-        sparse_results = sparse_future.result()
+        # Step 4: Merge scores
+        debug_log(f"Step 4: Merging dense + sparse scores...", "HYBRID")
+        merged_results = merge_dense_sparse_scores(sparse_results)  # sparse_results has both scores
+    else:
+        debug_log(f"Step 3: Skipping sparse scoring (no keywords provided - dense only)", "HYBRID")
+        # Use dense results directly, add combined_score = dense_score
+        merged_results = {}
+        for doc_id, data in dense_results.items():
+            chunks_with_combined = []
+            for chunk in data["chunks"]:
+                chunk_copy = chunk.copy()
+                chunk_copy["combined_score"] = chunk["dense_score"]  # Combined = dense when no sparse
+                chunk_copy["sparse_score"] = 0.0  # No sparse score
+                chunks_with_combined.append(chunk_copy)
+            
+            merged_results[doc_id] = {
+                "doc_title": data["doc_title"],
+                "cloudinary_url": data["cloudinary_url"],
+                "chunks": chunks_with_combined
+            }
+        
+        debug_log(f"Step 4: Using dense scores as combined scores (no merge needed)", "HYBRID")
     
-    print(f"[HYBRID] Dense + Sparse retrieval completed in parallel", file=sys.stderr)
-    
-    # Step 3: Merge results
-    merged_results = merge_results(dense_results, sparse_results)
-    
-    # Prepare data for Stage 1 logging (will be stored in buffer, not written yet)
-    # Collect all chunks across all documents
+    # Prepare data for Stage 1 logging
     all_chunks_for_ranking = []
     for doc_id, data in merged_results.items():
         for chunk in data["chunks"]:
@@ -682,20 +947,19 @@ def hybrid_retrieve_chunks(
         }
     
     # Store Stage 1 data globally for retriever to access
-    # This is a workaround since hybrid_retrieval doesn't know the sub-question index
     global _stage1_data
     _stage1_data = doc_chunks_map_for_stage1
     
-    print(f"\n{'='*80}", file=sys.stderr)
-    print(f"[HYBRID] DENSE AND SPARSE CHUNKS (Before pre-filtering to top-{settings.final_top_k})", file=sys.stderr)
-    print(f"{'='*80}", file=sys.stderr)
+    debug_log(f"\n{'='*80}", "HYBRID")
+    debug_log(f"CHUNKS AFTER SCORING (Before pre-filtering to top-{settings.final_top_k})", "HYBRID")
+    debug_log(f"{'='*80}", "HYBRID")
     
     for doc_id, data in merged_results.items():
         chunks = data["chunks"]
-        print(f"\n[HYBRID] Document {doc_id}: {data['doc_title']}", file=sys.stderr)
-        print(f"[HYBRID] Total chunks: {len(chunks)}", file=sys.stderr)
-        print(f"[HYBRID] {'Chunk':<8} {'Dense':<10} {'Sparse':<10} {'Combined':<10} {'Page':<6} {'Section':<40}", file=sys.stderr)
-        print(f"[HYBRID] {'-'*90}", file=sys.stderr)
+        debug_log(f"\n[HYBRID] Document {doc_id}: {data['doc_title']}", "HYBRID")
+        debug_log(f"Total chunks: {len(chunks)}", "HYBRID")
+        debug_log(f"{'Chunk':<8} {'Dense':<10} {'Sparse':<10} {'Combined':<10} {'Page':<6} {'Section':<40}", "HYBRID")
+        debug_log(f"{'-'*90}", "HYBRID")
         
         for chunk in chunks[:50]:  # Show first 50 chunks per doc
             chunk_idx = chunk.get('chunk_index', '?')
@@ -705,14 +969,29 @@ def hybrid_retrieve_chunks(
             page = chunk.get('start_page_num', '?')
             section = chunk.get('section_title', 'Unknown')[:40]
             
-            print(f"[HYBRID] #{chunk_idx:<7} {dense_score:<10.4f} {sparse_score:<10.4f} {combined_score:<10.4f} {page:<6} {section}", file=sys.stderr)
+            debug_log(f"#{chunk_idx:<7} {dense_score:<10.4f} {sparse_score:<10.4f} {combined_score:<10.4f} {page:<6} {section}", "HYBRID")
         
         if len(chunks) > 50:
-            print(f"[HYBRID] ... and {len(chunks) - 50} more chunks", file=sys.stderr)
+            debug_log(f"... and {len(chunks) - 50} more chunks", "HYBRID")
     
-    print(f"\n{'='*80}", file=sys.stderr)
+    debug_log(f"\n{'='*80}", "HYBRID")
     
-    # Step 3.5: Pre-filter to top-K BEFORE reranking (NEW)
+    # Step 5: Pre-filter to top-K BEFORE reranking
+    debug_log(f"Step 5: Pre-filtering to top-{settings.final_top_k}...", "HYBRID")
+    pre_filtered_results = pre_filter_top_k(merged_results)
+    
+    # Step 6: Rerank (optional)
+    if use_reranking:
+        debug_log(f"Step 6: Reranking with {reranker_model}...", "HYBRID")
+        final_results = rerank_chunks(pre_filtered_results, question, model_name=reranker_model)
+    else:
+        debug_log(f"Step 6: Skipping reranking (use_reranking=False)", "HYBRID")
+        final_results = pre_filtered_results
+    
+    total_chunks = sum(len(v["chunks"]) for v in final_results.values())
+    debug_log(f"Final results: {total_chunks} chunks from {len(final_results)} docs\n", "HYBRID")
+    
+    return final_results
     # This ensures all reranked chunks are in the pool for threshold filtering
     pre_filtered_results = pre_filter_top_k(merged_results)
     
@@ -723,7 +1002,7 @@ def hybrid_retrieve_chunks(
         # Already filtered to top-k in pre_filter_top_k
         final_results = pre_filtered_results    
     total_chunks = sum(len(v["chunks"]) for v in final_results.values())
-    print(f"[HYBRID] Final results: {total_chunks} chunks from {len(final_results)} docs\n", file=sys.stderr)
+    debug_log(f"Final results: {total_chunks} chunks from {len(final_results)} docs\n", "HYBRID")
     
     return final_results
 
@@ -736,7 +1015,8 @@ def retrieve_chunks_for_all_docs_hybrid(
     chunk_db: Session,
     document_ids: List[int],
     question: str,
-    use_deep_reranker: bool = False  # NEW: Flag to use deep model
+    use_deep_reranker: bool = False,  # NEW: Flag to use deep model
+    keywords: List[str] = None  # NEW: Optional keywords from decomposer
 ) -> Dict[int, Dict]:
     """
     Drop-in replacement for retrieve_chunks_for_all_docs() from doc_qa_tool_structured.
@@ -747,13 +1027,14 @@ def retrieve_chunks_for_all_docs_hybrid(
     Args:
         use_deep_reranker: If True, uses jina-reranker-v3 (slower, more accurate)
                           If False, uses ms-marco-MiniLM (faster, good quality)
+        keywords: Optional list of important keywords for BM25 matching
     """
     settings = get_settings()
     
     # Choose reranker model based on flag
     reranker_model = settings.reranker_model_deep if use_deep_reranker else settings.reranker_model_fast
     
-    print(f"[HYBRID] Using reranker: {reranker_model}", file=sys.stderr)
+    debug_log(f"Using reranker: {reranker_model}", "HYBRID")
     
     # Use hybrid retrieval with reranking
     return hybrid_retrieve_chunks(
@@ -761,5 +1042,6 @@ def retrieve_chunks_for_all_docs_hybrid(
         document_ids=document_ids,
         question=question,
         use_reranking=True,
-        reranker_model=reranker_model
+        reranker_model=reranker_model,
+        keywords=keywords  # Pass keywords
     )

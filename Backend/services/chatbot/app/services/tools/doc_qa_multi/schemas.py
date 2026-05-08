@@ -10,6 +10,10 @@ class SubQuestion(BaseModel):
     """A sub-question targeting specific documents."""
     question: str = Field(description="The sub-question text")
     doc_ids: List[int] = Field(description="Document IDs this question targets")
+    keywords: List[str] = Field(
+        default_factory=list,
+        description="Important keywords extracted from question (mixed case: GPA, Aadil, grade)"
+    )
 
 
 class DecomposedQuestions(BaseModel):
