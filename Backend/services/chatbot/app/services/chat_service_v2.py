@@ -191,7 +191,19 @@ def respond_turn_v2(
         from shared.llm.utils import count_tokens
         msg_tokens = count_tokens(message)
         tokens_input = msg_tokens + tool_tokens_input
-        print(f"[CHAT] Final token count: msg={msg_tokens} + tool={tool_tokens_input} = {tokens_input} input, {tool_tokens_output} output", file=sys.stderr)
+        
+        # ✅ DETAILED TOKEN BREAKDOWN
+        print(f"\n{'='*80}", file=sys.stderr)
+        print(f"📊 TOKEN USAGE BREAKDOWN", file=sys.stderr)
+        print(f"{'='*80}", file=sys.stderr)
+        print(f"User Message Tokens:     {msg_tokens:>6} tokens", file=sys.stderr)
+        print(f"Tool Input Tokens:       {tool_tokens_input:>6} tokens (retrieval + LLM prompts)", file=sys.stderr)
+        print(f"Tool Output Tokens:      {tool_tokens_output:>6} tokens (LLM responses)", file=sys.stderr)
+        print(f"{'-'*80}", file=sys.stderr)
+        print(f"TOTAL INPUT:             {tokens_input:>6} tokens", file=sys.stderr)
+        print(f"TOTAL OUTPUT:            {tool_tokens_output:>6} tokens", file=sys.stderr)
+        print(f"GRAND TOTAL:             {tokens_input + tool_tokens_output:>6} tokens", file=sys.stderr)
+        print(f"{'='*80}\n", file=sys.stderr)
 
         # Determine call_type — every tool sets this explicitly, trust it completely.
         # Only fall back to "doc_qa" if the agent somehow lost the field.

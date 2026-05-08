@@ -17,7 +17,8 @@ def decompose_question(
     doc_histories: Dict[int, Dict],
     llm,
     management_db: Session = None,
-    section_names_map: Dict[int, List[str]] = None  # ✅ NEW: Pre-fetched sections
+    section_names_map: Dict[int, List[str]] = None,  # ✅ NEW: Pre-fetched sections
+    request_id: str = None  # ✅ NEW: Request ID for token tracking
 ) -> DecomposedQuestions:
     """
     Analyze if the question contains sub-questions targeting different documents.
@@ -106,9 +107,43 @@ Respond with:
         # Use LangChain structured output with function_calling method for OpenAI compatibility
         try:
             debug_log(f"Calling LLM with structured output...", "DECOMPOSER")
+            
+            # ✅ Count tokens for decomposer
+            from shared.llm.utils import count_tokens
+            decomposer_input_tokens = count_tokens(prompt)
+            
             langchain_model = llm.get_langchain_model()
             structured_llm = langchain_model.with_structured_output(DecomposedQuestions, method="function_calling")
             result: DecomposedQuestions = structured_llm.invoke(prompt)
+            
+            # ✅ Count output tokens
+            import json
+            result_json = json.dumps({
+                "is_cross_doc": result.is_cross_doc,
+                "confidence": result.confidence,
+                "sub_questions": [
+                    {"question": sq.question, "doc_ids": sq.doc_ids, "keywords": sq.keywords}
+                    for sq in result.sub_questions
+                ]
+            })
+            decomposer_output_tokens = count_tokens(result_json)
+            
+            # ✅ Add to global tracker
+            if request_id:
+                from ..token_tracker import add_tokens
+                add_tokens(request_id, decomposer_input_tokens, decomposer_output_tokens)
+            
+            # ✅ Print token breakdown
+            print(f"\n{'='*80}", file=sys.stderr)
+            print(f"🔍 DECOMPOSER TOKEN USAGE", file=sys.stderr)
+            print(f"{'='*80}", file=sys.stderr)
+            print(f"Input Tokens:   {decomposer_input_tokens:>6} tokens (prompt + doc context)", file=sys.stderr)
+            print(f"Output Tokens:  {decomposer_output_tokens:>6} tokens (decomposition result)", file=sys.stderr)
+            print(f"Total:          {decomposer_input_tokens + decomposer_output_tokens:>6} tokens", file=sys.stderr)
+            if request_id:
+                print(f"✅ Added to tracker: {request_id[:8]}...", file=sys.stderr)
+            print(f"{'='*80}\n", file=sys.stderr)
+            
             debug_log(f"Result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}, sub_questions={len(result.sub_questions)}", "DECOMPOSER")
             
             # ✅ Print extracted keywords for each sub-question

@@ -4,16 +4,34 @@ Multi-document QA tool factory - orchestrates decomposition, retrieval, and merg
 """
 import sys
 import json
+import uuid
 from langchain_core.tools import tool
 from typing import Dict, List
+from pydantic import BaseModel, Field
 
 # Import debug logger
 from app.utils.debug_logger import debug_log
+
+# Import token tracker
+from ..token_tracker import add_tokens, get_tokens, cleanup
 
 from .decomposer import decompose_question
 from .retriever import retrieve_and_answer_subquestions
 from .merger import merge_answers
 from app.core.config import get_settings
+
+
+# ✅ Define return schema for the tool
+class DocQAToolOutput(BaseModel):
+    """Output schema for doc_qa_multi_tool"""
+    answer: str = Field(description="The answer to the user's question")
+    has_contradiction: bool = Field(description="Whether contradictions were found")
+    citations: List[dict] = Field(description="List of citations")
+    tokens_input: int = Field(description="Total input tokens consumed")
+    tokens_output: int = Field(description="Total output tokens consumed")
+    call_type: str = Field(description="Type of call (doc_qa, list_sections, etc.)")
+    request_id: str = Field(description="Unique request identifier for token tracking")
+
 
 
 def _prefetch_section_names(chunk_db, document_ids: List[int]) -> Dict[int, List[str]]:
@@ -70,7 +88,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
     settings = get_settings()
     
     @tool
-    def doc_qa_multi_tool(questions: List[str]) -> dict:
+    def doc_qa_multi_tool(questions: List[str]) -> DocQAToolOutput:
         
         """
         Answer one or more questions about document content.
@@ -113,6 +131,10 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             Dict with answer, has_contradiction, citations, tokens_input, tokens_output
         """
         try:
+            # ✅ Generate unique request ID for token tracking
+            request_id = str(uuid.uuid4())
+            debug_log(f"[MULTI-DOC TOOL] Request ID: {request_id}", "MULTI-DOC")
+            
             # Combine questions into single string for processing
             if len(questions) == 1:
                 question = questions[0]
@@ -164,7 +186,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 doc_histories=doc_histories,
                 llm=llm,
                 management_db=chunk_db,  # Pass management DB for section retrieval
-                section_names_map=section_names_map  # ✅ NEW: Pass pre-fetched sections
+                section_names_map=section_names_map,  # ✅ NEW: Pass pre-fetched sections
+                request_id=request_id  # ✅ Pass request_id for token tracking
             )
             
             # Step 2: Confidence gate - fall back to single-doc if needed
@@ -172,7 +195,15 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 debug_log(f"[MULTI-DOC TOOL] Falling back to single-doc path (is_cross_doc={decomposed.is_cross_doc}, confidence={decomposed.confidence})", "MULTI-DOC")
                 # Extract keywords from first sub-question if available
                 keywords = decomposed.sub_questions[0].keywords if decomposed.sub_questions and len(decomposed.sub_questions) > 0 else []
-                return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords)
+                
+                result = _fallback_to_single_doc(
+                    question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords,
+                    request_id=request_id  # ✅ Pass request_id
+                )
+                
+                # ✅ DON'T cleanup here - let agent do it
+                # cleanup(request_id)
+                return result
             
             debug_log(f"[MULTI-DOC TOOL] Using multi-doc path with {len(decomposed.sub_questions)} sub-questions", "MULTI-DOC")
             
@@ -184,7 +215,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 doc_histories=doc_histories,
                 settings=settings,
                 all_active_doc_ids=document_ids,  # ✅ NEW: Pass all active docs for fallback retrieval
-                use_deep_reranker=use_deep_reranker  # NEW: Pass deep flag
+                use_deep_reranker=use_deep_reranker,  # NEW: Pass deep flag
+                request_id=request_id  # ✅ Pass request_id for token tracking
             )
             
             # Step 4: Merge answers
@@ -192,7 +224,8 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             merged = merge_answers(
                 sub_answers=sub_answers,
                 original_question=question,
-                llm=llm
+                llm=llm,
+                request_id=request_id  # ✅ Pass request_id for token tracking
             )
             
             # ✅ NEW: Log merged answer
@@ -218,16 +251,54 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 debug_log(f"[MULTI-DOC TOOL] Logging error: {log_error}", "MULTI-DOC")
             
             # Step 6: Return dict in same format as single-doc tool (NOT JSON string)
+            # ✅ Get tokens from global tracker
+            tracked_tokens = get_tokens(request_id)
+            
             result = {
                 "answer": merged.answer,
                 "has_contradiction": merged.has_contradiction,
                 "citations": merged.citations,
-                "tokens_input": merged.tokens_input,
-                "tokens_output": merged.tokens_output,
+                "tokens_input": tracked_tokens['input'],
+                "tokens_output": tracked_tokens['output'],
                 "call_type": "doc_qa",
+                "request_id": request_id,  # ✅ Keep for belt-and-suspenders
             }
             
+            # ✅ NEW: Store metadata in thread-local registry BEFORE LLM can corrupt it
+            import threading
+            tid = threading.get_ident()
+            print(f"[TOOL] Thread ID: {tid}, storing metadata...", file=sys.stderr)
+            
+            from app.services.agent_service_v2 import _store_tool_metadata
+            _store_tool_metadata(
+                request_id=request_id,
+                tokens_input=tracked_tokens['input'],
+                tokens_output=tracked_tokens['output'],
+                call_type="doc_qa",
+                citations=merged.citations,
+                has_contradiction=merged.has_contradiction
+            )
+            
+            print(f"[TOOL] Metadata stored for thread {tid}", file=sys.stderr)
+            
+            # ✅ Print final summary
+            print(f"\n{'='*80}", file=sys.stderr)
+            print(f"✅ MULTI-DOC TOOL COMPLETE", file=sys.stderr)
+            print(f"{'='*80}", file=sys.stderr)
+            print(f"Sub-questions processed: {len(sub_answers)}", file=sys.stderr)
+            print(f"Citations generated:     {len(merged.citations)}", file=sys.stderr)
+            print(f"{'-'*80}", file=sys.stderr)
+            print(f"TOTAL INPUT TOKENS:      {tracked_tokens['input']:>6} tokens (from tracker)", file=sys.stderr)
+            print(f"TOTAL OUTPUT TOKENS:     {tracked_tokens['output']:>6} tokens (from tracker)", file=sys.stderr)
+            print(f"GRAND TOTAL:             {tracked_tokens['input'] + tracked_tokens['output']:>6} tokens", file=sys.stderr)
+            print(f"Request ID:              {request_id}", file=sys.stderr)
+            print(f"{'='*80}\n", file=sys.stderr)
+            
             debug_log(f"[MULTI-DOC TOOL] Complete! Returning merged answer with {len(merged.citations)} citations", "MULTI-DOC")
+            
+            # ✅ Safe to cleanup tracker now — values are in thread-local registry
+            cleanup(request_id)
+            
             return result
             
         except Exception as e:
@@ -236,7 +307,11 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
             traceback.print_exc(file=sys.stderr)
             
             # Fall back to single-doc tool on any error
-            return _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords=[])
+            result = _fallback_to_single_doc(question, chunk_db, document_ids, doc_histories, use_deep_reranker, keywords=[], request_id=request_id)
+            
+            # ✅ DON'T cleanup here - let agent do it
+            # cleanup(request_id)
+            return result
     
     return doc_qa_multi_tool
 
@@ -247,7 +322,8 @@ def _fallback_to_single_doc(
     document_ids: List[int], 
     doc_histories: Dict, 
     use_deep_reranker: bool = False,
-    keywords: List[str] = None  # NEW: Accept keywords
+    keywords: List[str] = None,  # NEW: Accept keywords
+    request_id: str = None  # ✅ NEW: Request ID for token tracking
 ):
     """
     Fall back to the existing single-doc QA tool.
@@ -388,6 +464,46 @@ def _fallback_to_single_doc(
             context_blocks=context_blocks,
             chunk_map=chunk_map
         )
+        
+        # ✅ Get tokens from tracker (includes decomposer tokens already added)
+        if request_id:
+            tracked_tokens = get_tokens(request_id)
+            result["tokens_input"] = tracked_tokens['input']
+            result["tokens_output"] = tracked_tokens['output']
+            result["request_id"] = request_id  # ✅ Keep for belt-and-suspenders
+            
+            # ✅ NEW: Store metadata in thread-local registry
+            import threading
+            tid = threading.get_ident()
+            print(f"[FALLBACK] Thread ID: {tid}, storing metadata...", file=sys.stderr)
+            
+            from app.services.agent_service_v2 import _store_tool_metadata
+            _store_tool_metadata(
+                request_id=request_id,
+                tokens_input=tracked_tokens['input'],
+                tokens_output=tracked_tokens['output'],
+                call_type=result.get("call_type", "doc_qa"),
+                citations=result.get("citations", []),
+                has_contradiction=result.get("has_contradiction", False)
+            )
+            
+            print(f"[FALLBACK] Metadata stored for thread {tid}", file=sys.stderr)
+            
+            # ✅ Print fallback summary
+            print(f"\n{'='*80}", file=sys.stderr)
+            print(f"✅ SINGLE-DOC FALLBACK COMPLETE", file=sys.stderr)
+            print(f"{'='*80}", file=sys.stderr)
+            print(f"TOTAL INPUT:        {tracked_tokens['input']:>6} tokens (from tracker)", file=sys.stderr)
+            print(f"TOTAL OUTPUT:       {tracked_tokens['output']:>6} tokens (from tracker)", file=sys.stderr)
+            print(f"GRAND TOTAL:        {tracked_tokens['input'] + tracked_tokens['output']:>6} tokens", file=sys.stderr)
+            print(f"Request ID:         {request_id}", file=sys.stderr)
+            print(f"{'='*80}\n", file=sys.stderr)
+            
+            # ✅ Safe to cleanup tracker now
+            cleanup(request_id)
+        else:
+            # No request_id (shouldn't happen, but fallback to result tokens)
+            print(f"[FALLBACK] Warning: No request_id provided", file=sys.stderr)
         
         # ✅ NEW: Log the fallback path
         try:

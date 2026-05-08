@@ -14,9 +14,88 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 import sys
 import json
+import threading
 
 settings = get_settings()
 
+
+# ============================================================================
+# REQUEST-BASED METADATA REGISTRY
+# ============================================================================
+# Stores tool metadata (tokens, citations, etc.) keyed by request_id
+# This bypasses LLM's JSON rewriting which drops numeric fields
+# Uses request_id instead of thread_id because LangChain may spawn new threads
+_last_tool_metadata: dict = {}  # {request_id: {tokens_input, tokens_output, ...}}
+_meta_lock = threading.Lock()
+
+
+def _store_tool_metadata(
+    request_id: str,
+    tokens_input: int,
+    tokens_output: int,
+    call_type: str,
+    citations: list,
+    has_contradiction: bool
+):
+    """
+    Called from inside the tool to persist metadata before LLM can corrupt it.
+    Thread-safe storage keyed by request_id (not thread_id, since LangChain may spawn threads).
+    
+    Also stores under sentinel key "__latest__" as fallback when request_id can't be extracted.
+    """
+    metadata = {
+        "request_id": request_id,
+        "tokens_input": tokens_input,
+        "tokens_output": tokens_output,
+        "call_type": call_type,
+        "citations": citations,
+        "has_contradiction": has_contradiction,
+    }
+    
+    with _meta_lock:
+        # Store under request_id
+        _last_tool_metadata[request_id] = metadata
+        # Also store under sentinel key as fallback
+        _last_tool_metadata["__latest__"] = metadata
+    
+    print(f"[AGENT] ✅ Stored metadata for request {request_id}: tokens={tokens_input}/{tokens_output}", file=sys.stderr)
+
+
+def _pop_tool_metadata(request_id: str = None) -> dict:
+    """
+    Retrieve and remove stored metadata for this request.
+    Called immediately after invoke() returns.
+    
+    Args:
+        request_id: The request ID to retrieve metadata for (may be None)
+        
+    Returns:
+        Metadata dict, or {} if not found
+        
+    Fallback: If request_id is None or not found, tries sentinel key "__latest__"
+    """
+    with _meta_lock:
+        # Try to get by request_id first
+        if request_id and request_id in _last_tool_metadata:
+            meta = _last_tool_metadata.pop(request_id)
+            # Also clean up sentinel
+            _last_tool_metadata.pop("__latest__", None)
+            print(f"[AGENT] ✅ Retrieved metadata for request {request_id}: tokens={meta.get('tokens_input')}/{meta.get('tokens_output')}", file=sys.stderr)
+            return meta
+        
+        # Fallback to sentinel key
+        if "__latest__" in _last_tool_metadata:
+            meta = _last_tool_metadata.pop("__latest__")
+            # Clean up any stale request_id entries
+            stale_id = meta.get("request_id")
+            if stale_id:
+                _last_tool_metadata.pop(stale_id, None)
+            print(f"[AGENT] ✅ Retrieved metadata via sentinel (request_id was lost): tokens={meta.get('tokens_input')}/{meta.get('tokens_output')}", file=sys.stderr)
+            return meta
+        
+        # Nothing found
+        print(f"[AGENT] ⚠️  No metadata found for request {request_id} (and no sentinel)", file=sys.stderr)
+        return {}
 
 class AgentFinalOutput(BaseModel):
     """Structured output schema for agent's final response."""
@@ -358,7 +437,8 @@ class DocumentAgentV2:
             tools=tools,
             verbose=True,
             max_iterations=1,
-            handle_parsing_errors=True
+            handle_parsing_errors=True,
+            return_intermediate_steps=True  # ✅ NEW: Expose tool outputs
         )
         return executor
 
@@ -461,23 +541,86 @@ class DocumentAgentV2:
             verbose=True,
             max_iterations=2,  # Need 2: one to call tool, one to return output
             handle_parsing_errors=True,
-            early_stopping_method="force"  # Force stop after tool returns to prevent multiple calls
+            early_stopping_method="force",  # Force stop after tool returns to prevent multiple calls
+            return_intermediate_steps=True  # ✅ NEW: Expose tool outputs
         )
+        
+        # ✅ DEBUG: Print thread ID before invoke
+        tid_before = threading.get_ident()
+        print(f"[AGENT] Thread ID before invoke: {tid_before}", file=sys.stderr)
         
         result = executor_with_history.invoke({"input": user_message})
         raw_output = result.get("output", "")
 
+        # ✅ DEBUG: Print thread ID after invoke
+        tid_after = threading.get_ident()
+        print(f"[AGENT] Thread ID after invoke: {tid_after}", file=sys.stderr)
+
+        # ✅ NEW: Extract request_id from tool output to retrieve metadata
+        # The tool includes request_id in its return dict, which survives JSON serialization
+        request_id = None
+        
+        # Try to extract request_id from intermediate_steps first
+        for action, observation in result.get("intermediate_steps", []):
+            if isinstance(observation, dict) and "request_id" in observation:
+                request_id = observation["request_id"]
+                print(f"[AGENT] Found request_id in intermediate_steps: {request_id}", file=sys.stderr)
+                break
+            elif isinstance(observation, str):
+                try:
+                    obs_dict = json.loads(observation)
+                    if "request_id" in obs_dict:
+                        request_id = obs_dict["request_id"]
+                        print(f"[AGENT] Found request_id in intermediate_steps (parsed): {request_id}", file=sys.stderr)
+                        break
+                except:
+                    pass
+        
+        # If not in intermediate_steps, try raw_output
+        if not request_id:
+            if isinstance(raw_output, dict) and "request_id" in raw_output:
+                request_id = raw_output["request_id"]
+                print(f"[AGENT] Found request_id in raw_output dict: {request_id}", file=sys.stderr)
+            elif isinstance(raw_output, str):
+                try:
+                    parsed = json.loads(raw_output)
+                    if "request_id" in parsed:
+                        request_id = parsed["request_id"]
+                        print(f"[AGENT] Found request_id in raw_output (parsed): {request_id}", file=sys.stderr)
+                except:
+                    pass
+        
+        # Retrieve stored metadata using request_id (or sentinel if request_id is None)
+        stored_meta = _pop_tool_metadata(request_id)
+        print(f"[AGENT] Stored metadata: {stored_meta}", file=sys.stderr)
+        
+        # ✅ DEBUG: Check all stored request IDs
+        with _meta_lock:
+            print(f"[AGENT] All stored request IDs: {list(_last_tool_metadata.keys())}", file=sys.stderr)
+
         # Try to recover tool metadata (tokens, call_type) from intermediate_steps
         # when the LLM rewrites the tool output as plain text (losing the structured data)
         tool_metadata = {}
-        for action, observation in result.get("intermediate_steps", []):
+        
+        # ✅ DEBUG: Print all intermediate steps
+        print(f"[AGENT] Checking {len(result.get('intermediate_steps', []))} intermediate_steps for tool_metadata", file=sys.stderr)
+        
+        for idx, (action, observation) in enumerate(result.get("intermediate_steps", [])):
             obs = observation
+            print(f"[AGENT] Step {idx}: observation type={type(obs)}", file=sys.stderr)
+            
             # observation may be a dict, JSON string, or plain string
             if isinstance(obs, str):
+                print(f"[AGENT] Step {idx}: observation is string, length={len(obs)}, preview={obs[:200]}", file=sys.stderr)
                 try:
                     obs = json.loads(obs)
-                except (json.JSONDecodeError, TypeError):
+                    print(f"[AGENT] Step {idx}: parsed to dict, keys={list(obs.keys())}", file=sys.stderr)
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"[AGENT] Step {idx}: JSON parse failed: {e}", file=sys.stderr)
                     pass
+            elif isinstance(obs, dict):
+                print(f"[AGENT] Step {idx}: observation is dict, keys={list(obs.keys())}", file=sys.stderr)
+            
             # ✅ FIXED: Also check for retrieved_contexts to ensure it's always captured
             if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input") or obs.get("retrieved_contexts")):
                 tool_metadata = obs
@@ -496,6 +639,8 @@ class DocumentAgentV2:
                 # Try to parse as JSON string
                 parsed = json.loads(raw_output)
                 print(f"[AGENT] Parsed from JSON: retrieved_contexts={len(parsed.get('retrieved_contexts', []))} chunks", file=sys.stderr)
+                # ✅ DEBUG: Print token values from parsed dict
+                print(f"[AGENT] Parsed dict tokens: tokens_input={parsed.get('tokens_input')}, tokens_output={parsed.get('tokens_output')}", file=sys.stderr)
             
             # Handle case where parsed is a list (multiple tool calls returned as array)
             if isinstance(parsed, list):
@@ -564,13 +709,52 @@ class DocumentAgentV2:
             if not isinstance(raw_answer, str):
                 raw_answer = str(raw_answer)
 
+            # ✅ ROBUST TOKEN RECOVERY: Priority chain
+            # 1. stored_meta (thread-local, written by tool before LLM sees anything) ← ALWAYS WINS
+            # 2. tool_metadata (from intermediate_steps, sometimes populated)
+            # 3. parsed (from raw_output, LLM-rewritten, unreliable for numeric fields)
+            
+            if stored_meta:
+                # stored_meta is written by the tool BEFORE the LLM gets a chance to corrupt it
+                final_tokens_input = stored_meta["tokens_input"]
+                final_tokens_output = stored_meta["tokens_output"]
+                final_call_type = stored_meta.get("call_type") or raw_call_type
+                
+                # Also prefer stored citations/contradiction if LLM dropped them
+                if not flat_citations:
+                    flat_citations = stored_meta.get("citations", [])
+                if not parsed.get("has_contradiction"):
+                    has_contradiction = stored_meta.get("has_contradiction", False)
+                else:
+                    has_contradiction = parsed.get("has_contradiction", False)
+                
+                print(f"[AGENT] ✅ Using stored_meta tokens: input={final_tokens_input}, output={final_tokens_output}", file=sys.stderr)
+                
+            elif tool_metadata:
+                # Fallback to intermediate_steps
+                final_tokens_input = tool_metadata.get("tokens_input") or 0
+                final_tokens_output = tool_metadata.get("tokens_output") or 0
+                final_call_type = tool_metadata.get("call_type") or raw_call_type
+                has_contradiction = parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False)
+                
+                print(f"[AGENT] ⚠️  Using intermediate_steps tokens: input={final_tokens_input}, output={final_tokens_output}", file=sys.stderr)
+                
+            else:
+                # Last resort: use parsed (unreliable)
+                final_tokens_input = parsed.get("tokens_input") or 0
+                final_tokens_output = parsed.get("tokens_output") or 0
+                final_call_type = raw_call_type
+                has_contradiction = parsed.get("has_contradiction", False)
+                
+                print(f"[AGENT] ❌ No metadata found, using parsed tokens: input={final_tokens_input}, output={final_tokens_output}", file=sys.stderr)
+            
             structured_response = AgentFinalOutput(
                 answer=raw_answer,
-                has_contradiction=parsed.get("has_contradiction", False) or tool_metadata.get("has_contradiction", False),
+                has_contradiction=has_contradiction,
                 citations=flat_citations,
-                tokens_input=tool_metadata.get("tokens_input") if tool_metadata.get("tokens_input") is not None else parsed.get("tokens_input", 0),
-                tokens_output=tool_metadata.get("tokens_output") if tool_metadata.get("tokens_output") is not None else parsed.get("tokens_output", 0),
-                call_type=raw_call_type,
+                tokens_input=final_tokens_input,  # ✅ Use prioritized values
+                tokens_output=final_tokens_output,  # ✅ Use prioritized values
+                call_type=final_call_type,
             )
             
             print(f"[AGENT] Structured parsing: tokens_input={structured_response.tokens_input}, tokens_output={structured_response.tokens_output}", file=sys.stderr)

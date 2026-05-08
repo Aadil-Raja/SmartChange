@@ -17,7 +17,8 @@ def retrieve_and_answer_subquestions(
     doc_histories: dict,
     settings,
     all_active_doc_ids: List[int],  # NEW: All active documents for fallback retrieval
-    use_deep_reranker: bool = False  # NEW: Flag for deep reranker
+    use_deep_reranker: bool = False,  # NEW: Flag for deep reranker
+    request_id: str = None  # ✅ NEW: Request ID for token tracking
 ) -> List[SubAnswer]:
     """
     Process multiple sub-questions in parallel using existing retrieval logic.
@@ -46,7 +47,8 @@ def retrieve_and_answer_subquestions(
                 doc_histories,
                 settings,
                 all_active_doc_ids,
-                use_deep_reranker  # NEW: Pass deep flag
+                use_deep_reranker,  # NEW: Pass deep flag
+                request_id  # ✅ Pass request_id
             )
             for idx, sub_q in enumerate(sub_questions)
         ]
@@ -65,7 +67,8 @@ def _process_sub_question(
     doc_histories: dict,
     settings,
     all_active_doc_ids: List[int],  # NEW: All active documents
-    use_deep_reranker: bool = False  # NEW: Deep reranker flag
+    use_deep_reranker: bool = False,  # NEW: Deep reranker flag
+    request_id: str = None  # ✅ NEW: Request ID for token tracking
 ) -> SubAnswer:
     """
     Process a single sub-question using existing retrieval functions.
@@ -533,12 +536,38 @@ def _process_sub_question(
         
         # Step 5: Invoke LLM with structured output
         debug_log(f"Calling invoke_llm_with_structured_output with {len(context_blocks)} blocks", "RETRIEVER")
+        
+        # ✅ Count input tokens before LLM call
+        from shared.llm.utils import count_tokens
+        context_text = "\n\n".join(context_blocks)
+        context_tokens = count_tokens(context_text)
+        question_tokens = count_tokens(sub_question.question)
+        conversation_tokens = count_tokens(conversation_context)
+        sub_input_tokens = context_tokens + question_tokens + conversation_tokens + 500  # +500 for system prompt
+        
         result = invoke_llm_with_structured_output(
             question=sub_question.question,
             conversation_context=conversation_context,
             context_blocks=context_blocks,
             chunk_map=chunk_map
         )
+        
+        # ✅ Add tokens to global tracker (thread-safe!)
+        if request_id:
+            from ..token_tracker import add_tokens
+            add_tokens(request_id, result.get('tokens_input', sub_input_tokens), result.get('tokens_output', 0))
+        
+        # ✅ Print token breakdown for this sub-question
+        print(f"\n{'─'*80}", file=sys.stderr)
+        print(f"📝 SUB-QUESTION {index}/{total} TOKEN USAGE", file=sys.stderr)
+        print(f"{'─'*80}", file=sys.stderr)
+        print(f"Question: {sub_question.question[:60]}...", file=sys.stderr)
+        print(f"Input Tokens:   {result.get('tokens_input', sub_input_tokens):>6} tokens (chunks + prompt)", file=sys.stderr)
+        print(f"Output Tokens:  {result.get('tokens_output', 0):>6} tokens (answer + citations)", file=sys.stderr)
+        print(f"Total:          {result.get('tokens_input', sub_input_tokens) + result.get('tokens_output', 0):>6} tokens", file=sys.stderr)
+        if request_id:
+            print(f"✅ Added to tracker: {request_id[:8]}...", file=sys.stderr)
+        print(f"{'─'*80}\n", file=sys.stderr)
         
         debug_log(f"LLM returned {len(result.get('retrieved_contexts', []))} contexts", "RETRIEVER")
         

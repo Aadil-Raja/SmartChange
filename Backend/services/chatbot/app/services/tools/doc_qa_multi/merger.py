@@ -13,7 +13,8 @@ from app.utils.debug_logger import debug_log
 def merge_answers(
     sub_answers: List[SubAnswer],
     original_question: str,
-    llm
+    llm,
+    request_id: str = None  # ✅ NEW: Request ID for token tracking
 ) -> MergedAnswer:
     """
     Merge multiple sub-answers into one unified response.
@@ -111,6 +112,11 @@ Respond with a JSON-compatible structure containing:
         # Use LangChain structured output with function_calling method for OpenAI compatibility
         from shared.llm.utils import count_tokens
         merger_prompt_tokens = count_tokens(prompt)
+        
+        print(f"\n{'='*80}", file=sys.stderr)
+        print(f"🔀 MERGER TOKEN USAGE", file=sys.stderr)
+        print(f"{'='*80}", file=sys.stderr)
+        
         try:
             debug_log(f"Calling LLM with structured output...", "MERGER")
             langchain_model = llm.get_langchain_model()
@@ -130,11 +136,19 @@ Respond with a JSON-compatible structure containing:
         result.citations = _dedup_citations(all_citations)
         
         # Token counts: sum all sub-answer tokens + merger LLM call tokens
-        # Sub-answer tokens = chunks fed to each sub-question LLM call
-        # Merger tokens = the prompt sent to merge + the merged answer output
         merger_output_tokens = count_tokens(result.answer) if result.answer else 0
-        result.tokens_input = sum(sa.tokens_input for sa in sub_answers) + merger_prompt_tokens
-        result.tokens_output = sum(sa.tokens_output for sa in sub_answers) + merger_output_tokens
+        
+        # ✅ Add merger tokens to global tracker
+        if request_id:
+            from ..token_tracker import add_tokens
+            add_tokens(request_id, merger_prompt_tokens, merger_output_tokens)
+        
+        # ✅ Print detailed merger breakdown
+        print(f"Merger Input:   {merger_prompt_tokens:>6} tokens (merge prompt)", file=sys.stderr)
+        print(f"Merger Output:  {merger_output_tokens:>6} tokens (merged answer)", file=sys.stderr)
+        if request_id:
+            print(f"✅ Added to tracker: {request_id[:8]}...", file=sys.stderr)
+        print(f"{'='*80}\n", file=sys.stderr)
         
         # Post-process: add error notes from failed sub-answers
         failed_notes = [sa.error_note for sa in sub_answers if sa.failed and sa.error_note]
