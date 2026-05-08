@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import toast from 'react-hot-toast';
 
 export default function ForgotPassword() {
   const { requestPasswordReset, loading } = useAuth();
@@ -18,11 +19,14 @@ export default function ForgotPassword() {
     const result = await requestPasswordReset(email);
     
     if (result.success) {
+      toast.success(result.message || 'Reset link sent to your email');
       setMessage(result.message || 'Reset link sent to your email');
       // Note: In production, backend sends email with token
       // For dev, check backend response for reset link
     } else {
-      setMessage(result.message || 'Failed to send reset link');
+      const m = result.message || 'Failed to send reset link';
+      setMessage(m);
+      toast.error(m);
     }
   };
 

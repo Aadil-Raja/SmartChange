@@ -1,5 +1,6 @@
 // src/context/AdminAuthContext.jsx
 import { createContext, useState, useEffect } from "react";
+import toast from 'react-hot-toast';
 import { adminLogin } from "../services/adminApi";
 
 export const AdminAuthContext = createContext(null);
@@ -47,6 +48,7 @@ export const AdminAuthProvider = ({ children }) => {
     } catch (err) {
       const errorMsg = err.response?.data?.message || err.message;
       setError(errorMsg);
+      toast.error(errorMsg);
       return { success: false, message: errorMsg };
     } finally {
       setLoading(false);

@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import toast from 'react-hot-toast';
 
 export default function ResetPassword() {
   const { confirmPasswordReset, loading } = useAuth();
@@ -20,17 +21,22 @@ export default function ResetPassword() {
     setMessage('');
 
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match!');
+      const m = 'Passwords do not match!';
+      setMessage(m);
+      toast.error(m);
       return;
     }
 
     const result = await confirmPasswordReset(token, password);
 
     if (result.success) {
+      toast.success('Password reset successful! Redirecting to login...');
       setMessage('Password reset successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } else {
-      setMessage(result.message || 'Password reset failed');
+      const m = result.message || 'Password reset failed';
+      setMessage(m);
+      toast.error(m);
     }
   };
 

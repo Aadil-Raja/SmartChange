@@ -3,10 +3,12 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GraduationCap, Users, MessageSquare, User, ChevronLeft, ChevronRight, LogOut, Trophy } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import LogoutConfirmModal from "./LogoutConfirmModal";
 
 const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const navItems = [
     { icon: GraduationCap, label: 'My Courses', path: '/employee/mycourses' },
@@ -16,10 +18,13 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
   ];
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      localStorage.removeItem('token');
-      navigate('/login');
-    }
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    localStorage.removeItem('token');
+    setShowLogoutModal(false);
+    navigate('/login');
   };
 
   return (
@@ -98,6 +103,15 @@ const EmployeeSidebar = ({ collapsed = true, onToggle }) => {
       <div className="px-2 pt-2 pb-2" style={{ borderBottom: "1px solid rgba(245,130,32,0.15)" }}>
         <NotificationBell collapsed={collapsed} />
       </div>
+
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={confirmLogout}
+        title="Logout employee?"
+        message="You will be signed out of the employee portal and returned to the login screen."
+        confirmLabel="Logout"
+      />
 
       {/* Divider label */}
       {!collapsed && (

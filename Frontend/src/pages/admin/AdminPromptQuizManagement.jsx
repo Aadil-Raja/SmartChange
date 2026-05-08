@@ -4,6 +4,7 @@ import { Plus, Trash2, ChevronDown, ChevronRight, X, Loader, CheckCircle, FileTe
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import * as quizApi from "../../services/quizApi";
+import toast from 'react-hot-toast';
 
 const C = {
   bg: "#faf6ef", ink: "#1a1209", orange: "#f7953f",
@@ -91,6 +92,7 @@ const AdminPromptQuizManagement = () => {
     setError(null);
     try {
       await quizApi.generatePromptQuiz(form);
+      toast.success("Quiz generation started! It will appear as Draft when ready.");
       setSuccess("Quiz generation started! It will appear as Draft when ready.");
       setShowModal(false);
       setForm({ title: "", prompt_text: "", num_questions: 10, description: "" });
@@ -106,6 +108,7 @@ const AdminPromptQuizManagement = () => {
     if (!deleteConfirm) return;
     try {
       await quizApi.deletePromptQuiz(deleteConfirm.id);
+      toast.success("Prompt quiz deleted");
       setSuccess("Prompt quiz deleted");
       setDeleteConfirm(null);
       load();

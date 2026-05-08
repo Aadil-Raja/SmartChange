@@ -4,6 +4,7 @@ import JoinTeamModal from '../../components/ui/JoinTeamModal';
 import EmployeeSidebar from '../../components/ui/EmployeeSidebar';
 import { Users, Plus } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
+import toast from 'react-hot-toast';
 
 const MyTeams = () => {
   const { teams, loading, error, joinTeam, regerenateTeamCode, loadTeams } = useTeams();
@@ -24,6 +25,7 @@ const MyTeams = () => {
     const result = await joinTeam(code);
     console.log('Join team result:', result);
     if (result.success) {
+      toast.success('Successfully joined the team!');
       setSuccessMessage('Successfully joined the team!');
       setTimeout(() => setSuccessMessage(''), 3000);
     }
@@ -35,6 +37,7 @@ const MyTeams = () => {
     const result = await regerenateTeamCode(teamId);
     console.log('Regenerate code result:', result);
     if (result.success) {
+      toast.success(`Join code regenerated successfully! New code: ${result.data.join_code}`);
       setSuccessMessage(`Join code regenerated successfully! New code: ${result.data.join_code}`);
       setTimeout(() => setSuccessMessage(''), 5000);
     }

@@ -14,6 +14,7 @@ import AdminContentForm from "./AdminContentForm";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import * as quizApi from "../../services/quizApi";
+import toast from 'react-hot-toast';
 
 const quizInputBase = {
   width: "100%", padding: "10px 14px", borderRadius: "10px",
@@ -160,8 +161,8 @@ const AdminCourseDetails = () => {
     setSubmittingQuiz(true);
     clearQuizMessages();
     try {
-      if (selectedQuiz) { await quizApi.updateCourseQuiz(selectedQuiz.id, quizForm); setQuizSuccess('Quiz updated successfully'); }
-      else              { await quizApi.createCourseQuiz(id, quizForm);               setQuizSuccess('Quiz created successfully'); }
+      if (selectedQuiz) { await quizApi.updateCourseQuiz(selectedQuiz.id, quizForm); toast.success('Quiz updated successfully'); setQuizSuccess('Quiz updated successfully'); }
+      else              { await quizApi.createCourseQuiz(id, quizForm);               toast.success('Quiz created successfully'); setQuizSuccess('Quiz created successfully'); }
       setShowCreateQuizModal(false);
       setSelectedQuiz(null);
       await refreshQuizData();
@@ -174,6 +175,7 @@ const AdminCourseDetails = () => {
     clearQuizMessages();
     try {
       await quizApi.deleteCourseQuiz(deleteQuizConfirm.id);
+      toast.success('Quiz deleted successfully');
       setQuizSuccess('Quiz deleted successfully');
       setDeleteQuizConfirm(null);
       await refreshQuizData();
@@ -185,7 +187,7 @@ const AdminCourseDetails = () => {
 
   const handlePublishQuiz = async (quizId) => {
     clearQuizMessages();
-    try { await quizApi.publishCourseQuiz(quizId); setQuizSuccess('Quiz published successfully'); await refreshQuizData(); }
+    try { await quizApi.publishCourseQuiz(quizId); toast.success('Quiz published successfully'); setQuizSuccess('Quiz published successfully'); await refreshQuizData(); }
     catch (err) { setQuizError(err.response?.data?.message || err.response?.data?.detail || 'Failed to publish quiz'); }
   };
 
