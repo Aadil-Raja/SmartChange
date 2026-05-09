@@ -31,7 +31,7 @@ const Field = ({ label, required, children }) => (
 );
 
 const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
-  const { addContent, updateContent, error, clearMessages,
+  const { addContent, updateContent, clearMessages,
           fetchProcessedDocuments, fetchVideos, fetchExternalLinks } = useAdminTraining();
 
   const [formData, setFormData] = useState({
@@ -134,13 +134,6 @@ const AdminContentForm = ({ courseId, editingContent, onClose, onSuccess }) => {
             <X size={16} />
           </button>
         </div>
-
-        {/* Error */}
-        {error && (
-          <div className="px-7 pt-5">
-            <Alert variant="error" onClose={clearMessages}>{error}</Alert>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-7 py-6 space-y-5">

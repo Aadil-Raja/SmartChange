@@ -753,8 +753,8 @@ def get_document_sections_with_preview(db: Session, *, document_id: int):
         preview = " ".join(lines[-2:])
         return preview[:150] + "…" if len(preview) > 150 else preview
 
-    def get_chunk_text(chunk_index: int) -> str:
-        chunk = (
+    def get_chunk(chunk_index: int):
+        return (
             db.query(DocumentChunk)
             .filter(
                 DocumentChunk.document_id == document_id,
@@ -762,23 +762,35 @@ def get_document_sections_with_preview(db: Session, *, document_id: int):
             )
             .first()
         )
-        return chunk.text if chunk else ""
+
+    def strip_breadcrumb(text: str) -> str:
+        """Remove leading [Section > Sub] prefix injected during chunking."""
+        import re
+        return re.sub(r'^\[.*?\]\s*', '', text or '').strip()
 
     data = []
     for s in sections:
-        start_text = get_chunk_text(s.start_chunk_index)
-        # Only fetch end chunk separately if it's a different chunk
-        if s.start_chunk_index == s.end_chunk_index:
-            end_text = start_text
-        else:
-            end_text = get_chunk_text(s.end_chunk_index)
+        start_chunk = get_chunk(s.start_chunk_index)
+        end_chunk = start_chunk if s.start_chunk_index == s.end_chunk_index else get_chunk(s.end_chunk_index)
+
+        start_text = strip_breadcrumb(start_chunk.text if start_chunk else "")
+        end_text = strip_breadcrumb(end_chunk.text if end_chunk else "")
+
+        # Page range across the whole section
+        start_page = start_chunk.start_page_num if start_chunk else None
+        end_page = end_chunk.end_page_num if end_chunk else None
+
         data.append({
             "id": s.id,
             "section_title": s.section_title,
             "chunk_count": s.chunk_count,
+            "start_chunk_index": s.start_chunk_index,
+            "end_chunk_index": s.end_chunk_index,
             "start_preview": first_two_lines(start_text),
             "end_preview": last_two_lines(end_text),
             "single_chunk": s.start_chunk_index == s.end_chunk_index,
+            "start_page": start_page,
+            "end_page": end_page,
         })
 
     return make_response(

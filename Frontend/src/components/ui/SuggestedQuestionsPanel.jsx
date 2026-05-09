@@ -1,13 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sparkles, Plus, Trash2, Eye, EyeOff, Save, Loader } from 'lucide-react';
-import { getSuggestedQuestions, generateSuggestedQuestions, updateSuggestedQuestions } from '../../services/adminApi';
+import { useQueryClient } from '@tanstack/react-query';
+import { generateSuggestedQuestions, updateSuggestedQuestions } from '../../services/adminApi';
+import { useDocumentSuggestedQuestions, adminKeys } from '../../hooks/useAdminQueries';
 import toast from 'react-hot-toast';
 
 const MAX = 5;
 
 const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+  const { data: serverQuestions = [], isLoading: loading } = useDocumentSuggestedQuestions(documentId);
+
+  const [questions, setQuestions] = useState(null); // null = use server data
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -15,16 +19,10 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
   const [newText, setNewText] = useState('');
   const [dirty, setDirty] = useState(false);
 
-  const isProcessed = documentStatus === 'PROCESSED';
+  // Use local edits if dirty, otherwise show server data
+  const questions_ = dirty && questions !== null ? questions : serverQuestions;
 
-  useEffect(() => {
-    if (!documentId) return;
-    setLoading(true);
-    getSuggestedQuestions(documentId)
-      .then(res => setQuestions(res?.data?.questions || []))
-      .catch(() => setError('Failed to load questions'))
-      .finally(() => setLoading(false));
-  }, [documentId]);
+  const isProcessed = documentStatus === 'PROCESSED';
 
   const flash = (type, msg) => {
     if (type === 'success') { toast.success(msg); setSuccess(msg); setTimeout(() => setSuccess(null), 3000); }
@@ -36,7 +34,8 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
     setError(null);
     try {
       const res = await generateSuggestedQuestions(documentId);
-      setQuestions(res?.data?.questions || []);
+      qc.invalidateQueries({ queryKey: adminKeys.suggestedQuestions(documentId) });
+      setQuestions(null);
       setDirty(false);
       flash('success', `Generated ${res?.data?.questions?.length || 0} questions`);
     } catch {
@@ -47,31 +46,33 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
   };
 
   const handleToggle = (id) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, is_active: !q.is_active } : q));
+    setQuestions(prev => (prev ?? serverQuestions).map(q => q.id === id ? { ...q, is_active: !q.is_active } : q));
     setDirty(true);
   };
 
   const handleDelete = (id) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
+    setQuestions(prev => (prev ?? serverQuestions).filter(q => q.id !== id));
     setDirty(true);
   };
 
   const handleAdd = () => {
-    if (!newText.trim() || questions.length >= MAX) return;
-    setQuestions(prev => [...prev, { id: crypto.randomUUID(), text: newText.trim(), is_active: true }]);
+    if (!newText.trim() || questions_.length >= MAX) return;
+    setQuestions(prev => [...(prev ?? serverQuestions), { id: crypto.randomUUID(), text: newText.trim(), is_active: true }]);
     setNewText('');
     setDirty(true);
   };
 
   const handleEditText = (id, text) => {
-    setQuestions(prev => prev.map(q => q.id === id ? { ...q, text } : q));
+    setQuestions(prev => (prev ?? serverQuestions).map(q => q.id === id ? { ...q, text } : q));
     setDirty(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateSuggestedQuestions(documentId, questions);
+      await updateSuggestedQuestions(documentId, questions_);
+      qc.invalidateQueries({ queryKey: adminKeys.suggestedQuestions(documentId) });
+      setQuestions(null);
       setDirty(false);
       flash('success', 'Saved');
     } catch {
@@ -92,7 +93,7 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
           <div>
             <p className="text-sm font-bold" style={{ color: '#1a1209' }}>Suggested Questions</p>
             <p className="text-xs" style={{ color: 'rgba(65,50,24,0.45)' }}>
-              {questions.length}/{MAX} · shown as chips in chatbot
+              {questions_.length}/{MAX} · shown as chips in chatbot
             </p>
           </div>
         </div>
@@ -145,13 +146,13 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
         <div className="flex items-center justify-center py-6">
           <Loader size={18} className="animate-spin" style={{ color: '#f7953f' }} />
         </div>
-      ) : questions.length === 0 ? (
+      ) : questions_.length === 0 ? (
         <p className="text-xs text-center py-4" style={{ color: 'rgba(65,50,24,0.4)' }}>
           No questions yet. Click Generate or add manually below.
         </p>
       ) : (
         <div className="space-y-2 mb-3">
-          {questions.map((q) => (
+          {questions_.map((q) => (
             <div
               key={q.id}
               className="flex items-start gap-2 p-2.5 rounded-xl"
@@ -186,7 +187,7 @@ const SuggestedQuestionsPanel = ({ documentId, documentStatus }) => {
       )}
 
       {/* Add manually */}
-      {questions.length < MAX && (
+      {questions_.length < MAX && (
         <div className="flex gap-2">
           <input
             value={newText}

@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowUpRight, MoreVertical, Star, UserPlus, UserMinus } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArrowUpRight, MoreVertical, Star, UserPlus, UserMinus, CheckCircle } from 'lucide-react';
+import { markCourseComplete } from '../../services/courseApi';
+import { employeeKeys } from '../../hooks/useEmployeeQueries';
+import toast from 'react-hot-toast';
 
 const COURSE_EMOJIS = ['BOOK', 'TARGET', 'IDEA', 'SCIENCE', 'TOOLS', 'CHART', 'GLOBE', 'BRAIN', 'BOLT', 'ROCKET'];
 const getEmoji = (id) => {
@@ -83,6 +87,12 @@ const CourseCard = ({
 
   const status = getStatusMeta();
   const isStarred = Boolean(course.is_starred);
+  const [localStarred, setLocalStarred] = useState(isStarred);
+
+  // Keep local state in sync if the prop changes (e.g. after cache update)
+  useEffect(() => {
+    setLocalStarred(Boolean(course.is_starred));
+  }, [course.is_starred]);
   const isEnrolled = course.is_enrolled !== undefined
     ? Boolean(course.is_enrolled)
     : course.category !== 'not_enrolled';
@@ -94,13 +104,44 @@ const CourseCard = ({
   const handleStarAction = async (e) => {
     e.stopPropagation();
     if (!onToggleStar || actionLoading) return;
-
+    setLocalStarred(prev => !prev); // optimistic flip
     setActionLoading(true);
     try {
       await onToggleStar(course.id);
       setMenuOpen(false);
+    } catch {
+      setLocalStarred(prev => !prev); // revert on error
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const qc = useQueryClient();
+  const [markingComplete, setMarkingComplete] = useState(false);
+
+  const handleMarkComplete = async (e) => {
+    e.stopPropagation();
+    if (markingComplete) return;
+    setMarkingComplete(true);
+    try {
+      const res = await markCourseComplete(course.id);
+      if (res.success) {
+        // Update courses list cache optimistically
+        qc.setQueryData(employeeKeys.courses(), (old) =>
+          (old || []).map(c => c.id === course.id
+            ? { ...c, category: 'completed', completed_at: new Date().toISOString() }
+            : c)
+        );
+        qc.invalidateQueries({ queryKey: employeeKeys.courses() });
+        qc.invalidateQueries({ queryKey: employeeKeys.coursesOverview() });
+        toast.success('Course marked as completed!');
+      } else {
+        toast.error(res.message || 'Could not mark as complete');
+      }
+    } catch {
+      toast.error('Could not mark as complete');
+    } finally {
+      setMarkingComplete(false);
     }
   };
 
@@ -164,30 +205,25 @@ const CourseCard = ({
 
         {showActions && onToggleStar && (
           <button
-            className="absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 z-10"
+            className="absolute top-3 left-3 w-9 h-9 rounded-full flex items-center justify-center z-10"
             style={{
-              background: isStarred ? '#f59e0b' : 'rgba(255,255,255,0.95)',
-              color: isStarred ? '#ffffff' : '#9c8e80',
+              background: localStarred ? '#f59e0b' : 'rgba(255,255,255,0.95)',
+              color: localStarred ? '#ffffff' : '#9c8e80',
               boxShadow: '0 4px 12px rgba(26,18,9,0.18)',
+              transition: 'background 0.2s ease, color 0.2s ease, transform 0.15s ease',
+              transform: actionLoading ? 'scale(0.88)' : 'scale(1)',
             }}
             onClick={handleStarAction}
-            onMouseEnter={(e) => {
-              if (!isStarred) {
-                e.currentTarget.style.background = '#fff7e6';
-                e.currentTarget.style.color = '#f59e0b';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isStarred) {
-                e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
-                e.currentTarget.style.color = '#9c8e80';
-              }
-            }}
             disabled={actionLoading}
-            title={isStarred ? 'Unstar course' : 'Star course'}
-            aria-label={isStarred ? 'Unstar course' : 'Star course'}
+            title={localStarred ? 'Unstar course' : 'Star course'}
+            aria-label={localStarred ? 'Unstar course' : 'Star course'}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.12)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = actionLoading ? 'scale(0.88)' : 'scale(1)'; }}
           >
-            <Star size={16} className={isStarred ? 'fill-current' : ''} />
+            <Star
+              size={16}
+              style={{ transition: 'fill 0.2s ease', fill: localStarred ? 'currentColor' : 'none' }}
+            />
           </button>
         )}
       </div>
@@ -276,6 +312,23 @@ const CourseCard = ({
                 style={{ width: `${progress.percentage}%`, background: 'linear-gradient(90deg, #f2b44d 0%, #f7953f 55%, #e0741c 100%)' }}
               />
             </div>
+            {/* Mark as Complete button — shows when 100% but not yet marked completed */}
+            {progress.percentage >= 100 && (variant || course.category) !== 'completed' && (
+              <button
+                onClick={handleMarkComplete}
+                disabled={markingComplete}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                style={{
+                  background: markingComplete ? '#f3ede4' : '#e6f4f1',
+                  color: markingComplete ? '#9c8e80' : '#0d9488',
+                  border: '1px solid',
+                  borderColor: markingComplete ? '#e0d8ce' : '#99d6cf',
+                }}
+              >
+                <CheckCircle size={13} />
+                {markingComplete ? 'Marking…' : 'Mark as Complete'}
+              </button>
+            )}
           </div>
         )}
 

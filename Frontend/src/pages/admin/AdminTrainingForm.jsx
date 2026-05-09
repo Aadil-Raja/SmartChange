@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
+import { useAdminInvalidations } from "../../hooks/useAdminQueries";
 import { ArrowLeft, Plus, Save } from "lucide-react";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -17,6 +18,7 @@ const AdminTrainingForm = () => {
     createNewCourse, updateExistingCourse, fetchCourseDetails, clearMessages,
   } = useAdminTraining();
 
+  const { invalidateCourses } = useAdminInvalidations();
   const [formData, setFormData] = useState({ title: "", description: "", department: "" });
   const [submitting, setSubmitting] = useState(false);
   const [navCollapsed, setNavCollapsed] = useState(true);
@@ -59,6 +61,7 @@ const AdminTrainingForm = () => {
       : await createNewCourse(submitData);
     setSubmitting(false);
     if (result.success) {
+      invalidateCourses();
       setTimeout(() => navigate(isEditMode ? `/admin/training/course/${id}` : "/admin/training"), 1500);
     }
   };

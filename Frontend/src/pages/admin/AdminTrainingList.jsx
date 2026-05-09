@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminTraining } from "../../hooks/useAdminTraining";
 import { useAdminCourses, useAdminInvalidations } from "../../hooks/useAdminQueries";
-import { Plus, Search, Edit, Trash2, Power, PowerOff, ClipboardList, FileText, BookOpen, ArrowUpRight } from "lucide-react";
+import { getCourseEnrollmentStats } from "../../services/trainingApi";
+import { Plus, Search, Edit, Trash2, Power, PowerOff, ClipboardList, FileText, BookOpen, ArrowUpRight, AlertTriangle } from "lucide-react";
 import AdminSidebar from "../../components/ui/AdminSidebar";
-import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Alert from "../../components/ui/Alert";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { useRef } from "react";
@@ -33,6 +33,8 @@ const AdminTrainingList = () => {
   const [filter, setFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [deleteStats, setDeleteStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
     return () => clearMessages();
@@ -72,7 +74,22 @@ const AdminTrainingList = () => {
     const result = await deleteExistingCourse(courseId);
     if (result.success) {
       setShowDeleteConfirm(null);
-      invalidateCourses(); // refresh cache after delete
+      setDeleteStats(null);
+      invalidateCourses();
+    }
+  };
+
+  const handleRequestDelete = async (course) => {
+    setShowDeleteConfirm(course);
+    setDeleteStats(null);
+    setLoadingStats(true);
+    try {
+      const res = await getCourseEnrollmentStats(course.id);
+      setDeleteStats(res.success ? res.data : null);
+    } catch {
+      setDeleteStats(null);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -226,7 +243,7 @@ const AdminTrainingList = () => {
                   onNavigate={() => navigate(`/admin/training/course/${course.id}`)}
                   onEdit={() => navigate(`/admin/training/edit/${course.id}`)}
                   onToggle={() => handleToggleStatus(course)}
-                  onDelete={() => setShowDeleteConfirm(course)}
+                  onDelete={() => handleRequestDelete(course)}
                   formatDate={formatDate}
                 />
               ))}
@@ -255,15 +272,76 @@ const AdminTrainingList = () => {
       </div>
 
       {showDeleteConfirm && (
-        <ConfirmDialog
-          title="Delete Course"
-          message={`Are you sure you want to delete "${showDeleteConfirm.title}"? This action cannot be undone.`}
-          confirmText="Delete Course"
-          cancelText="Cancel"
-          onConfirm={() => handleDeleteCourse(showDeleteConfirm.id)}
-          onCancel={() => setShowDeleteConfirm(null)}
-          variant="danger"
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6" style={{ border: '1px solid #f0ebe3' }}>
+            {/* Header */}
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                <Trash2 size={18} className="text-red-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold" style={{ color: '#1a1209' }}>Delete Course</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  "{showDeleteConfirm.title}"
+                </p>
+              </div>
+            </div>
+
+            {/* Enrollment impact */}
+            {loadingStats ? (
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 mb-4 flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                <span className="text-sm text-gray-500">Checking enrollment data…</span>
+              </div>
+            ) : deleteStats && deleteStats.total > 0 ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle size={15} className="text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-red-700">This will permanently erase employee records</span>
+                </div>
+                <div className="flex gap-4 mt-1">
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-red-700">{deleteStats.total}</p>
+                    <p className="text-xs text-red-500">enrolled</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-amber-600">{deleteStats.in_progress}</p>
+                    <p className="text-xs text-amber-500">in progress</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-green-600">{deleteStats.completed}</p>
+                    <p className="text-xs text-green-500">completed</p>
+                  </div>
+                </div>
+                <p className="text-xs text-red-500 mt-2">
+                  All progress, quiz attempts, and completion records will be lost.
+                  Consider <span className="font-semibold">unpublishing</span> instead.
+                </p>
+              </div>
+            ) : deleteStats && deleteStats.total === 0 ? (
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-4 py-3 mb-4">
+                <p className="text-sm text-gray-500">No employees are enrolled — safe to delete.</p>
+              </div>
+            ) : null}
+
+            <p className="text-sm text-gray-600 mb-5">This action cannot be undone.</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDeleteCourse(showDeleteConfirm.id)}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+              >
+                Delete Permanently
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm(null); setDeleteStats(null); }}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

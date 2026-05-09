@@ -326,26 +326,43 @@ export const CourseProvider = ({ children }) => {
     // Star/Unstar course
     const toggleCourseStar = async (courseId) => {
         try {
-            const course = courses.find(c => c.id === courseId);
+            // Read current starred state from React Query cache (source of truth for MyCourses)
+            const cached = qc.getQueryData(employeeKeys.courses()) || [];
+            const course = cached.find(c => c.id === courseId)
+                        || courses.find(c => c.id === courseId);
             if (!course) return { success: false, message: 'Course not found' };
 
-            let result;
-            if (course.is_starred) {
-                result = await unstarCourse(courseId);
-            } else {
-                result = await starCourse(courseId);
-            }
+            const nowStarred = !course.is_starred;
+            const result = course.is_starred
+                ? await unstarCourse(courseId)
+                : await starCourse(courseId);
 
             if (result.success) {
-                setCourses(prevCourses =>
-                    prevCourses.map(c =>
-                        c.id === courseId
-                            ? { ...c, is_starred: !c.is_starred }
-                            : c
-                    )
+                // Optimistically update React Query cache so the UI reflects immediately
+                qc.setQueryData(employeeKeys.courses(), (old) =>
+                    (old || []).map(c => c.id === courseId ? { ...c, is_starred: nowStarred } : c)
                 );
-                qc.invalidateQueries({ queryKey: employeeKeys.courses() });
-                return { success: true, starred: !course.is_starred };
+                // Also update the overview cache (used by profile page starred tab)
+                qc.setQueryData(employeeKeys.coursesOverview(), (old) => {
+                    if (!old) return old;
+                    const course = (old.starred || []).find(c => c.id === courseId)
+                                || (old.in_progress || []).find(c => c.id === courseId)
+                                || (old.completed || []).find(c => c.id === courseId);
+                    const updatedSection = (section) =>
+                        (section || []).map(c => c.id === courseId ? { ...c, is_starred: nowStarred } : c);
+                    return {
+                        ...old,
+                        starred: nowStarred
+                            ? course ? [...(old.starred || []), { ...course, is_starred: true }] : old.starred
+                            : (old.starred || []).filter(c => c.id !== courseId),
+                        in_progress: updatedSection(old.in_progress),
+                        completed: updatedSection(old.completed),
+                        expired: updatedSection(old.expired),
+                    };
+                });
+                // Also keep context state in sync
+                setCourses(prev => prev.map(c => c.id === courseId ? { ...c, is_starred: nowStarred } : c));
+                return { success: true, starred: nowStarred };
             }
             return result;
         } catch (err) {

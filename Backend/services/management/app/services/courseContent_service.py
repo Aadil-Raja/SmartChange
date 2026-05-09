@@ -123,6 +123,12 @@ def deactivate_course(db: Session, *, course_id: int) -> dict:
     return {"updated": True, "is_active": False}
 
 def activate_course(db: Session, *, course_id: int) -> dict:
+    # Check if this is a re-publish (was previously active) by seeing if any enrollments exist
+    from shared.models.course_enrollment import CourseEnrollment
+    had_enrollments = db.query(CourseEnrollment).filter(
+        CourseEnrollment.course_id == course_id
+    ).first() is not None
+
     ok = repo.set_course_active(db, course_id=course_id, is_active=True)
     if not ok:
         raise ValueError("Course not found")
@@ -130,7 +136,38 @@ def activate_course(db: Session, *, course_id: int) -> dict:
     # Reopen any completed enrollments — course was edited while unpublished,
     # so employees who were marked done must complete the new material.
     from app.repositories import course_enrollment_repo as enrollment_repo
-    enrollment_repo.reopen_completed_enrollments(db, course_id=course_id)
+    reopened = enrollment_repo.reopen_completed_enrollments(db, course_id=course_id)
+
+    # Notify enrolled users
+    try:
+        from shared.models.notification import NotificationType
+        from shared.repos.notification_repo import bulk_create_notifications
+
+        course = repo.get_course(db, course_id=course_id)
+        enrolled_user_ids = [
+            e.user_id for e in db.query(CourseEnrollment)
+            .filter(CourseEnrollment.course_id == course_id).all()
+        ]
+        if enrolled_user_ids and course:
+            if had_enrollments:
+                # Re-publish: course was updated, tell enrolled users to review
+                title = f"{course.title} has been updated"
+                message = f'"{course.title}" has been updated with new content. Please review the latest material.'
+            else:
+                # First publish: course is now available
+                title = f"{course.title} is now available"
+                message = f'"{course.title}" has been published and is ready for you to start.'
+
+            bulk_create_notifications(
+                db,
+                user_ids=enrolled_user_ids,
+                type=NotificationType.SYSTEM,
+                title=title,
+                message=message,
+                related_course_id=course_id,
+            )
+    except Exception:
+        pass  # Never block activation due to notification failure
 
     return {"updated": True, "is_active": True}
 
@@ -184,8 +221,6 @@ def add_content_item(db: Session, *, course_id: int, body: ContentItemCreateIn):
     )
 
     return {"item": repo.item_to_dict(item)}
-
-
 def update_content_item(db: Session, *, content_id: int, body: ContentItemUpdateIn):
     item = repo.get_content_item(db, content_id=content_id)
     if not item:

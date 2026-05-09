@@ -263,13 +263,14 @@ const TeamsPage = () => {
 
                         {/* Expanded members */}
                         {isExpanded && (
-                          <div className="px-6 py-4 border-t border-gray-100" style={{ background: '#faf6ef' }}>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Team Members</p>
+                          <div className="border-t border-gray-100" style={{ background: '#faf6ef' }}>
                             {memberCount === 0 ? (
-                              <p className="text-xs text-gray-400">No members yet. Add someone to get started.</p>
+                              <div className="px-6 py-4">
+                                <span className="text-xs text-gray-400">No members yet. Add someone to get started.</span>
+                              </div>
                             ) : (
-                              <div className="space-y-2">
-                                {teamMembers.map(member => {
+                              <div>
+                                {teamMembers.map((member, idx) => {
                                   const colorClass = AVATAR_COLORS[member.id % AVATAR_COLORS.length];
                                   const initials = member.name
                                     ? member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -278,20 +279,22 @@ const TeamsPage = () => {
                                   return (
                                     <div
                                       key={`${team.id}-${member.user_id}`}
-                                      className="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3"
+                                      className="flex items-center justify-between px-6 py-3"
+                                      style={{ borderBottom: idx < teamMembers.length - 1 ? '1px solid #f0ebe3' : 'none' }}
                                     >
+                                      {/* Avatar + name */}
                                       <div className="flex items-center gap-3 min-w-0">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
                                           <span className="text-white text-xs font-bold">{initials}</span>
                                         </div>
                                         <div className="min-w-0">
-                                          <p className="text-sm font-semibold truncate" style={{ color: '#1a1209' }}>{member.name || member.email}</p>
+                                          <p className="text-sm font-medium truncate" style={{ color: '#1a1209' }}>{member.name || member.email}</p>
                                           <p className="text-xs text-gray-400 truncate">{member.email}</p>
                                         </div>
                                       </div>
 
+                                      {/* Role + remove */}
                                       <div className="flex items-center gap-2 flex-shrink-0">
-                                        {/* Role dropdown */}
                                         {editingMemberId === `${team.id}-${member.id}` ? (
                                           <RoleDropdown
                                             value={member.role_in_team}
@@ -302,17 +305,25 @@ const TeamsPage = () => {
                                         ) : (
                                           <button
                                             onClick={() => setEditingMemberId(`${team.id}-${member.id}`)}
-                                            className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#f7953f] hover:text-[#f7953f]"
-                                            style={{ color: '#1a1209' }}
+                                            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                                            style={{
+                                              background: 'rgba(247,149,63,0.10)',
+                                              color: '#c2620a',
+                                              border: '1px solid rgba(247,149,63,0.25)',
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(247,149,63,0.20)'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'rgba(247,149,63,0.10)'}
                                           >
                                             {member.role_in_team}
+                                            <ChevronDown size={11} />
                                           </button>
                                         )}
-
-                                        {/* Remove */}
                                         <button
                                           onClick={() => handleRemoveMember(team.id, member.user_id)}
-                                          className="p-1.5 rounded-lg text-red-600 border border-transparent hover:bg-[#fff0f0] hover:border-red-200 transition-all"
+                                          className="p-1.5 rounded-lg transition-all"
+                                          style={{ color: '#dc2626' }}
+                                          onMouseEnter={e => { e.currentTarget.style.background = '#fff0f0'; }}
+                                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                                           title="Remove from team"
                                         >
                                           <X size={14} />

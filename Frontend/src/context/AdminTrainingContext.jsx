@@ -54,6 +54,9 @@ export const AdminTrainingProvider = ({ children }) => {
     if (success && success !== lastSuccessRef.current) {
       toast.success(success);
       lastSuccessRef.current = success;
+      // Auto-clear after 3 seconds
+      const t = setTimeout(() => setSuccess(null), 3000);
+      return () => clearTimeout(t);
     }
 
     if (!success) {

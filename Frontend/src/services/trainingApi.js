@@ -80,6 +80,12 @@ export const deleteCourse = async (courseId) => {
   return response.data;
 };
 
+// Get enrollment stats for a course (used in delete confirmation)
+export const getCourseEnrollmentStats = async (courseId) => {
+  const response = await api.get(`/admin-training/courses/${courseId}/enrollment-stats`);
+  return response.data;
+};
+
 // ==================== CONTENT ITEMS ====================
 
 // Add content item to a course

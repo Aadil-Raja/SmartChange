@@ -212,6 +212,15 @@ def build_enrollment_based_overview(
                 "quiz_scores": quiz_scores,
             })
 
+            # Self-heal: if progress is 100% but enrollment isn't marked complete, fix it now
+            if percent >= 100.0 and enrollment and not enrollment.completed_at:
+                from datetime import datetime, timezone
+                enrollment.completed_at = datetime.now(timezone.utc)
+                db.commit()
+                course_info["completed_at"] = enrollment.completed_at
+                category = "completed"
+                course_info["category"] = "completed"
+
             total_progress_sum += percent
             total_items_completed += completed_items
             total_items_count += total_c

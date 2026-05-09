@@ -157,3 +157,9 @@ export const submitQuizAttempt = async (quizId, answers) => {
     throw error;
   }
 };
+
+// Manually mark a course as completed (only succeeds if all items + quizzes done)
+export const markCourseComplete = async (courseId) => {
+  const response = await api.post(`/employee/courses/${courseId}/complete`);
+  return response.data;
+};

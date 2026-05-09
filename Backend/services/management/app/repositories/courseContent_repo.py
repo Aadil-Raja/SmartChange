@@ -180,6 +180,29 @@ def add_content_item(
         content_type = ContentType(type_str)
     except ValueError:
         raise ValueError(f"Invalid content type: {type_str}. Must be one of: document, video, link")
+
+    # Prevent adding the same asset twice to the same course
+    if type_str == "document" and document_id:
+        exists = db.query(ContentItem).filter(
+            ContentItem.course_id == course_id,
+            ContentItem.document_id == document_id,
+        ).first()
+        if exists:
+            raise ValueError("This document is already added to the course.")
+    elif type_str == "video" and video_id:
+        exists = db.query(ContentItem).filter(
+            ContentItem.course_id == course_id,
+            ContentItem.video_id == video_id,
+        ).first()
+        if exists:
+            raise ValueError("This video is already added to the course.")
+    elif type_str == "link" and external_link_id:
+        exists = db.query(ContentItem).filter(
+            ContentItem.course_id == course_id,
+            ContentItem.external_link_id == external_link_id,
+        ).first()
+        if exists:
+            raise ValueError("This link is already added to the course.")
     
     # If no order_index provided, add to end
     if order_index is None:
@@ -233,7 +256,75 @@ def delete_content_item(db: Session, *, content_id: int) -> bool:
     # Remove deleted content_id from prerequisite_content_ids of all quizzes in this course
     _remove_prerequisite_from_course_quizzes(db, course_id=course_id, content_id=content_id)
 
+    # Re-check completion for all enrolled users.
+    # If this was the last incomplete item, the user is now done and needs completed_at set.
+    _recheck_course_completion_for_all_users(db, course_id=course_id)
+
     return True
+
+
+def _recheck_course_completion_for_all_users(db: Session, *, course_id: int) -> None:
+    """
+    After a content item is deleted, check every enrolled user.
+    If all remaining items are completed, set CourseEnrollment.completed_at.
+    """
+    from datetime import datetime, timezone
+    from shared.models.course_enrollment import CourseEnrollment
+    from shared.models.progress import UserProgress
+    from shared.repos.course_quiz_repo import get_course_quizzes_by_course
+    from shared.models.course_quiz import QuizStatus
+    from shared.repos.quiz_attempt_repo import get_user_quiz_attempts
+
+    # Remaining content items after the deletion
+    remaining_items = db.query(ContentItem).filter(ContentItem.course_id == course_id).all()
+    remaining_content_ids = {it.id for it in remaining_items}
+
+    # Published quizzes
+    published_quizzes = get_course_quizzes_by_course(db, course_id, QuizStatus.PUBLISHED)
+
+    # Only check enrollments that are not yet completed
+    enrollments = (
+        db.query(CourseEnrollment)
+        .filter(
+            CourseEnrollment.course_id == course_id,
+            CourseEnrollment.completed_at.is_(None),
+        )
+        .all()
+    )
+
+    now = datetime.now(timezone.utc)
+    for enrollment in enrollments:
+        user_id = enrollment.user_id
+
+        # Check content items — all remaining must be completed
+        if remaining_content_ids:
+            progress_rows = (
+                db.query(UserProgress)
+                .filter(
+                    UserProgress.user_id == user_id,
+                    UserProgress.content_id.in_(remaining_content_ids),
+                )
+                .all()
+            )
+            done_ids = {
+                r.content_id for r in progress_rows
+                if r.completed_at is not None or (r.progress or 0) >= 100.0
+            }
+            if not remaining_content_ids.issubset(done_ids):
+                continue  # still has incomplete content items
+
+        # Check quizzes — all published quizzes must be passed
+        all_quizzes_passed = all(
+            any(a.passed for a in get_user_quiz_attempts(db, user_id, quiz.id))
+            for quiz in published_quizzes
+        )
+        if not all_quizzes_passed:
+            continue
+
+        # All content done and all quizzes passed — mark complete
+        enrollment.completed_at = now
+
+    db.commit()
 
 
 def _remove_prerequisite_from_course_quizzes(db: Session, *, course_id: int, content_id: int) -> None:

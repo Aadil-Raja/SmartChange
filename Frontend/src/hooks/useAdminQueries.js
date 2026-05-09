@@ -5,17 +5,19 @@
  * Pattern mirrors useEmployeeQueries.js on the employee side.
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchDocuments, fetchEmployees, fetchTeamRoles, fetchTeams } from '../services/adminApi';
+import { fetchDocuments, fetchEmployees, fetchTeamRoles, fetchTeams, fetchDocumentSections, getSuggestedQuestions } from '../services/adminApi';
 import { getCourses, getCourseDetails } from '../services/trainingApi';
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const adminKeys = {
-  documents:  ()    => ['admin', 'documents'],
-  employees:  ()    => ['admin', 'employees'],
-  teams:      ()    => ['admin', 'teams'],
-  teamRoles:  ()    => ['admin', 'team-roles'],
-  courses:    ()    => ['admin', 'courses'],
-  course:     (id)  => ['admin', 'course', id],
+  documents:         ()         => ['admin', 'documents'],
+  documentSections:  (docId)    => ['admin', 'document-sections', docId],
+  suggestedQuestions:(docId)    => ['admin', 'suggested-questions', docId],
+  employees:         ()         => ['admin', 'employees'],
+  teams:             ()         => ['admin', 'teams'],
+  teamRoles:         ()         => ['admin', 'team-roles'],
+  courses:           ()         => ['admin', 'courses'],
+  course:            (id)       => ['admin', 'course', id],
 };
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -118,6 +120,37 @@ export const useAdminCourse = (courseId) =>
     staleTime: 2 * 60_000,
   });
 
+/**
+ * Document sections with chunk previews + page numbers.
+ * Only fetches when a docId is provided. Stale after 10 min — sections don't change after processing.
+ */
+export const useDocumentSections = (docId) =>
+  useQuery({
+    queryKey: adminKeys.documentSections(docId),
+    queryFn: async () => {
+      const res = await fetchDocumentSections(docId);
+      if (!res.success) throw new Error(res.message || 'Failed to fetch sections');
+      return res.data?.sections || [];
+    },
+    enabled: !!docId,
+    staleTime: 10 * 60_000,
+  });
+
+/**
+ * Suggested questions for a document.
+ * Stale after 5 min. Invalidated after generate/save mutations.
+ */
+export const useDocumentSuggestedQuestions = (docId) =>
+  useQuery({
+    queryKey: adminKeys.suggestedQuestions(docId),
+    queryFn: async () => {
+      const res = await getSuggestedQuestions(docId);
+      return res?.data?.questions || [];
+    },
+    enabled: !!docId,
+    staleTime: 5 * 60_000,
+  });
+
 // ─── Invalidation helpers (call these after mutations) ────────────────────────
 
 /**
@@ -133,6 +166,8 @@ export const useAdminInvalidations = () => {
   const qc = useQueryClient();
   return {
     invalidateDocuments:        ()         => qc.invalidateQueries({ queryKey: adminKeys.documents() }),
+    invalidateDocumentSections: (docId)    => qc.invalidateQueries({ queryKey: adminKeys.documentSections(docId) }),
+    invalidateSuggestedQuestions:(docId)   => qc.invalidateQueries({ queryKey: adminKeys.suggestedQuestions(docId) }),
     invalidateEmployees:        ()         => qc.invalidateQueries({ queryKey: adminKeys.employees() }),
     invalidateTeams:            ()         => qc.invalidateQueries({ queryKey: adminKeys.teams() }),
     // Convenience: teams and employees share membership data — invalidate both together

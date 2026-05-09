@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Users, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import { useAdmin } from '../../hooks/useAdmin';
@@ -244,23 +244,28 @@ const EmployeeList = () => {
 
                         {/* Expanded */}
                         {isExpanded && (
-                          <div className="px-6 py-4 border-t border-gray-100" style={{ background: '#faf6ef' }}>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Team Assignments</p>
+                          <div className="border-t border-gray-100" style={{ background: '#faf6ef' }}>
                             {employee.teams.length === 0 ? (
-                              <p className="text-xs text-gray-400">Not assigned to any team.</p>
+                              <div className="px-6 py-4">
+                                <span className="text-xs text-gray-400">Not assigned to any team yet.</span>
+                              </div>
                             ) : (
-                              <div className="space-y-2">
+                              <div>
                                 {employee.teams.map((team, idx) => (
                                   <div
                                     key={`${employee.id}-${team.team_id}-${idx}`}
-                                    className="flex items-center gap-3 bg-white rounded-xl border border-gray-100 px-4 py-3"
+                                    className="flex items-center justify-between px-6 py-3"
+                                    style={{ borderBottom: idx < employee.teams.length - 1 ? '1px solid #f0ebe3' : 'none' }}
                                   >
-                                    {/* Team name pill */}
-                                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-full whitespace-nowrap">
-                                      {team.team_name}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#c2a882', minWidth: 20 }}>
+                                        {String(idx + 1).padStart(2, '0')}
+                                      </span>
+                                      <span className="text-sm font-medium" style={{ color: '#1a1209' }}>
+                                        {team.team_name}
+                                      </span>
+                                    </div>
 
-                                    {/* Role pill / dropdown */}
                                     {editingRole === `${employee.id}-${team.team_id}` ? (
                                       <RoleDropdown
                                         value={team.team_role}
@@ -271,10 +276,17 @@ const EmployeeList = () => {
                                     ) : (
                                       <button
                                         onClick={e => { e.stopPropagation(); setEditingRole(`${employee.id}-${team.team_id}`); }}
-                                        className="text-xs font-medium border border-gray-200 px-3 py-1.5 rounded-full transition-colors hover:border-[#f7953f] hover:text-[#f7953f]"
-                                        style={{ color: '#1a1209' }}
+                                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
+                                        style={{
+                                          background: 'rgba(247,149,63,0.10)',
+                                          color: '#c2620a',
+                                          border: '1px solid rgba(247,149,63,0.25)',
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(247,149,63,0.20)'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'rgba(247,149,63,0.10)'}
                                       >
                                         {team.team_role}
+                                        <ChevronDown size={11} />
                                       </button>
                                     )}
                                   </div>

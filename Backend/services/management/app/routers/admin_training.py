@@ -116,6 +116,25 @@ def activate_course_route(
         return make_response(False, "Failed to activate course", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
 
 
+@router.get("/courses/{course_id}/enrollment-stats", status_code=status.HTTP_200_OK)
+def get_course_enrollment_stats(
+    course_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """Return enrollment counts for the delete confirmation dialog."""
+    from shared.models.course_enrollment import CourseEnrollment
+    enrollments = db.query(CourseEnrollment).filter(CourseEnrollment.course_id == course_id).all()
+    total = len(enrollments)
+    completed = sum(1 for e in enrollments if e.completed_at is not None)
+    in_progress = total - completed
+    return make_response(True, "OK", data={
+        "total": total,
+        "completed": completed,
+        "in_progress": in_progress,
+    })
+
+
 @router.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
 def delete_course_route(
     course_id: int,

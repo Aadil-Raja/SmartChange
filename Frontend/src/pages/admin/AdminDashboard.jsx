@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import AdminSidebar from '../../components/ui/AdminSidebar';
 import { useAdmin } from '../../hooks/useAdmin';
-import { useAdminDocuments, useAdminInvalidations } from '../../hooks/useAdminQueries';
-import { fetchProcessingJobs, fetchDocumentSections } from '../../services/adminApi';
+import { useAdminDocuments, useAdminInvalidations, useDocumentSections } from '../../hooks/useAdminQueries';
+import { fetchProcessingJobs } from '../../services/adminApi';
 import SuggestedQuestionsPanel from '../../components/ui/SuggestedQuestionsPanel';
 
 const C = {
@@ -89,8 +89,6 @@ const AdminDashboard = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showSectionsModal, setShowSectionsModal] = useState(false);
-  const [sections, setSections] = useState([]);
-  const [loadingSections, setLoadingSections] = useState(false);
   const [processingDocs, setProcessingDocs] = useState(new Set());
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [auditJobs, setAuditJobs] = useState([]);
@@ -99,6 +97,9 @@ const AdminDashboard = () => {
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   const [auditStatusFilter, setAuditStatusFilter] = useState('all');
   const [sqDocId, setSqDocId] = useState(null); // doc ID with suggested questions panel open
+
+  // Depends on selectedDoc state — must come after useState declarations
+  const { data: sections = [], isLoading: loadingSections } = useDocumentSections(selectedDoc?.id);
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -148,15 +149,9 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleOpenSections = async (doc) => {
+  const handleOpenSections = (doc) => {
     setSelectedDoc(doc);
-    setLoadingSections(true);
     setShowSectionsModal(true);
-    try {
-      const r = await fetchDocumentSections(doc.id);
-      setSections(r.success ? (r.data.sections || []) : []);
-    } catch { setSections([]); }
-    finally { setLoadingSections(false); }
   };
 
   const handleOpenAuditLog = async () => {
@@ -705,7 +700,7 @@ const AdminDashboard = () => {
                   </p>
                 )}
               </div>
-              <button onClick={() => { setShowSectionsModal(false); setSections([]); setSelectedDoc(null); }}
+              <button onClick={() => { setShowSectionsModal(false); setSelectedDoc(null); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted }}>
                 <X size={20} />
               </button>
@@ -722,84 +717,69 @@ const AdminDashboard = () => {
                   <p style={{ color: C.muted, fontSize: 12, marginTop: 4 }}>Sections are created during processing.</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {/* Summary pill */}
-                  <div style={{ background: C.cream, borderRadius: 10, padding: '8px 14px', marginBottom: 12 }}
-                    className="flex items-center justify-between">
-                    <span style={{ color: C.muted, fontSize: 12 }}>Total sections</span>
-                    <span style={{ color: C.ink, fontWeight: 700, fontSize: 14 }}>{sections.length}</span>
+                <div>
+                  {/* Stats bar */}
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <span style={{ color: C.muted, fontSize: 12 }}>{sections.length} sections found</span>
                   </div>
 
-                  {sections.map((sec, i) => (
-                    <div key={sec.id}
-                      style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', background: C.card }}>
-
-                      {/* Section header */}
-                      <div style={{ background: C.cream, padding: '10px 14px' }}
-                        className="flex items-start gap-3">
-                        <div style={{
-                          width: 26, height: 26, borderRadius: 8, background: C.orange,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                        }}>
-                          <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p style={{ color: C.ink, fontWeight: 700, fontSize: 13 }} className="truncate">
+                  {/* Section list */}
+                  <div style={{ border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', background: C.card }}>
+                  {sections.map((sec, i) => {
+                    const pageLabel = sec.start_page != null
+                      ? (sec.start_page === sec.end_page || sec.end_page == null)
+                        ? `p. ${sec.start_page}`
+                        : `pp. ${sec.start_page}–${sec.end_page}`
+                      : null;
+                    const isLast = i === sections.length - 1;
+                    return (
+                      <div key={sec.id} style={{ borderBottom: isLast ? 'none' : `1px solid ${C.border}` }}>
+                        {/* Header row */}
+                        <div className="flex items-center gap-3 px-4 py-3">
+                          <span style={{
+                            width: 22, height: 22, borderRadius: 6, background: C.orange, flexShrink: 0,
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            color: '#fff', fontSize: 10, fontWeight: 700,
+                          }}>{i + 1}</span>
+                          <p style={{ color: C.ink, fontWeight: 600, fontSize: 13, flex: 1, minWidth: 0 }} className="truncate">
                             {sec.section_title}
                           </p>
-                          <p style={{ color: C.muted, fontSize: 11, marginTop: 2 }}>
-                            {sec.chunk_count} {sec.chunk_count === 1 ? 'chunk' : 'chunks'}
-                          </p>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {pageLabel && (
+                              <span style={{
+                                background: 'rgba(0,173,239,0.10)', color: C.blue,
+                                borderRadius: 50, padding: '2px 9px', fontSize: 10, fontWeight: 600,
+                              }}>
+                                {pageLabel}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Text previews */}
-                      <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {/* Preview */}
                         {sec.single_chunk ? (
-                          /* Single chunk — just show one preview */
-                          <div style={{
-                            background: 'rgba(245,130,32,0.06)', border: '1px solid rgba(245,130,32,0.18)',
-                            borderRadius: 10, padding: '8px 12px',
+                          <p style={{
+                            color: C.muted, fontSize: 12, lineHeight: 1.65,
+                            padding: '0 16px 12px 49px',
                           }}>
-                            <p style={{ color: C.orange, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
-                              ↳ Single chunk
+                            {sec.start_preview || '—'}
+                          </p>
+                        ) : (
+                          <div style={{ padding: '0 16px 12px 49px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.65 }}>
+                              <span style={{ color: C.orange, fontWeight: 600, fontSize: 10, marginRight: 6, textTransform: 'uppercase' }}>Start</span>
+                              {sec.start_preview || '—'}
                             </p>
-                            <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
-                              {sec.start_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
+                            <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.65 }}>
+                              <span style={{ color: C.green, fontWeight: 600, fontSize: 10, marginRight: 6, textTransform: 'uppercase' }}>End</span>
+                              {sec.end_preview || '—'}
                             </p>
                           </div>
-                        ) : (
-                          <>
-                            {/* Start preview */}
-                            <div style={{
-                              background: 'rgba(0,173,239,0.06)', border: '1px solid rgba(0,173,239,0.18)',
-                              borderRadius: 10, padding: '8px 12px',
-                            }}>
-                              <p style={{ color: C.blue, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
-                                ↳ Opening
-                              </p>
-                              <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
-                                {sec.start_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
-                              </p>
-                            </div>
-
-                            {/* End preview */}
-                            <div style={{
-                              background: 'rgba(120,190,32,0.06)', border: '1px solid rgba(120,190,32,0.18)',
-                              borderRadius: 10, padding: '8px 12px',
-                            }}>
-                              <p style={{ color: C.green, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 5 }}>
-                                ↳ Closing
-                              </p>
-                              <p style={{ color: C.ink, fontSize: 12, lineHeight: 1.55 }}>
-                                {sec.end_preview || <span style={{ color: C.muted, fontStyle: 'italic' }}>No preview available</span>}
-                              </p>
-                            </div>
-                          </>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  </div>
                 </div>
               )}
             </div>

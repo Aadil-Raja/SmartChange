@@ -260,6 +260,52 @@ def get_course_progress_route(
         return make_response(False, "Could not fetch course progress", status_code=500, error=str(e))
 
 
+@router.post("/courses/{course_id}/complete", status_code=status.HTTP_200_OK)
+def mark_course_complete_route(
+    course_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+):
+    """
+    Manually mark a course as completed for the current user.
+    Only succeeds if all content items and published quizzes are actually done.
+    Returns 409 if requirements are not met.
+    """
+    from app.repositories.course_enrollment_repo import get_enrollment, mark_course_completed
+    from app.repositories import courseContent_repo as content_repo
+    from app.repositories import progress_repo as prog_repo
+    from shared.repos.course_quiz_repo import get_course_quizzes_by_course
+    from shared.models.course_quiz import QuizStatus
+    from shared.repos.quiz_attempt_repo import get_user_quiz_attempts
+
+    try:
+        enrollment = get_enrollment(db, user_id=user.id, course_id=course_id)
+        if not enrollment:
+            return make_response(False, "Not enrolled in this course", status_code=403)
+        if enrollment.completed_at:
+            return make_response(True, "Course already completed", data={"already_completed": True})
+
+        items = content_repo.list_items_for_course(db, course_id=course_id)
+        content_ids = [i.id for i in items]
+        if content_ids:
+            rows = prog_repo.list_for_user_and_content_ids(db, user_id=user.id, content_ids=content_ids)
+            done_ids = {r.content_id for r in rows if r.completed_at is not None or (r.progress or 0) >= 100.0}
+            if not set(content_ids).issubset(done_ids):
+                incomplete = len(set(content_ids) - done_ids)
+                return make_response(False, f"{incomplete} content item(s) not yet completed", status_code=409)
+
+        quizzes = get_course_quizzes_by_course(db, course_id, QuizStatus.PUBLISHED)
+        for quiz in quizzes:
+            attempts = get_user_quiz_attempts(db, user.id, quiz.id)
+            if not any(a.passed for a in attempts):
+                return make_response(False, "Not all quizzes have been passed", status_code=409)
+
+        mark_course_completed(db, user_id=user.id, course_id=course_id)
+        return make_response(True, "Course marked as completed", data={"completed": True})
+    except Exception as e:
+        return make_response(False, "Could not mark course as completed", status_code=500, error=str(e))
+
+
 @router.get("/courses/{course_id}/progress/items", status_code=status.HTTP_200_OK)
 def get_course_items_progress_route(
     course_id: int,
