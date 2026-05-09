@@ -165,7 +165,7 @@ export const ChatbotProvider = ({ children }) => {
   };
 
   // Send message
-  const sendMessage = async (messageText, chatHeadId = null, title = null) => {
+  const sendMessage = async (messageText, chatHeadId = null, title = null, reranker = "fast") => {
     if (!selectedDocumentIds || selectedDocumentIds.length === 0) {
       setError("Please select at least one document first");
       return { success: false, message: "No document selected" };
@@ -215,6 +215,7 @@ export const ChatbotProvider = ({ children }) => {
         active_doc_ids: selectedDocumentIds,
         chathead_id: chatHeadId,
         title: title,
+        reranker: reranker,
       });
       console.log("Send message response:", res);
 

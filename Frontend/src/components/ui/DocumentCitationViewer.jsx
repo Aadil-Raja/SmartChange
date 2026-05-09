@@ -45,8 +45,20 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
           const normalizedSnippet = normalize(snippet);
           if (normalizedSnippet.length < 10) continue; // Skip very short snippets
           
+          // Exact containment
           if (normalizedSnippet.includes(normalizedStr) || normalizedStr.includes(normalizedSnippet)) {
             return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
+          }
+
+          // Fuzzy match: PDF spans can have extra content inserted mid-text (e.g. " - 1" inside parens).
+          // Strip everything inside parentheses and compare the base text.
+          const stripParens = (s) => s.replace(/\s*\([^)]*\)/g, "").trim();
+          const baseSnippet = stripParens(normalizedSnippet);
+          const baseStr = stripParens(normalizedStr);
+          if (baseSnippet.length >= 10 && baseStr.length >= 10) {
+            if (baseSnippet.includes(baseStr) || baseStr.includes(baseSnippet)) {
+              return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
+            }
           }
         }
         

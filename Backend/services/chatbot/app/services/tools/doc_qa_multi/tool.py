@@ -468,9 +468,11 @@ def _fallback_to_single_doc(
         # ✅ Get tokens from tracker (includes decomposer tokens already added)
         if request_id:
             tracked_tokens = get_tokens(request_id)
-            result["tokens_input"] = tracked_tokens['input']
-            result["tokens_output"] = tracked_tokens['output']
-            result["request_id"] = request_id  # ✅ Keep for belt-and-suspenders
+            # Only use tracker values if they're non-zero; otherwise keep what invoke_llm already set
+            if tracked_tokens['input'] > 0 or tracked_tokens['output'] > 0:
+                result["tokens_input"] = tracked_tokens['input']
+                result["tokens_output"] = tracked_tokens['output']
+            result["request_id"] = request_id
             
             # ✅ NEW: Store metadata in thread-local registry
             import threading
@@ -480,8 +482,8 @@ def _fallback_to_single_doc(
             from app.services.agent_service_v2 import _store_tool_metadata
             _store_tool_metadata(
                 request_id=request_id,
-                tokens_input=tracked_tokens['input'],
-                tokens_output=tracked_tokens['output'],
+                tokens_input=result["tokens_input"],
+                tokens_output=result["tokens_output"],
                 call_type=result.get("call_type", "doc_qa"),
                 citations=result.get("citations", []),
                 has_contradiction=result.get("has_contradiction", False)
@@ -493,9 +495,9 @@ def _fallback_to_single_doc(
             print(f"\n{'='*80}", file=sys.stderr)
             print(f"✅ SINGLE-DOC FALLBACK COMPLETE", file=sys.stderr)
             print(f"{'='*80}", file=sys.stderr)
-            print(f"TOTAL INPUT:        {tracked_tokens['input']:>6} tokens (from tracker)", file=sys.stderr)
-            print(f"TOTAL OUTPUT:       {tracked_tokens['output']:>6} tokens (from tracker)", file=sys.stderr)
-            print(f"GRAND TOTAL:        {tracked_tokens['input'] + tracked_tokens['output']:>6} tokens", file=sys.stderr)
+            print(f"TOTAL INPUT:        {result['tokens_input']:>6} tokens", file=sys.stderr)
+            print(f"TOTAL OUTPUT:       {result['tokens_output']:>6} tokens", file=sys.stderr)
+            print(f"GRAND TOTAL:        {result['tokens_input'] + result['tokens_output']:>6} tokens", file=sys.stderr)
             print(f"Request ID:         {request_id}", file=sys.stderr)
             print(f"{'='*80}\n", file=sys.stderr)
             

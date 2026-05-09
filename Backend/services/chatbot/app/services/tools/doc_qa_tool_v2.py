@@ -94,6 +94,15 @@ def make_doc_qa_tool_v2(chunk_db, document_ids: List[int]):
                                   f"chunk_index={c.get('chunk_index')} | "
                                   f"preview={c['text'][:80].replace(chr(10), ' ')}...",
                                   file=sys.stderr)
+                except RuntimeError as e:
+                    if "EMBEDDING_RATE_LIMIT" in str(e):
+                        return json.dumps({
+                            "answer": "The chatbot is temporarily unavailable due to high demand. Please try again in a moment.",
+                            "has_contradiction": False,
+                            "citations": []
+                        })
+                    debug_log(f"[TOOL V2] Error for doc {doc_id}: {e}", "TOOL")
+                    continue
                 except Exception as e:
                     debug_log(f"[TOOL V2] Error for doc {doc_id}: {e}", "TOOL")
                     continue

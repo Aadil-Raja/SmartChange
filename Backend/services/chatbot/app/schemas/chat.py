@@ -13,10 +13,11 @@ class ChatTurnIn(BaseModel):
     - Single document: active_doc_ids=[123]
     - Multiple documents: active_doc_ids=[123, 456, 789]
     """
-    message: str = Field(..., min_length=1, description="User's message text")
+    message: str = Field(..., min_length=1, max_length=2000, description="User's message text")
     active_doc_ids: List[int] = Field(..., min_items=1, description="List of document IDs (can be single [123] or multiple [123, 456, 789])")
     chathead_id: Optional[int] = Field(default=None, ge=1, description="Existing chathead to continue")
     title: Optional[str] = Field(default=None, description="Optional title (used only when creating a new chat)")
+    reranker: Optional[str] = Field(default="fast", description="Reranker model to use: 'fast' or 'deep'")
     
     @field_validator('active_doc_ids')
     @classmethod

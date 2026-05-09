@@ -61,7 +61,8 @@ def respond_turn_v2(
     chathead_id: int | None,
     active_doc_ids: List[int],
     message: str,
-    title: str | None = None
+    title: str | None = None,
+    reranker: str = "fast",
 ) -> dict:
     """
     V2 respond turn - returns {chathead_id, answer, has_contradiction, citations}.
@@ -121,9 +122,6 @@ def respond_turn_v2(
         from app.models.chathead import ChatHead
         
         cid = ensure_chathead(db, user_id=user_id, chathead_id=chathead_id, title=title)
-        
-        # Fetch the chathead object to access use_deep_reranker
-        chathead_obj = db.query(ChatHead).filter(ChatHead.id == cid).first()
 
         # Initialize logger for this chathead
         try:
@@ -173,7 +171,7 @@ def respond_turn_v2(
         print(f"[CHAT] Loaded {len(doc_histories)} doc histories and {len(section_names_map)} section maps in parallel", file=sys.stderr)
 
         # Run v2 agent FIRST to get validated doc IDs
-        agent = DocumentAgentV2(db, management_db, chathead_obj)  # Pass chathead
+        agent = DocumentAgentV2(db, management_db, reranker=reranker)
         out = agent.get_response(
             active_doc_ids=active_doc_ids,
             user_message=message,
@@ -191,19 +189,6 @@ def respond_turn_v2(
         from shared.llm.utils import count_tokens
         msg_tokens = count_tokens(message)
         tokens_input = msg_tokens + tool_tokens_input
-        
-        # ✅ DETAILED TOKEN BREAKDOWN
-        print(f"\n{'='*80}", file=sys.stderr)
-        print(f"📊 TOKEN USAGE BREAKDOWN", file=sys.stderr)
-        print(f"{'='*80}", file=sys.stderr)
-        print(f"User Message Tokens:     {msg_tokens:>6} tokens", file=sys.stderr)
-        print(f"Tool Input Tokens:       {tool_tokens_input:>6} tokens (retrieval + LLM prompts)", file=sys.stderr)
-        print(f"Tool Output Tokens:      {tool_tokens_output:>6} tokens (LLM responses)", file=sys.stderr)
-        print(f"{'-'*80}", file=sys.stderr)
-        print(f"TOTAL INPUT:             {tokens_input:>6} tokens", file=sys.stderr)
-        print(f"TOTAL OUTPUT:            {tool_tokens_output:>6} tokens", file=sys.stderr)
-        print(f"GRAND TOTAL:             {tokens_input + tool_tokens_output:>6} tokens", file=sys.stderr)
-        print(f"{'='*80}\n", file=sys.stderr)
 
         # Determine call_type — every tool sets this explicitly, trust it completely.
         # Only fall back to "doc_qa" if the agent somehow lost the field.
@@ -223,6 +208,20 @@ def respond_turn_v2(
         else:
             # direct or doc_qa — use tool output if present, else count answer text
             tokens_output = tool_tokens_output if tool_tokens_output > 0 else count_tokens(answer_text)
+
+        # ✅ DETAILED TOKEN BREAKDOWN
+        print(f"\n{'='*80}", file=sys.stderr)
+        print(f"📊 TOKEN USAGE BREAKDOWN", file=sys.stderr)
+        print(f"{'='*80}", file=sys.stderr)
+        print(f"User Message Tokens:     {msg_tokens:>6} tokens", file=sys.stderr)
+        print(f"Tool Input Tokens:       {tool_tokens_input:>6} tokens (retrieval + LLM prompts)", file=sys.stderr)
+        print(f"Tool Output Tokens:      {tool_tokens_output:>6} tokens (LLM responses)", file=sys.stderr)
+        print(f"Answer Tokens (final):   {tokens_output:>6} tokens", file=sys.stderr)
+        print(f"{'-'*80}", file=sys.stderr)
+        print(f"TOTAL INPUT:             {tokens_input:>6} tokens", file=sys.stderr)
+        print(f"TOTAL OUTPUT:            {tokens_output:>6} tokens", file=sys.stderr)
+        print(f"GRAND TOTAL:             {tokens_input + tokens_output:>6} tokens", file=sys.stderr)
+        print(f"{'='*80}\n", file=sys.stderr)
 
         # Log usage — always log if tokens were consumed, quota row optional
         try:

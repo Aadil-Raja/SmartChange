@@ -9,6 +9,7 @@ const ChatTextArea = forwardRef(({
   disabled = false,
   className = "",
   maxRows = 5,
+  maxLength = 2000,
   ...props
 }, ref) => {
   // Auto-resize functionality
@@ -32,6 +33,7 @@ const ChatTextArea = forwardRef(({
         onKeyDown={onKeyDown}
         placeholder={placeholder}
         disabled={disabled}
+        maxLength={maxLength}
         rows={1}
         className={`
           w-full px-4 py-3 pr-12

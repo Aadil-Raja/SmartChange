@@ -73,6 +73,25 @@ def _get_reranker_model(model_name: str):
         if hf_token:
             os.environ['HUGGING_FACE_HUB_TOKEN'] = hf_token
         
+        # Never re-download if already cached — fail fast if missing in production
+        import os as _os
+        if _os.environ.get("TRANSFORMERS_OFFLINE", "0") != "1":
+            # Use config setting or auto-detect from cache
+            if settings.transformers_offline:
+                _os.environ["TRANSFORMERS_OFFLINE"] = "1"
+                _os.environ["HF_DATASETS_OFFLINE"] = "1"
+                debug_log("Offline mode enabled via config", "HYBRID")
+            else:
+                # Auto-detect: if model already cached locally, enable offline mode
+                import pathlib
+                hf_home = _os.environ.get("HF_HOME", str(pathlib.Path.home() / ".cache" / "huggingface"))
+                model_cache_name = "models--" + model_name.replace("/", "--")
+                model_cache_path = pathlib.Path(hf_home) / "hub" / model_cache_name
+                if model_cache_path.exists():
+                    _os.environ["TRANSFORMERS_OFFLINE"] = "1"
+                    _os.environ["HF_DATASETS_OFFLINE"] = "1"
+                    debug_log(f"Model cache found at {model_cache_path}, enabling offline mode", "HYBRID")
+
         debug_log(f"Loading reranker model: {model_name} (first time only)", "HYBRID")
         
         # Use different loading methods for different models
@@ -152,33 +171,56 @@ def fetch_and_score_with_numpy(
     # Get document metadata
     docs = {d.id: d for d in documents_repo.get_by_ids(chunk_db, document_ids)}
     
-    # Step 1: Generate query embedding
     settings = get_settings()
-    print(f"[NUMPY] Starting embedding generation...", file=sys.stderr)
-    
-    t0 = time.time()
-    q_emb = embed_single(
-        text=question,
-        api_key=settings.google_api_key,
-        embedding_model=settings.embedding_model,
-        task_type="retrieval_query",
-        output_dimensionality=3072
-    )
-    embed_time = time.time() - t0
-    print(f"[NUMPY] ⏱️  Embedding: {embed_time:.2f}s", file=sys.stderr)
-    debug_log(f"Embedding generation took {embed_time:.2f}s", "HYBRID")
-    
-    try:
-        # Step 2: Fetch ONLY chunks from active documents (filter-first!)
-        t1 = time.time()
-        
-        chunks = chunk_db.query(DocumentChunk).filter(
+    print(f"[NUMPY] Starting embedding + fetch in parallel...", file=sys.stderr)
+
+    # ── PARALLEL: embedding API call and DB fetch run at the same time ──────
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    q_emb = None
+    chunks = None
+    embed_time = None
+    fetch_time = None
+
+    def _embed():
+        t = time.time()
+        try:
+            result = embed_single(
+                text=question,
+                api_key=settings.google_api_key,
+                embedding_model=settings.embedding_model,
+                task_type="retrieval_query",
+                output_dimensionality=3072
+            )
+        except Exception as emb_err:
+            err_str = str(emb_err)
+            if "429" in err_str or "Resource exhausted" in err_str or "ResourceExhausted" in err_str:
+                raise RuntimeError("EMBEDDING_RATE_LIMIT") from emb_err
+            raise
+        return result, time.time() - t
+
+    def _fetch():
+        t = time.time()
+        result = chunk_db.query(DocumentChunk).filter(
             DocumentChunk.document_id.in_(document_ids)
         ).all()
-        
-        fetch_time = time.time() - t1
-        print(f"[NUMPY] ⏱️  Fetch query: {fetch_time:.2f}s ({len(chunks)} chunks)", file=sys.stderr)
-        debug_log(f"Fetched {len(chunks)} chunks in {fetch_time:.2f}s", "HYBRID")
+        return result, time.time() - t
+
+    t0 = time.time()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_embed = executor.submit(_embed)
+        future_fetch = executor.submit(_fetch)
+        q_emb, embed_time = future_embed.result()
+        chunks, fetch_time = future_fetch.result()
+    parallel_time = time.time() - t0
+
+    print(f"[NUMPY] ⏱️  Embedding: {embed_time:.2f}s", file=sys.stderr)
+    print(f"[NUMPY] ⏱️  Fetch query: {fetch_time:.2f}s ({len(chunks)} chunks)", file=sys.stderr)
+    print(f"[NUMPY] ⏱️  Parallel wall time: {parallel_time:.2f}s (saved ~{embed_time + fetch_time - parallel_time:.2f}s)", file=sys.stderr)
+    debug_log(f"Parallel embed+fetch took {parallel_time:.2f}s (embed={embed_time:.2f}s, fetch={fetch_time:.2f}s)", "HYBRID")
+    # ────────────────────────────────────────────────────────────────────────
+
+    try:
         
         if not chunks:
             debug_log(f"No chunks found for documents {document_ids}", "HYBRID")

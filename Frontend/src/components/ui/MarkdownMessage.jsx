@@ -42,10 +42,10 @@ const MarkdownMessage = ({ content, isUser = false }) => {
 
         // Lists
         ul: ({ node, ...props }) => (
-          <ul className={`list-disc list-inside mb-3 space-y-0.5 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
+          <ul className={`list-disc pl-5 mb-3 space-y-1 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
         ),
         ol: ({ node, ...props }) => (
-          <ol className={`list-decimal list-inside mb-3 space-y-1 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
+          <ol className={`list-decimal pl-5 mb-3 space-y-1 ${isUser ? 'text-white' : 'text-gray-800'}`} {...props} />
         ),
         li: ({ node, children, ...props }) => {
           // Filter out empty li nodes (caused by remarkGfm misparse of "- 1. text" mixed lists)
@@ -54,14 +54,8 @@ const MarkdownMessage = ({ content, isUser = false }) => {
             : children !== null && children !== undefined && children !== '';
           if (!hasContent) return null;
           return (
-            <li className="ml-2 leading-snug" {...props}>
-              {Array.isArray(children)
-                ? children.map((child, i) =>
-                    child?.type === 'p'
-                      ? <span key={i}>{child.props.children}</span>
-                      : child
-                  )
-                : children}
+            <li className="leading-snug" {...props}>
+              {children}
             </li>
           );
         },

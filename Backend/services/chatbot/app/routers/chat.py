@@ -171,6 +171,7 @@ def respond_route_v2(
             active_doc_ids=payload.active_doc_ids,
             message=payload.message.strip(),
             title=payload.title,
+            reranker=payload.reranker or "fast",
         )
         
         # Check if should trigger summarization

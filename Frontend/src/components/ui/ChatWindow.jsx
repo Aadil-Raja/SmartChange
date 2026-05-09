@@ -26,13 +26,18 @@ const getCitationGroups = (message) => {
         const pageValue = ref?.page;
         const pageNumber = pageValue === null || pageValue === undefined ? null : Number(pageValue);
         if (!Number.isFinite(pageNumber) || pageNumber <= 0) return;
+        const newSnippets = Array.isArray(ref?.snippets) ? ref.snippets : [];
         if (!pageMap.has(pageNumber)) {
           pageMap.set(pageNumber, {
             key: `${citationDoc?.doc_id || docIndex}-${pageNumber}`,
             page: pageNumber,
             section: ref?.section ?? null,
-            snippets: Array.isArray(ref?.snippets) ? ref.snippets : [],  // ✅ Array of snippets
+            snippets: newSnippets,
           });
+        } else {
+          // Merge snippets from multiple references on the same page
+          const existing = pageMap.get(pageNumber);
+          existing.snippets = [...new Set([...existing.snippets, ...newSnippets])];
         }
       });
       

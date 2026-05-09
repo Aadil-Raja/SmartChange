@@ -14,7 +14,21 @@ async def lifespan(app: FastAPI):
     # Startup
     init_db()
 
-
+    # Pre-warm reranker models in background so first request isn't slow
+    import threading
+    def _prewarm():
+        try:
+            from app.services.tools.hybrid_retrieval import _get_reranker_model
+            from app.core.config import get_settings
+            s = get_settings()
+            print("[STARTUP] Pre-warming fast reranker...", flush=True)
+            _get_reranker_model(s.reranker_model_fast)
+            print("[STARTUP] Pre-warming deep reranker...", flush=True)
+            _get_reranker_model(s.reranker_model_deep)
+            print("[STARTUP] Both reranker models ready.", flush=True)
+        except Exception as e:
+            print(f"[STARTUP] Reranker pre-warm failed: {e}", flush=True)
+    threading.Thread(target=_prewarm, daemon=True).start()
 
     yield
     # Shutdown (nothing to clean up for now)

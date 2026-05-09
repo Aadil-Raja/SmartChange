@@ -401,10 +401,10 @@ REMEMBER: You are a tool-calling agent. You MUST call a tool for every user ques
 
 
 class DocumentAgentV2:
-    def __init__(self, db: Session, management_db: Session, chathead=None):
+    def __init__(self, db: Session, management_db: Session, reranker: str = "fast"):
         self.db = db
         self.management_db = management_db
-        self.chathead = chathead  # NEW: Store chathead to access use_deep_reranker
+        self.use_deep_reranker = (reranker == "deep")
 
         provider = settings.llm_provider.lower()
         model = settings.llm_model
@@ -506,8 +506,8 @@ class DocumentAgentV2:
         # Format doc histories for system prompt
         chat_history_string = self._format_doc_histories_for_prompt(doc_histories, active_doc_ids)
 
-        # Get use_deep_reranker flag from chathead
-        use_deep_reranker = self.chathead.use_deep_reranker if self.chathead else False
+        # Get use_deep_reranker flag from request payload
+        use_deep_reranker = self.use_deep_reranker
         
         print(f"[AGENT V2] Using deep reranker: {use_deep_reranker}", file=sys.stderr)
 

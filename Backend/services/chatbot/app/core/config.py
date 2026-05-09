@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Hugging Face token for faster model downloads and private models
     hugging_face_token: str | None = None
 
+    # Offline mode — set to True after models are downloaded to skip network checks
+    transformers_offline: bool = False
+
     # ============================================================================
     # HYBRID RETRIEVAL CONFIGURATION
     # ============================================================================
