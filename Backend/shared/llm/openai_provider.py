@@ -71,19 +71,39 @@ class OpenAIProvider(BaseLLMProvider):
             Generated text
         """
         try:
-            # Merge default config with kwargs
             params = {
                 "model": self.model,
                 "messages": [{"role": "user", "content": prompt}],
                 **self.config,
                 **kwargs
             }
-            
-            # Generate completion
             response = self.client.chat.completions.create(**params)
-            
             return response.choices[0].message.content
             
+        except Exception as e:
+            logger.error(f"OpenAI generation failed: {e}")
+            raise
+
+    def generate_with_usage(self, prompt: str, **kwargs) -> tuple[str, dict]:
+        """
+        Generate text and return (content, usage_dict).
+        usage_dict keys: prompt_tokens, completion_tokens, total_tokens
+        """
+        try:
+            params = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                **self.config,
+                **kwargs
+            }
+            response = self.client.chat.completions.create(**params)
+            content = response.choices[0].message.content
+            usage = {
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0,
+            }
+            return content, usage
         except Exception as e:
             logger.error(f"OpenAI generation failed: {e}")
             raise

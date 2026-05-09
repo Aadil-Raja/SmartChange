@@ -9,7 +9,7 @@ import random
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
 
-from shared.models import DocumentChunk, Quiz, QuizStatus, QuizGenerationStage
+from shared.models import DocumentChunk, Quiz, QuizStatus, QuizGenerationStage, QuizQuestion, QuizOption
 from shared.repos import quiz_repo, quiz_audit_repo
 from shared.llm import get_llm_provider, BaseLLMProvider
 
@@ -19,6 +19,15 @@ MAX_QUESTIONS = 20
 MIN_CHUNKS = 5
 MAX_TOKENS = 50000
 MAX_PROMPT_CHARS = 500  # guardrail for prompt-based generation
+
+def _get_quiz_limits():
+    """Load quiz limits from config (env-driven)."""
+    try:
+        from app.core.config import get_settings
+        s = get_settings()
+        return s.quiz_max_tokens, s.quiz_min_chunks, s.quiz_max_questions
+    except Exception:
+        return MAX_TOKENS, MIN_CHUNKS, MAX_QUESTIONS
 
 
 class QuizPipelineConfig:
@@ -43,8 +52,8 @@ class QuizPipelineResult:
 # Shared helpers
 # ─────────────────────────────────────────────
 
-def _call_llm(context: str, num_questions: int, config: QuizPipelineConfig) -> Optional[List[Dict]]:
-    """Call LLM and return validated list of question dicts."""
+def _call_llm(context: str, num_questions: int, config: QuizPipelineConfig) -> Optional[tuple[List[Dict], int]]:
+    """Call LLM and return (validated question list, output_tokens) or None on failure."""
     try:
         llm = get_llm_provider(provider=config.llm_provider, api_key=config.api_key, model=config.llm_model)
         prompt = f"""Generate {num_questions} multiple choice questions based on the content below.
@@ -71,7 +80,26 @@ REQUIRED JSON FORMAT:
   ]
 }}"""
 
-        data = llm.generate_json(prompt)
+        extra = {}
+        if "gpt-4" in config.llm_model or "gpt-3.5" in config.llm_model:
+            extra["response_format"] = {"type": "json_object"}
+
+        output_tokens = 0
+        if hasattr(llm, "generate_with_usage"):
+            raw_text, usage = llm.generate_with_usage(prompt, **extra)
+            output_tokens = usage.get("completion_tokens", 0)
+        else:
+            raw_text = llm.generate(prompt, **extra)
+
+        # Strip markdown fences if present
+        cleaned = raw_text.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            cleaned = "\n".join(lines[1:])
+            if cleaned.rstrip().endswith("```"):
+                cleaned = cleaned.rstrip()[:-3]
+
+        data = json.loads(cleaned)
 
         if isinstance(data, dict):
             if "questions" in data:
@@ -98,8 +126,8 @@ REQUIRED JSON FORMAT:
                 continue
             valid.append(q)
 
-        logger.info(f"Validated {len(valid)} questions from LLM")
-        return valid
+        logger.info(f"Validated {len(valid)} questions | output_tokens={output_tokens}")
+        return valid, output_tokens
 
     except Exception as e:
         logger.error(f"LLM call failed: {e}", exc_info=True)
@@ -107,25 +135,40 @@ REQUIRED JSON FORMAT:
 
 
 def _save_questions(db: Session, quiz_id: int, questions_data: List[Dict]) -> int:
-    """Persist generated questions to DB, return count saved."""
-    saved = 0
-    for i, q in enumerate(questions_data):
-        try:
-            options = [{"option_text": opt, "option_order": idx} for idx, opt in enumerate(q["options"])]
-            quiz_repo.create_question_with_options(
-                db,
+    """Persist generated questions to DB in a single transaction. Returns count saved."""
+    try:
+        # Build all question objects
+        questions = [
+            QuizQuestion(
                 quiz_id=quiz_id,
                 question_text=q["question"],
                 correct_answer_index=q["correct_index"],
                 question_order=i,
-                options=options,
                 explanation=q.get("explanation"),
             )
-            saved += 1
-        except Exception as e:
-            logger.error(f"Failed to save question {i}: {e}")
-    logger.info(f"Saved {saved} questions to DB")
-    return saved
+            for i, q in enumerate(questions_data)
+        ]
+        db.add_all(questions)
+        db.flush()  # assigns PKs without committing
+
+        # Build all option objects using the flushed question IDs
+        options = []
+        for question, q in zip(questions, questions_data):
+            for idx, opt_text in enumerate(q["options"]):
+                options.append(QuizOption(
+                    question_id=question.id,
+                    option_text=opt_text,
+                    option_order=idx,
+                ))
+        db.add_all(options)
+        db.commit()
+
+        logger.info(f"Bulk saved {len(questions)} questions and {len(options)} options in 1 commit")
+        return len(questions)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Bulk save failed: {e}")
+        return 0
 
 
 # ─────────────────────────────────────────────
@@ -135,16 +178,17 @@ def _save_questions(db: Session, quiz_id: int, questions_data: List[Dict]) -> in
 def select_chunks_for_quiz(chunks: List[DocumentChunk], num_questions: int) -> List[DocumentChunk]:
     if not chunks:
         return []
+    max_tokens, min_chunks, max_questions = _get_quiz_limits()
     total = len(chunks)
-    ratio = num_questions / MAX_QUESTIONS
-    to_use = max(min(MIN_CHUNKS, total), int(total * ratio))
+    ratio = num_questions / max_questions
+    to_use = max(min(min_chunks, total), int(total * ratio))
     to_use = min(to_use, total)
 
     selected = list(chunks) if to_use >= total else random.sample(chunks, to_use)
 
     total_tokens = sum(c.token_count or 0 for c in selected)
-    min_keep = min(MIN_CHUNKS, total, 1)
-    while total_tokens > MAX_TOKENS and len(selected) > min_keep:
+    min_keep = min(min_chunks, total, 1)
+    while total_tokens > max_tokens and len(selected) > min_keep:
         removed = selected.pop(random.randint(0, len(selected) - 1))
         total_tokens -= (removed.token_count or 0)
 
@@ -194,6 +238,8 @@ def run_quiz_pipeline(
             quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
             return QuizPipelineResult(False, quiz_id, error="LLM returned no questions")
 
+        questions_data, output_tokens = questions_data
+
         if job_id:
             quiz_audit_repo.update_stage(db, job_id, QuizGenerationStage.SAVING_QUESTIONS)
 
@@ -208,10 +254,12 @@ def run_quiz_pipeline(
                 questions_created=created,
                 total_chunks=len(chunks),
                 chunks_selected=len(selected),
-                total_tokens=total_tokens,
+                total_tokens=total_tokens + output_tokens,  # chunk tokens + output tokens
                 generation_metadata={
                     "chunks_ratio": f"{(len(selected)/len(chunks)*100):.1f}%",
                     "context_length": len(context),
+                    "chunk_tokens": total_tokens,
+                    "output_tokens": output_tokens,
                     "questions_requested": num_questions,
                     "questions_generated": len(questions_data),
                 },
@@ -220,7 +268,9 @@ def run_quiz_pipeline(
         return QuizPipelineResult(True, quiz_id, questions_created=created, metadata={
             "total_chunks": len(chunks),
             "chunks_selected": len(selected),
-            "total_tokens": total_tokens,
+            "chunk_tokens": total_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens + output_tokens,
             "questions_requested": num_questions,
             "questions_generated": len(questions_data),
         })
@@ -272,6 +322,7 @@ def run_prompt_quiz_pipeline(
             quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
             return QuizPipelineResult(False, quiz_id, error="LLM returned no questions")
 
+        questions_data, output_tokens = questions_data
         created = _save_questions(db, quiz_id, questions_data)
         quiz_repo.update_quiz_status(db, quiz_id, QuizStatus.DRAFT)
         quiz_repo.update_total_questions(db, quiz_id)
@@ -279,6 +330,7 @@ def run_prompt_quiz_pipeline(
         logger.info(f"Prompt quiz pipeline done. Created {created} questions.")
         return QuizPipelineResult(True, quiz_id, questions_created=created, metadata={
             "prompt_length": len(prompt_text),
+            "output_tokens": output_tokens,
             "questions_requested": num_questions,
             "questions_generated": len(questions_data),
         })

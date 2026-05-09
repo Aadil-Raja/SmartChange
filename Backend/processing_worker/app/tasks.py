@@ -484,5 +484,3 @@ def check_deadline_notifications(user_id: int) -> dict:
 
     finally:
         db.close()
-
-process_document(49)

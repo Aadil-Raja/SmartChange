@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     chunk_size: int = 512  # tokens
     chunk_overlap: int = 50  # tokens
     min_chunk_size: int = 100  # tokens
+
+    # Quiz generation limits
+    quiz_max_tokens: int = 10000       # max total chunk tokens sent to LLM
+    quiz_min_chunks: int = 5           # minimum chunks to select
+    quiz_max_questions: int = 20       # denominator for chunk ratio calculation
     
     # Embeddings
     embedding_batch_size: int = 100
