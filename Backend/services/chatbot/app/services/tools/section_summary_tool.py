@@ -239,7 +239,7 @@ def make_generate_summary_tool(management_db, chunk_db, document_ids: List[int])
                     return (
                         f"Section '{section_title}' was not found.\n\n"
                         f"Available sections:\n" +
-                        "\n".join([f"{i+1}. {t}" for i, t in enumerate(section_titles)])
+                        "\n".join([f"- {t}" for t in section_titles])
                     )
 
             debug_log(f"Found section: {section.section_title} ({section.chunk_count} chunks)", "TOOL")

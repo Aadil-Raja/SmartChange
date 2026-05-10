@@ -216,11 +216,38 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
             section = next((s for s in all_sections if s.section_title.lower() == section_title.lower()), None)
 
             if not section:
-                matches = get_close_matches(section_title, section_titles, n=1, cutoff=0.6)
-                if matches:
-                    section = next(s for s in all_sections if s.section_title == matches[0])
-                else:
-                    available = "\n".join([f"{i+1}. {t}" for i, t in enumerate(section_titles)])
+                import re
+                query = section_title.lower().strip()
+
+                # Strip leading number prefixes like "1.", "7.", "12." for cleaner matching
+                def strip_prefix(t):
+                    return re.sub(r'^\d+\.\s*', '', t).strip()
+
+                stripped_titles = [strip_prefix(t) for t in section_titles]
+
+                # Layer 1: substring match on stripped titles (handles "villans" → finds "Villains and Conflicts")
+                # Check if query is a substring of any title or any title word starts with query
+                section = next(
+                    (all_sections[i] for i, t in enumerate(stripped_titles)
+                     if query in t.lower() or t.lower().startswith(query)),
+                    None
+                )
+
+                # Layer 2: fuzzy match on stripped titles (handles typos like "villans" vs "Villains")
+                if not section:
+                    matches = get_close_matches(query, [t.lower() for t in stripped_titles], n=1, cutoff=0.5)
+                    if matches:
+                        idx = [t.lower() for t in stripped_titles].index(matches[0])
+                        section = all_sections[idx]
+
+                # Layer 3: fuzzy match on full titles as last resort
+                if not section:
+                    matches = get_close_matches(section_title, section_titles, n=1, cutoff=0.5)
+                    if matches:
+                        section = next(s for s in all_sections if s.section_title == matches[0])
+
+                if not section:
+                    available = "\n".join([f"- {t}" for t in section_titles])
                     return json.dumps({
                         "answer": f"Section '{section_title}' not found.\n\nAvailable sections:\n{available}",
                         "has_contradiction": False,

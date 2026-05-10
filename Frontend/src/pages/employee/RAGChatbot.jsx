@@ -900,7 +900,7 @@ const RAGChatbot = () => {
     selectedDocumentIds, error, success, clearMessages,
     fetchChatHeads, fetchDocuments, fetchConfig, startNewChat,
     activeChatId, messages, availableDocuments, loading,
-    sendMessage, fetchMessages, selectDocument, clearDocumentSelection,
+    sendMessage, fetchMessages, selectDocument, clearDocumentSelection, quota,
   } = useChatbot();
 
   const [showDocSel, setShowDocSel] = useState(false);
@@ -983,15 +983,17 @@ const RAGChatbot = () => {
 
   const handleNewChat = () => { startNewChat(); setShowDocSel(true); };
 
+  const isExhausted = quota?.token_limit != null && quota?.tokens_remaining === 0;
+
   const handleSend = useCallback(async () => {
-    if (!inputMsg.trim() || !hasDocs || sending) return;
+    if (!inputMsg.trim() || !hasDocs || sending || isExhausted) return;
     const text = inputMsg.trim();
     const wasNewChat = !activeChatId;
     setInputMsg(""); setSending(true);
     await sendMessage(text, activeChatId, wasNewChat ? text.substring(0, 50) : null, rerankerModel);
     setSending(false);
     setTimeout(() => inputRef.current?.focus(), 80);
-  }, [inputMsg, hasDocs, sending, activeChatId, sendMessage]);
+  }, [inputMsg, hasDocs, sending, activeChatId, sendMessage, isExhausted]);
 
   const handleKey = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } };
 
@@ -1838,8 +1840,8 @@ const RAGChatbot = () => {
                           onKeyDown={handleKey}
                           onFocus={() => setInputFocused(true)}
                           onBlur={() => setInputFocused(false)}
-                          placeholder={hasDocs ? "Ask anything about your sources…" : "Load sources to start chatting"}
-                          disabled={sending || !hasDocs}
+                          placeholder={isExhausted ? "Token limit reached. Contact your admin to reset." : hasDocs ? "Ask anything about your sources…" : "Load sources to start chatting"}
+                          disabled={sending || !hasDocs || isExhausted}
                           maxRows={5}
                           className="rag-textarea"
                         />
@@ -1850,9 +1852,9 @@ const RAGChatbot = () => {
                             <span><span className="kbd">⇧ ↵</span> newline</span>
                           </div>
                           <button
-                            className={`send-btn ${inputMsg.trim() && !sending && hasDocs ? "ready" : "idle"}`}
+                            className={`send-btn ${inputMsg.trim() && !sending && hasDocs && !isExhausted ? "ready" : "idle"}`}
                             onClick={handleSend}
-                            disabled={!inputMsg.trim() || sending || !hasDocs}>
+                            disabled={!inputMsg.trim() || sending || !hasDocs || isExhausted}>
                             {sending ? (
                               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "spin 0.85s linear infinite" }}>
                                 <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.8" strokeDasharray="13 28" strokeLinecap="round"/>
