@@ -142,6 +142,26 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
 
     settings = get_settings()
 
+    # Pre-fetch section titles only for single-doc context so the LLM can resolve
+    # partial/abbreviated names (e.g. "Q9" → "Q9. Is your software FBR compliant?")
+    # For multi-doc, the tool itself rejects the call anyway, so no point injecting.
+    try:
+        if len(document_ids) == 1:
+            _all_sections_for_desc = management_db.query(DocumentSection).filter(
+                DocumentSection.document_id == document_ids[0]
+            ).order_by(DocumentSection.start_chunk_index).all()
+            _section_titles_list = "\n".join(f"  - {s.section_title}" for s in _all_sections_for_desc)
+            _sections_hint = (
+                f"\n\nAvailable section titles (use these EXACT names for section_title):\n"
+                f"{_section_titles_list}\n\n"
+                f"If the user writes a partial name or abbreviation (e.g. 'Q9', 'day 3', 'intro'), "
+                f"match it to the closest title above and pass that exact full title."
+            )
+        else:
+            _sections_hint = ""
+    except Exception:
+        _sections_hint = ""
+
     @tool(args_schema=GenerateSummaryToolArgs, return_direct=True)
     def generate_section_summary_tool(section_title: str, user_intent: str = "summary", selection_type: str = "one") -> str:
         """Generate or retrieve a summary for a specific document section.
@@ -384,5 +404,9 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
                 "citations": [],
                 "call_type": "section_summary",
             })
+
+    # Append section titles to the tool description so the LLM can resolve partial names
+    if _sections_hint:
+        generate_section_summary_tool.description = generate_section_summary_tool.description + _sections_hint
 
     return generate_section_summary_tool
