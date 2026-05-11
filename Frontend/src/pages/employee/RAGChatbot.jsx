@@ -221,9 +221,11 @@ const getCitationGroups = (message) => {
       if (!pageMap.has(pg)) {
         pageMap.set(pg, { 
           key: `${doc?.doc_id || i}-${pg}`, 
-          page: pg, 
+          page: pg,
+          endPage: r?.end_page ?? null,
           section: r?.section ?? null, 
-          snippets: newSnippets
+          snippets: newSnippets,
+          isSectionSummary: r?.is_section_summary ?? false,
         });
       } else {
         // Merge snippets from multiple references on the same page
@@ -507,6 +509,11 @@ const DocSelector = ({ onClose }) => {
   const { availableDocuments, selectedDocumentIds, loading, selectDocument, fetchDocuments, maxActiveDocs } = useChatbot();
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(selectedDocumentIds || []);
+
+  // Keep local sel in sync when selectedDocumentIds changes externally (e.g. X pill click)
+  useEffect(() => {
+    setSel(selectedDocumentIds || []);
+  }, [selectedDocumentIds]);
   const [limitWarning, setLimitWarning] = useState(false);
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef(null);

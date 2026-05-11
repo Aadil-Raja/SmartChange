@@ -25,33 +25,48 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
 
   const url = citation?.cloudinaryUrl || null;
   const snippets = Array.isArray(citation?.snippets) ? citation.snippets : [];
+  // Section summary mode: only when backend explicitly marks it as a section summary
+  const isSectionSummary = citation?.isSectionSummary === true;
+  const startPage = citation?.page || 1;
+  // Cap section highlight to 10 pages max to avoid highlighting the entire document
+  const MAX_HIGHLIGHT_PAGES = 10;
+  const rawEndPage = citation?.endPage ?? startPage;
+  const endPage = isSectionSummary
+    ? Math.min(rawEndPage, startPage + MAX_HIGHLIGHT_PAGES - 1)
+    : startPage;
 
   // Normalize text for comparison
   const normalize = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
 
-  // Highlight matching text — only on the cited page
+  // Highlight matching text
+  // For section summaries: highlight ALL text on every page in the section range (capped at 10 pages)
+  // For regular citations (multi-doc QA): highlight only matching snippets on the cited page — unchanged
   const customTextRenderer = useCallback(
     ({ str, pageNumber: renderedPage }) => {
+      // Section summary path — only when isSectionSummary is explicitly true
+      if (isSectionSummary) {
+        if (renderedPage >= startPage && renderedPage <= endPage) {
+          return `<mark style="background:rgba(255,215,0,0.3);color:inherit;border-radius:2px;padding:0 1px;">${str}</mark>`;
+        }
+        return str;
+      }
+
+      // Regular citation (multi-doc QA) — snippet-based highlighting, unchanged
       if (renderedPage !== citation?.page) return str;
       if (snippets.length === 0) return str;
       
       try {
         const normalizedStr = normalize(str);
-        // Require span to be at least 4 chars to avoid highlighting single words/noise
         if (normalizedStr.length < 4) return str;
         
-        // Check if this text matches any of the snippets
         for (const snippet of snippets) {
           const normalizedSnippet = normalize(snippet);
-          if (normalizedSnippet.length < 10) continue; // Skip very short snippets
+          if (normalizedSnippet.length < 10) continue;
           
-          // Exact containment
           if (normalizedSnippet.includes(normalizedStr) || normalizedStr.includes(normalizedSnippet)) {
             return `<mark style="background:rgba(255,215,0,0.75);color:#1a1209;border-radius:2px;padding:0 1px;">${str}</mark>`;
           }
 
-          // Fuzzy match: PDF spans can have extra content inserted mid-text (e.g. " - 1" inside parens).
-          // Strip everything inside parentheses and compare the base text.
           const stripParens = (s) => s.replace(/\s*\([^)]*\)/g, "").trim();
           const baseSnippet = stripParens(normalizedSnippet);
           const baseStr = stripParens(normalizedStr);
@@ -67,7 +82,7 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
         return str;
       }
     },
-    [snippets, citation?.page]
+    [snippets, citation?.page, isSectionSummary, startPage, endPage]
   );
 
   if (!citation) return null;
@@ -95,8 +110,11 @@ const DocumentCitationViewer = ({ citation, onClose }) => {
               </h3>
             </div>
             <p className="text-[11px]" style={{ color: "rgba(250,246,239,0.55)" }}>
-              {citation.page ? `Page ${citation.page}` : "Referenced section"}
+              {isSectionSummary && rawEndPage !== startPage
+                ? `Pages ${startPage}–${endPage}${rawEndPage > endPage ? ` (showing first ${MAX_HIGHLIGHT_PAGES})` : ""}`
+                : citation.page ? `Page ${citation.page}` : "Referenced section"}
               {citation.section ? ` · ${citation.section}` : ""}
+              {isSectionSummary && <span style={{ color: "rgba(245,130,32,0.8)", marginLeft: 6 }}>· Section highlighted</span>}
             </p>
             {snippets.length > 0 && (
               <p className="text-[11px] mt-1 line-clamp-2 max-w-2xl" style={{ color: "rgba(250,246,239,0.45)" }}>

@@ -31,8 +31,10 @@ const getCitationGroups = (message) => {
           pageMap.set(pageNumber, {
             key: `${citationDoc?.doc_id || docIndex}-${pageNumber}`,
             page: pageNumber,
+            endPage: ref?.end_page ?? null,
             section: ref?.section ?? null,
             snippets: newSnippets,
+            isSectionSummary: ref?.is_section_summary ?? false,
           });
         } else {
           // Merge snippets from multiple references on the same page
@@ -96,7 +98,6 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
   const [activeCitation, setActiveCitation] = useState(null);
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
   const [rerankerModel, setRerankerModel] = useState("fast"); // "fast" or "deep"
-  const [updatingReranker, setUpdatingReranker] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -106,53 +107,16 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [currentMessages]);
 
-  // Fetch reranker setting when chat changes
+  // Reset reranker to fast only when user explicitly starts a new chat (null activeChatId)
+  // Do NOT reset when activeChatId changes to a real ID — that happens mid-send on first message
   useEffect(() => {
-    if (!activeChatId) return;
-    
-    const fetchRerankerSetting = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8001/chat/chatheads/${activeChatId}/reranker`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setRerankerModel(data.data.use_deep_reranker ? "deep" : "fast");
-        }
-      } catch (error) {
-        console.error("Failed to fetch reranker setting:", error);
-      }
-    };
-    
-    fetchRerankerSetting();
+    if (activeChatId === null) {
+      setRerankerModel("fast");
+    }
   }, [activeChatId]);
 
-  const handleRerankerChange = async (newModel) => {
-    if (!activeChatId || updatingReranker) return;
-    
-    setUpdatingReranker(true);
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8001/chat/chatheads/${activeChatId}/reranker`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ use_deep_reranker: newModel === "deep" })
-      });
-      
-      if (response.ok) {
-        setRerankerModel(newModel);
-      } else {
-        console.error("Failed to update reranker setting");
-      }
-    } catch (error) {
-      console.error("Error updating reranker:", error);
-    } finally {
-      setUpdatingReranker(false);
-    }
+  const handleRerankerChange = (newModel) => {
+    setRerankerModel(newModel);
   };
   useEffect(() => { if (activeChatId && !messages[activeChatId]) fetchMessages(activeChatId); }, [activeChatId]);
   useEffect(() => {
@@ -461,13 +425,13 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
             <select
               value={rerankerModel}
               onChange={(e) => handleRerankerChange(e.target.value)}
-              disabled={updatingReranker}
+              disabled={false}
               className="text-[11px] px-2 py-1 rounded-lg border outline-none transition-all"
               style={{
                 background: "#FAF6EF",
                 border: "1px solid #e0d8ce",
                 color: "#1A1209",
-                cursor: updatingReranker ? "wait" : "pointer"
+                cursor: "pointer"
               }}
             >
               <option value="fast">⚡ Fast (ms-marco)</option>

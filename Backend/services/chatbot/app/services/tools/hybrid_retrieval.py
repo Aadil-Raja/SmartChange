@@ -36,6 +36,7 @@ if os.getenv('HF_TOKEN'):
     os.environ['HUGGING_FACE_HUB_TOKEN'] = os.getenv('HF_TOKEN')
 
 
+
 # ============================================================================
 # GLOBAL STAGE DATA (for buffered logging)
 # ============================================================================
@@ -52,6 +53,8 @@ from app.core.config import get_settings
 
 # Global model cache (loaded once per model, reused for all requests)
 _reranker_models = {}
+import threading
+_reranker_lock = threading.Lock()  # Prevents concurrent access to non-thread-safe tokenizers (e.g. jina-v3)
 
 
 def _get_reranker_model(model_name: str):
@@ -781,8 +784,10 @@ def rerank_chunks(
         # Get reranking scores based on model type
         if model_type == 'jina':
             # Jina v3 uses .rerank() method with query + list of documents
+            # Lock required: jina's Rust tokenizer is not thread-safe for concurrent calls
             texts = [item["chunk"]["text"] for item in all_chunks_with_metadata]
-            results = reranker.rerank(question, texts)
+            with _reranker_lock:
+                results = reranker.rerank(question, texts)
             # Results is a list of dicts with 'relevance_score' and 'index'
             rerank_scores = [r['relevance_score'] for r in results]
         else:
@@ -1086,4 +1091,25 @@ def retrieve_chunks_for_all_docs_hybrid(
         use_reranking=True,
         reranker_model=reranker_model,
         keywords=keywords  # Pass keywords
+    )
+
+
+def hybrid_retrieve_chunks_no_rerank(
+    chunk_db: Session,
+    document_ids: List[int],
+    question: str,
+    keywords: List[str] = None,
+) -> Dict[int, Dict]:
+    """
+    Fetch and score chunks WITHOUT reranking.
+    Used by the 3-phase pipeline in retriever.py so that chunk fetching can run
+    in parallel across sub-questions while reranking stays sequential.
+    """
+    return hybrid_retrieve_chunks(
+        chunk_db=chunk_db,
+        document_ids=document_ids,
+        question=question,
+        use_reranking=False,
+        reranker_model=None,
+        keywords=keywords,
     )

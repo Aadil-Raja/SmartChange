@@ -223,7 +223,14 @@ Instructions:
    "Note: Documents contradict each other — [Doc A] states X while [Doc B] states Y."
    Then recommend the safer option if possible.
 7. If no contradiction, answer normally.
-8. Do not make up information not in the content.
+8. ANTI-HALLUCINATION (STRICTLY FOLLOW):
+   - ONLY use information explicitly present in the retrieved content above.
+   - Do NOT add facts, details, or explanations from your own training knowledge.
+   - If the retrieved content does not contain enough information to answer the question, respond with:
+     "The provided documents do not contain information about this topic."
+   - If the content is only partially relevant, answer only the covered parts and state:
+     "The documents do not contain information about [missing part]."
+   - Do NOT infer, assume, or extrapolate beyond what is stated in the chunks.
 9. CITATIONS: For each chunk you use, provide:
    - chunk_id: The CHUNK_ID (e.g., "DOC5_CHUNK2")
    - highlight_snippets: 2-3 EXACT text phrases (5-20 words each) from that chunk that directly answer the question

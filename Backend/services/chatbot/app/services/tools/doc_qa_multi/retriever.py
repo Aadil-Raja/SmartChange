@@ -16,45 +16,34 @@ def retrieve_and_answer_subquestions(
     chunk_db,
     doc_histories: dict,
     settings,
-    all_active_doc_ids: List[int],  # NEW: All active documents for fallback retrieval
-    use_deep_reranker: bool = False,  # NEW: Flag for deep reranker
-    request_id: str = None  # ✅ NEW: Request ID for token tracking
+    all_active_doc_ids: List[int],
+    use_deep_reranker: bool = False,
+    request_id: str = None
 ) -> List[SubAnswer]:
     """
-    Process multiple sub-questions in parallel using existing retrieval logic.
-    
-    Args:
-        sub_questions: List of SubQuestion objects to process
-        chunk_db: Database session for chunk retrieval
-        doc_histories: Document histories for context
-        settings: Application settings
-        all_active_doc_ids: All active document IDs (for fallback retrieval)
-        
-    Returns:
-        List of SubAnswer objects (one per sub-question)
+    Process multiple sub-questions in parallel.
+    Thread safety for jina-v3 reranker is handled by the lock in hybrid_retrieval.rerank_chunks.
     """
     debug_log(f"Processing {len(sub_questions)} sub-questions in parallel", "RETRIEVER")
-    
-    # Process in parallel using ThreadPoolExecutor
+
     with ThreadPoolExecutor(max_workers=len(sub_questions)) as executor:
         futures = [
             executor.submit(
                 _process_sub_question,
                 sub_q,
-                idx + 1,  # 1-indexed
+                idx + 1,
                 len(sub_questions),
                 chunk_db,
                 doc_histories,
                 settings,
                 all_active_doc_ids,
-                use_deep_reranker,  # NEW: Pass deep flag
-                request_id  # ✅ Pass request_id
+                use_deep_reranker,
+                request_id,
             )
             for idx, sub_q in enumerate(sub_questions)
         ]
-        
-        results = [future.result() for future in futures]
-    
+        results = [f.result() for f in futures]
+
     debug_log(f"Completed processing, {sum(1 for r in results if not r.failed)}/{len(results)} succeeded", "RETRIEVER")
     return results
 
@@ -561,7 +550,11 @@ def _process_sub_question(
         print(f"\n{'─'*80}", file=sys.stderr)
         print(f"📝 SUB-QUESTION {index}/{total} TOKEN USAGE", file=sys.stderr)
         print(f"{'─'*80}", file=sys.stderr)
-        print(f"Question: {sub_question.question[:60]}...", file=sys.stderr)
+        print(f"Question: {sub_question.question}", file=sys.stderr)
+        print(f"Chunks passed to LLM: {len(context_blocks)} context block(s) from docs: {passing_doc_ids}", file=sys.stderr)
+        # Print each passing chunk briefly
+        for cid, meta in chunk_map.items():
+            print(f"  [{cid}] doc={meta.get('doc_id')} page={meta.get('page')} sec='{str(meta.get('section',''))[:50]}'", file=sys.stderr)
         print(f"Input Tokens:   {result.get('tokens_input', sub_input_tokens):>6} tokens (chunks + prompt)", file=sys.stderr)
         print(f"Output Tokens:  {result.get('tokens_output', 0):>6} tokens (answer + citations)", file=sys.stderr)
         print(f"Total:          {result.get('tokens_input', sub_input_tokens) + result.get('tokens_output', 0):>6} tokens", file=sys.stderr)

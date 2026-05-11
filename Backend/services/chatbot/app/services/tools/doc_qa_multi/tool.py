@@ -91,12 +91,13 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
     def doc_qa_multi_tool(questions: List[str]) -> DocQAToolOutput:
         
         """
-        Answer questions about document content. Handles single and multi-part questions automatically.
+        Answer one or more questions about document content. Handles multi-document questions automatically.
         
         CRITICAL INSTRUCTIONS:
-        - ALWAYS pass the COMPLETE user question as a SINGLE string in a single-item list.
-        - NEVER break the question into multiple items — the tool handles decomposition internally.
-        - Call this tool EXACTLY ONCE per user message, no matter how many sub-questions exist.
+        - Collect ALL questions from the user's message into a SINGLE list and call this tool ONCE.
+        - NEVER call this tool multiple times — one call per user message, always.
+        - If the user asks 3 questions, pass all 3 in one list: questions=["Q1", "Q2", "Q3"]
+        - The tool handles retrieval and answering for all questions internally.
         
         EXAMPLES:
         
@@ -104,13 +105,12 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
         ✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's education background?"])
         
         User: "What are Aadil's projects and what are the PSL teams?"
-        ✅ CORRECT: doc_qa_multi_tool(questions=["What are Aadil's projects and what are the PSL teams?"])
-        ❌ WRONG: doc_qa_multi_tool(questions=["What are Aadil's projects?", "What are the PSL teams?"])
-        ❌ WRONG: Call the tool twice — once for each sub-question
+        ✅ CORRECT: doc_qa_multi_tool(questions=["What are Aadil's projects?", "What are the PSL teams?"])
+        ❌ WRONG: Call tool once with questions=["What are Aadil's projects?"], then call AGAIN with questions=["What are the PSL teams?"]
         
         User: "Tell me about Aadil's skills, the PSL format, and Harry Potter books"
-        ✅ CORRECT: doc_qa_multi_tool(questions=["Tell me about Aadil's skills, the PSL format, and Harry Potter books"])
-        ❌ WRONG: doc_qa_multi_tool(questions=["What are Aadil's skills?", "What is the PSL format?", "What are the Harry Potter books?"])
+        ✅ CORRECT: doc_qa_multi_tool(questions=["What are Aadil's skills?", "What is the PSL format?", "What are the Harry Potter books?"])
+        ❌ WRONG: Call the tool 3 separate times, once for each question
         
         After this tool returns, STOP. Do not call any other tool. Return the output as-is.
         
@@ -131,6 +131,7 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
                 debug_log(f"\n[MULTI-DOC TOOL] Processing {len(questions)} questions combined: '{question}'", "MULTI-DOC")
             
             debug_log(f"[MULTI-DOC TOOL] Active documents: {document_ids}", "MULTI-DOC")
+            debug_log(f"[MULTI-DOC TOOL] Reranker: {'🎯 Deep (jina-v3)' if use_deep_reranker else '⚡ Fast (ms-marco)'}", "MULTI-DOC")
             
             # ✅ NEW: Log user turn at the start
             try:
@@ -328,6 +329,7 @@ def _fallback_to_single_doc(
     """
     try:
         debug_log(f"[MULTI-DOC TOOL] Executing single-doc fallback", "MULTI-DOC")
+        debug_log(f"[MULTI-DOC TOOL] Reranker: {'🎯 Deep (jina-v3)' if use_deep_reranker else '⚡ Fast (ms-marco)'}", "MULTI-DOC")
         debug_log(f"[MULTI-DOC TOOL] Keywords for fallback: {keywords}", "MULTI-DOC")
         
         # Import and use hybrid retrieval for single-doc fallback

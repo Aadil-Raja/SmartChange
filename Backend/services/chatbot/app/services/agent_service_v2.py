@@ -233,21 +233,19 @@ The section selection context expires if the user clearly moves on to a new topi
 ## CRITICAL: PASS FULL QUESTIONS TO TOOLS
 
 When calling doc_qa_multi_tool:
-- ALWAYS pass the COMPLETE user question as-is in a SINGLE tool call
-- DO NOT break the question into parts yourself
-- DO NOT call the tool multiple times for one question
-- Even if the user asks multiple questions (e.g., "What is X and what is Y?"), pass the ENTIRE question as ONE string
-- The tool will automatically handle multi-part and multi-document questions internally
-- Let the tool decide if decomposition is needed
+- Collect ALL questions from the user's message into a SINGLE list and call the tool ONCE
+- DO NOT call the tool multiple times — one call per user message, always
+- If the user asks 3 questions, pass all 3 in one list: questions=["Q1?", "Q2?", "Q3?"]
+- The tool handles retrieval and answering for all questions internally
 
 Examples:
+✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's GPA?", "What are the PSL team names?"])
+✅ CORRECT: doc_qa_multi_tool(questions=["What are teams in PSL?", "Tell me about FYP?"])
 ✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's GPA and what are the PSL team names?"])
-✅ CORRECT: doc_qa_multi_tool(questions=["What are teams in PSL and tell me about FYP?"])
-❌ WRONG: Call doc_qa_multi_tool twice with questions=["What is Aadil's GPA?"] then questions=["What are PSL team names?"]
-❌ WRONG: Call doc_qa_multi_tool with questions=["What is Aadil's GPA?", "What are PSL team names?"]
+❌ WRONG: Call doc_qa_multi_tool with questions=["What is Aadil's GPA?"] then call it AGAIN with questions=["What are PSL team names?"]
 ❌ WRONG: Rewrite or simplify the user's question
 
-CRITICAL RULE: ONE user message = ONE tool call with ONE question string, no matter how many sub-questions it contains.
+CRITICAL RULE: ONE user message = ONE tool call. Put ALL questions in the list. Never call the tool more than once.
 
 ## QUERY ENRICHMENT — DO THIS BEFORE EVERY TOOL CALL
 
@@ -366,33 +364,45 @@ CRITICAL RULES FOR RE-EXPLANATION:
 
 ## TOOL SELECTION — READ THIS CAREFULLY
 
-### ALWAYS use generate_section_summary_tool when:
-- User names a SPECIFIC section title directly: "summarize Day 3", "summarize achievements", "summarize education", "tell me about Chapter 2"
-- ANY message with "summarize" or "summary" followed by a specific section name → use generate_section_summary_tool, NOT list_document_sections_tool
-- Multiple sections: "Day 1 and Day 7", "all days", "days 5 to 12", "all the sections", "all sections", "all of them", "everything" → use selection_type='many'
-- This also applies AFTER list_document_sections_tool has shown the section list and the user picks one
+## TOOL SELECTION — DECISION TREE (follow in order)
 
-### ALWAYS use list_document_sections_tool when the user asks about the ENTIRE document with NO specific section named:
-- "summarize the document", "summarize this", "give me an overview", "what is this document about", "what topics does this document cover"
-- "what sections", "table of contents", "list all sections"
-- Examples: "Can you summarize this document?", "Give me an overview of what's in this document", "What topics are covered?"
-- Do NOT use this when the user names a specific section — that goes to generate_section_summary_tool
+### STEP A — Does the message start with "summarize" or contain "summarize [something]"?
+IF YES:
+  - "summarize [specific section name]" → generate_section_summary_tool(section_title="[name]", selection_type='one')
+  - "summarize all", "summarize everything", "summarize all sections", "summarize all days" → generate_section_summary_tool(selection_type='many')
+  - "summarize the document", "summarize this document", "summarize this" (no section named) → list_document_sections_tool
+  - ANY other "summarize X" where X is a topic/section name → generate_section_summary_tool(section_title="X")
+  
+  Examples:
+  - "summarize psl champions by year" → generate_section_summary_tool(section_title="PSL Champions by Year")
+  - "summarize Day 3" → generate_section_summary_tool(section_title="Day 3")
+  - "summarize achievements" → generate_section_summary_tool(section_title="achievements")
+  - "summarize the document" → list_document_sections_tool
+  - "summarize all sections" → generate_section_summary_tool(selection_type='many')
+
+### STEP B — Does the message contain "all sections", "all of them", "all days", "everything"?
+IF YES → generate_section_summary_tool(selection_type='many')
+
+### STEP C — Is the user picking a section after the bot listed sections?
+(History shows list_document_sections_tool was just called)
+IF YES → generate_section_summary_tool with the section name(s) mentioned
+
+### STEP D — Is the user asking to list/see what sections exist?
+"what sections", "list sections", "table of contents", "what topics", "give me an overview", "what is this document about"
+IF YES → list_document_sections_tool
+
+### STEP E — Everything else (factual questions, who/what/how/why, details about people/events)
+→ doc_qa_multi_tool
 
 ### NEVER use list_document_sections_tool for:
-- "explain in easy words", "explain again", "tell me more", "elaborate", "in detail", "simplify", "can you explain"
+- "explain in easy words", "explain again", "tell me more", "elaborate", "in detail", "simplify"
 - These are re-explanation requests → Use doc_qa_multi_tool with enriched question
-- Follow-ups about a specific topic/entity from previous answer → Use doc_qa_multi_tool
 
 ### ALWAYS use doc_qa_multi_tool when:
 - User asks a specific factual question: "What is X?", "Who is Y?", "How does Z work?"
 - User asks for details about a named person, project, achievement, or event
-- User asks "does X include Y?", "what did X do at Y?"
 - User asks to re-explain, elaborate, or simplify a previous answer (with enrichment)
-- The question has a specific answer extractable from the document
-- User asks multiple questions in one message (the tool handles this automatically)
-- Examples: "What is the tournament format?", "Who are the notable players?", "How many teams participated?"
-- Examples: "What is Aadil's GPA and what are the PSL team names?" (pass as single question)
-- Examples: "explain in easy words" (after enriching with previous topic and details)
+- User asks multiple questions in one message
 
 ## CRITICAL INSTRUCTIONS:
 1. YOU MUST ALWAYS CALL A TOOL. NEVER answer directly without calling a tool.
@@ -413,7 +423,7 @@ CRITICAL: Output ONLY the JSON. No explanations, no formatting, no additional te
 - generate_section_summary_tool is FINAL. After calling it, STOP IMMEDIATELY.
 - NEVER chain tools. One tool call per turn. The tool output is complete and needs no enhancement.
 - If list_document_sections_tool returns "Multiple documents selected", return that message as-is. Do NOT try another tool.
-- CRITICAL: If user asks multiple questions in one message (e.g. "What are Aadil's projects and what are PSL teams?"), pass the ENTIRE question to doc_qa_multi_tool in ONE SINGLE call. The tool will handle decomposition internally. DO NOT call the tool multiple times.
+- CRITICAL: If user asks multiple questions in one message (e.g. "What are Aadil's projects and what are PSL teams?"), collect ALL questions into a single list and call doc_qa_multi_tool ONCE with questions=["Q1?", "Q2?"]. DO NOT call the tool once per question.
 - CRITICAL: If user asks for multiple sections (e.g. "Day 1 and Day 7", "all days", "days 5 to 12", "all the sections", "all of them", "everything"), call generate_section_summary_tool EXACTLY ONCE with selection_type='many'. NEVER call it multiple times.
 
 REMEMBER: You are a tool-calling agent. You MUST call a tool for every user question. Never answer directly. Always pass complete questions to tools.
@@ -529,7 +539,7 @@ class DocumentAgentV2:
         # Get use_deep_reranker flag from request payload
         use_deep_reranker = self.use_deep_reranker
         
-        print(f"[AGENT V2] Using deep reranker: {use_deep_reranker}", file=sys.stderr)
+        print(f"[AGENT V2] Using deep reranker: {use_deep_reranker} ({'🎯 Deep (jina-v3)' if use_deep_reranker else '⚡ Fast (ms-marco)'})", file=sys.stderr)
 
         tools = [
             make_doc_qa_multi_tool(self.management_db, active_doc_ids, doc_histories, section_names_map, use_deep_reranker),
@@ -621,6 +631,7 @@ class DocumentAgentV2:
         # Try to recover tool metadata (tokens, call_type) from intermediate_steps
         # when the LLM rewrites the tool output as plain text (losing the structured data)
         tool_metadata = {}
+        all_step_observations = []  # Collect ALL tool call observations for merging
         
         # ✅ DEBUG: Print all intermediate steps
         print(f"[AGENT] Checking {len(result.get('intermediate_steps', []))} intermediate_steps for tool_metadata", file=sys.stderr)
@@ -637,15 +648,53 @@ class DocumentAgentV2:
                     print(f"[AGENT] Step {idx}: parsed to dict, keys={list(obs.keys())}", file=sys.stderr)
                 except (json.JSONDecodeError, TypeError) as e:
                     print(f"[AGENT] Step {idx}: JSON parse failed: {e}", file=sys.stderr)
-                    pass
             elif isinstance(obs, dict):
                 print(f"[AGENT] Step {idx}: observation is dict, keys={list(obs.keys())}", file=sys.stderr)
             
-            # ✅ FIXED: Also check for retrieved_contexts to ensure it's always captured
             if isinstance(obs, dict) and (obs.get("call_type") or obs.get("tokens_input") or obs.get("retrieved_contexts")):
-                tool_metadata = obs
-                print(f"[AGENT] Recovered tool_metadata from intermediate_steps: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}, retrieved_contexts={len(obs.get('retrieved_contexts', []))} chunks", file=sys.stderr)
-                break
+                all_step_observations.append(obs)
+                if not tool_metadata:
+                    tool_metadata = obs  # Keep first for backward compat
+                print(f"[AGENT] Step {idx}: captured tool obs: tokens_input={obs.get('tokens_input')}, tokens_output={obs.get('tokens_output')}, call_type={obs.get('call_type')}", file=sys.stderr)
+        
+        # ✅ FALLBACK MERGER: If multiple tool calls happened, merge them now
+        # This handles the case where the LLM split the question and called the tool N times
+        if len(all_step_observations) > 1:
+            print(f"[AGENT] ⚠️  Detected {len(all_step_observations)} tool calls — merging into single response", file=sys.stderr)
+            merged_answers = []
+            all_citations = []
+            all_retrieved_contexts = []
+            has_any_contradiction = False
+            total_tokens_input = 0
+            total_tokens_output = 0
+            
+            for obs in all_step_observations:
+                ans = obs.get("answer", "")
+                if ans:
+                    merged_answers.append(str(ans))
+                existing_keys = {(c.get('doc_id'), c.get('page'), c.get('section')) for c in all_citations}
+                for citation in obs.get("citations", []):
+                    key = (citation.get('doc_id'), citation.get('page'), citation.get('section'))
+                    if key not in existing_keys:
+                        all_citations.append(citation)
+                        existing_keys.add(key)
+                all_retrieved_contexts.extend(obs.get("retrieved_contexts", []))
+                if obs.get("has_contradiction"):
+                    has_any_contradiction = True
+                total_tokens_input += obs.get("tokens_input", 0)
+                total_tokens_output += obs.get("tokens_output", 0)
+            
+            # Override raw_output with merged result so the JSON parse path picks it up
+            raw_output = {
+                "answer": "\n\n".join(a for a in merged_answers if a),
+                "citations": all_citations,
+                "retrieved_contexts": all_retrieved_contexts,
+                "has_contradiction": has_any_contradiction,
+                "tokens_input": total_tokens_input,
+                "tokens_output": total_tokens_output,
+                "call_type": "doc_qa",
+            }
+            print(f"[AGENT] Merged {len(all_step_observations)} tool calls: {len(all_citations)} citations, tokens={total_tokens_input}/{total_tokens_output}", file=sys.stderr)
         
         print(f"[AGENT] raw_output type={type(raw_output)}, tool_metadata={bool(tool_metadata)}", file=sys.stderr)
 
@@ -730,17 +779,28 @@ class DocumentAgentV2:
                 raw_answer = str(raw_answer)
 
             # ✅ ROBUST TOKEN RECOVERY: Priority chain
-            # 1. stored_meta (thread-local, written by tool before LLM sees anything) ← ALWAYS WINS
-            # 2. tool_metadata (from intermediate_steps, sometimes populated)
-            # 3. parsed (from raw_output, LLM-rewritten, unreliable for numeric fields)
+            # When multiple tool calls happened (agent split the question), use merged totals from parsed.
+            # stored_meta only has the LAST tool call's tokens in that case — don't use it.
+            # 1. parsed (merged totals) ← WINS when multiple tool calls detected
+            # 2. stored_meta (single tool call, written before LLM can corrupt it) ← WINS for single calls
+            # 3. tool_metadata (from intermediate_steps fallback)
             
-            if stored_meta:
-                # stored_meta is written by the tool BEFORE the LLM gets a chance to corrupt it
+            multi_call = len(all_step_observations) > 1
+            
+            if multi_call:
+                # Multiple tool calls — parsed already has correct merged totals
+                final_tokens_input = parsed.get("tokens_input") or 0
+                final_tokens_output = parsed.get("tokens_output") or 0
+                final_call_type = raw_call_type
+                has_contradiction = parsed.get("has_contradiction", False)
+                print(f"[AGENT] ✅ Using merged totals ({len(all_step_observations)} calls): input={final_tokens_input}, output={final_tokens_output}", file=sys.stderr)
+
+            elif stored_meta:
+                # Single tool call — stored_meta is most reliable
                 final_tokens_input = stored_meta["tokens_input"]
                 final_tokens_output = stored_meta["tokens_output"]
                 final_call_type = stored_meta.get("call_type") or raw_call_type
                 
-                # Also prefer stored citations/contradiction if LLM dropped them
                 if not flat_citations:
                     flat_citations = stored_meta.get("citations", [])
                 if not parsed.get("has_contradiction"):

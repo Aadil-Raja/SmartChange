@@ -272,22 +272,21 @@ def make_generate_summary_tool_v2(management_db, chunk_db, document_ids: List[in
                 DocumentChunk.chunk_index <= section.end_chunk_index
             ).order_by(DocumentChunk.chunk_index).all()
 
-            # Build citations from chunks
+            # Build a single citation covering the full section page range
             citations = []
-            seen_pages = set()
-            for c in chunks:
-                page = getattr(c, 'start_page_num', None)
-                key = (document_id, page, section.section_title)
-                if key not in seen_pages:
-                    seen_pages.add(key)
-                    citations.append({
-                        "doc_id": document_id,
-                        "doc_title": doc_title,
-                        "cloudinary_url": cloudinary_url,
-                        "page": page,
-                        "section": section.section_title,
-                        "snippet": c.text[:150].strip()
-                    })
+            if chunks:
+                start_page = getattr(chunks[0], 'start_page_num', None)
+                end_page = getattr(chunks[-1], 'end_page_num', None) or getattr(chunks[-1], 'start_page_num', start_page)
+                citations.append({
+                    "doc_id": document_id,
+                    "doc_title": doc_title,
+                    "cloudinary_url": cloudinary_url,
+                    "page": start_page,
+                    "end_page": end_page,
+                    "section": section.section_title,
+                    "is_section_summary": True,
+                    "snippet": chunks[0].text[:150].strip()
+                })
 
             if cache_ok:
                 answer = (

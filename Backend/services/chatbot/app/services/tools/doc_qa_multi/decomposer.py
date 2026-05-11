@@ -66,6 +66,7 @@ Examples of when to split:
 Instructions:
 - Only split when confident that different parts target different documents
 - A sub-question may still span multiple doc IDs if needed
+- **Maximum 3 sub-questions.** If the user asks more than 3 questions, pick the 3 most important/distinct ones.
 - **If confused or uncertain which document(s) contain the answer, include ALL relevant doc_ids** in that sub-question
 - **Multiple documents per sub-question is ENCOURAGED when uncertain** - the retrieval system will use cosine similarity to find the best chunks
 - Set confidence based on how clearly the split maps to distinct documents
@@ -145,6 +146,11 @@ Respond with:
             print(f"{'='*80}\n", file=sys.stderr)
             
             debug_log(f"Result: is_cross_doc={result.is_cross_doc}, confidence={result.confidence}, sub_questions={len(result.sub_questions)}", "DECOMPOSER")
+            
+            # Cap sub-questions to 3 max to avoid excessive parallel LLM calls
+            if len(result.sub_questions) > 3:
+                debug_log(f"Capping sub-questions from {len(result.sub_questions)} to 3", "DECOMPOSER")
+                result.sub_questions = result.sub_questions[:3]
             
             # ✅ Print extracted keywords for each sub-question
             for idx, sub_q in enumerate(result.sub_questions, 1):

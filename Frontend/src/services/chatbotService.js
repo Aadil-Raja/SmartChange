@@ -53,7 +53,8 @@ export const sendChatMessage = async (messageData) => {
     message: messageData.message,
     active_doc_ids: messageData.active_doc_ids,
     chathead_id: messageData.chathead_id || null,
-    title: messageData.title || null
+    title: messageData.title || null,
+    reranker: messageData.reranker || "fast"
   });
   
   console.log("✅ sendChatMessage response:", response.data);
