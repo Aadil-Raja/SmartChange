@@ -232,6 +232,10 @@ Instructions:
 8. ANTI-HALLUCINATION (STRICTLY FOLLOW):
    - ONLY use information explicitly present in the retrieved content above.
    - Do NOT add facts, details, or explanations from your own training knowledge.
+   - ENTITY MATCHING (CRITICAL): Before answering, verify that the retrieved chunks actually contain information about the SPECIFIC person, entity, or subject mentioned in the question.
+     - If the question asks about <Person X> but the chunks only contain information about <Person Y>, the chunks do NOT answer the question — respond with "The provided documents do not contain information about <Person X>."
+     - Do NOT substitute a different person/entity just because the topic (e.g. GPA, salary, skills) is similar.
+     - The retrieved content must explicitly mention the exact name/entity asked about.
    - If the retrieved content does not contain enough information to answer the question, respond with:
      "The provided documents do not contain information about this topic."
    - If the content is only partially relevant, answer only the covered parts and state:
