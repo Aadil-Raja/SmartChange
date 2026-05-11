@@ -91,14 +91,12 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
     def doc_qa_multi_tool(questions: List[str]) -> DocQAToolOutput:
         
         """
-        Answer one or more questions about document content.
+        Answer questions about document content. Handles single and multi-part questions automatically.
         
         CRITICAL INSTRUCTIONS:
-        - If user asks ONE question: pass it as a single-item list, e.g., ["What is Aadil's GPA?"]
-        - If user asks MULTIPLE questions: break them into separate list items, e.g., 
-          ["What is Aadil's GPA?", "What are PSL teams?", "Who wrote Harry Potter?"]
-        - Each question should be a complete, standalone question
-        - Call this tool ONLY ONCE per user message
+        - ALWAYS pass the COMPLETE user question as a SINGLE string in a single-item list.
+        - NEVER break the question into multiple items — the tool handles decomposition internally.
+        - Call this tool EXACTLY ONCE per user message, no matter how many sub-questions exist.
         
         EXAMPLES:
         
@@ -106,24 +104,13 @@ def make_doc_qa_multi_tool(chunk_db, document_ids: List[int], doc_histories: Dic
         ✅ CORRECT: doc_qa_multi_tool(questions=["What is Aadil's education background?"])
         
         User: "What are Aadil's projects and what are the PSL teams?"
-        ✅ CORRECT: doc_qa_multi_tool(questions=["What are Aadil's projects?", "What are the PSL teams?"])
-        ❌ WRONG: doc_qa_multi_tool(questions=["What are Aadil's projects and what are the PSL teams?"])
+        ✅ CORRECT: doc_qa_multi_tool(questions=["What are Aadil's projects and what are the PSL teams?"])
+        ❌ WRONG: doc_qa_multi_tool(questions=["What are Aadil's projects?", "What are the PSL teams?"])
+        ❌ WRONG: Call the tool twice — once for each sub-question
         
         User: "Tell me about Aadil's skills, the PSL format, and Harry Potter books"
-        ✅ CORRECT: doc_qa_multi_tool(questions=[
-            "What are Aadil's skills?",
-            "What is the PSL tournament format?", 
-            "What are the Harry Potter books?"
-        ])
-        
-        User: "What is Aadil's CGPA, internship, PSL teams, Harry Potter book count, and PSL prize?"
-        ✅ CORRECT: doc_qa_multi_tool(questions=[
-            "What is Aadil's CGPA?",
-            "What internship did Aadil do?",
-            "What are the PSL teams?",
-            "How many Harry Potter books are there?",
-            "What is the PSL prize money?"
-        ])
+        ✅ CORRECT: doc_qa_multi_tool(questions=["Tell me about Aadil's skills, the PSL format, and Harry Potter books"])
+        ❌ WRONG: doc_qa_multi_tool(questions=["What are Aadil's skills?", "What is the PSL format?", "What are the Harry Potter books?"])
         
         After this tool returns, STOP. Do not call any other tool. Return the output as-is.
         
