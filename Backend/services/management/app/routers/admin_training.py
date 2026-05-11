@@ -434,3 +434,59 @@ def delete_video_route(
         return make_response(False, msg, status_code=code, error=msg)
     except Exception as e:
         return make_response(False, "Failed to delete video", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, error=str(e))
+
+# --------------------------- DOCUMENT DESCRIPTION ---------------------------
+
+@router.get("/documents/{document_id}/description", status_code=status.HTTP_200_OK)
+async def get_document_description(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """Get the plain-text description for a document."""
+    try:
+        from shared.repos import documents_repo
+        doc = documents_repo.get_by_id(db, document_id)
+        if not doc:
+            return make_response(False, "Document not found", status_code=404)
+        return make_response(True, "OK", data={"description": doc.description or ""})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return make_response(False, "Could not fetch description", status_code=500, error=str(e))
+
+
+@router.patch("/documents/{document_id}/description", status_code=status.HTTP_200_OK)
+async def update_document_description(
+    document_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """Update the plain-text description for a document (sent to LLM as context)."""
+    try:
+        from shared.repos import documents_repo
+        doc = documents_repo.get_by_id(db, document_id)
+        if not doc:
+            return make_response(False, "Document not found", status_code=404)
+        doc.description = payload.get("description", "")
+        db.commit()
+        db.refresh(doc)
+        return make_response(True, "Description updated", data={"description": doc.description})
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return make_response(False, "Could not update description", status_code=500, error=str(e))
+
+
+@router.post("/documents/{document_id}/generate-description", status_code=status.HTTP_200_OK)
+async def generate_document_description(
+    document_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_current_admin),
+):
+    """AI-generate a short plain-text description from the document title and section titles."""
+    try:
+        from app.services import documents_service
+        return documents_service.generate_document_description(db, document_id=document_id)
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return make_response(False, "Could not generate description", status_code=500, error=str(e))

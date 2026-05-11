@@ -43,6 +43,9 @@ class Document(Base):
     cloudinary_public_id = Column(String, nullable=True)
     cloudinary_thumbnail_url = Column(String, nullable=True)
 
+    # 🔹 Optional human-written description (sent to LLM as context)
+    description = Column(Text, nullable=True)
+
     # 🔹 New JSON column for main topics
     main_topics = Column(
         JSON,

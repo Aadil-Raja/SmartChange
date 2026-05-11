@@ -241,10 +241,10 @@ const loadDocuments = useCallback(async () => {
   }
 }, []);
 
-const uploadDoc = useCallback(async (file, title = null) => {
+const uploadDoc = useCallback(async (file, title = null, description = null) => {
   try {
     setError(null);
-    const data = await adminApi.uploadDocument(file, title);
+    const data = await adminApi.uploadDocument(file, title, description);
     console.log('Upload API Response:', data);
 
     if (data.success) {

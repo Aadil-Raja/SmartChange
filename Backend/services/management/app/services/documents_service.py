@@ -32,6 +32,7 @@ def _doc_to_dict(row) -> dict:
         "cloudinary_public_id": doc.cloudinary_public_id,
         "cloudinary_thumbnail_url": doc.cloudinary_thumbnail_url,
         "main_topics": doc.main_topics,  # 🆕 NEW FIELD
+        "description": doc.description,  # 🆕 Optional context description
     }
 
 
@@ -83,6 +84,7 @@ def upload_document_dual(
     filename: str,
     mime: str | None = None,
     title: str | None = None,
+    description: str | None = None,
     fail_if_cloudinary_fails: bool = False,
 ):
     """
@@ -115,6 +117,10 @@ def upload_document_dual(
             uploaded_by=user_id,
             status=DocStatus.STORED,
         )
+        if description:
+            doc.description = description
+            db.commit()
+            db.refresh(doc)
         print(f"[upload_document_dual] Document row created with ID={doc.id}", file=sys.stderr)
     except Exception as e:
         print("[upload_document_dual] ERROR creating document row:", e, file=sys.stderr)
@@ -831,3 +837,77 @@ def get_document_sections_with_preview(db: Session, *, document_id: int):
         first_line = first_line[:120].strip() + "..."
     
     return first_line.strip()
+
+
+def generate_document_description(db: Session, *, document_id: int):
+    """
+    Generate a short plain-text description for a document using its title and section titles.
+    Used as context for the chatbot to prevent entity hallucination.
+    """
+    from shared.models.Document import DocumentChunk
+    from shared.llm import create_llm_provider
+
+    doc = documents_repo.get_by_id(db, document_id)
+    if not doc:
+        return make_response(False, "Document not found", status_code=404)
+
+    if doc.status != DocStatus.PROCESSED:
+        return make_response(
+            False,
+            f"Document must be PROCESSED to generate a description. Current status: {doc.status.value}",
+            status_code=400,
+        )
+
+    # Collect unique section titles (ordered by first appearance)
+    rows = (
+        db.query(DocumentChunk.section_title)
+        .filter(DocumentChunk.document_id == document_id)
+        .order_by(DocumentChunk.chunk_index)
+        .all()
+    )
+    seen = set()
+    section_titles = []
+    for (title,) in rows:
+        if title and title not in seen:
+            seen.add(title)
+            section_titles.append(title)
+
+    sections_text = ", ".join(section_titles) if section_titles else "N/A"
+
+    llm = create_llm_provider(
+        llm_provider=settings.llm_provider,
+        llm_model=settings.llm_model,
+        google_api_key=settings.google_api_key,
+        openai_api_key=settings.openai_api_key,
+    )
+
+    prompt = f"""You are generating a short description for a document that will be used as context for an AI chatbot.
+
+Document filename: {doc.title}
+Section titles found in the document: {sections_text}
+
+Write ONE concise sentence (max 30 words) that describes what this document is about and who or what it relates to.
+The description should help the AI understand the subject of the document so it can avoid confusing it with other documents.
+
+Rules:
+- Be specific: mention the person's name, company name, or subject if it is clear from the filename or sections
+- Keep it factual and neutral
+- Return ONLY the plain sentence, no quotes, no explanation
+
+Example outputs:
+This is Uzain Ahmed's CV covering his education at FAST NUCES, technical skills, and work experience.
+This document is a chapter on database normalization covering 1NF, 2NF, 3NF, and BCNF.
+This is Aadil Raja's resume listing his projects, skills, and academic background at FAST University.
+
+Generate the description now:"""
+
+    try:
+        description = llm.generate(prompt).strip().strip('"').strip("'")
+    except Exception:
+        # Fallback: build a simple description from what we have
+        description = f"This document is titled '{doc.title}' and covers the following topics: {sections_text[:200]}."
+
+    doc.description = description
+    db.commit()
+
+    return make_response(True, "Description generated", data={"description": description})

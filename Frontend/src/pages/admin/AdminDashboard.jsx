@@ -9,6 +9,7 @@ import { useAdmin } from '../../hooks/useAdmin';
 import { useAdminDocuments, useAdminInvalidations, useDocumentSections } from '../../hooks/useAdminQueries';
 import { fetchProcessingJobs } from '../../services/adminApi';
 import SuggestedQuestionsPanel from '../../components/ui/SuggestedQuestionsPanel';
+import DocumentDescriptionPanel from '../../components/ui/DocumentDescriptionPanel';
 
 const C = {
   bg: '#faf6ef',
@@ -86,6 +87,7 @@ const AdminDashboard = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(null);
   const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
   const [uploading, setUploading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [showSectionsModal, setShowSectionsModal] = useState(false);
@@ -97,6 +99,7 @@ const AdminDashboard = () => {
   const [auditSearchTerm, setAuditSearchTerm] = useState('');
   const [auditStatusFilter, setAuditStatusFilter] = useState('all');
   const [sqDocId, setSqDocId] = useState(null); // doc ID with suggested questions panel open
+  const [descDocId, setDescDocId] = useState(null); // doc ID with description panel open
 
   // Depends on selectedDoc state — must come after useState declarations
   const { data: sections = [], isLoading: loadingSections } = useDocumentSections(selectedDoc?.id);
@@ -128,11 +131,12 @@ const AdminDashboard = () => {
     if (!uploadingFile) return;
     setUploading(true);
     try {
-      const result = await uploadDoc(uploadingFile, uploadTitle.trim() || null);
+      const result = await uploadDoc(uploadingFile, uploadTitle.trim() || null, uploadDescription.trim() || null);
       if (result.success) {
         setShowUploadModal(false);
         setUploadingFile(null);
         setUploadTitle('');
+        setUploadDescription('');
         invalidateDocuments(); // refresh cache
       }
     } finally { setUploading(false); }
@@ -450,12 +454,33 @@ const AdminDashboard = () => {
                               <Sparkles size={17} />
                             </button>
                           )}
+                          {/* Description button — available for all docs */}
+                          <button
+                            onClick={() => setDescDocId(descDocId === doc.id ? null : doc.id)}
+                            style={{
+                              background: descDocId === doc.id ? 'rgba(0,173,239,0.10)' : 'transparent',
+                              border: 'none', cursor: 'pointer',
+                              color: '#00ADEF', padding: 6, borderRadius: 8,
+                              display: 'flex', alignItems: 'center',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,173,239,0.10)'}
+                            onMouseLeave={e => { if (descDocId !== doc.id) e.currentTarget.style.background = 'transparent'; }}
+                            title="Document Description"
+                          >
+                            <FileText size={17} />
+                          </button>
                         </div>
                       </div>
                       {/* Suggested Questions Panel — inline below the row */}
                       {sqDocId === doc.id && (
                         <div className="px-4 pb-4 pt-1">
                           <SuggestedQuestionsPanel key={doc.id} documentId={doc.id} documentStatus={doc.status} />
+                        </div>
+                      )}
+                      {/* Description Panel — inline below the row */}
+                      {descDocId === doc.id && (
+                        <div className="px-4 pb-4 pt-1">
+                          <DocumentDescriptionPanel key={doc.id} documentId={doc.id} documentStatus={doc.status} />
                         </div>
                       )}
                       </React.Fragment>
@@ -477,7 +502,7 @@ const AdminDashboard = () => {
           <div style={{ background: C.card, borderRadius: 20, width: '100%', maxWidth: 480 }} className="shadow-2xl">
             <div className="flex items-center justify-between p-6" style={{ borderBottom: `1px solid ${C.border}` }}>
               <h2 style={{ color: C.ink, fontSize: 18, fontWeight: 700 }}>Upload Document</h2>
-              <button onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }}
+              <button onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); setUploadDescription(''); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted }}>
                 <X size={20} />
               </button>
@@ -522,7 +547,7 @@ const AdminDashboard = () => {
                   {uploading ? 'Uploading…' : 'Upload'}
                 </button>
                 <button
-                  onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); }}
+                  onClick={() => { setShowUploadModal(false); setUploadingFile(null); setUploadTitle(''); setUploadDescription(''); }}
                   style={{
                     flex: 1, background: 'transparent', color: C.orange,
                     border: `1.5px solid ${C.orange}`, borderRadius: 50,

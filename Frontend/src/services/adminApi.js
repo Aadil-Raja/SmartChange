@@ -67,13 +67,15 @@ export const adminLogin = async (email, password) => {
 
 // ============ DOCUMENTS ============
 // In your frontend API call file
-export const uploadDocument = async (file, title = null) => {
+export const uploadDocument = async (file, title = null, description = null) => {
   const formData = new FormData();
-  // ---- FIX IS HERE ----
-  formData.append('f', file); // Changed 'file' to 'f' to match the backend
+  formData.append('f', file);
   
   if (title) {
     formData.append('title', title);
+  }
+  if (description) {
+    formData.append('description', description);
   }
   
   console.log("Uploading file with form data...");
@@ -162,5 +164,20 @@ export const generateSuggestedQuestions = async (documentId) => {
 
 export const updateSuggestedQuestions = async (documentId, questions) => {
   const res = await api.patch(`/admin-training/documents/${documentId}/suggested-questions`, { questions });
+  return res.data;
+};
+
+export const getDocumentDescription = async (documentId) => {
+  const res = await api.get(`/admin-training/documents/${documentId}/description`);
+  return res.data;
+};
+
+export const updateDocumentDescription = async (documentId, description) => {
+  const res = await api.patch(`/admin-training/documents/${documentId}/description`, { description });
+  return res.data;
+};
+
+export const generateDocumentDescription = async (documentId) => {
+  const res = await api.post(`/admin-training/documents/${documentId}/generate-description`);
   return res.data;
 };

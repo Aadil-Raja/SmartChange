@@ -304,7 +304,11 @@ def _process_sub_question(
             total_chunk_texts = 0
             for doc_id in passing_doc_ids:
                 data = doc_chunks[doc_id]
-                block_lines = [f"[Source: {data['doc_title']}]"]
+                doc_description = data.get("doc_description", "")
+                source_header = f"[Source: {data['doc_title']}]"
+                if doc_description:
+                    source_header += f"\n[Document Description: {doc_description}]"
+                block_lines = [source_header]
                 for c in data["chunks"]:
                     cid = f"DOC{doc_id}_CHUNK{c['chunk_index']}"
                     chunk_text = c['text']

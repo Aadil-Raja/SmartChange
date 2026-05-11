@@ -219,6 +219,7 @@ def delete_user_route(
 async def upload_document(
     f: UploadFile = File(...),
     title: str = Form(None),
+    description: str = Form(None),
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ):
@@ -239,7 +240,8 @@ async def upload_document(
             file_bytes=data,
             filename=f.filename,
             mime=f.content_type,
-            title=title,  # Use title from frontend, falls back to filename if None
+            title=title,
+            description=description,
             fail_if_cloudinary_fails=False,
         )
 
@@ -454,3 +456,4 @@ async def generate_document_main_topics_ai(
         print(f"Error generating main topics for document {document_id}: {e}", file=sys.stderr)
         traceback.print_exc()
         return make_response(False, "Could not generate main topics", status_code=500, error=str(e))
+

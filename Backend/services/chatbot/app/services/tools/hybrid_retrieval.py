@@ -265,6 +265,7 @@ def fetch_and_score_with_numpy(
                 
                 chunks_by_doc[doc_id] = {
                     "doc_title": doc.title,
+                    "doc_description": doc.description or "",
                     "cloudinary_url": doc.cloudinary_url,
                     "chunks": [],
                     "query_embedding": q_emb
@@ -417,6 +418,7 @@ def fetch_top_chunks_across_all_docs(
                 
                 chunks_by_doc[doc_id] = {
                     "doc_title": doc.title,
+                    "doc_description": doc.description or "",
                     "cloudinary_url": doc.cloudinary_url,
                     "chunks": [],
                     "query_embedding": q_emb

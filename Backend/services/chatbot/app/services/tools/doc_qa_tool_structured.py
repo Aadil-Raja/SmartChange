@@ -136,7 +136,11 @@ def filter_chunks_by_threshold(
 
         passing_doc_ids.append(doc_id)
 
-        block_lines = [f"[Source: {doc_title}]"]
+        doc_description = data.get("doc_description", "")
+        source_header = f"[Source: {doc_title}]"
+        if doc_description:
+            source_header += f"\n[Document Description: {doc_description}]"
+        block_lines = [source_header]
         for c in passing_chunks:
             cid = f"DOC{doc_id}_CHUNK{c['chunk_index']}"
             block_lines.append(f"[CHUNK_ID: {cid}]\n{c['text']}")
