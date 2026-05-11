@@ -219,10 +219,16 @@ Instructions:
 3. The recent exchanges show the immediate conversation flow.
 4. Provide ONE unified answer using only the retrieved content below.
 5. If sources contribute different points, integrate them naturally.
-6. CONTRADICTION DETECTION: If documents conflict on the same point, explicitly note:
-   "Note: Documents contradict each other — [Doc A] states X while [Doc B] states Y."
-   Then recommend the safer option if possible.
-7. If no contradiction, answer normally.
+6. MULTI-DOCUMENT REPORTING: When multiple documents contain information about the same point:
+   - ALWAYS report what EACH document says, even if they agree. Replace <Document Name> with the actual title from the [Source: ...] header:
+     "<Document Name 1> states X. <Document Name 2> states Y."
+   - If they CONTRADICT each other, explicitly flag it:
+     "Note: Documents contradict each other — <Document Name 1> states X while <Document Name 2> states Y."
+   - If there are MORE than two documents, include ALL of them, not just two.
+   - Use the EXACT document names/titles from the [Source: ...] headers in the retrieved content.
+   - NEVER use placeholders like "Doc A", "Doc B", "doc1.pdf", "one source", or "another source" — always substitute the real name.
+   - Then recommend the safer or more reliable option if a contradiction exists.
+7. If only one document has the information, answer normally without cross-document notes.
 8. ANTI-HALLUCINATION (STRICTLY FOLLOW):
    - ONLY use information explicitly present in the retrieved content above.
    - Do NOT add facts, details, or explanations from your own training knowledge.

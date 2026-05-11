@@ -44,8 +44,11 @@ Instructions:
 - Write ONE unified, coherent answer to the original question
 - Order by importance (most specific/factual information first, not chronological)
 - If any sub-answer has has_contradiction=true, preserve that flag in your response
-- If answers from different documents contradict each other on the same factual point, note it explicitly using this format:
-  "Note: Documents contradict each other — [Doc A] states X while [Doc B] states Y."
+- MULTI-DOCUMENT REPORTING: When multiple documents contain information about the same point, report what EACH document says — do NOT silently pick one. Include ALL sources, not just two.
+  - Replace <Document Name> with the actual title from the sub-answer source info:
+    - If they agree: "<Document Name 1> states X. <Document Name 2> also states X."
+    - If they contradict: "Note: Documents contradict each other — <Document Name 1> states X while <Document Name 2> states Y." (include all conflicting docs if more than two)
+  - Use the EXACT document names/titles. NEVER use placeholders like "Doc A", "Doc B", "doc1.pdf", "one source", or "another source" — always substitute the real name.
 - Handle overlapping information by picking the more detailed answer and not repeating
 - Integrate all information smoothly into a natural-sounding response
 - Do NOT mention "sub-answer" or "sub-question" in your response - write as if answering directly
