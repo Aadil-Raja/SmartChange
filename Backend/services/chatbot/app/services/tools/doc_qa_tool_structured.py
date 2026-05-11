@@ -213,6 +213,17 @@ Question: {question}
 Retrieved Content:
 {full_context}
 
+⚠️ STEP 1 — ENTITY CHECK (DO THIS BEFORE ANYTHING ELSE):
+Identify the specific person, entity, or subject the question is asking about.
+Then check: does the retrieved content explicitly mention that exact name/entity?
+
+- If NO — stop immediately and respond ONLY with:
+  "The provided documents do not contain information about [the entity from the question]."
+  Do NOT use data from other people or entities to answer. Do NOT rephrase or reframe.
+  This applies even if the topic (e.g. skills, GPA, salary) is present for a different person.
+
+- If YES — proceed to answer using only the matching content.
+
 Instructions:
 1. Use the conversation history above to understand context and follow-up questions.
 2. The summary shows what was discussed earlier about each document.
