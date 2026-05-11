@@ -201,7 +201,7 @@ const ChatWindow = ({ onOpenDocumentSelector, minimal = false }) => {
     const text = inputMessage.trim();
     setInputMessage("");
     setSending(true);
-    await sendMessage(text, activeChatId, !activeChatId ? text.substring(0, 50) : null);
+    await sendMessage(text, activeChatId, !activeChatId ? text.substring(0, 50) : null, rerankerModel);
     setSending(false);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
