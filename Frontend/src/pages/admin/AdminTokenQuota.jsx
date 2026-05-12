@@ -234,18 +234,28 @@ const AdminTokenQuota = () => {
   const [viewingHistory, setViewingHistory] = useState(null);
   const [overviewDays, setOverviewDays] = useState(7);
   const [topLimit, setTopLimit] = useState(10);
-  const [debouncedTopLimit, setDebouncedTopLimit] = useState(10);
+  // Track the highest limit ever requested so we only fetch more, never less
+  const [fetchedLimit, setFetchedLimit] = useState(10);
 
-  // Debounce topLimit so typing in the input doesn't fire a new fetch on every keystroke
+  // Reset fetchedLimit when period changes so we don't carry over a stale high-water mark
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedTopLimit(topLimit), 500);
+    setFetchedLimit(Math.max(10, topLimit));
+  }, [overviewDays]);
+
+  // Debounce topLimit — only bump fetchedLimit upward
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFetchedLimit(prev => Math.max(prev, topLimit));
+    }, 500);
     return () => clearTimeout(t);
   }, [topLimit]);
 
   // ── React Query ──────────────────────────────────────────────────────────
   const { data: quotaData, isLoading: loading, refetch: refetchQuota } = useAdminTokenQuotaList();
   const { data: overview } = useAdminTokenOverview(overviewDays);
-  const { data: topUsers = [] } = useAdminTokenTopUsers(overviewDays, debouncedTopLimit);
+  const { data: topUsersRaw = [] } = useAdminTokenTopUsers(overviewDays, fetchedLimit);
+  // Slice client-side — decreasing never triggers a refetch
+  const topUsers = topUsersRaw.slice(0, topLimit);
   const { invalidateTokenQuota } = useAdminInvalidations();
 
   const employees = quotaData?.employees || [];

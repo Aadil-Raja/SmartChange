@@ -35,6 +35,7 @@ const AdminCourseDetails = () => {
   const {
     error: ctxError, success,
     uploadThumbnail, deleteContent, reorderContent,
+    deleteThumbnail,
     clearMessages, setCourseDeadlineWeeks, activateExistingCourse, deactivateExistingCourse,
   } = useAdminTraining();
 
@@ -126,6 +127,13 @@ const AdminCourseDetails = () => {
     setUploadingThumbnail(false);
     e.target.value = '';
     if (result.success) invalidateCourse(courseId);
+  };
+
+  const handleThumbnailDelete = async () => {
+    setUploadingThumbnail(true);
+    const result = await deleteThumbnail(id);
+    setUploadingThumbnail(false);
+    if (result?.success) invalidateCourse(courseId);
   };
 
   const handleAddContent = () => { setEditingContent(null); setShowContentForm(true); };
@@ -323,12 +331,21 @@ const AdminCourseDetails = () => {
                   ? <img src={currentCourse.thumbnail_url} alt={currentCourse.title} className="w-full h-full object-cover absolute inset-0" />
                   : <span className="text-7xl select-none z-10">{getEmoji(currentCourse.id)}</span>}
                 <label htmlFor="thumbnail-upload"
-                  className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1 rounded-full cursor-pointer transition-all z-20"
-                  style={{ background: 'rgba(250,246,239,0.12)', color: 'rgba(250,246,239,0.6)', fontSize: '11px' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(250,246,239,0.22)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(250,246,239,0.12)'}>
-                  <Upload size={11} />{uploadingThumbnail ? 'Uploading…' : 'Upload Cover'}
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full cursor-pointer transition-all z-20"
+                  style={{ background: 'rgba(26,18,9,0.65)', color: '#faf6ef', fontSize: '11px', fontWeight: 600, backdropFilter: 'blur(4px)', border: '1px solid rgba(250,246,239,0.2)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(26,18,9,0.85)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(26,18,9,0.65)'}>
+                  <Upload size={11} />{uploadingThumbnail ? 'Uploading…' : currentCourse.thumbnail_url ? 'Change Cover' : 'Upload Cover'}
                 </label>
+                {currentCourse.thumbnail_url && (
+                  <button onClick={handleThumbnailDelete} disabled={uploadingThumbnail} title="Remove cover"
+                    className="absolute top-3 right-3 z-20 flex items-center justify-center w-7 h-7 rounded-full transition-all"
+                    style={{ background: 'rgba(26,18,9,0.65)', color: '#faf6ef', backdropFilter: 'blur(4px)', border: '1px solid rgba(250,246,239,0.2)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(180,40,40,0.8)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(26,18,9,0.65)'}>
+                    <X size={13} />
+                  </button>
+                )}
                 <input type="file" id="thumbnail-upload" className="hidden" accept="image/*" onChange={handleThumbnailUpload} disabled={uploadingThumbnail} />
               </div>
               <div className="px-8 py-6">
