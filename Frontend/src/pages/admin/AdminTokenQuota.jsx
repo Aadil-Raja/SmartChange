@@ -234,11 +234,18 @@ const AdminTokenQuota = () => {
   const [viewingHistory, setViewingHistory] = useState(null);
   const [overviewDays, setOverviewDays] = useState(7);
   const [topLimit, setTopLimit] = useState(10);
+  const [debouncedTopLimit, setDebouncedTopLimit] = useState(10);
+
+  // Debounce topLimit so typing in the input doesn't fire a new fetch on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTopLimit(topLimit), 500);
+    return () => clearTimeout(t);
+  }, [topLimit]);
 
   // ── React Query ──────────────────────────────────────────────────────────
   const { data: quotaData, isLoading: loading, refetch: refetchQuota } = useAdminTokenQuotaList();
   const { data: overview } = useAdminTokenOverview(overviewDays);
-  const { data: topUsers = [] } = useAdminTokenTopUsers(overviewDays, topLimit);
+  const { data: topUsers = [] } = useAdminTokenTopUsers(overviewDays, debouncedTopLimit);
   const { invalidateTokenQuota } = useAdminInvalidations();
 
   const employees = quotaData?.employees || [];
