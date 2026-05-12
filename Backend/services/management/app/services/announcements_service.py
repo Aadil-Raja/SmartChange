@@ -228,7 +228,16 @@ def add_comment(db: Session, *, team_id: int, announcement_id: int, user_id: int
         return make_response(False, "Announcement not found", status_code=404)
     
     c = announcements_repo.add_comment(db, announcement_id=announcement_id, user_id=user_id, body=body)
-    return make_response(True, "Comment added", data=c, status_code=201)
+    serialized = {
+        "id": c.id,
+        "announcement_id": c.announcement_id,
+        "body": c.body,
+        "created_at": c.created_at,
+        "user_name": c.user.Name if c.user else None,
+        "user_profile_picture": c.user.profile_picture_url if c.user else None,
+        "can_delete": True,  # the commenter can always delete their own comment
+    }
+    return make_response(True, "Comment added", data=serialized, status_code=201)
 
 def delete_comment(db: Session, *, team_id: int, announcement_id: int, comment_id: int, user_id: int):
     if not _is_team_member(db, team_id=team_id, user_id=user_id):

@@ -302,8 +302,8 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
             </div>
 
             {attachments.length > 0 && (
-              <div className="mb-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {attachments.map((attachment) => (
                     <div
                       key={attachment.id}
@@ -312,26 +312,26 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     >
                       {attachment.attachment_type === "image" ? (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <img src={attachment.url} alt={attachment.filename} className="w-full h-36 object-cover" />
+                          <img src={attachment.url} alt={attachment.filename} className="w-full h-28 object-cover" />
                         </a>
                       ) : attachment.attachment_type === "video" ? (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <div className="relative w-full h-36" style={{ background: "#f3ede4" }}>
+                          <div className="relative w-full h-28" style={{ background: "#f3ede4" }}>
                             {attachment.thumbnail_url ? (
                               <img src={attachment.thumbnail_url} alt={attachment.filename} className="w-full h-full object-cover" />
                             ) : (
                               <div className="flex items-center justify-center h-full">
-                                <Video size={36} className="text-gray-500" />
+                                <Video size={28} className="text-gray-500" />
                               </div>
                             )}
                           </div>
                         </a>
                       ) : (
                         <a href={attachment.url} target="_blank" rel="noopener noreferrer">
-                          <div className="flex items-center gap-3 p-3">
+                          <div className="flex items-center gap-2 p-3">
                             {getAttachmentIcon(attachment.attachment_type)}
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate" style={{ color: "#1a1209" }}>
+                              <p className="font-medium text-xs truncate" style={{ color: "#1a1209" }}>
                                 {attachment.filename}
                               </p>
                               <p className="text-xs text-gray-500">{formatFileSize(attachment.size_bytes)}</p>
@@ -343,11 +343,11 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                       {canDelete && (
                         <button
                           onClick={() => handleDeleteAttachment(attachment.id)}
-                          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           style={{ background: "#dc2626", color: "white" }}
                           title="Delete attachment"
                         >
-                          <X size={13} />
+                          <X size={11} />
                         </button>
                       )}
                     </div>
@@ -428,25 +428,25 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
 
       {isExpanded && !isEditing && (
         <div style={{ background: "#faf6ef", borderTop: "1px solid #ede8e0" }}>
-          <div className="p-6 lg:p-7">
-            <div className="flex items-center gap-2 mb-5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#fff0e8" }}>
-                <MessageSquare size={16} className="text-[#f7953f]" />
+          <div className="p-5 lg:p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "#fff0e8" }}>
+                <MessageSquare size={14} className="text-[#f7953f]" />
               </div>
-              <h3 className="text-lg font-bold" style={{ color: "#1a1209" }}>
+              <h3 className="text-sm font-bold" style={{ color: "#1a1209" }}>
                 {isManager ? "Team Discussion" : "Comments"}
               </h3>
-              <span className="ml-auto px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#f3ede4", color: "#6b5e4e" }}>
+              <span className="ml-auto px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ background: "#f3ede4", color: "#6b5e4e" }}>
                 {commentCount}
               </span>
             </div>
 
             {announcement.comments && announcement.comments.length > 0 ? (
-              <div className="space-y-3 mb-5">
+              <div className="space-y-2 mb-4 overflow-y-auto pr-1" style={{ maxHeight: 280 }}>
                 {announcement.comments.map((comment) => (
                   <div key={comment.id} className="rounded-xl border p-3" style={{ background: "white", borderColor: "#ede8e0" }}>
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white font-bold overflow-hidden" style={{ background: "#1a1209" }}>
+                    <div className="flex items-start gap-2.5">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold overflow-hidden text-xs" style={{ background: "#1a1209" }}>
                         {comment.user_profile_picture ? (
                           <img src={comment.user_profile_picture} alt={comment.user_name || "User"} className="w-full h-full object-cover" />
                         ) : (
@@ -455,28 +455,28 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="font-semibold text-sm" style={{ color: "#1a1209" }}>
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span className="font-semibold text-xs" style={{ color: "#1a1209" }}>
                             {comment.user_name || "Team Member"}
                           </span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <span className="text-xs flex items-center gap-1" style={{ color: "#9c8e80" }}>
-                              <Clock size={11} />
+                              <Clock size={10} />
                               {formatRelativeTime(comment.created_at)}
                             </span>
                             {comment.can_delete && (
                               <button
                                 onClick={() => handleDeleteComment(comment.id)}
-                                className="p-1 rounded transition-colors"
+                                className="p-0.5 rounded transition-colors hover:bg-red-50"
                                 style={{ color: "#dc2626" }}
                                 title="Delete comment"
                               >
-                                <Trash2 size={13} />
+                                <Trash2 size={12} />
                               </button>
                             )}
                           </div>
                         </div>
-                        <p className="text-sm whitespace-pre-wrap" style={{ color: "#3d3228" }}>
+                        <p className="text-xs whitespace-pre-wrap leading-relaxed" style={{ color: "#3d3228" }}>
                           {comment.body}
                         </p>
                       </div>
@@ -493,40 +493,37 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     loadingText="Loading comments..."
                     noMoreText="All comments loaded"
                     variant="secondary"
-                    className="mt-2"
+                    className="mt-1"
                   />
                 )}
               </div>
             ) : (
-              <div className="text-center py-8 mb-5">
-                <div className="inline-flex p-4 rounded-full mb-3" style={{ background: "#f3ede4" }}>
-                  <MessageSquare size={28} className="text-[#9c8e80]" />
+              <div className="text-center py-5 mb-4">
+                <div className="inline-flex p-3 rounded-full mb-2" style={{ background: "#f3ede4" }}>
+                  <MessageSquare size={22} className="text-[#9c8e80]" />
                 </div>
-                <p style={{ color: "#9c8e80" }} className="italic text-sm">
+                <p style={{ color: "#9c8e80" }} className="italic text-xs">
                   No comments yet. Be the first to share your thoughts!
                 </p>
               </div>
             )}
 
-            <div className="rounded-xl border p-4" style={{ background: "white", borderColor: "#ede8e0" }}>
-              <div className="flex items-center gap-2 mb-3">
-                <MessageSquare size={16} className="text-[#f7953f]" />
-                <span className="font-semibold text-sm" style={{ color: "#1a1209" }}>Add your comment</span>
-              </div>
+            <div className="rounded-xl border p-3" style={{ background: "white", borderColor: "#ede8e0" }}>
               <Textarea
                 placeholder="Share your thoughts or ask a question..."
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                rows={3}
+                rows={2}
                 disabled={submittingComment}
-                className="mb-3"
+                className="mb-2"
               />
-              <div className="flex justify-end mt-1">
+              <div className="flex justify-end">
                 <button
                   onClick={handleAddComment}
                   type="button"
                   disabled={submittingComment || !commentText.trim()}
-                  className="flex w-fit items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-[#FDB913] to-[#f7953f] px-5 py-2 text-sm font-semibold text-white transition-all hover:shadow-md hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ background: "linear-gradient(to right, #FDB913, #f7953f)" }}
                 >
                   {submittingComment ? (
                     <>
@@ -535,7 +532,7 @@ const AnnouncementCard = ({ announcement, isManager, teamId, onLoadMoreComments,
                     </>
                   ) : (
                     <>
-                      <Send size={16} />
+                      <Send size={13} />
                       <span>Post Comment</span>
                     </>
                   )}

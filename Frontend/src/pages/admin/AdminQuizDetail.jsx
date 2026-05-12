@@ -179,7 +179,7 @@ const AdminQuizDetail = () => {
           setQuiz(prev => ({ ...prev, questions: [...(prev.questions || []), ...optimisticQuestions] }));
           setShowAddQuestion(false);
 
-          // Fire API fully detached — no reload on success
+          // Fire API fully detached — reload when done to replace optimistic items
           (async () => {
             let added = 0;
             for (const q of selected) {
@@ -191,8 +191,7 @@ const AdminQuizDetail = () => {
             const addedMessage = `${added} question${added !== 1 ? "s" : ""} added`;
             toast.success(addedMessage);
             setSuccess(addedMessage);
-            // Only reload if something failed (count mismatch)
-            if (added !== selected.length) loadQuiz();
+            loadQuiz(); // always reload to replace optimistic items with real IDs
           })();
         } else {
           setSubmitting(true);
@@ -538,15 +537,15 @@ const AdminQuizDetail = () => {
                 <div style={{ display: "flex", gap: 6, marginLeft: 12 }}>
                   <button
                     onClick={() => handleEditQuestion(question)}
-                    disabled={isGenerating || isPublished}
-                    style={{ background: "#fff7ed", border: "none", borderRadius: 8, padding: "6px 8px", cursor: (isGenerating || isPublished) ? "not-allowed" : "pointer", color: C.orange, opacity: (isGenerating || isPublished) ? 0.4 : 1 }}
+                    disabled={isGenerating || isPublished || question._optimistic}
+                    style={{ background: "#fff7ed", border: "none", borderRadius: 8, padding: "6px 8px", cursor: (isGenerating || isPublished || question._optimistic) ? "not-allowed" : "pointer", color: C.orange, opacity: (isGenerating || isPublished || question._optimistic) ? 0.4 : 1 }}
                   >
                     <Edit size={15} />
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(question.id)}
-                    disabled={isGenerating || isPublished}
-                    style={{ background: "#fff1f0", border: "none", borderRadius: 8, padding: "6px 8px", cursor: (isGenerating || isPublished) ? "not-allowed" : "pointer", color: "#dc2626", opacity: (isGenerating || isPublished) ? 0.4 : 1 }}
+                    disabled={isGenerating || isPublished || question._optimistic}
+                    style={{ background: "#fff1f0", border: "none", borderRadius: 8, padding: "6px 8px", cursor: (isGenerating || isPublished || question._optimistic) ? "not-allowed" : "pointer", color: "#dc2626", opacity: (isGenerating || isPublished || question._optimistic) ? 0.4 : 1 }}
                   >
                     <Trash2 size={15} />
                   </button>
