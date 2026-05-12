@@ -1,8 +1,14 @@
 // src/pages/admin/AdminTokenQuota.jsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Zap, Search, RefreshCw, Edit2, RotateCcw, X } from "lucide-react";
 import AdminSidebar from "../../components/ui/AdminSidebar";
 import api from "../../services/api";
+import {
+  useAdminTokenQuotaList,
+  useAdminTokenOverview,
+  useAdminTokenTopUsers,
+  useAdminInvalidations,
+} from "../../hooks/useAdminQueries";
 
 const C = {
   bg: "#faf6ef", ink: "#1a1209", orange: "#F58220", muted: "#9c8e80",
@@ -222,70 +228,28 @@ function UsageHistoryModal({ user, onClose }) {
 
 const AdminTokenQuota = () => {
   const [navCollapsed, setNavCollapsed] = useState(true);
-  const [employees, setEmployees] = useState([]);
-  const [quotas, setQuotas] = useState({});
-  const [defaults, setDefaults] = useState({ token_limit: 100000, reset_interval_hours: 24 });
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
   const [resetting, setResetting] = useState(null);
   const [editing, setEditing] = useState(null);
   const [viewingHistory, setViewingHistory] = useState(null);
   const [overviewDays, setOverviewDays] = useState(7);
-  const [overview, setOverview] = useState(null);
-  const [topUsers, setTopUsers] = useState([]);
   const [topLimit, setTopLimit] = useState(10);
-  const hasFetched = useRef(false);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const empRes = await api.get("/admin/employees");
-      const raw = empRes.data?.data?.employees || [];
-      // Deduplicate by user id (users with multiple team memberships appear multiple times)
-      const seen = new Set();
-      const emps = raw.filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; });
-      setEmployees(emps);
+  // ── React Query ──────────────────────────────────────────────────────────
+  const { data: quotaData, isLoading: loading, refetch: refetchQuota } = useAdminTokenQuotaList();
+  const { data: overview } = useAdminTokenOverview(overviewDays);
+  const { data: topUsers = [] } = useAdminTokenTopUsers(overviewDays, topLimit);
+  const { invalidateTokenQuota } = useAdminInvalidations();
 
-      // Fetch quota for each employee in parallel
-      const quotaResults = await Promise.allSettled(
-        emps.map(e => api.get(`/admin/users/${e.id}/quota`).then(r => ({ id: e.id, data: r.data?.data })))
-      );
-      const map = {};
-      quotaResults.forEach(r => {
-        if (r.status === "fulfilled") {
-          map[r.value.id] = r.value.data;
-          // Extract system defaults from any response that has them
-          if (r.value.data?.note && r.value.data?.token_limit) {
-            setDefaults({ token_limit: r.value.data.token_limit, reset_interval_hours: r.value.data.reset_interval_hours });
-          }
-        }
-      });
-      setQuotas(map);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!hasFetched.current) { hasFetched.current = true; loadData(); }
-  }, []);
-
-  useEffect(() => {
-    api.get(`/admin/quota/overview?days=${overviewDays}`)
-      .then(r => setOverview(r.data?.data || null))
-      .catch(() => {});
-    api.get(`/admin/quota/top-users?days=${overviewDays}&limit=${topLimit}`)
-      .then(r => setTopUsers(r.data?.data?.users || []))
-      .catch(() => {});
-  }, [overviewDays, topLimit]);
+  const employees = quotaData?.employees || [];
+  const quotas    = quotaData?.quotas    || {};
+  const defaults  = quotaData?.defaults  || { token_limit: 100000, reset_interval_hours: 24 };
 
   const handleReset = async (userId) => {
     setResetting(userId);
     try {
       await api.post(`/admin/users/${userId}/quota/reset`);
-      await loadData();
+      invalidateTokenQuota();
     } catch (e) { console.error(e); }
     finally { setResetting(null); }
   };
@@ -392,7 +356,7 @@ const AdminTokenQuota = () => {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees…"
                 style={{ width: "100%", paddingLeft: 32, paddingRight: 12, paddingTop: 9, paddingBottom: 9, border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, outline: "none", background: "#fff" }} />
             </div>
-            <button onClick={loadData} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, fontSize: 13, flexShrink: 0 }}>
+            <button onClick={() => refetchQuota()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "#fff", color: C.muted, fontSize: 13, flexShrink: 0 }}>
               <RefreshCw size={13} /> Refresh table
             </button>
           </div>
@@ -474,7 +438,7 @@ const AdminTokenQuota = () => {
         </div>
       </div>
 
-      {editing && <EditQuotaModal user={editing} onClose={() => setEditing(null)} onSaved={loadData} defaultLimit={defaults.token_limit} defaultHours={defaults.reset_interval_hours} />}
+      {editing && <EditQuotaModal user={editing} onClose={() => setEditing(null)} onSaved={invalidateTokenQuota} defaultLimit={defaults.token_limit} defaultHours={defaults.reset_interval_hours} />}
       {viewingHistory && <UsageHistoryModal user={viewingHistory} onClose={() => setViewingHistory(null)} />}
     </div>
   );

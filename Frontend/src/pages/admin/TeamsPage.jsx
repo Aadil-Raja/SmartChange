@@ -27,6 +27,8 @@ const TeamsPage = () => {
   const [expandedTeams, setExpandedTeams] = useState(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   // React Query handles fetching — no manual useEffect needed
 
   const groupedEmployees = (() => {
@@ -54,7 +56,9 @@ const TeamsPage = () => {
 
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) return;
+    setIsCreating(true);
     const result = await createTeam(newTeamName);
+    setIsCreating(false);
     if (result.success) {
       setShowCreateModal(false);
       setNewTeamName('');
@@ -86,7 +90,9 @@ const TeamsPage = () => {
 
   const handleDeleteTeam = async () => {
     if (!deleteConfirm) return;
+    setIsDeleting(true);
     const result = await deleteTeam(deleteConfirm.id);
+    setIsDeleting(false);
     if (result.success) {
       setDeleteConfirm(null);
       setDeleteError(null);
@@ -365,17 +371,20 @@ const TeamsPage = () => {
           <div className="flex gap-3">
             <button
               onClick={handleCreateTeam}
-              disabled={!newTeamName.trim()}
-              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40"
+              disabled={!newTeamName.trim() || isCreating}
+              className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
               style={{ background: '#1a1209' }}
-              onMouseEnter={e => { if (newTeamName.trim()) e.currentTarget.style.background = '#f7953f'; }}
+              onMouseEnter={e => { if (newTeamName.trim() && !isCreating) e.currentTarget.style.background = '#f7953f'; }}
               onMouseLeave={e => e.currentTarget.style.background = '#1a1209'}
             >
-              Create Team
+              {isCreating ? (
+                <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Creating…</>
+              ) : 'Create Team'}
             </button>
             <button
               onClick={() => { setShowCreateModal(false); setNewTeamName(''); }}
-              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#f7953f] text-[#f7953f] hover:bg-orange-50 transition-colors"
+              disabled={isCreating}
+              className="px-5 py-2.5 rounded-full text-sm font-semibold border border-[#f7953f] text-[#f7953f] hover:bg-orange-50 transition-colors disabled:opacity-40"
             >
               Cancel
             </button>
@@ -458,11 +467,12 @@ const TeamsPage = () => {
           <ConfirmDialog
             title="Delete Team"
             message={`Are you sure you want to delete "${deleteConfirm.name}"? This will remove all team members and cannot be undone.`}
-            confirmText="Delete Team"
+            confirmText={isDeleting ? "Deleting…" : "Delete Team"}
             cancelText="Cancel"
             onConfirm={handleDeleteTeam}
             onCancel={() => { setDeleteConfirm(null); setDeleteError(null); }}
             variant="danger"
+            isLoading={isDeleting}
           />
         </>
       )}

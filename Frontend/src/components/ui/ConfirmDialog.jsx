@@ -9,6 +9,7 @@ const ConfirmDialog = ({
   onConfirm,
   onCancel,
   variant = "danger",
+  isLoading = false,
 }) => {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -29,18 +30,23 @@ const ConfirmDialog = ({
         <div className="flex items-center justify-end gap-3 px-6 py-4">
           <button
             onClick={onCancel}
-            className="px-5 py-2 rounded-full border border-[#f7953f] text-[#f7953f] text-sm font-semibold hover:bg-orange-50 transition-colors"
+            disabled={isLoading}
+            className="px-5 py-2 rounded-full border border-[#f7953f] text-[#f7953f] text-sm font-semibold hover:bg-orange-50 transition-colors disabled:opacity-40"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
-            className={`px-5 py-2 rounded-full text-sm font-bold text-white transition-colors ${
+            disabled={isLoading}
+            className={`px-5 py-2 rounded-full text-sm font-bold text-white transition-colors flex items-center gap-2 disabled:opacity-70 ${
               variant === "danger"
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-[#f7953f] hover:bg-[#E0741C]"
             }`}
           >
+            {isLoading && (
+              <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            )}
             {confirmText}
           </button>
         </div>

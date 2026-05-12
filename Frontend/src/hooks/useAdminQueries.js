@@ -7,6 +7,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchDocuments, fetchEmployees, fetchTeamRoles, fetchTeams, fetchDocumentSections, getSuggestedQuestions } from '../services/adminApi';
 import { getCourses, getCourseDetails } from '../services/trainingApi';
+import api from '../services/api';
 
 // ─── Query Keys ───────────────────────────────────────────────────────────────
 export const adminKeys = {
@@ -18,6 +19,9 @@ export const adminKeys = {
   teamRoles:         ()         => ['admin', 'team-roles'],
   courses:           ()         => ['admin', 'courses'],
   course:            (id)       => ['admin', 'course', id],
+  tokenQuotaList:    ()         => ['admin', 'token-quota-list'],
+  tokenOverview:     (days)     => ['admin', 'token-overview', days],
+  tokenTopUsers:     (days, limit) => ['admin', 'token-top-users', days, limit],
 };
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
@@ -182,5 +186,67 @@ export const useAdminInvalidations = () => {
       qc.invalidateQueries({ queryKey: adminKeys.courses() });
       qc.invalidateQueries({ queryKey: adminKeys.course(courseId) });
     },
+    invalidateTokenQuota: () => qc.invalidateQueries({ queryKey: adminKeys.tokenQuotaList() }),
+    invalidateTokenOverview: (days) => qc.invalidateQueries({ queryKey: adminKeys.tokenOverview(days) }),
+    invalidateTokenTopUsers: (days, limit) => qc.invalidateQueries({ queryKey: adminKeys.tokenTopUsers(days, limit) }),
   };
 };
+
+/**
+ * Token quota list — employees + their individual quota data.
+ * Stale after 2 min. Invalidated after edit/reset mutations.
+ */
+export const useAdminTokenQuotaList = () =>
+  useQuery({
+    queryKey: adminKeys.tokenQuotaList(),
+    queryFn: async () => {
+      const empRes = await api.get('/admin/employees');
+      const raw = empRes.data?.data?.employees || [];
+      const seen = new Set();
+      const emps = raw.filter(e => { if (seen.has(e.id)) return false; seen.add(e.id); return true; });
+
+      const quotaResults = await Promise.allSettled(
+        emps.map(e => api.get(`/admin/users/${e.id}/quota`).then(r => ({ id: e.id, data: r.data?.data })))
+      );
+      const quotas = {};
+      let defaults = { token_limit: 100000, reset_interval_hours: 24 };
+      quotaResults.forEach(r => {
+        if (r.status === 'fulfilled') {
+          quotas[r.value.id] = r.value.data;
+          if (r.value.data?.note && r.value.data?.token_limit) {
+            defaults = { token_limit: r.value.data.token_limit, reset_interval_hours: r.value.data.reset_interval_hours };
+          }
+        }
+      });
+      return { employees: emps, quotas, defaults };
+    },
+    staleTime: 2 * 60_000,
+  });
+
+/**
+ * Token usage overview stats (totals, active users) for a given period.
+ * Stale after 5 min — matches the "updates every 5 min" label on the page.
+ */
+export const useAdminTokenOverview = (days) =>
+  useQuery({
+    queryKey: adminKeys.tokenOverview(days),
+    queryFn: async () => {
+      const r = await api.get(`/admin/quota/overview?days=${days}`);
+      return r.data?.data || null;
+    },
+    staleTime: 5 * 60_000,
+  });
+
+/**
+ * Top users by token usage for a given period + limit.
+ * Stale after 5 min.
+ */
+export const useAdminTokenTopUsers = (days, limit) =>
+  useQuery({
+    queryKey: adminKeys.tokenTopUsers(days, limit),
+    queryFn: async () => {
+      const r = await api.get(`/admin/quota/top-users?days=${days}&limit=${limit}`);
+      return r.data?.data?.users || [];
+    },
+    staleTime: 5 * 60_000,
+  });

@@ -35,6 +35,7 @@ const AdminTrainingList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [deleteStats, setDeleteStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [isDeletingCourse, setIsDeletingCourse] = useState(false);
 
   useEffect(() => {
     return () => clearMessages();
@@ -71,7 +72,9 @@ const AdminTrainingList = () => {
   };
 
   const handleDeleteCourse = async (courseId) => {
+    setIsDeletingCourse(true);
     const result = await deleteExistingCourse(courseId);
+    setIsDeletingCourse(false);
     if (result.success) {
       setShowDeleteConfirm(null);
       setDeleteStats(null);
@@ -329,13 +332,18 @@ const AdminTrainingList = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => handleDeleteCourse(showDeleteConfirm.id)}
-                className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors"
+                disabled={isDeletingCourse}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                Delete Permanently
+                {isDeletingCourse && (
+                  <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                )}
+                {isDeletingCourse ? 'Deleting…' : 'Delete Permanently'}
               </button>
               <button
                 onClick={() => { setShowDeleteConfirm(null); setDeleteStats(null); }}
-                className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={isDeletingCourse}
+                className="flex-1 py-2.5 rounded-full text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
               >
                 Cancel
               </button>
