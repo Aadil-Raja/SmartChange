@@ -19,6 +19,6 @@ class Course(Base):
     deadline_weeks = Column(Integer, nullable=True)  # NULL = no deadline
 
     # Relationships
-    contents = relationship("ContentItem", back_populates="course", cascade="all, delete-orphan")
-    quizzes = relationship("CourseQuiz", back_populates="course", cascade="all, delete-orphan")
-    enrollments = relationship("CourseEnrollment", back_populates="course", cascade="all, delete-orphan")
+    contents = relationship("ContentItem", back_populates="course", cascade="all, delete-orphan", passive_deletes=True)
+    quizzes = relationship("CourseQuiz", back_populates="course", cascade="all, delete-orphan", passive_deletes=True)
+    enrollments = relationship("CourseEnrollment", back_populates="course", cascade="all, delete-orphan", passive_deletes=True)
